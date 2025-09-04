@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using Spillgebees.Blazor.Map.Components;
+using Spillgebees.Blazor.Map.Models;
 
 namespace Spillgebees.Blazor.Map.Interop;
 
@@ -23,16 +24,23 @@ internal static class MapJs
             dotNetObjectReference,
             onAfterCreateMapCallback,
             mapReference,
-            center, zoom);
+            center,
+            zoom);
 
-    internal static ValueTask DisposeMapAsync(
+    public static ValueTask SetLayersAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
-        ElementReference mapReference)
+        ElementReference mapReference,
+        List<Marker> markers,
+        List<CircleMarker> circleMarkers,
+        List<Polyline> polylines)
         => jsRuntime.SafeInvokeVoidAsync(
             logger,
-            $"{JsNamespace}.disposeMap",
-            mapReference);
+            $"{JsNamespace}.setLayers",
+            mapReference,
+            markers,
+            circleMarkers,
+            polylines);
 
     internal static ValueTask InvalidateSizeAsync(
         IJSRuntime jsRuntime,
@@ -41,6 +49,15 @@ internal static class MapJs
         => jsRuntime.SafeInvokeVoidAsync(
             logger,
             $"{JsNamespace}.invalidateSize",
+            mapReference);
+
+    internal static ValueTask DisposeMapAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference)
+        => jsRuntime.SafeInvokeVoidAsync(
+            logger,
+            $"{JsNamespace}.disposeMap",
             mapReference);
 
     private static ValueTask SafeInvokeVoidAsync(

@@ -1,9 +1,9 @@
-using System.Diagnostics.Tracing;
 using BlazorComponentUtilities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using Spillgebees.Blazor.Map.Interop;
+using Spillgebees.Blazor.Map.Models;
 
 namespace Spillgebees.Blazor.Map.Components;
 
@@ -20,6 +20,15 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     public required Coordinate Center { get; set; }
 
     [Parameter]
+    public List<Marker> Markers { get; set; } = [];
+
+    [Parameter]
+    public List<CircleMarker> CircleMarkers { get; set; } = [];
+
+    [Parameter]
+    public List<Polyline> Polylines { get; set; } = [];
+
+    [Parameter]
     public int Zoom { get; set; } = 9;
 
     [Parameter]
@@ -30,6 +39,10 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     [Parameter]
     public string MapContainerClass { get; set; } = string.Empty;
+
+    protected List<Marker> InternalMarkers { get; set; } = [];
+    protected List<CircleMarker> InternalCircleMarkers { get; set; } = [];
+    protected List<Polyline> InternalPolylines { get; set; } = [];
 
     protected string InternalMapContainerClass => new CssBuilder()
         .AddClass("sgb-map-container")
@@ -95,6 +108,16 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             return;
         }
 
+        if (Markers != InternalMarkers
+            || CircleMarkers != InternalCircleMarkers
+            || Polylines != InternalPolylines)
+        {
+            InternalMarkers = Markers;
+            InternalCircleMarkers = CircleMarkers;
+            InternalPolylines = Polylines;
+            await SetMarkersAsync();
+        }
+
         await Task.CompletedTask;
     }
 
@@ -115,7 +138,15 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             MapReference,
             Center,
             Zoom);
+
+        InternalMarkers = Markers;
+        InternalCircleMarkers = CircleMarkers;
+        InternalPolylines = Polylines;
+        await SetMarkersAsync();
     }
+
+    private ValueTask SetMarkersAsync()
+        => MapJs.SetLayersAsync(JsRuntime, Logger.Value, MapReference, InternalMarkers, InternalCircleMarkers, InternalPolylines);
 
     private ValueTask InvalidateMapSizeAsync()
         => MapJs.InvalidateSizeAsync(JsRuntime, Logger.Value, MapReference);

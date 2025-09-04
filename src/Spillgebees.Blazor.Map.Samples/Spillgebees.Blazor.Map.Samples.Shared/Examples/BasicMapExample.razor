@@ -1,15 +1,70 @@
 @using Spillgebees.Blazor.Map.Components
-@using Spillgebees.Blazor.Map.Interop
+@using Spillgebees.Blazor.Map.Models
 
 <div>
     <h3>Basic map component usage</h3>
     <CodeSnippet Code="@Code">
         <Component>
-            <Map Center="new Coordinate(49.808496766, 6.085499658)" />
+            <Map Center="new Coordinate(49.808496766, 6.085499658)"
+                 Markers="@_markers"
+                 CircleMarkers="@_circleMarkers"
+                 Polylines="@_polylines" />
         </Component>
     </CodeSnippet>
 </div>
 
 @code {
     private const string Code = """<Map Center="new Coordinate(49.808496766, 6.085499658)" />""";
+
+    private readonly List<Marker> _markers =
+    [
+        new(new Coordinate(49.5999673, 6.1342483), "Luxembourg")
+    ];
+
+    private readonly List<CircleMarker> _circleMarkers =
+    [
+        new(
+            new Coordinate(49.751496994, 6.106166242),
+            Stroke: true,
+            StrokeColor: "#C41039",
+            StrokeWeight: 2,
+            Fill: true,
+            FillColor: "white"),
+        new(
+            new Coordinate(49.7912, 6.1188),
+            Stroke: true,
+            StrokeColor: "#C41039",
+            StrokeWeight: 2,
+            Fill: true,
+            FillColor: "white"),
+        new(
+            new Coordinate(49.808996764, 6.100999596),
+            Stroke: true,
+            StrokeColor: "#C41039",
+            StrokeWeight: 2,
+            Fill: true,
+            FillColor: "white"),
+        new(
+            new Coordinate(49.842163298, 6.104332916),
+            Stroke: true,
+            StrokeColor: "#C41039",
+            StrokeWeight: 2,
+            Fill: true,
+            FillColor: "white")
+    ];
+
+    private readonly List<Polyline> _polylines =
+    [
+        new([
+            new Coordinate(49.751496994, 6.106166242),
+            new Coordinate(49.7912, 6.1188),
+            new Coordinate(49.808996764, 6.100999596),
+            new Coordinate(49.842163298, 6.104332916)
+        ],
+        SmoothFactor: 1,
+        NoClip: true,
+        Stroke: true,
+        StrokeColor: "#C41039",
+        StrokeWeight: 6)
+    ];
 }

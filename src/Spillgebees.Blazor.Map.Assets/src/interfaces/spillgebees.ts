@@ -1,6 +1,6 @@
 import { DotNet } from "@microsoft/dotnet-js-interop";
-import { Map as LeafletMap } from "leaflet";
-import { SpillgebeesCoordinate, SpillgebeesMarker } from "./map";
+import { Map as LeafletMap, Layer as LeafletLayer } from "leaflet";
+import {ISpillgebeesCircleMarker, ISpillgebeesCoordinate, ISpillgebeesMarker, ISpillgebeesPolyline} from "./map";
 
 interface Spillgebees {
     Map: SpillgebeesMap;
@@ -9,6 +9,7 @@ interface Spillgebees {
 interface SpillgebeesMap {
     mapFunctions: MapFunctions;
     maps: Map<HTMLElement, LeafletMap>;
+    layers: Map<LeafletMap, Set<LeafletLayer>>
 }
 
 interface MapFunctions {
@@ -16,9 +17,13 @@ interface MapFunctions {
         dotNetHelper: DotNet.DotNetObject,
         invokableDotNetMethodName: string,
         mapContainer: HTMLElement,
-        center: SpillgebeesCoordinate,
+        center: ISpillgebeesCoordinate,
         zoom: number) => Promise<void>;
-    addMarkers: (mapContainer: HTMLElement, markers: SpillgebeesMarker[]) => void;
+    setLayers: (
+        mapContainer: HTMLElement,
+        markers: ISpillgebeesMarker[],
+        circleMarkers: ISpillgebeesCircleMarker[],
+        polylines: ISpillgebeesPolyline[]) => void;
     disposeMap: (mapContainer: HTMLElement) => void;
 }
 

@@ -1,6 +1,6 @@
 import * as esbuild from 'esbuild'
 import pkg from './package.json' assert { type: 'json' }
-import cssModulesPlugin from 'esbuild-plugin-css-modules'
+import { copy } from 'esbuild-plugin-copy';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -16,6 +16,17 @@ await esbuild.build({
         'process.env.NODE_ENV': `"${process.env.NODE_ENV}"`,
     },
     loader: {
-        '.png': 'file', // Configure the loader for .png files
-    }
+        '.png': 'file'
+    },
+    plugins: [
+        copy({
+            assets: [
+                {
+                    from: ['./node_modules/leaflet/dist/images/*'],
+                    to: ['./'],
+                }
+            ]
+        })
+    ],
+    assetNames: '[name]'
 }).catch(() => process.exit(1));
