@@ -1,0 +1,15 @@
+@using Spillgebees.Blazor.Map.Components
+@using Spillgebees.Blazor.Map.Interop
+
+<div>
+    <h3>Basic map component usage</h3>
+    <CodeSnippet Code="@Code">
+        <Component>
+            <Map Center="new Coordinate(49.808496766, 6.085499658)" />
+        </Component>
+    </CodeSnippet>
+</div>
+
+@code {
+    private const string Code = """<Map Center="new Coordinate(49.808496766, 6.085499658)" />""";
+}

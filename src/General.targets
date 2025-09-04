@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <NoWarn>1701;1702;1591;</NoWarn>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotNet.ReproducibleBuilds" PrivateAssets="All" />
+    <PackageReference Include="MinVer" PrivateAssets="All" />
+  </ItemGroup>
+</Project>

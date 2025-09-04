@@ -1,0 +1,50 @@
+name: Node test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+
+    outputs:
+      changed: ${{ steps.filter.outputs.changed }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🔎 checking for changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            changed:
+              - 'src/Spillgebees.Blazor.Map.JS.Tests/**'
+
+  node-test:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: src/Spillgebees.Blazor.Map.JS.Tests
+
+    needs: changes
+    if: ${{ needs.changes.outputs.changed == 'true' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 📦 setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 19.x
+
+      - name: ⚙️ restore dependencies
+        run: npm install
+
+      - name: ✅ test project
+        run: npm test

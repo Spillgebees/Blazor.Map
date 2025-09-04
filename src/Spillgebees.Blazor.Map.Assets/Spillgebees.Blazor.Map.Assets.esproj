@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.3350272">
+  <PropertyGroup>
+    <DebugAssetsDirectory>dist\</DebugAssetsDirectory>
+    <StaticWebAssetSourceId>Spillgebees.Blazor.Map</StaticWebAssetSourceId>
+    <IsPackable>false</IsPackable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <BuildCommand>npm run build:dev</BuildCommand>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <BuildCommand>npm run build:prod</BuildCommand>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Script Include="build.ts" />
+    <Script Include="src\index.ts" />
+    <Script Include="src\map.ts" />
+    <Script Include="tsconfig.json" />
+  </ItemGroup>
+
+  <Target Name="Pack" />
+  <Target Name="_GetRequiredWorkloads" />
+</Project>

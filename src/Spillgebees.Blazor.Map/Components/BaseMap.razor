@@ -1,0 +1,9 @@
+﻿@code {
+    protected virtual RenderFragment Render
+        => @<div id="@MapContainerHtmlId"
+                 class="@InternalMapContainerClass"
+                 style="height: 500px"
+                 @ref="@MapReference">
+                @MapContent
+            </div>;
+}
