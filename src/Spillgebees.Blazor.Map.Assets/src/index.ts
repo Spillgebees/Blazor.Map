@@ -4,7 +4,7 @@ import { bootstrap } from "./map";
 import './styles.scss';
 
 export function beforeWebStart(options: any) {
-    if (window.hasBeforeStartBeenCalled) {
+    if (window.hasBeforeStartBeenCalledForSpillgebeesMap) {
         return;
     }
 
@@ -12,7 +12,7 @@ export function beforeWebStart(options: any) {
 }
 
 export function afterWebStarted(options: any) {
-    if (window.hasAfterStartedBeenCalled) {
+    if (window.hasAfterStartedBeenCalledForSpillgebeesMap) {
         return;
     }
 
@@ -20,7 +20,7 @@ export function afterWebStarted(options: any) {
 }
 
 export function beforeWebAssemblyStart(options: any) {
-    if (window.hasBeforeStartBeenCalled) {
+    if (window.hasBeforeStartBeenCalledForSpillgebeesMap) {
         return;
     }
 
@@ -28,7 +28,7 @@ export function beforeWebAssemblyStart(options: any) {
 }
 
 export function afterWebAssemblyStarted(options: any) {
-    if (window.hasAfterStartedBeenCalled) {
+    if (window.hasAfterStartedBeenCalledForSpillgebeesMap) {
         return
     }
 
@@ -36,7 +36,7 @@ export function afterWebAssemblyStarted(options: any) {
 }
 
 export function beforeServerStart(options: any) {
-    if (window.hasBeforeStartBeenCalled) {
+    if (window.hasBeforeStartBeenCalledForSpillgebeesMap) {
         return;
     }
 
@@ -44,7 +44,7 @@ export function beforeServerStart(options: any) {
 }
 
 export function afterServerStarted(options: any) {
-    if (window.hasAfterStartedBeenCalled) {
+    if (window.hasAfterStartedBeenCalledForSpillgebeesMap) {
         return;
     }
 
@@ -52,10 +52,10 @@ export function afterServerStarted(options: any) {
 }
 
 export function beforeStart(_: any) {
-    window.hasBeforeStartBeenCalled = true;
+    window.hasBeforeStartBeenCalledForSpillgebeesMap = true;
     bootstrap();
 }
 
 export function afterStarted(_: any) {
-    window.hasAfterStartedBeenCalled = true;
+    window.hasAfterStartedBeenCalledForSpillgebeesMap = true;
 }
