@@ -1,11 +1,27 @@
-import { ControlPosition } from "leaflet";
+import {ControlPosition, PointExpression} from "leaflet";
 
 export interface ISpillgebeesCoordinate {
     latitude: number;
     longitude: number;
 }
 
+export interface ISpillgebeesTooltipOffset {
+    x: number;
+    y: number;
+}
+
+export interface ISpillgebeesTooltip {
+    content: string;
+    offset?: PointExpression | undefined;
+    direction?: 'top' | 'bottom' | 'left' | 'right' | 'center' | 'auto';
+    permanent?: boolean;
+    sticky?: boolean;
+    opacity?: number;
+    className?: string;
+}
+
 export interface ISpillgebeesPath {
+    id: string;
     stroke: boolean | undefined;
     strokeColor: string | undefined;
     strokeWeight: number | undefined;
@@ -13,23 +29,21 @@ export interface ISpillgebeesPath {
     fill: boolean | undefined;
     fillColor: string | undefined;
     fillOpacity: number | undefined;
+    tooltip?: ISpillgebeesTooltip;
 }
 
 export interface ISpillgebeesMarker extends ISpillgebeesPath {
-    id: string;
     coordinate: ISpillgebeesCoordinate;
     title: string | undefined;
     icon: string | undefined;
 }
 
 export interface ISpillgebeesCircleMarker extends ISpillgebeesPath {
-    id: string;
     coordinate: ISpillgebeesCoordinate;
     radius: number | 10;
 }
 
 export interface ISpillgebeesPolyline extends ISpillgebeesPath {
-    id: string;
     coordinates: ISpillgebeesCoordinate[];
     smoothFactor: number | 1.0;
     noClip: boolean | false;

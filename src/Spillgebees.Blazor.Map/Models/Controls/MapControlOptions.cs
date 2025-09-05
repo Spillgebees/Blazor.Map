@@ -1,6 +1,4 @@
-using Spillgebees.Blazor.Map.Models;
-
-namespace Spillgebees.Blazor.Map.Components;
+namespace Spillgebees.Blazor.Map.Models.Controls;
 
 public record MapControlOptions(
     ZoomControlOptions ZoomControlOptions,

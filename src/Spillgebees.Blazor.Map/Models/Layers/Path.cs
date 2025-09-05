@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models;
+namespace Spillgebees.Blazor.Map.Models.Layers;
 
 public interface IPath
 {

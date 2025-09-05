@@ -22,6 +22,7 @@ import {
 import {CenterControl} from "./controls";
 import { LayerTuple, LayerStorage } from "./types/layers";
 import { fitToLayer, fitToLayerById } from "./utils/fitToLayer";
+import { convertToLeafletTooltip } from "./utils/tooltip";
 
 export function bootstrap() {
     window.Spillgebees = window.Spillgebees || {};
@@ -132,6 +133,11 @@ const setLayers = (
         layerStorage.byId.set(polyline.id, layerTuple);
         layerStorage.byLeaflet.set(leafletLayer, layerTuple);
 
+        if (polyline.tooltip) {
+            const tooltip = convertToLeafletTooltip(polyline.tooltip);
+            leafletLayer.bindTooltip(tooltip);
+        }
+
         map.addLayer(leafletLayer);
     });
     markers.forEach(marker => {
@@ -148,6 +154,11 @@ const setLayers = (
 
         layerStorage.byId.set(marker.id, layerTuple);
         layerStorage.byLeaflet.set(leafletLayer, layerTuple);
+
+        if (marker.tooltip) {
+            const tooltip = convertToLeafletTooltip(marker.tooltip);
+            leafletLayer.bindTooltip(tooltip);
+        }
 
         map.addLayer(leafletLayer);
     });
@@ -172,6 +183,11 @@ const setLayers = (
 
         layerStorage.byId.set(circleMarker.id, layerTuple);
         layerStorage.byLeaflet.set(leafletLayer, layerTuple);
+
+        if (circleMarker.tooltip) {
+            const tooltip = convertToLeafletTooltip(circleMarker.tooltip);
+            leafletLayer.bindTooltip(tooltip);
+        }
 
         map.addLayer(leafletLayer);
     });

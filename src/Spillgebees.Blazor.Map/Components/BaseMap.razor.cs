@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using Spillgebees.Blazor.Map.Interop;
 using Spillgebees.Blazor.Map.Models;
+using Spillgebees.Blazor.Map.Models.Controls;
+using Spillgebees.Blazor.Map.Models.Layers;
 
 namespace Spillgebees.Blazor.Map.Components;
 

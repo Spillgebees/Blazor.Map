@@ -1,4 +1,6 @@
-namespace Spillgebees.Blazor.Map.Models;
+using Spillgebees.Blazor.Map.Models.Tooltips;
+
+namespace Spillgebees.Blazor.Map.Models.Layers;
 
 public record CircleMarker(
     string Id,
@@ -10,4 +12,5 @@ public record CircleMarker(
     int? StrokeOpacity = null,
     bool Fill = false,
     string? FillColor = null,
-    int? FillOpacity = null) : IPath;
+    int? FillOpacity = null,
+    TooltipOptions? Tooltip = null) : IPath;

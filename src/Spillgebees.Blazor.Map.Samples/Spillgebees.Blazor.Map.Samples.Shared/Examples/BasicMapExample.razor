@@ -1,5 +1,8 @@
 @using Spillgebees.Blazor.Map.Components
 @using Spillgebees.Blazor.Map.Models
+@using Spillgebees.Blazor.Map.Models.Controls
+@using Spillgebees.Blazor.Map.Models.Layers
+@using Spillgebees.Blazor.Map.Models.Tooltips
 
 <div>
     <h3>Basic map component usage</h3>
@@ -22,35 +25,36 @@
      CircleMarkers=""@_circleMarkers""
      Polylines=""@_polylines"" />";
 
-    private readonly List<TileLayer> _tileLayers = [TileLayerPresets.OpenStreetMap];
+    private readonly List<TileLayer> _tileLayers = [TileLayer.OpenStreetMap];
 
     private readonly MapOptions _mapOptions = MapOptions.Default with
     {
-        FitToLayerId = "line"
+        FitToLayerId = "polyline-1"
     };
 
     private readonly MapControlOptions _mapControlOptions = MapControlOptions.Default with
     {
-        CenterControlOptions = new CenterControlOptions(true, ControlPosition.TopRight, new Coordinate(0, 0), 0, "line")
+        CenterControlOptions = new CenterControlOptions(true, ControlPosition.TopRight, new Coordinate(0, 0), 0, "polyline-1")
     };
 
     private readonly List<Marker> _markers =
     [
-        new(Guid.NewGuid().ToString(), new Coordinate(49.5999673, 6.1342483), "Luxembourg")
+        new("marker-1", new Coordinate(49.5999673, 6.1342483), "Luxembourg")
     ];
 
     private readonly List<CircleMarker> _circleMarkers =
     [
         new(
-            Guid.NewGuid().ToString(),
+            "circle-1",
             new Coordinate(49.751496994, 6.106166242),
             Stroke: true,
             StrokeColor: "#C41039",
             StrokeWeight: 2,
             Fill: true,
-            FillColor: "white"),
+            FillColor: "white",
+            Tooltip: new TooltipOptions("Circle 1")),
         new(
-            Guid.NewGuid().ToString(),
+            "circle-2",
             new Coordinate(49.7912, 6.1188),
             Stroke: true,
             StrokeColor: "#C41039",
@@ -58,7 +62,7 @@
             Fill: true,
             FillColor: "white"),
         new(
-            Guid.NewGuid().ToString(),
+            "circle-3",
             new Coordinate(49.808996764, 6.100999596),
             Stroke: true,
             StrokeColor: "#C41039",
@@ -66,7 +70,7 @@
             Fill: true,
             FillColor: "white"),
         new(
-            Guid.NewGuid().ToString(),
+            "circle-4",
             new Coordinate(49.842163298, 6.104332916),
             Stroke: true,
             StrokeColor: "#C41039",
@@ -77,13 +81,14 @@
 
     private readonly List<Polyline> _polylines =
     [
-        new("line",
-            [
-                new Coordinate(49.751496994, 6.106166242),
-                new Coordinate(49.7912, 6.1188),
-                new Coordinate(49.808996764, 6.100999596),
-                new Coordinate(49.842163298, 6.104332916)
-            ],
+        new(
+        "polyline-1",
+        [
+            new Coordinate(49.751496994, 6.106166242),
+            new Coordinate(49.7912, 6.1188),
+            new Coordinate(49.808996764, 6.100999596),
+            new Coordinate(49.842163298, 6.104332916)
+        ],
         SmoothFactor: 1,
         NoClip: true,
         Stroke: true,
