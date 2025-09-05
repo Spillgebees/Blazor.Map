@@ -1,0 +1,40 @@
+name: Build & test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+
+    outputs:
+      changed: ${{ steps.filter.outputs.changed }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🔎 checking for changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            changed:
+              - 'src/Spillgebees.Blazor.Map/**'
+              - 'src/Spillgebees.Blazor.Map.Samples/**'
+              - 'src/Spillgebees.Blazor.Map.Tests/**'
+
+  build-and-test:
+    name: build-and-test
+    permissions:
+      contents: write
+    needs: changes
+    uses: ./.github/workflows/build-test-publish.yml
+    with:
+      should-run: ${{ needs.changes.outputs.changed == 'true' }}
+      should-publish-gh-page: ${{ github.event_name == 'push' && needs.changes.outputs.changed == 'true' }}
+      gh-page-destination-directory: main

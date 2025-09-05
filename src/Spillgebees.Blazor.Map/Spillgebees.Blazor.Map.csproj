@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <Import Project="../General.targets" />
+
+  <PropertyGroup>
+    <Authors>Jason Rebelo Neves (igotinfected)</Authors>
+    <Company>Spillgebees</Company>
+    <Description>Spillgebees.Blazor.Map is a Blazor map component powered by Leaflet.</Description>
+    <PackageTags>blazor, blazor-wasm, blazor-server, leaflet, leafletjs, map</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>spillgebees_small.png</PackageIcon>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\assets\spillgebees_small.png" Pack="true" PackagePath=""/>
+    <None Include="README.md" Pack="true" PackagePath=""/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BlazorComponentUtilities" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Spillgebees.Blazor.Map.Assets\Spillgebees.Blazor.Map.Assets.esproj" PrivateAssets="All" />
+  </ItemGroup>
+</Project>

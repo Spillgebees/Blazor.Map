@@ -1,0 +1,98 @@
+@using Spillgebees.Blazor.Map.Components
+@using Spillgebees.Blazor.Map.Models
+@using Spillgebees.Blazor.Map.Models.Controls
+@using Spillgebees.Blazor.Map.Models.Layers
+@using Spillgebees.Blazor.Map.Models.Tooltips
+
+<div>
+    <h3>Basic map component usage</h3>
+    <CodeSnippet Code="@Code">
+        <Component>
+            <Map MapOptions="@_mapOptions"
+                 MapControlOptions="@_mapControlOptions"
+                 TileLayers="@_tileLayers"
+                 Markers="@_markers"
+                 CircleMarkers="@_circleMarkers"
+                 Polylines="@_polylines" />
+        </Component>
+    </CodeSnippet>
+</div>
+
+@code {
+    private const string Code =
+@"<Map TileLayers=""@_tileLayers""
+     Markers=""@_markers""
+     CircleMarkers=""@_circleMarkers""
+     Polylines=""@_polylines"" />";
+
+    private readonly List<TileLayer> _tileLayers = [TileLayer.OpenStreetMap];
+
+    private readonly MapOptions _mapOptions = MapOptions.Default with
+    {
+        FitToLayerId = "polyline-1"
+    };
+
+    private readonly MapControlOptions _mapControlOptions = MapControlOptions.Default with
+    {
+        CenterControlOptions = new CenterControlOptions(true, ControlPosition.TopRight, new Coordinate(0, 0), 0, "polyline-1")
+    };
+
+    private readonly List<Marker> _markers =
+    [
+        new("marker-1", new Coordinate(49.5999673, 6.1342483), "Luxembourg")
+    ];
+
+    private readonly List<CircleMarker> _circleMarkers =
+    [
+        new(
+            "circle-1",
+            new Coordinate(49.751496994, 6.106166242),
+            Stroke: true,
+            StrokeColor: "#C41039",
+            StrokeWeight: 2,
+            Fill: true,
+            FillColor: "white",
+            Tooltip: new TooltipOptions("Circle 1")),
+        new(
+            "circle-2",
+            new Coordinate(49.7912, 6.1188),
+            Stroke: true,
+            StrokeColor: "#C41039",
+            StrokeWeight: 2,
+            Fill: true,
+            FillColor: "white"),
+        new(
+            "circle-3",
+            new Coordinate(49.808996764, 6.100999596),
+            Stroke: true,
+            StrokeColor: "#C41039",
+            StrokeWeight: 2,
+            Fill: true,
+            FillColor: "white"),
+        new(
+            "circle-4",
+            new Coordinate(49.842163298, 6.104332916),
+            Stroke: true,
+            StrokeColor: "#C41039",
+            StrokeWeight: 2,
+            Fill: true,
+            FillColor: "white")
+    ];
+
+    private readonly List<Polyline> _polylines =
+    [
+        new(
+        "polyline-1",
+        [
+            new Coordinate(49.751496994, 6.106166242),
+            new Coordinate(49.7912, 6.1188),
+            new Coordinate(49.808996764, 6.100999596),
+            new Coordinate(49.842163298, 6.104332916)
+        ],
+        SmoothFactor: 1,
+        NoClip: true,
+        Stroke: true,
+        StrokeColor: "#C41039",
+        StrokeWeight: 6)
+    ];
+}
