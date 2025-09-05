@@ -1,9 +1,10 @@
 import { DotNet } from "@microsoft/dotnet-js-interop";
-import { Map as LeafletMap, Layer as LeafletLayer, TileLayer } from "leaflet";
+import { Map as LeafletMap, TileLayer } from "leaflet";
 import {
     ISpillgebeesCircleMarker, ISpillgebeesMapControlOptions,
     ISpillgebeesMapOptions, ISpillgebeesMarker, ISpillgebeesPolyline, ISpillgebeesTileLayer
 } from "./map";
+import { LayerStorage } from "../types/layers";
 
 interface Spillgebees {
     Map: SpillgebeesMap;
@@ -12,7 +13,7 @@ interface Spillgebees {
 interface SpillgebeesMap {
     mapFunctions: MapFunctions;
     maps: Map<HTMLElement, LeafletMap>;
-    layers: Map<LeafletMap, Set<LeafletLayer>>;
+    layers: Map<LeafletMap, LayerStorage>;
     tileLayers: Map<LeafletMap, Set<TileLayer>>;
 }
 
@@ -23,7 +24,10 @@ interface MapFunctions {
         mapContainer: HTMLElement,
         mapOptions: ISpillgebeesMapOptions,
         mapControlOptions: ISpillgebeesMapControlOptions,
-        tileLayers: ISpillgebeesTileLayer[]) => Promise<void>;
+        tileLayers: ISpillgebeesTileLayer[],
+        markers: ISpillgebeesMarker[],
+        circleMarkers: ISpillgebeesCircleMarker[],
+        polylines: ISpillgebeesPolyline[]) => Promise<void>;
     setLayers: (
         mapContainer: HTMLElement,
         markers: ISpillgebeesMarker[],
@@ -32,6 +36,7 @@ interface MapFunctions {
     setTileLayers: (
         mapContainer: HTMLElement,
         tileLayers: ISpillgebeesTileLayer[]) => void;
+    fitToLayer: (mapContainer: HTMLElement, layerId: string) => void;
     disposeMap: (mapContainer: HTMLElement) => void;
 }
 

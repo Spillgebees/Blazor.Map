@@ -15,12 +15,13 @@ import {
     Marker as LeafletMarker,
     CircleMarker as LeafletCircleMarker,
     Polyline as LeafletPolyline,
-    Layer as LeafletLayer,
     TileLayer,
     TileLayerOptions as LeafletTileLayerOptions,
     Control
 } from "leaflet";
 import {CenterControl} from "./controls";
+import { LayerTuple, LayerStorage } from "./types/layers";
+import { fitToLayer, fitToLayerById } from "./utils/fitToLayer";
 
 export function bootstrap() {
     window.Spillgebees = window.Spillgebees || {};
@@ -30,10 +31,11 @@ export function bootstrap() {
         setLayers: setLayers,
         setTileLayers: setTileLayers,
         invalidateSize: invalidateSize,
-        disposeMap: disposeMap
+        fitToLayer: fitToLayerById,
+        disposeMap: disposeMap,
     };
     window.Spillgebees.Map.maps = window.Spillgebees.Map.maps || new Map<HTMLElement, LeafletMap>();
-    window.Spillgebees.Map.layers = window.Spillgebees.Map.layers || new Map<LeafletMap, Set<LeafletLayer>>();
+    window.Spillgebees.Map.layers = window.Spillgebees.Map.layers || new Map<LeafletMap, LayerStorage>();
     window.Spillgebees.Map.tileLayers = window.Spillgebees.Map.tileLayers || new Map<LeafletMap, Set<TileLayer>>();
 }
 
@@ -43,7 +45,10 @@ const createMap = async (
     mapContainer: HTMLElement,
     mapOptions: ISpillgebeesMapOptions,
     mapControlOptions: ISpillgebeesMapControlOptions,
-    tileLayers: ISpillgebeesTileLayer[]): Promise<void> => {
+    tileLayers: ISpillgebeesTileLayer[],
+    markers: ISpillgebeesMarker[],
+    circleMarkers: ISpillgebeesCircleMarker[],
+    polylines: ISpillgebeesPolyline[]): Promise<void> => {
 
     const leafletTileLayers = tileLayers.map(tileLayer => {
         const options: LeafletTileLayerOptions = {
@@ -74,31 +79,40 @@ const createMap = async (
         addMapControls(map, mapControlOptions);
     }
 
+    setLayers(mapContainer, markers, circleMarkers, polylines);
+
+    if (mapOptions.fitToLayerId) {
+        const layerStorage = window.Spillgebees.Map.layers.get(map);
+        if (layerStorage) {
+            fitToLayer(map, layerStorage, mapOptions.fitToLayerId);
+        }
+    }
+
     await dotNetHelper.invokeMethodAsync(invokableDotNetMethodName);
 };
 
 const setLayers = (
     mapContainer: HTMLElement,
-    markers: Set<ISpillgebeesMarker>,
-    circleMarkers: Set<ISpillgebeesCircleMarker>,
-    polylines: Set<ISpillgebeesPolyline>): void => {
+    markers: ISpillgebeesMarker[],
+    circleMarkers: ISpillgebeesCircleMarker[],
+    polylines: ISpillgebeesPolyline[]): void => {
     const map = window.Spillgebees.Map.maps.get(mapContainer);
-    if (map === undefined) {
+    if (!map) {
         return;
     }
 
-    let layers = window.Spillgebees.Map.layers.get(map);
-    if (layers === undefined) {
-        layers = new Set<LeafletLayer>;
-    }
-    else
-    {
-        layers.forEach(layer => map.removeLayer(layer))
-        layers.clear()
+    let layerStorage = window.Spillgebees.Map.layers.get(map);
+    if (!layerStorage) {
+        layerStorage = { byId: new Map(), byLeaflet: new Map() };
+        window.Spillgebees.Map.layers.set(map, layerStorage);
+    } else {
+        layerStorage.byLeaflet.forEach((_, leafletLayer) => map.removeLayer(leafletLayer));
+        layerStorage.byId.clear();
+        layerStorage.byLeaflet.clear();
     }
 
     polylines.forEach(polyline => {
-        const layer = new LeafletPolyline(
+        const leafletLayer = new LeafletPolyline(
             polyline.coordinates.map(coordinate => new LatLng(coordinate.latitude, coordinate.longitude)),
             {
                 smoothFactor: polyline.smoothFactor,
@@ -110,23 +124,35 @@ const setLayers = (
                 fill: polyline.fill,
                 fillColor: polyline.fillColor,
                 fillOpacity: polyline.fillOpacity
-            })
-        map.addLayer(layer)
-        layers?.add(layer)
+            }
+        );
+
+        const layerTuple: LayerTuple = { model: polyline, leaflet: leafletLayer };
+
+        layerStorage.byId.set(polyline.id, layerTuple);
+        layerStorage.byLeaflet.set(leafletLayer, layerTuple);
+
+        map.addLayer(leafletLayer);
     });
     markers.forEach(marker => {
-        const leafletMarker = new LeafletMarker(
+        const leafletLayer = new LeafletMarker(
             new LatLng(
                 marker.coordinate.latitude,
                 marker.coordinate.longitude),
             {
                 title: marker.title
-            })
-        map.addLayer(leafletMarker)
-        layers?.add(leafletMarker)
+            }
+        );
+
+        const layerTuple: LayerTuple = { model: marker, leaflet: leafletLayer };
+
+        layerStorage.byId.set(marker.id, layerTuple);
+        layerStorage.byLeaflet.set(leafletLayer, layerTuple);
+
+        map.addLayer(leafletLayer);
     });
     circleMarkers.forEach(circleMarker => {
-        const layer = new LeafletCircleMarker(
+        const leafletLayer = new LeafletCircleMarker(
             new LatLng(
                 circleMarker.coordinate.latitude,
                 circleMarker.coordinate.longitude),
@@ -139,11 +165,16 @@ const setLayers = (
                 fill: circleMarker.fill,
                 fillColor: circleMarker.fillColor,
                 fillOpacity: circleMarker.fillOpacity
-            })
-        map.addLayer(layer)
-        layers?.add(layer)
+            }
+        );
+
+        const layerTuple: LayerTuple = { model: circleMarker, leaflet: leafletLayer };
+
+        layerStorage.byId.set(circleMarker.id, layerTuple);
+        layerStorage.byLeaflet.set(leafletLayer, layerTuple);
+
+        map.addLayer(leafletLayer);
     });
-    window.Spillgebees.Map.layers.set(map, layers);
 }
 
 const setTileLayers = (
@@ -212,15 +243,16 @@ const invalidateSize = (mapContainer: HTMLElement): void => {
     map.invalidateSize();
 }
 
+
 const disposeMap = (mapContainer: HTMLElement): void => {
     const map = window.Spillgebees.Map.maps.get(mapContainer);
     if (map === undefined) {
         return;
     }
 
-    const layers = window.Spillgebees.Map.layers.get(map);
-    if (layers) {
-        layers.forEach(layer => map.removeLayer(layer));
+    const layerStorage = window.Spillgebees.Map.layers.get(map);
+    if (layerStorage) {
+        layerStorage.byLeaflet.forEach((_, leafletLayer) => map.removeLayer(leafletLayer));
         window.Spillgebees.Map.layers.delete(map);
     }
 

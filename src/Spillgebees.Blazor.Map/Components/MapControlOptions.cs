@@ -23,7 +23,7 @@ public record ScaleControlOptions(bool Enable, ControlPosition Position, bool? S
     public static ScaleControlOptions Default => new(false, ControlPosition.BottomLeft, true, false);
 }
 
-public record CenterControlOptions(bool Enable, ControlPosition Position, Coordinate Center, int Zoom)
+public record CenterControlOptions(bool Enable, ControlPosition Position, Coordinate Center, int Zoom, string? LayerId = null)
 {
     public static CenterControlOptions Default => new(true, ControlPosition.TopRight, new Coordinate(49.751667, 6.101667), 9);
 }

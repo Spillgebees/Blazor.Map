@@ -141,14 +141,17 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     protected override Task OnAfterRenderAsync(bool firstRender)
         => firstRender
-            ? InitializeEditorAsync()
+            ? InitializeMapAsync()
             : Task.CompletedTask;
 
-    protected virtual async Task InitializeEditorAsync()
+    protected virtual async Task InitializeMapAsync()
     {
         DotNetObjectReference = Microsoft.JSInterop.DotNetObjectReference.Create(this);
 
         InternalTileLayers = TileLayers;
+        InternalMarkers = Markers;
+        InternalCircleMarkers = CircleMarkers;
+        InternalPolylines = Polylines;
 
         await MapJs.CreateMapAsync(
             JsRuntime,
@@ -158,12 +161,10 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             MapReference,
             MapOptions,
             MapControlOptions,
-            InternalTileLayers);
-
-        InternalMarkers = Markers;
-        InternalCircleMarkers = CircleMarkers;
-        InternalPolylines = Polylines;
-        await SetMarkersAsync();
+            InternalTileLayers,
+            InternalMarkers,
+            InternalCircleMarkers,
+            InternalPolylines);
     }
 
     private ValueTask SetMarkersAsync()
@@ -174,4 +175,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     private ValueTask InvalidateMapSizeAsync()
         => MapJs.InvalidateSizeAsync(JsRuntime, Logger.Value, MapReference);
+
+    public ValueTask FitToLayerAsync(string layerId)
+        => MapJs.FitToLayerAsync(JsRuntime, Logger.Value, MapReference, layerId);
 }

@@ -1,9 +1,11 @@
 import {Control, Map as LeafletMap, LatLng, DomUtil, DomEvent, ControlOptions, Map} from "leaflet";
 import {ISpillgebeesCoordinate} from "../interfaces/map";
+import { fitToLayer } from "../utils/fitToLayer";
 
 export interface CenterControlOptions extends ControlOptions {
     center: ISpillgebeesCoordinate;
     zoom: number;
+    layerId?: string | undefined;
 }
 
 export class CenterControl extends Control {
@@ -47,7 +49,19 @@ export class CenterControl extends Control {
     }
 
     private centerView() {
-        if (this.map === undefined || this.centerControlOptions.center === undefined || this.centerControlOptions.zoom === undefined) {
+        if (!this.map) {
+            return;
+        }
+
+        if (this.centerControlOptions.layerId) {
+            const layerStorage = window.Spillgebees.Map.layers.get(this.map);
+            if (layerStorage) {
+                fitToLayer(this.map, layerStorage, this.centerControlOptions.layerId);
+            }
+            return;
+        }
+
+        if (this.centerControlOptions.center === undefined || this.centerControlOptions.zoom === undefined) {
             return;
         }
 

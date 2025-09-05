@@ -16,17 +16,20 @@ export interface ISpillgebeesPath {
 }
 
 export interface ISpillgebeesMarker extends ISpillgebeesPath {
+    id: string;
     coordinate: ISpillgebeesCoordinate;
     title: string | undefined;
     icon: string | undefined;
 }
 
 export interface ISpillgebeesCircleMarker extends ISpillgebeesPath {
+    id: string;
     coordinate: ISpillgebeesCoordinate;
     radius: number | 10;
 }
 
 export interface ISpillgebeesPolyline extends ISpillgebeesPath {
+    id: string;
     coordinates: ISpillgebeesCoordinate[];
     smoothFactor: number | 1.0;
     noClip: boolean | false;
@@ -43,6 +46,7 @@ export interface ISpillgebeesMapOptions {
     center: ISpillgebeesCoordinate;
     zoom: number;
     showLeafletPrefix: boolean;
+    fitToLayerId?: string | undefined;
 }
 
 export interface ISpillgebeesZoomControlOptions {
@@ -64,6 +68,7 @@ export interface ISpillgebeesCenterControlOptions {
     position: ControlPosition;
     center: ISpillgebeesCoordinate;
     zoom: number;
+    layerId?: string | undefined;
 }
 
 export interface ISpillgebeesMapControlOptions {

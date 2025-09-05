@@ -5,7 +5,9 @@
     <h3>Basic map component usage</h3>
     <CodeSnippet Code="@Code">
         <Component>
-            <Map TileLayers="@_tileLayers"
+            <Map MapOptions="@_mapOptions"
+                 MapControlOptions="@_mapControlOptions"
+                 TileLayers="@_tileLayers"
                  Markers="@_markers"
                  CircleMarkers="@_circleMarkers"
                  Polylines="@_polylines" />
@@ -22,14 +24,25 @@
 
     private readonly List<TileLayer> _tileLayers = [TileLayerPresets.OpenStreetMap];
 
+    private readonly MapOptions _mapOptions = MapOptions.Default with
+    {
+        FitToLayerId = "line"
+    };
+
+    private readonly MapControlOptions _mapControlOptions = MapControlOptions.Default with
+    {
+        CenterControlOptions = new CenterControlOptions(true, ControlPosition.TopRight, new Coordinate(0, 0), 0, "line")
+    };
+
     private readonly List<Marker> _markers =
     [
-        new(new Coordinate(49.5999673, 6.1342483), "Luxembourg")
+        new(Guid.NewGuid().ToString(), new Coordinate(49.5999673, 6.1342483), "Luxembourg")
     ];
 
     private readonly List<CircleMarker> _circleMarkers =
     [
         new(
+            Guid.NewGuid().ToString(),
             new Coordinate(49.751496994, 6.106166242),
             Stroke: true,
             StrokeColor: "#C41039",
@@ -37,6 +50,7 @@
             Fill: true,
             FillColor: "white"),
         new(
+            Guid.NewGuid().ToString(),
             new Coordinate(49.7912, 6.1188),
             Stroke: true,
             StrokeColor: "#C41039",
@@ -44,6 +58,7 @@
             Fill: true,
             FillColor: "white"),
         new(
+            Guid.NewGuid().ToString(),
             new Coordinate(49.808996764, 6.100999596),
             Stroke: true,
             StrokeColor: "#C41039",
@@ -51,6 +66,7 @@
             Fill: true,
             FillColor: "white"),
         new(
+            Guid.NewGuid().ToString(),
             new Coordinate(49.842163298, 6.104332916),
             Stroke: true,
             StrokeColor: "#C41039",
@@ -61,12 +77,13 @@
 
     private readonly List<Polyline> _polylines =
     [
-        new([
-            new Coordinate(49.751496994, 6.106166242),
-            new Coordinate(49.7912, 6.1188),
-            new Coordinate(49.808996764, 6.100999596),
-            new Coordinate(49.842163298, 6.104332916)
-        ],
+        new("line",
+            [
+                new Coordinate(49.751496994, 6.106166242),
+                new Coordinate(49.7912, 6.1188),
+                new Coordinate(49.808996764, 6.100999596),
+                new Coordinate(49.842163298, 6.104332916)
+            ],
         SmoothFactor: 1,
         NoClip: true,
         Stroke: true,

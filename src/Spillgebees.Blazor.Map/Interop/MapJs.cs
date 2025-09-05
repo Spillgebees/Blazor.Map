@@ -18,7 +18,10 @@ internal static class MapJs
         ElementReference mapReference,
         MapOptions mapOptions,
         MapControlOptions mapControlOptions,
-        List<TileLayer> tileLayers)
+        List<TileLayer> tileLayers,
+        List<Marker> markers,
+        List<CircleMarker> circleMarkers,
+        List<Polyline> polylines)
         => jsRuntime.SafeInvokeVoidAsync(
             logger,
             $"{JsNamespace}.createMap",
@@ -27,7 +30,10 @@ internal static class MapJs
             mapReference,
             mapOptions,
             mapControlOptions,
-            tileLayers);
+            tileLayers,
+            markers,
+            circleMarkers,
+            polylines);
 
     public static ValueTask SetLayersAsync(
         IJSRuntime jsRuntime,
@@ -72,6 +78,17 @@ internal static class MapJs
             logger,
             $"{JsNamespace}.disposeMap",
             mapReference);
+
+    public static ValueTask FitToLayerAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        string layerId)
+        => jsRuntime.SafeInvokeVoidAsync(
+            logger,
+            $"{JsNamespace}.fitToLayer",
+            mapReference,
+            layerId);
 
     private static ValueTask SafeInvokeVoidAsync(
         this IJSRuntime jsRuntime,

@@ -1,6 +1,7 @@
 namespace Spillgebees.Blazor.Map.Models;
 
 public record Polyline(
+    string Id,
     List<Coordinate> Coordinates,
     int? SmoothFactor = null,
     bool NoClip = false,
