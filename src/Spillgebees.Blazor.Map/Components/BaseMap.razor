@@ -2,8 +2,7 @@
     protected virtual RenderFragment Render
         => @<div id="@MapContainerHtmlId"
                  class="@InternalMapContainerClass"
-                 style="height: 500px"
+                 style="@InternalMapContainerStyle"
                  @ref="@MapReference">
-                @MapContent
             </div>;
 }

@@ -1,6 +1,13 @@
 import { DotNet } from "@microsoft/dotnet-js-interop";
 import DotNetObject = DotNet.DotNetObject;
-import { ISpillgebeesCoordinate, ISpillgebeesMarker, ISpillgebeesCircleMarker, ISpillgebeesPolyline } from "./interfaces/map";
+import {
+    ISpillgebeesMarker,
+    ISpillgebeesCircleMarker,
+    ISpillgebeesPolyline,
+    ISpillgebeesTileLayer,
+    ISpillgebeesMapOptions,
+    ISpillgebeesMapControlOptions
+} from "./interfaces/map";
 import {
     Map as LeafletMap,
     MapOptions,
@@ -9,8 +16,11 @@ import {
     CircleMarker as LeafletCircleMarker,
     Polyline as LeafletPolyline,
     Layer as LeafletLayer,
-    TileLayer
+    TileLayer,
+    TileLayerOptions as LeafletTileLayerOptions,
+    Control
 } from "leaflet";
+import {CenterControl} from "./controls";
 
 export function bootstrap() {
     window.Spillgebees = window.Spillgebees || {};
@@ -18,34 +28,51 @@ export function bootstrap() {
     window.Spillgebees.Map.mapFunctions = window.Spillgebees.Map.mapFunctions || {
         createMap: createMap,
         setLayers: setLayers,
+        setTileLayers: setTileLayers,
         invalidateSize: invalidateSize,
         disposeMap: disposeMap
     };
     window.Spillgebees.Map.maps = window.Spillgebees.Map.maps || new Map<HTMLElement, LeafletMap>();
     window.Spillgebees.Map.layers = window.Spillgebees.Map.layers || new Map<LeafletMap, Set<LeafletLayer>>();
+    window.Spillgebees.Map.tileLayers = window.Spillgebees.Map.tileLayers || new Map<LeafletMap, Set<TileLayer>>();
 }
 
 const createMap = async (
     dotNetHelper: DotNetObject,
     invokableDotNetMethodName: string,
     mapContainer: HTMLElement,
-    center: ISpillgebeesCoordinate,
-    zoom: number): Promise<void> => {
+    mapOptions: ISpillgebeesMapOptions,
+    mapControlOptions: ISpillgebeesMapControlOptions,
+    tileLayers: ISpillgebeesTileLayer[]): Promise<void> => {
 
-    let mapOptions: MapOptions = {
-        center: new LatLng(center.latitude, center.longitude),
-        zoom: zoom,
-        layers: [
-            new TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap'
-            })
-        ]
+    const leafletTileLayers = tileLayers.map(tileLayer => {
+        const options: LeafletTileLayerOptions = {
+            attribution: tileLayer.attribution,
+            detectRetina: tileLayer.detectRetina,
+        };
+        return new TileLayer(tileLayer.urlTemplate, options);
+    });
+
+    const leafletMapOptions: MapOptions = {
+        center: new LatLng(mapOptions.center.latitude, mapOptions.center.longitude),
+        zoom: mapOptions.zoom,
+        layers: leafletTileLayers,
+        zoomControl: false
     };
 
-    const map = new LeafletMap(mapContainer, mapOptions);
-    // hide leaflet prefix
-    map.attributionControl.setPrefix(false);
+    const map = new LeafletMap(mapContainer, leafletMapOptions);
+    if (!mapOptions.showLeafletPrefix) {
+        map.attributionControl.setPrefix(false);
+    }
     window.Spillgebees.Map.maps.set(mapContainer, map);
+
+    const tileLayerSet = new Set<TileLayer>();
+    leafletTileLayers.forEach(tileLayer => tileLayerSet.add(tileLayer));
+    window.Spillgebees.Map.tileLayers.set(map, tileLayerSet);
+
+    if (mapControlOptions) {
+        addMapControls(map, mapControlOptions);
+    }
 
     await dotNetHelper.invokeMethodAsync(invokableDotNetMethodName);
 };
@@ -119,13 +146,62 @@ const setLayers = (
     window.Spillgebees.Map.layers.set(map, layers);
 }
 
-const disposeMap = (mapContainer: HTMLElement): void => {
-    if (window.Spillgebees.Map.maps.get(mapContainer) === undefined
-        || !window.Spillgebees.Map.maps.has(mapContainer)) {
+const setTileLayers = (
+    mapContainer: HTMLElement,
+    tileLayers: ISpillgebeesTileLayer[]): void => {
+    const map = window.Spillgebees.Map.maps.get(mapContainer);
+    if (map === undefined) {
         return;
     }
 
-    window.Spillgebees.Map.maps.delete(mapContainer);
+    let existingTileLayers = window.Spillgebees.Map.tileLayers.get(map);
+    if (existingTileLayers === undefined) {
+        existingTileLayers = new Set<TileLayer>();
+    }
+    else {
+        existingTileLayers.forEach(tileLayer => map.removeLayer(tileLayer));
+        existingTileLayers.clear();
+    }
+    tileLayers.forEach(tileLayer => {
+        const options: LeafletTileLayerOptions = {
+            attribution: tileLayer.attribution,
+            detectRetina: tileLayer.detectRetina,
+            tileSize: tileLayer.tileSize,
+        };
+
+        const leafletTileLayer = new TileLayer(tileLayer.urlTemplate, options);
+        map.addLayer(leafletTileLayer);
+        existingTileLayers.add(leafletTileLayer);
+    });
+
+    window.Spillgebees.Map.tileLayers.set(map, existingTileLayers);
+}
+
+const addMapControls = (map: LeafletMap, controlOptions: ISpillgebeesMapControlOptions): void => {
+    console.warn(controlOptions);
+
+    if (controlOptions.zoomControlOptions.enable) {
+        const zoomControl = new Control.Zoom({
+            position: controlOptions.zoomControlOptions.position
+        });
+        map.addControl(zoomControl);
+    }
+
+    if (controlOptions.scaleControlOptions.enable) {
+        const scaleControl = new Control.Scale({
+            position: controlOptions.scaleControlOptions.position,
+            metric: controlOptions.scaleControlOptions.showMetric ?? true,
+            imperial: controlOptions.scaleControlOptions.showImperial ?? false
+        });
+        map.addControl(scaleControl);
+    }
+
+    if (controlOptions.centerControlOptions.enable) {
+        const centerControl = new CenterControl(
+            map,
+            controlOptions.centerControlOptions);
+        map.addControl(centerControl);
+    }
 }
 
 const invalidateSize = (mapContainer: HTMLElement): void => {
@@ -134,4 +210,25 @@ const invalidateSize = (mapContainer: HTMLElement): void => {
         return;
     }
     map.invalidateSize();
+}
+
+const disposeMap = (mapContainer: HTMLElement): void => {
+    const map = window.Spillgebees.Map.maps.get(mapContainer);
+    if (map === undefined) {
+        return;
+    }
+
+    const layers = window.Spillgebees.Map.layers.get(map);
+    if (layers) {
+        layers.forEach(layer => map.removeLayer(layer));
+        window.Spillgebees.Map.layers.delete(map);
+    }
+
+    const tileLayers = window.Spillgebees.Map.tileLayers.get(map);
+    if (tileLayers) {
+        tileLayers.forEach(tileLayer => map.removeLayer(tileLayer));
+        window.Spillgebees.Map.tileLayers.delete(map);
+    }
+
+    window.Spillgebees.Map.maps.delete(mapContainer);
 }

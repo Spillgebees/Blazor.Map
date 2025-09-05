@@ -1,7 +1,7 @@
 // noinspection JSUnusedGlobalSymbols
 
 import { bootstrap } from "./map";
-import './styles.css';
+import './styles.scss';
 
 export function beforeWebStart(options: any) {
     if (window.hasBeforeStartBeenCalled) {

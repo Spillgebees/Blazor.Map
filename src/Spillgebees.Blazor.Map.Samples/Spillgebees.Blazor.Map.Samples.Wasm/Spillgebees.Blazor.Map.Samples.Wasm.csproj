@@ -8,7 +8,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference
-      Include="..\Spillgebees.Blazor.Map.Samples.Shared\Spillgebees.Blazor.Map.Samples.Shared.csproj" />
+    <ProjectReference Include="..\Spillgebees.Blazor.Map.Samples.Shared\Spillgebees.Blazor.Map.Samples.Shared.csproj" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,7 @@
 import * as esbuild from 'esbuild'
 import pkg from './package.json' assert { type: 'json' }
 import { copy } from 'esbuild-plugin-copy';
+import { sassPlugin } from 'esbuild-sass-plugin';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -26,7 +27,8 @@ await esbuild.build({
                     to: ['./'],
                 }
             ]
-        })
+        }),
+        sassPlugin()
     ],
     assetNames: '[name]'
 }).catch(() => process.exit(1));

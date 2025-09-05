@@ -16,16 +16,18 @@ internal static class MapJs
         DotNetObjectReference<BaseMap>? dotNetObjectReference,
         string onAfterCreateMapCallback,
         ElementReference mapReference,
-        Coordinate center,
-        int zoom)
+        MapOptions mapOptions,
+        MapControlOptions mapControlOptions,
+        List<TileLayer> tileLayers)
         => jsRuntime.SafeInvokeVoidAsync(
             logger,
             $"{JsNamespace}.createMap",
             dotNetObjectReference,
             onAfterCreateMapCallback,
             mapReference,
-            center,
-            zoom);
+            mapOptions,
+            mapControlOptions,
+            tileLayers);
 
     public static ValueTask SetLayersAsync(
         IJSRuntime jsRuntime,
@@ -41,6 +43,17 @@ internal static class MapJs
             markers,
             circleMarkers,
             polylines);
+
+    public static ValueTask SetTileLayersAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        List<TileLayer> tileLayers)
+        => jsRuntime.SafeInvokeVoidAsync(
+            logger,
+            $"{JsNamespace}.setTileLayers",
+            mapReference,
+            tileLayers);
 
     internal static ValueTask InvalidateSizeAsync(
         IJSRuntime jsRuntime,

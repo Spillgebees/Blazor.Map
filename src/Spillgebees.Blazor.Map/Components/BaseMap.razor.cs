@@ -16,8 +16,14 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     private ILoggerFactory _loggerFactory { get; set; } = null!;
     protected Lazy<ILogger> Logger => new(() => _loggerFactory.CreateLogger(GetType()));
 
+    [Parameter]
+    public MapOptions MapOptions { get; set; } = MapOptions.Default;
+
+    [Parameter]
+    public MapControlOptions MapControlOptions { get; set; } = MapControlOptions.Default;
+
     [Parameter, EditorRequired]
-    public required Coordinate Center { get; set; }
+    public required List<TileLayer> TileLayers { get; set; }
 
     [Parameter]
     public List<Marker> Markers { get; set; } = [];
@@ -29,10 +35,10 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     public List<Polyline> Polylines { get; set; } = [];
 
     [Parameter]
-    public int Zoom { get; set; } = 9;
+    public string? Width { get; set; }
 
     [Parameter]
-    public RenderFragment? MapContent { get; set; }
+    public string? Height { get; set; } = "500px";
 
     [Parameter]
     public string MapContainerHtmlId { get; set; } = $"map-container-{Guid.NewGuid()}";
@@ -43,10 +49,16 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     protected List<Marker> InternalMarkers { get; set; } = [];
     protected List<CircleMarker> InternalCircleMarkers { get; set; } = [];
     protected List<Polyline> InternalPolylines { get; set; } = [];
+    protected List<TileLayer> InternalTileLayers { get; set; } = [];
 
     protected string InternalMapContainerClass => new CssBuilder()
         .AddClass("sgb-map-container")
         .AddClass(MapContainerClass)
+        .Build();
+
+    protected string InternalMapContainerStyle => new StyleBuilder()
+        .AddStyle("width", Width, Width is not null)
+        .AddStyle("height", Height, Height is not null)
         .Build();
 
     protected ElementReference MapReference;
@@ -66,7 +78,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
         try
         {
-            // ensure initialization has been completed to avoid DotNetObjectReference disposed exceptions
+            // ensure initialization completed to avoid DotNetObjectReference disposed exceptions
             await _initializationCompletionSource.Task;
             await MapJs.DisposeMapAsync(JsRuntime, Logger.Value, MapReference);
         }
@@ -96,7 +108,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         _initializationCompletionSource.TrySetResult();
         IsInitialized = true;
 
-        // ensure map is initialized correctly
+        // ensure map initialized correctly
         await Task.Delay(50);
         await InvalidateMapSizeAsync();
     }
@@ -118,6 +130,12 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             await SetMarkersAsync();
         }
 
+        if (TileLayers != InternalTileLayers)
+        {
+            InternalTileLayers = TileLayers;
+            await SetTileLayersAsync();
+        }
+
         await Task.CompletedTask;
     }
 
@@ -130,14 +148,17 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     {
         DotNetObjectReference = Microsoft.JSInterop.DotNetObjectReference.Create(this);
 
+        InternalTileLayers = TileLayers;
+
         await MapJs.CreateMapAsync(
             JsRuntime,
             Logger.Value,
             DotNetObjectReference,
             nameof(OnMapInitializedAsync),
             MapReference,
-            Center,
-            Zoom);
+            MapOptions,
+            MapControlOptions,
+            InternalTileLayers);
 
         InternalMarkers = Markers;
         InternalCircleMarkers = CircleMarkers;
@@ -147,6 +168,9 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     private ValueTask SetMarkersAsync()
         => MapJs.SetLayersAsync(JsRuntime, Logger.Value, MapReference, InternalMarkers, InternalCircleMarkers, InternalPolylines);
+
+    private ValueTask SetTileLayersAsync()
+        => MapJs.SetTileLayersAsync(JsRuntime, Logger.Value, MapReference, InternalTileLayers);
 
     private ValueTask InvalidateMapSizeAsync()
         => MapJs.InvalidateSizeAsync(JsRuntime, Logger.Value, MapReference);
