@@ -225,8 +225,6 @@ const setTileLayers = (
 }
 
 const addMapControls = (map: LeafletMap, controlOptions: ISpillgebeesMapControlOptions): void => {
-    console.warn(controlOptions);
-
     if (controlOptions.zoomControlOptions.enable) {
         const zoomControl = new Control.Zoom({
             position: controlOptions.zoomControlOptions.position
