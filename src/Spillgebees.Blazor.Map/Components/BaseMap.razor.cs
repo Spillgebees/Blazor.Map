@@ -89,7 +89,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         }
         catch (Exception exception)
         {
-            Logger.Value.LogError(exception, "Failed to dispose editor");
+            Logger.Value.LogError(exception, "Failed to dispose map");
         }
         finally
         {
