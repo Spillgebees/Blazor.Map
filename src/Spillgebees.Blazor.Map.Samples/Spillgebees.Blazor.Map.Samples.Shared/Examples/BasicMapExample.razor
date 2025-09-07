@@ -8,24 +8,26 @@
     <h3>Basic map component usage</h3>
     <CodeSnippet Code="@Code">
         <Component>
-            <Map MapOptions="@_mapOptions"
-                 MapControlOptions="@_mapControlOptions"
-                 TileLayers="@_tileLayers"
-                 Markers="@_markers"
-                 CircleMarkers="@_circleMarkers"
-                 Polylines="@_polylines" />
+            <SgbMap MapOptions="@_mapOptions"
+                    MapControlOptions="@_mapControlOptions"
+                    TileLayers="@_tileLayers"
+                    Markers="@_markers"
+                    CircleMarkers="@_circleMarkers"
+                    Polylines="@_polylines" />
         </Component>
     </CodeSnippet>
 </div>
 
 @code {
     private const string Code =
-@"<Map TileLayers=""@_tileLayers""
-     Markers=""@_markers""
-     CircleMarkers=""@_circleMarkers""
-     Polylines=""@_polylines"" />";
+@"<SgbMap MapOptions=""@_mapOptions""
+        MapControlOptions=""@_mapControlOptions""
+        TileLayers=""@_tileLayers""
+        Markers=""@_markers""
+        CircleMarkers=""@_circleMarkers""
+        Polylines=""@_polylines"" />";
 
-    private readonly List<TileLayer> _tileLayers = [TileLayer.OpenStreetMap];
+    private readonly List<TileLayer> _tileLayers = [TileLayer.OpnvKarte];
 
     private readonly MapOptions _mapOptions = MapOptions.Default with
     {

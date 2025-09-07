@@ -1,4 +1,6 @@
-﻿@code {
+﻿@inherits ComponentBase
+
+@code {
     protected virtual RenderFragment Render
         => @<div id="@MapContainerHtmlId"
                  class="@InternalMapContainerClass"

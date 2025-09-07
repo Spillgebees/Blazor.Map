@@ -1,5 +1,21 @@
 namespace Spillgebees.Blazor.Map.Models.Layers;
 
+/// <summary>
+/// A tile layer to be used as a base map layer.
+/// </summary>
+/// <param name="UrlTemplate">
+/// The URL template for the tile layer.
+/// See <see href="https://leafletjs.com/reference.html#tilelayer">leaflet</see> for details.
+/// </param>
+/// <param name="Attribution">The attribution text to be displayed on the map.</param>
+/// <param name="DetectRetina">
+/// Whether to use high-DPI tiles if the browser supports them.
+/// Default is <see langword="null" />.
+/// </param>
+/// <param name="TileSize">
+/// The size of the tiles in pixels. Default is <see langword="null" />
+/// which uses the Leaflet default of 256.
+/// </param>
 public record TileLayer(
     string UrlTemplate,
     string Attribution,
@@ -7,7 +23,7 @@ public record TileLayer(
     int? TileSize = null)
 {
     /// <summary>
-    /// OpenStreetMap tile layer - free to use with attribution, optimized for high-DPI displays
+    /// OpenStreetMap tile layer, free to use with attribution.
     /// </summary>
     public static readonly TileLayer OpenStreetMap = new(
         UrlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -15,10 +31,18 @@ public record TileLayer(
         );
 
     /// <summary>
-    /// OpenStreetMap France tile layer - free to use with attribution, optimized for high-DPI displays
+    /// OpenStreetMap France tile layer, free to use with attribution.
     /// </summary>
     public static readonly TileLayer OpenStreetMapFrance = new(
         UrlTemplate: "https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",
         Attribution: "&copy; OpenStreetMap France | &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
+        );
+
+    /// <summary>
+    /// Public transport map tile layer, free to use with attribution.
+    /// </summary>
+    public static readonly TileLayer OpnvKarte = new(
+        UrlTemplate: "https://tileserver.memomaps.de/tilegen/{z}/{x}/{y}.png",
+        Attribution: "&copy; <a href='memomaps.de'>memomaps.de</a> <a href='https://creativecommons.org/licenses/by-sa/2.0/CC-BY-SA'>CC-BY-SA</a> | &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
         );
 }

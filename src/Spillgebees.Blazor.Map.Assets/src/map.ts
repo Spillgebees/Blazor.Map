@@ -191,6 +191,8 @@ const setLayers = (
 
         map.addLayer(leafletLayer);
     });
+
+    map.invalidateSize()
 }
 
 const setTileLayers = (
