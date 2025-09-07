@@ -18,33 +18,63 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     private ILoggerFactory _loggerFactory { get; set; } = null!;
     protected Lazy<ILogger> Logger => new(() => _loggerFactory.CreateLogger(GetType()));
 
+    /// <summary>
+    /// Options for the map.
+    /// </summary>
     [Parameter]
     public MapOptions MapOptions { get; set; } = MapOptions.Default;
 
+    /// <summary>
+    /// Options for the map controls.
+    /// </summary>
     [Parameter]
     public MapControlOptions MapControlOptions { get; set; } = MapControlOptions.Default;
 
+    /// <summary>
+    /// The tile layers to display on the map.
+    /// </summary>
     [Parameter, EditorRequired]
     public required List<TileLayer> TileLayers { get; set; }
 
+    /// <summary>
+    /// The markers to display on the map.
+    /// </summary>
     [Parameter]
     public List<Marker> Markers { get; set; } = [];
 
+    /// <summary>
+    /// The circle markers to display on the map.
+    /// </summary>
     [Parameter]
     public List<CircleMarker> CircleMarkers { get; set; } = [];
 
+    /// <summary>
+    /// The polylines to display on the map.
+    /// </summary>
     [Parameter]
     public List<Polyline> Polylines { get; set; } = [];
 
+    /// <summary>
+    /// The width of the map. If not set, the map will take the full width of its container.
+    /// </summary>
     [Parameter]
     public string? Width { get; set; }
 
+    /// <summary>
+    /// The height of the map. Default is "500px", a fixed height is required for the map to be displayed.
+    /// </summary>
     [Parameter]
     public string? Height { get; set; } = "500px";
 
+    /// <summary>
+    /// The HTML id attribute for the map container. If not set, a unique id will be generated.
+    /// </summary>
     [Parameter]
     public string MapContainerHtmlId { get; set; } = $"map-container-{Guid.NewGuid()}";
 
+    /// <summary>
+    /// Additional CSS classes for the map container.
+    /// </summary>
     [Parameter]
     public string MapContainerClass { get; set; } = string.Empty;
 
@@ -99,6 +129,9 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         GC.SuppressFinalize(this);
     }
 
+    /// <summary>
+    /// This method is called from JavaScript when the map has been initialized. Don't call it manually.
+    /// </summary>
     [JSInvokable]
     public async Task OnMapInitializedAsync()
     {
@@ -110,8 +143,9 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         _initializationCompletionSource.TrySetResult();
         IsInitialized = true;
 
-        // ensure map initialized correctly
+        // the delay is required to ensure the page has rendered
         await Task.Delay(50);
+        // since content may have shifted after rendering, we must tell leaflet to check the map size
         await InvalidateMapSizeAsync();
     }
 

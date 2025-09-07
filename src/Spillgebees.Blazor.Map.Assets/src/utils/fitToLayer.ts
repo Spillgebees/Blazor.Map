@@ -8,10 +8,10 @@ export const fitToLayer = (map: LeafletMap, layerStorage: LayerStorage, layerId:
     }
 
     const { leaflet } = layerTuple;
-    
+
     if (leaflet instanceof LeafletMarker || leaflet instanceof LeafletCircleMarker) {
         map.fitBounds(new LatLngBounds([leaflet.getLatLng()]));
-    } else if (leaflet instanceof LeafletPolyline) {
+    } else {
         map.fitBounds(leaflet.getBounds());
     }
 };
