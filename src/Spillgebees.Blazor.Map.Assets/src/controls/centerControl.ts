@@ -48,7 +48,7 @@ export class CenterControl extends Control {
         }
     }
 
-    private centerView() {
+    centerView() {
         if (!this.map) {
             return;
         }
