@@ -39,6 +39,12 @@
     TileLayers=""@_tileLayers""
     Markers=""@_markers"" />
 
+// marker with tooltip
+private readonly List<Marker> _markers = [
+    new(""marker-1"", new Coordinate(49.5999673, 6.1342483), ""Luxembourg"", 
+        Tooltip: new TooltipOptions(""This is a tooltip to test the dark theme styling!""))
+];
+
 // theme switching
 private void SetTheme(MapTheme theme)
 {
@@ -57,7 +63,8 @@ private void SetTheme(MapTheme theme)
 
     private readonly List<Marker> _markers =
     [
-        new("marker-1", new Coordinate(49.5999673, 6.1342483), "Luxembourg")
+        new("marker-1", new Coordinate(49.5999673, 6.1342483), "Luxembourg", 
+            Tooltip: new TooltipOptions("This is a tooltip to test the dark theme styling. Hover over the marker to see it!"))
     ];
 
     private void SetTheme(MapTheme theme)

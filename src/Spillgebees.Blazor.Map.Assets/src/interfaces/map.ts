@@ -18,10 +18,11 @@ export interface ISpillgebeesTooltipOffset {
 
 export interface ISpillgebeesTooltip {
     content: string;
-    offset?: PointExpression | undefined;
+    offset?: ISpillgebeesTooltipOffset | undefined;
     direction?: 'top' | 'bottom' | 'left' | 'right' | 'center' | 'auto';
     permanent?: boolean;
     sticky?: boolean;
+    interactive?: boolean;
     opacity?: number;
     className?: string;
 }
