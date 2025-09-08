@@ -1,5 +1,5 @@
 import { DotNet } from "@microsoft/dotnet-js-interop";
-import { Map as LeafletMap, TileLayer } from "leaflet";
+import { Map as LeafletMap, TileLayer, Control } from "leaflet";
 import {
     ISpillgebeesCircleMarker, ISpillgebeesMapControlOptions,
     ISpillgebeesMapOptions, ISpillgebeesMarker, ISpillgebeesPolyline, ISpillgebeesTileLayer
@@ -15,6 +15,7 @@ interface SpillgebeesMap {
     maps: Map<HTMLElement, LeafletMap>;
     layers: Map<LeafletMap, LayerStorage>;
     tileLayers: Map<LeafletMap, Set<TileLayer>>;
+    controls: Map<LeafletMap, Set<Control>>;
 }
 
 interface MapFunctions {
@@ -36,7 +37,10 @@ interface MapFunctions {
     setTileLayers: (
         mapContainer: HTMLElement,
         tileLayers: ISpillgebeesTileLayer[]) => void;
-    fitToLayer: (mapContainer: HTMLElement, layerId: string) => void;
+    setMapControls: (
+        mapContainer: HTMLElement,
+        mapControlOptions: ISpillgebeesMapControlOptions) => void;
+    fitToLayers: (mapContainer: HTMLElement, layerIds: string[]) => void;
     disposeMap: (mapContainer: HTMLElement) => void;
 }
 

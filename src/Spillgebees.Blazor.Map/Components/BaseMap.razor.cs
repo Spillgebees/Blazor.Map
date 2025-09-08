@@ -78,6 +78,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     [Parameter]
     public string MapContainerClass { get; set; } = string.Empty;
 
+    protected MapControlOptions InternalMapControlOptions = null!;
     protected List<Marker> InternalMarkers { get; set; } = [];
     protected List<CircleMarker> InternalCircleMarkers { get; set; } = [];
     protected List<Polyline> InternalPolylines { get; set; } = [];
@@ -172,6 +173,12 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             await SetTileLayersAsync();
         }
 
+        if (InternalMapControlOptions != MapControlOptions)
+        {
+            InternalMapControlOptions = MapControlOptions;
+            await SetMapControlsAsync();
+        }
+
         await Task.CompletedTask;
     }
 
@@ -184,6 +191,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     {
         DotNetObjectReference = Microsoft.JSInterop.DotNetObjectReference.Create(this);
 
+        InternalMapControlOptions = MapControlOptions;
         InternalTileLayers = TileLayers;
         InternalMarkers = Markers;
         InternalCircleMarkers = CircleMarkers;
@@ -196,7 +204,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             nameof(OnMapInitializedAsync),
             MapReference,
             MapOptions,
-            MapControlOptions,
+            InternalMapControlOptions,
             InternalTileLayers,
             InternalMarkers,
             InternalCircleMarkers,
@@ -209,9 +217,12 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     private ValueTask SetTileLayersAsync()
         => MapJs.SetTileLayersAsync(JsRuntime, Logger.Value, MapReference, InternalTileLayers);
 
+    private ValueTask SetMapControlsAsync()
+        => MapJs.SetMapControlsAsync(JsRuntime, Logger.Value, MapReference, InternalMapControlOptions);
+
     private ValueTask InvalidateMapSizeAsync()
         => MapJs.InvalidateSizeAsync(JsRuntime, Logger.Value, MapReference);
 
-    public ValueTask FitToLayerAsync(string layerId)
-        => MapJs.FitToLayerAsync(JsRuntime, Logger.Value, MapReference, layerId);
+    public ValueTask FitToLayersAsync(List<string> layerIds)
+        => MapJs.FitToLayerAsync(JsRuntime, Logger.Value, MapReference, layerIds);
 }

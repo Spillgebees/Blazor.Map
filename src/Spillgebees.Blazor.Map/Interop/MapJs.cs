@@ -63,6 +63,17 @@ internal static class MapJs
             mapReference,
             tileLayers);
 
+    public static ValueTask SetMapControlsAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        MapControlOptions mapControlOptions)
+        => jsRuntime.SafeInvokeVoidAsync(
+            logger,
+            $"{JsNamespace}.setMapControls",
+            mapReference,
+            mapControlOptions);
+
     internal static ValueTask InvalidateSizeAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
@@ -85,12 +96,12 @@ internal static class MapJs
         IJSRuntime jsRuntime,
         ILogger logger,
         ElementReference mapReference,
-        string layerId)
+        List<string> layerIds)
         => jsRuntime.SafeInvokeVoidAsync(
             logger,
-            $"{JsNamespace}.fitToLayer",
+            $"{JsNamespace}.fitToLayers",
             mapReference,
-            layerId);
+            layerIds);
 
     private static ValueTask SafeInvokeVoidAsync(
         this IJSRuntime jsRuntime,

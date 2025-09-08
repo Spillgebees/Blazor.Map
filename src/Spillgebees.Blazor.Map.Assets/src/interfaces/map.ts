@@ -60,7 +60,7 @@ export interface ISpillgebeesMapOptions {
     center: ISpillgebeesCoordinate;
     zoom: number;
     showLeafletPrefix: boolean;
-    fitToLayerId?: string | undefined;
+    fitToLayerIds?: string[] | undefined;
 }
 
 export interface ISpillgebeesZoomControlOptions {
@@ -82,7 +82,7 @@ export interface ISpillgebeesCenterControlOptions {
     position: ControlPosition;
     center: ISpillgebeesCoordinate;
     zoom: number;
-    layerId?: string | undefined;
+    layerIds?: string[] | undefined;
 }
 
 export interface ISpillgebeesMapControlOptions {
