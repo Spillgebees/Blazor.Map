@@ -27,16 +27,16 @@
         CircleMarkers=""@_circleMarkers""
         Polylines=""@_polylines"" />";
 
-    private readonly List<TileLayer> _tileLayers = [TileLayer.OpnvKarte];
+    private readonly List<TileLayer> _tileLayers = [TileLayer.OpenStreetMap];
 
     private readonly MapOptions _mapOptions = MapOptions.Default with
     {
-        FitToLayerId = "polyline-1"
+        FitToLayerIds = ["polyline-1", "polyline-2"]
     };
 
-    private readonly MapControlOptions _mapControlOptions = MapControlOptions.Default with
+    private MapControlOptions _mapControlOptions = MapControlOptions.Default with
     {
-        CenterControlOptions = new CenterControlOptions(true, ControlPosition.TopRight, new Coordinate(0, 0), 0, "polyline-1")
+        CenterControlOptions = new CenterControlOptions(true, ControlPosition.TopRight, new Coordinate(0, 0), 0, ["polyline-1", "polyline-2"])
     };
 
     private readonly List<Marker> _markers =
@@ -84,17 +84,30 @@
     private readonly List<Polyline> _polylines =
     [
         new(
-        "polyline-1",
-        [
-            new Coordinate(49.751496994, 6.106166242),
-            new Coordinate(49.7912, 6.1188),
-            new Coordinate(49.808996764, 6.100999596),
-            new Coordinate(49.842163298, 6.104332916)
-        ],
-        SmoothFactor: 1,
-        NoClip: true,
-        Stroke: true,
-        StrokeColor: "#C41039",
-        StrokeWeight: 6)
+            "polyline-1",
+            [
+                new Coordinate(49.751496994, 6.106166242),
+                new Coordinate(49.7912, 6.1188),
+                new Coordinate(49.808996764, 6.100999596),
+                new Coordinate(49.842163298, 6.104332916)
+            ],
+            SmoothFactor: 1,
+            NoClip: true,
+            Stroke: true,
+            StrokeColor: "#C41039",
+            StrokeWeight: 6),
+        new(
+            "polyline-2",
+            [
+                new Coordinate(50.751496994, 6.106166242),
+                new Coordinate(50.7912, 6.1188),
+                new Coordinate(50.808996764, 6.100999596),
+                new Coordinate(50.842163298, 6.104332916)
+            ],
+            SmoothFactor: 1,
+            NoClip: true,
+            Stroke: true,
+            StrokeColor: "#C41039",
+            StrokeWeight: 6)
     ];
 }

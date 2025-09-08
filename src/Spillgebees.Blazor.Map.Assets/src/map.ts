@@ -21,7 +21,7 @@ import {
 } from "leaflet";
 import {CenterControl} from "./controls";
 import { LayerTuple, LayerStorage } from "./types/layers";
-import { fitToLayer, fitToLayerById } from "./utils/fitToLayer";
+import {fitToLayers, fitToLayersById} from "./utils/fitToLayers";
 import { convertToLeafletTooltip } from "./utils/tooltip";
 
 export function bootstrap() {
@@ -32,12 +32,14 @@ export function bootstrap() {
         setLayers: setLayers,
         setTileLayers: setTileLayers,
         invalidateSize: invalidateSize,
-        fitToLayer: fitToLayerById,
+        setMapControls: setMapControls,
+        fitToLayers: fitToLayersById,
         disposeMap: disposeMap,
     };
     window.Spillgebees.Map.maps = window.Spillgebees.Map.maps || new Map<HTMLElement, LeafletMap>();
     window.Spillgebees.Map.layers = window.Spillgebees.Map.layers || new Map<LeafletMap, LayerStorage>();
     window.Spillgebees.Map.tileLayers = window.Spillgebees.Map.tileLayers || new Map<LeafletMap, Set<TileLayer>>();
+    window.Spillgebees.Map.controls = window.Spillgebees.Map.controls || new Map<LeafletMap, Set<Control>>();
 }
 
 const createMap = async (
@@ -77,15 +79,15 @@ const createMap = async (
     window.Spillgebees.Map.tileLayers.set(map, tileLayerSet);
 
     if (mapControlOptions) {
-        addMapControls(map, mapControlOptions);
+        setMapControls(mapContainer, mapControlOptions);
     }
 
     setLayers(mapContainer, markers, circleMarkers, polylines);
 
-    if (mapOptions.fitToLayerId) {
+    if (mapOptions.fitToLayerIds) {
         const layerStorage = window.Spillgebees.Map.layers.get(map);
         if (layerStorage) {
-            fitToLayer(map, layerStorage, mapOptions.fitToLayerId);
+            fitToLayers(map, layerStorage, mapOptions.fitToLayerIds);
         }
     }
 
@@ -226,12 +228,25 @@ const setTileLayers = (
     window.Spillgebees.Map.tileLayers.set(map, existingTileLayers);
 }
 
-const addMapControls = (map: LeafletMap, controlOptions: ISpillgebeesMapControlOptions): void => {
+const setMapControls = (mapContainer: HTMLElement, controlOptions: ISpillgebeesMapControlOptions): void => {
+    const map = window.Spillgebees.Map.maps.get(mapContainer);
+    if (map === undefined) {
+        return;
+    }
+
+    const existingControls = window.Spillgebees.Map.controls.get(map);
+    if (existingControls)
+    {
+        existingControls.forEach(control => map.removeControl(control));
+    }
+
+    const newControls = new Set<Control>();
     if (controlOptions.zoomControlOptions.enable) {
         const zoomControl = new Control.Zoom({
             position: controlOptions.zoomControlOptions.position
         });
         map.addControl(zoomControl);
+        newControls.add(zoomControl);
     }
 
     if (controlOptions.scaleControlOptions.enable) {
@@ -241,6 +256,7 @@ const addMapControls = (map: LeafletMap, controlOptions: ISpillgebeesMapControlO
             imperial: controlOptions.scaleControlOptions.showImperial ?? false
         });
         map.addControl(scaleControl);
+        newControls.add(scaleControl);
     }
 
     if (controlOptions.centerControlOptions.enable) {
@@ -248,7 +264,10 @@ const addMapControls = (map: LeafletMap, controlOptions: ISpillgebeesMapControlO
             map,
             controlOptions.centerControlOptions);
         map.addControl(centerControl);
+        newControls.add(centerControl);
     }
+
+    window.Spillgebees.Map.controls.set(map, newControls);
 }
 
 const invalidateSize = (mapContainer: HTMLElement): void => {
