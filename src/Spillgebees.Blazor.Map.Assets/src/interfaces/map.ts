@@ -1,5 +1,11 @@
 import {ControlPosition, PointExpression} from "leaflet";
 
+// TODO: use an enum instead, we serialize C# enums as strings, so JS receives matching values for the enums
+export const MapTheme = {
+    Default: 0,
+    Dark: 1
+} as const;
+
 export interface ISpillgebeesCoordinate {
     latitude: number;
     longitude: number;
@@ -60,6 +66,7 @@ export interface ISpillgebeesMapOptions {
     center: ISpillgebeesCoordinate;
     zoom: number;
     showLeafletPrefix: boolean;
+    theme: number;
     fitToLayerIds?: string[] | undefined;
 }
 

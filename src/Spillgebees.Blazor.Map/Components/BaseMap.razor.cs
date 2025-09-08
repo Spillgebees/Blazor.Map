@@ -78,6 +78,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     [Parameter]
     public string MapContainerClass { get; set; } = string.Empty;
 
+    protected MapOptions InternalMapOptions = null!;
     protected MapControlOptions InternalMapControlOptions = null!;
     protected List<Marker> InternalMarkers { get; set; } = [];
     protected List<CircleMarker> InternalCircleMarkers { get; set; } = [];
@@ -186,6 +187,12 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             await SetMapControlsAsync();
         }
 
+        if (InternalMapOptions != MapOptions)
+        {
+            InternalMapOptions = MapOptions;
+            await SetMapOptionsAsync();
+        }
+
         await Task.CompletedTask;
     }
 
@@ -198,6 +205,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     {
         DotNetObjectReference = Microsoft.JSInterop.DotNetObjectReference.Create(this);
 
+        InternalMapOptions = MapOptions;
         InternalMapControlOptions = MapControlOptions;
         InternalTileLayers = TileLayers;
         InternalMarkers = [..Markers];
@@ -226,6 +234,9 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     private ValueTask SetMapControlsAsync()
         => MapJs.SetMapControlsAsync(JsRuntime, Logger.Value, MapReference, InternalMapControlOptions);
+
+    private ValueTask SetMapOptionsAsync()
+        => MapJs.SetMapOptionsAsync(JsRuntime, Logger.Value, MapReference, InternalMapOptions);
 
     private ValueTask InvalidateMapSizeAsync()
         => MapJs.InvalidateSizeAsync(JsRuntime, Logger.Value, MapReference);
