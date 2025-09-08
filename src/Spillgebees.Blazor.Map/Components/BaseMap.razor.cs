@@ -101,6 +101,13 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     private readonly TaskCompletionSource _initializationCompletionSource = new();
 
+    /// <summary>
+    /// Changes the map view to fit the provider layers.
+    /// </summary>
+    /// <param name="layerIds">The layer ids to fit the view to.</param>
+    public ValueTask FitToLayersAsync(List<string> layerIds)
+        => MapJs.FitToLayerAsync(JsRuntime, Logger.Value, MapReference, layerIds);
+
     public virtual async ValueTask DisposeAsync()
     {
         if (IsDisposing)
@@ -157,13 +164,13 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             return;
         }
 
-        if (Markers != InternalMarkers
-            || CircleMarkers != InternalCircleMarkers
-            || Polylines != InternalPolylines)
+        if (Markers.SequenceEqual(InternalMarkers) is false
+            || CircleMarkers.SequenceEqual(InternalCircleMarkers) is false
+            || Polylines.SequenceEqual(InternalPolylines) is false)
         {
-            InternalMarkers = Markers;
-            InternalCircleMarkers = CircleMarkers;
-            InternalPolylines = Polylines;
+            InternalMarkers = [..Markers];
+            InternalCircleMarkers = [..CircleMarkers];
+            InternalPolylines = [..Polylines];
             await SetMarkersAsync();
         }
 
@@ -193,9 +200,9 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
         InternalMapControlOptions = MapControlOptions;
         InternalTileLayers = TileLayers;
-        InternalMarkers = Markers;
-        InternalCircleMarkers = CircleMarkers;
-        InternalPolylines = Polylines;
+        InternalMarkers = [..Markers];
+        InternalCircleMarkers = [..CircleMarkers];
+        InternalPolylines = [..Polylines];
 
         await MapJs.CreateMapAsync(
             JsRuntime,
@@ -222,7 +229,4 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     private ValueTask InvalidateMapSizeAsync()
         => MapJs.InvalidateSizeAsync(JsRuntime, Logger.Value, MapReference);
-
-    public ValueTask FitToLayersAsync(List<string> layerIds)
-        => MapJs.FitToLayerAsync(JsRuntime, Logger.Value, MapReference, layerIds);
 }
