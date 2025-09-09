@@ -3,7 +3,6 @@ import { LayerStorage } from "../types/layers";
 
 export const fitToLayers = (map: LeafletMap, layerStorage: LayerStorage, layerIds: string[]): void => {
     let mergedLayerBounds: LatLngBounds | undefined;
-    console.warn(layerIds);
     layerIds
         .map(layerId => {
             const layerTuple = layerStorage.byId.get(layerId);

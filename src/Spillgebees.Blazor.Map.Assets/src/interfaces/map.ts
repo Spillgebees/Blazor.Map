@@ -1,10 +1,4 @@
-import {ControlPosition, PointExpression} from "leaflet";
-
-// TODO: use an enum instead, we serialize C# enums as strings, so JS receives matching values for the enums
-export const MapTheme = {
-    Default: 0,
-    Dark: 1
-} as const;
+import { ControlPosition } from "leaflet";
 
 export interface ISpillgebeesCoordinate {
     latitude: number;
@@ -97,4 +91,9 @@ export interface ISpillgebeesMapControlOptions {
     zoomControlOptions: ISpillgebeesZoomControlOptions;
     scaleControlOptions: ISpillgebeesScaleControlOptions;
     centerControlOptions: ISpillgebeesCenterControlOptions;
+}
+
+export enum MapTheme {
+    Default,
+    Dark
 }

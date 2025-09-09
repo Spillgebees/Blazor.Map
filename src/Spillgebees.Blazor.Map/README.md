@@ -1,4 +1,7 @@
 TODO:
 
-- [ ] allow setting icons and tooltips for layers
-- [ ] allow centering on a layer and add a button to recenter
+- [ ] cleanup and refactoring
+- [ ] define relevant APIs in order of importance
+- [ ] tests
+- [ ] README/docs
+- [ ]
