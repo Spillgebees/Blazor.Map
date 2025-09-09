@@ -29,9 +29,9 @@ export class CenterControl extends Control {
         button.setAttribute('role', 'button');
         button.setAttribute('aria-label', 'Center map');
 
-        button.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-            <path d="M8 2C4.69 2 2 4.69 2 8s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/>
-            <circle cx="8" cy="8" r="2"/>
+        button.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 2C4.69 2 2 4.69 2 8s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" fill="currentColor"/>
+            <circle cx="8" cy="8" r="2" fill="currentColor"/>
             <path d="M8 0v2M8 14v2M0 8h2M14 8h2" stroke="currentColor" stroke-width="1.5" fill="none"/>
         </svg>`;
 
@@ -50,7 +50,7 @@ export class CenterControl extends Control {
         }
     }
 
-    centerView() {
+    private centerView() {
         if (!this.map) {
             return;
         }
