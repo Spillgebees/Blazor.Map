@@ -36,6 +36,8 @@ $border-radius: 8px;
 }
 
 .sgb-map-container {
+    // ensures elements outside of the map container aren't affected by leaflet z-indices
+    z-index: 1;
 
     .leaflet-control-zoom-in,
     .leaflet-control-zoom-out {
