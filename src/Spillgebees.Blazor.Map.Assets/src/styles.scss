@@ -1,9 +1,133 @@
 @import "leaflet/dist/leaflet.css";
 
+$dark-bg-primary: rgba(0, 0, 0, 0.53);
+$dark-bg-secondary: rgba(0, 0, 0, 0.7);
+$dark-bg-attribution: rgba(0, 0, 0, 0.75);
+$dark-text-primary: white;
+$dark-text-secondary: rgba(255, 255, 255, 0.8);
+$dark-link-color: #00bcd4;
+$dark-link-hover: #4dd0e1;
+
+$border-radius: 8px;
+
+@mixin control-button-base {
+    background: $dark-bg-primary !important;
+    color: $dark-text-primary !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: $border-radius !important;
+    outline: none !important;
+}
+
+@mixin control-interactive {
+
+    &:hover,
+    &:focus {
+        background: $dark-bg-secondary !important;
+        color: $dark-text-primary !important;
+    }
+}
+
+@mixin dark-overlay {
+    background: $dark-bg-primary !important;
+    color: $dark-text-primary !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.sgb-map-container {
+
+    .leaflet-control-zoom-in,
+    .leaflet-control-zoom-out {
+        text-indent: 0;
+    }
+}
+
 .sgb-map-center-control {
-    & .sgb-map-center-control-button {
+    .sgb-map-center-control-button {
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+}
+
+.sgb-map-dark {
+
+    .leaflet-bar {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: $border-radius !important;
+        overflow: hidden !important;
+
+        a {
+            @include control-button-base;
+            border-radius: 0 !important;
+            @include control-interactive;
+        }
+
+        .leaflet-control-zoom-in {
+            border-top-left-radius: $border-radius !important;
+            border-top-right-radius: $border-radius !important;
+        }
+
+        .leaflet-control-zoom-out {
+            border-bottom-left-radius: $border-radius !important;
+            border-bottom-right-radius: $border-radius !important;
+        }
+    }
+
+    .leaflet-control-scale {
+        @include dark-overlay;
+        border-radius: $border-radius !important;
+
+        .leaflet-control-scale-line {
+            @include dark-overlay;
+            border: 1px solid $dark-text-primary !important;
+        }
+    }
+
+    .leaflet-control-attribution {
+        background: $dark-bg-attribution !important;
+        color: $dark-text-secondary !important;
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: $border-radius !important;
+        margin: 4px !important;
+
+        a {
+            color: $dark-link-color !important;
+            text-decoration: none !important;
+
+            &:hover {
+                color: $dark-link-hover !important;
+                text-decoration: underline !important;
+            }
+        }
+    }
+
+    .sgb-map-center-control {
+        .leaflet-control-button {
+            @include control-button-base;
+            @include control-interactive;
+        }
+    }
+
+    .leaflet-popup-content-wrapper {
+        @include dark-overlay;
+    }
+
+    .leaflet-popup-tip {
+        background: $dark-bg-primary !important;
+    }
+
+    .leaflet-tooltip {
+        @include dark-overlay;
+    }
+
+    @each $direction in top, bottom, left, right {
+        .leaflet-tooltip-#{$direction}:before {
+            border-#{$direction}-color: $dark-bg-primary !important;
+        }
     }
 }

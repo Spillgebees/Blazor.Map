@@ -6,7 +6,8 @@ import {
     ISpillgebeesPolyline,
     ISpillgebeesTileLayer,
     ISpillgebeesMapOptions,
-    ISpillgebeesMapControlOptions
+    ISpillgebeesMapControlOptions,
+    MapTheme
 } from "./interfaces/map";
 import {
     Map as LeafletMap,
@@ -31,8 +32,9 @@ export function bootstrap() {
         createMap: createMap,
         setLayers: setLayers,
         setTileLayers: setTileLayers,
-        invalidateSize: invalidateSize,
         setMapControls: setMapControls,
+        setMapOptions: setMapOptions,
+        invalidateSize: invalidateSize,
         fitToLayers: fitToLayersById,
         disposeMap: disposeMap,
     };
@@ -72,6 +74,11 @@ const createMap = async (
     if (!mapOptions.showLeafletPrefix) {
         map.attributionControl.setPrefix(false);
     }
+
+    if (mapOptions.theme === MapTheme.Dark) {
+        mapContainer.classList.add('sgb-map-dark');
+    }
+
     window.Spillgebees.Map.maps.set(mapContainer, map);
 
     const tileLayerSet = new Set<TileLayer>();
@@ -278,6 +285,13 @@ const invalidateSize = (mapContainer: HTMLElement): void => {
     map.invalidateSize();
 }
 
+const setMapOptions = (mapContainer: HTMLElement, mapOptions: ISpillgebeesMapOptions): void => {
+    if (mapOptions.theme === MapTheme.Dark) {
+        mapContainer.classList.add('sgb-map-dark');
+    } else {
+        mapContainer.classList.remove('sgb-map-dark');
+    }
+};
 
 const disposeMap = (mapContainer: HTMLElement): void => {
     const map = window.Spillgebees.Map.maps.get(mapContainer);

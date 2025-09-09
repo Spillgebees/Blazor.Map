@@ -1,0 +1,72 @@
+@using Spillgebees.Blazor.Map.Components
+@using Spillgebees.Blazor.Map.Models
+@using Spillgebees.Blazor.Map.Models.Controls
+@using Spillgebees.Blazor.Map.Models.Layers
+@using Spillgebees.Blazor.Map.Models.Tooltips
+
+<div>
+    <h3>Map theme switching</h3>
+    <p>This example demonstrates how to switch between the default and dark themes.</p>
+    
+    <!-- use tailwind classes to style the buttons -->
+    <div class="mb-3 flex gap-2">
+        <button
+            class="px-6 py-2 rounded-full bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200"
+            @onclick="@(_ => SetTheme(MapTheme.Default))">
+            Default Theme
+        </button>
+        <button
+            class="px-6 py-2 rounded-full bg-gray-800 text-white font-semibold shadow hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors duration-200"
+            @onclick="@(_ => SetTheme(MapTheme.Dark))">
+            Dark Theme
+        </button>
+    </div>
+    
+    <CodeSnippet Code="@Code">
+        <Component>
+            <SgbMap MapOptions="@_mapOptions"
+                    MapControlOptions="@_mapControlOptions"
+                    TileLayers="@_tileLayers"
+                    Markers="@_markers" />
+        </Component>
+    </CodeSnippet>
+</div>
+
+@code {
+    private const string Code =
+@"<SgbMap MapOptions=""@_mapOptions""
+    MapControlOptions=""@_mapControlOptions""
+    TileLayers=""@_tileLayers""
+    Markers=""@_markers"" />
+
+// marker with tooltip
+private readonly List<Marker> _markers = [
+    new(""marker-1"", new Coordinate(49.5999673, 6.1342483), ""Luxembourg"", 
+        Tooltip: new TooltipOptions(""This is a tooltip to test the dark theme styling!""))
+];
+
+// theme switching
+private void SetTheme(MapTheme theme)
+{
+    _mapOptions = _mapOptions with { Theme = theme };
+    StateHasChanged();
+}";
+
+    private readonly List<TileLayer> _tileLayers = [TileLayer.OpenStreetMap];
+
+    private MapOptions _mapOptions = MapOptions.Default with
+    {
+        Theme = MapTheme.Default
+    };
+
+    private readonly MapControlOptions _mapControlOptions = MapControlOptions.Default;
+
+    private readonly List<Marker> _markers =
+    [
+        new("marker-1", new Coordinate(49.5999673, 6.1342483), "Luxembourg", 
+            Tooltip: new TooltipOptions("This is a tooltip to test the dark theme styling. Hover over the marker to see it!"))
+    ];
+
+    private void SetTheme(MapTheme theme)
+        => _mapOptions = _mapOptions with { Theme = theme };
+}

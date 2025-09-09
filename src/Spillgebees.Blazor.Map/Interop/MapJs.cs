@@ -37,7 +37,7 @@ internal static class MapJs
             circleMarkers,
             polylines);
 
-    public static ValueTask SetLayersAsync(
+    internal static ValueTask SetLayersAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
         ElementReference mapReference,
@@ -52,7 +52,7 @@ internal static class MapJs
             circleMarkers,
             polylines);
 
-    public static ValueTask SetTileLayersAsync(
+    internal static ValueTask SetTileLayersAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
         ElementReference mapReference,
@@ -63,7 +63,7 @@ internal static class MapJs
             mapReference,
             tileLayers);
 
-    public static ValueTask SetMapControlsAsync(
+    internal static ValueTask SetMapControlsAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
         ElementReference mapReference,
@@ -74,6 +74,17 @@ internal static class MapJs
             mapReference,
             mapControlOptions);
 
+    internal static ValueTask SetMapOptionsAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        MapOptions mapOptions)
+        => jsRuntime.SafeInvokeVoidAsync(
+            logger,
+            $"{JsNamespace}.setMapOptions",
+            mapReference,
+            mapOptions);
+
     internal static ValueTask InvalidateSizeAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
@@ -83,16 +94,7 @@ internal static class MapJs
             $"{JsNamespace}.invalidateSize",
             mapReference);
 
-    internal static ValueTask DisposeMapAsync(
-        IJSRuntime jsRuntime,
-        ILogger logger,
-        ElementReference mapReference)
-        => jsRuntime.SafeInvokeVoidAsync(
-            logger,
-            $"{JsNamespace}.disposeMap",
-            mapReference);
-
-    public static ValueTask FitToLayerAsync(
+    internal static ValueTask FitToLayerAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
         ElementReference mapReference,
@@ -102,6 +104,15 @@ internal static class MapJs
             $"{JsNamespace}.fitToLayers",
             mapReference,
             layerIds);
+
+    internal static ValueTask DisposeMapAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference)
+        => jsRuntime.SafeInvokeVoidAsync(
+            logger,
+            $"{JsNamespace}.disposeMap",
+            mapReference);
 
     private static ValueTask SafeInvokeVoidAsync(
         this IJSRuntime jsRuntime,

@@ -1,4 +1,4 @@
-import {ControlPosition, PointExpression} from "leaflet";
+import { ControlPosition } from "leaflet";
 
 export interface ISpillgebeesCoordinate {
     latitude: number;
@@ -12,10 +12,11 @@ export interface ISpillgebeesTooltipOffset {
 
 export interface ISpillgebeesTooltip {
     content: string;
-    offset?: PointExpression | undefined;
+    offset?: ISpillgebeesTooltipOffset | undefined;
     direction?: 'top' | 'bottom' | 'left' | 'right' | 'center' | 'auto';
     permanent?: boolean;
     sticky?: boolean;
+    interactive?: boolean;
     opacity?: number;
     className?: string;
 }
@@ -60,6 +61,7 @@ export interface ISpillgebeesMapOptions {
     center: ISpillgebeesCoordinate;
     zoom: number;
     showLeafletPrefix: boolean;
+    theme: number;
     fitToLayerIds?: string[] | undefined;
 }
 
@@ -89,4 +91,9 @@ export interface ISpillgebeesMapControlOptions {
     zoomControlOptions: ISpillgebeesZoomControlOptions;
     scaleControlOptions: ISpillgebeesScaleControlOptions;
     centerControlOptions: ISpillgebeesCenterControlOptions;
+}
+
+export enum MapTheme {
+    Default,
+    Dark
 }

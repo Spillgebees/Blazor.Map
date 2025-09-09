@@ -40,6 +40,8 @@ interface MapFunctions {
     setMapControls: (
         mapContainer: HTMLElement,
         mapControlOptions: ISpillgebeesMapControlOptions) => void;
+    setMapOptions: (mapContainer: HTMLElement, mapOptions: ISpillgebeesMapOptions) => void;
+    invalidateSize: (mapContainer: HTMLElement) => void;
     fitToLayers: (mapContainer: HTMLElement, layerIds: string[]) => void;
     disposeMap: (mapContainer: HTMLElement) => void;
 }
