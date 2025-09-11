@@ -71,12 +71,12 @@ public record ScaleControlOptions(bool Enable, ControlPosition Position, bool? S
 /// <param name="Position">Position of the center control on the map.</param>
 /// <param name="Center">The coordinate to center the map to when the control is clicked.</param>
 /// <param name="Zoom">The zoom level to set when the control is clicked.</param>
-/// <param name="LayerIds">The optional layer id to fit the map to when the control is clicked.</param>
+/// <param name="FitBoundsOptions">Options for centering and fitting the map to bounds based on provided layer ids.</param>
 /// <remarks>
-/// If <paramref name="LayerIds"/> is set, <paramref name="Center"/> and <paramref name="Zoom"/> are ignored.
+/// If <see cref="FitBoundsOptions"/> is set, <see cref="Center"/> and <see cref="Zoom"/> are ignored.
 /// The zoom level is calculated by leaflet to fit the layer bounds.
 /// </remarks>
-public record CenterControlOptions(bool Enable, ControlPosition Position, Coordinate Center, int Zoom, List<string>? LayerIds = null)
+public record CenterControlOptions(bool Enable, ControlPosition Position, Coordinate Center, int Zoom, FitBoundsOptions? FitBoundsOptions)
 {
     /// <summary>
     /// Default options for the center control.
@@ -85,8 +85,8 @@ public record CenterControlOptions(bool Enable, ControlPosition Position, Coordi
     /// <item><description><see cref="Position"/>: <see cref="ControlPosition.TopRight"/></description></item>
     /// <item><description><see cref="Center"/>: <c>new Coordinate(49.751667, 6.101667)</c> (center of Luxembourg)</description></item>
     /// <item><description><see cref="Zoom"/>: <c>9</c></description></item>
-    /// <item><description><see cref="LayerIds"/>: <see langword="null"/></description></item>
+    /// <item><description><see cref="FitBoundsOptions"/>: <see langword="null"/></description></item>
     /// </list>
     /// </summary>
-    public static CenterControlOptions Default => new(true, ControlPosition.TopRight, new Coordinate(49.751667, 6.101667), 9);
+    public static CenterControlOptions Default => new(true, ControlPosition.TopRight, new Coordinate(49.751667, 6.101667), 9, null);
 }

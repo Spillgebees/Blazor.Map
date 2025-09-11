@@ -94,16 +94,16 @@ internal static class MapJs
             $"{JsNamespace}.invalidateSize",
             mapReference);
 
-    internal static ValueTask FitToLayerAsync(
+    internal static ValueTask FitBoundsAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
         ElementReference mapReference,
-        List<string> layerIds)
+        FitBoundsOptions fitBoundsOptions)
         => jsRuntime.SafeInvokeVoidAsync(
             logger,
-            $"{JsNamespace}.fitToLayers",
+            $"{JsNamespace}.fitBounds",
             mapReference,
-            layerIds);
+            fitBoundsOptions);
 
     internal static ValueTask DisposeMapAsync(
         IJSRuntime jsRuntime,

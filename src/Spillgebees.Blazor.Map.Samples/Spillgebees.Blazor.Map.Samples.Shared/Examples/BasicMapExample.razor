@@ -31,12 +31,17 @@
 
     private readonly MapOptions _mapOptions = MapOptions.Default with
     {
-        FitToLayerIds = ["polyline-1", "polyline-2"]
+        FitBoundsOptions = new FitBoundsOptions(["polyline-1", "polyline-2"], Padding: new Point(100, 100))
     };
 
-    private MapControlOptions _mapControlOptions = MapControlOptions.Default with
+    private readonly MapControlOptions _mapControlOptions = MapControlOptions.Default with
     {
-        CenterControlOptions = new CenterControlOptions(true, ControlPosition.TopRight, new Coordinate(0, 0), 0, ["polyline-1", "polyline-2"])
+        CenterControlOptions = new CenterControlOptions(
+            true,
+            ControlPosition.TopRight,
+            new Coordinate(0, 0),
+            0,
+            new FitBoundsOptions(["polyline-1", "polyline-2"], Padding: new Point(100, 100)))
     };
 
     private readonly List<Marker> _markers =
