@@ -1,9 +1,10 @@
 import { Map as LeafletMap, LatLngBounds, Marker as LeafletMarker, CircleMarker as LeafletCircleMarker } from "leaflet";
 import { LayerStorage } from "../types/layers";
+import {ISpillgebeesFitBoundsOptions} from "../interfaces/map";
 
-export const fitToLayers = (map: LeafletMap, layerStorage: LayerStorage, layerIds: string[]): void => {
+export const fitBoundsForMap = (map: LeafletMap, layerStorage: LayerStorage, fitBoundsOptions: ISpillgebeesFitBoundsOptions): void => {
     let mergedLayerBounds: LatLngBounds | undefined;
-    layerIds
+    fitBoundsOptions.layerIds
         .map(layerId => {
             const layerTuple = layerStorage.byId.get(layerId);
             if (!layerTuple) {
@@ -33,11 +34,15 @@ export const fitToLayers = (map: LeafletMap, layerStorage: LayerStorage, layerId
 
     if (mergedLayerBounds)
     {
-        map.fitBounds(mergedLayerBounds);
+        map.fitBounds(mergedLayerBounds, {
+            paddingTopLeft: fitBoundsOptions.topLeftPadding,
+            paddingBottomRight: fitBoundsOptions.bottomRightPadding,
+            padding: fitBoundsOptions.padding
+        });
     }
 };
 
-export const fitToLayersById = (mapContainer: HTMLElement, layerIds: string[]): void => {
+export const fitBounds = (mapContainer: HTMLElement, fitBoundsOptions: ISpillgebeesFitBoundsOptions): void => {
     const map = window.Spillgebees.Map.maps.get(mapContainer);
     if (!map) {
         return;
@@ -48,5 +53,5 @@ export const fitToLayersById = (mapContainer: HTMLElement, layerIds: string[]): 
         return;
     }
 
-    fitToLayers(map, layerStorage, layerIds);
+    fitBoundsForMap(map, layerStorage, fitBoundsOptions);
 };

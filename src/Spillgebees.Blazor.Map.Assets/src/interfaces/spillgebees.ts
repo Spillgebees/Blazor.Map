@@ -1,6 +1,7 @@
 import { DotNet } from "@microsoft/dotnet-js-interop";
 import { Map as LeafletMap, TileLayer, Control } from "leaflet";
 import {
+    ISpillgebeesFitBoundsOptions,
     ISpillgebeesCircleMarker, ISpillgebeesMapControlOptions,
     ISpillgebeesMapOptions, ISpillgebeesMarker, ISpillgebeesPolyline, ISpillgebeesTileLayer
 } from "./map";
@@ -42,7 +43,7 @@ interface MapFunctions {
         mapControlOptions: ISpillgebeesMapControlOptions) => void;
     setMapOptions: (mapContainer: HTMLElement, mapOptions: ISpillgebeesMapOptions) => void;
     invalidateSize: (mapContainer: HTMLElement) => void;
-    fitToLayers: (mapContainer: HTMLElement, layerIds: string[]) => void;
+    fitBounds: (mapContainer: HTMLElement, fitBoundsOptions: ISpillgebeesFitBoundsOptions) => void;
     disposeMap: (mapContainer: HTMLElement) => void;
 }
 

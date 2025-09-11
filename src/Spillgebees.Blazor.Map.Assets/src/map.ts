@@ -22,7 +22,7 @@ import {
 } from "leaflet";
 import {CenterControl} from "./controls";
 import { LayerTuple, LayerStorage } from "./types/layers";
-import {fitToLayers, fitToLayersById} from "./utils/fitToLayers";
+import {fitBoundsForMap, fitBounds} from "./utils/fitBoundsForMap";
 import { convertToLeafletTooltip } from "./utils/tooltip";
 
 export function bootstrap() {
@@ -35,7 +35,7 @@ export function bootstrap() {
         setMapControls: setMapControls,
         setMapOptions: setMapOptions,
         invalidateSize: invalidateSize,
-        fitToLayers: fitToLayersById,
+        fitBounds: fitBounds,
         disposeMap: disposeMap,
     };
     window.Spillgebees.Map.maps = window.Spillgebees.Map.maps || new Map<HTMLElement, LeafletMap>();
@@ -91,10 +91,10 @@ const createMap = async (
 
     setLayers(mapContainer, markers, circleMarkers, polylines);
 
-    if (mapOptions.fitToLayerIds) {
+    if (mapOptions.fitBoundsOptions) {
         const layerStorage = window.Spillgebees.Map.layers.get(map);
         if (layerStorage) {
-            fitToLayers(map, layerStorage, mapOptions.fitToLayerIds);
+            fitBoundsForMap(map, layerStorage, mapOptions.fitBoundsOptions);
         }
     }
 

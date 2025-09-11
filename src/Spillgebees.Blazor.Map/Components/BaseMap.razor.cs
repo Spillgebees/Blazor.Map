@@ -103,11 +103,11 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     private readonly TaskCompletionSource _initializationCompletionSource = new();
 
     /// <summary>
-    /// Changes the map view to fit the provider layers.
+    /// Changes the map view to fit the layers.
     /// </summary>
-    /// <param name="layerIds">The layer ids to fit the view to.</param>
-    public ValueTask FitToLayersAsync(List<string> layerIds)
-        => MapJs.FitToLayerAsync(JsRuntime, Logger.Value, MapReference, layerIds);
+    /// <param name="options">Options containing the layers to fit to and other display options.</param>
+    public ValueTask FitBoundsAsync(FitBoundsOptions options)
+        => MapJs.FitBoundsAsync(JsRuntime, Logger.Value, MapReference, options);
 
     public virtual async ValueTask DisposeAsync()
     {
@@ -218,7 +218,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             DotNetObjectReference,
             nameof(OnMapInitializedAsync),
             MapReference,
-            MapOptions,
+            InternalMapOptions,
             InternalMapControlOptions,
             InternalTileLayers,
             InternalMarkers,
