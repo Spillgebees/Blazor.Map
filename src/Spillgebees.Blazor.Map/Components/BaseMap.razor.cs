@@ -109,6 +109,13 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     public ValueTask FitBoundsAsync(FitBoundsOptions options)
         => MapJs.FitBoundsAsync(JsRuntime, Logger.Value, MapReference, options);
 
+    /// <summary>
+    /// Triggers a size recalculation on the map. Useful when dynamically changing the height, especially if you notice
+    /// that the map has unloaded spots.
+    /// </summary>
+    public ValueTask InvalidateMapSizeAsync()
+        => MapJs.InvalidateSizeAsync(JsRuntime, Logger.Value, MapReference);
+
     public virtual async ValueTask DisposeAsync()
     {
         if (IsDisposing)
@@ -237,7 +244,4 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     private ValueTask SetMapOptionsAsync()
         => MapJs.SetMapOptionsAsync(JsRuntime, Logger.Value, MapReference, InternalMapOptions);
-
-    private ValueTask InvalidateMapSizeAsync()
-        => MapJs.InvalidateSizeAsync(JsRuntime, Logger.Value, MapReference);
 }

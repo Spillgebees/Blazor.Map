@@ -7,7 +7,7 @@
 <div>
     <h3>Map theme switching</h3>
     <p>This example demonstrates how to switch between the default and dark themes.</p>
-    
+
     <!-- use tailwind classes to style the buttons -->
     <div class="mb-3 flex gap-2">
         <button
@@ -21,7 +21,7 @@
             Dark Theme
         </button>
     </div>
-    
+
     <CodeSnippet Code="@Code">
         <Component>
             <SgbMap MapOptions="@_mapOptions"
@@ -41,7 +41,7 @@
 
 // marker with tooltip
 private readonly List<Marker> _markers = [
-    new(""marker-1"", new Coordinate(49.5999673, 6.1342483), ""Luxembourg"", 
+    new(""marker-1"", new Coordinate(49.5999673, 6.1342483), ""Luxembourg"",
         Tooltip: new TooltipOptions(""This is a tooltip to test the dark theme styling!""))
 ];
 
@@ -52,7 +52,7 @@ private void SetTheme(MapTheme theme)
     StateHasChanged();
 }";
 
-    private readonly List<TileLayer> _tileLayers = [TileLayer.OpenStreetMap];
+    private readonly List<TileLayer> _tileLayers = [TileLayer.OpenDataBaseMap];
 
     private MapOptions _mapOptions = MapOptions.Default with
     {
@@ -63,7 +63,7 @@ private void SetTheme(MapTheme theme)
 
     private readonly List<Marker> _markers =
     [
-        new("marker-1", new Coordinate(49.5999673, 6.1342483), "Luxembourg", 
+        new("marker-1", new Coordinate(49.5999673, 6.1342483), "Luxembourg",
             Tooltip: new TooltipOptions("This is a tooltip to test the dark theme styling. Hover over the marker to see it!"))
     ];
 
