@@ -28,12 +28,12 @@ public record MapOptions(
 public enum MapTheme
 {
     /// <summary>
-    /// The default light theme.
+    /// The leaflet light theme.
     /// </summary>
     Default,
 
     /// <summary>
-    /// The dark theme with black backgrounds and white icons.
+    /// The default custom dark theme with black backgrounds and white icons.
     /// </summary>
     Dark
 }
