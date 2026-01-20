@@ -10,15 +10,19 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".files", ".files", "{B95F80
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
-Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "Spillgebees.Blazor.Map.Assets", "src/Spillgebees.Blazor.Map.Assets/Spillgebees.Blazor.Map.Assets.esproj", "{66EA0761-4DCF-0A7D-8C50-DF9EC32672C5}"
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "Spillgebees.Blazor.Map.Assets", "src\Spillgebees.Blazor.Map.Assets\Spillgebees.Blazor.Map.Assets.esproj", "{66EA0761-4DCF-0A7D-8C50-DF9EC32672C5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spillgebees.Blazor.Map", "src/Spillgebees.Blazor.Map/Spillgebees.Blazor.Map.csproj", "{29F68285-EC39-B6B9-7D1D-4224FC56BE6E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spillgebees.Blazor.Map", "src\Spillgebees.Blazor.Map\Spillgebees.Blazor.Map.csproj", "{29F68285-EC39-B6B9-7D1D-4224FC56BE6E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Spillgebees.Blazor.Map.Samples", "Spillgebees.Blazor.Map.Samples", "{1C9160F6-067F-E0FB-5466-1E3EC1633314}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spillgebees.Blazor.Map.Samples.Wasm", "src\Spillgebees.Blazor.Map.Samples\Spillgebees.Blazor.Map.Samples.Wasm\Spillgebees.Blazor.Map.Samples.Wasm.csproj", "{EAABE6BF-8916-8DE8-CE10-66C2A133CBED}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spillgebees.Blazor.Map.Samples.Shared", "src\Spillgebees.Blazor.Map.Samples\Spillgebees.Blazor.Map.Samples.Shared\Spillgebees.Blazor.Map.Samples.Shared.csproj", "{47566330-0719-C84F-6D88-491116A5F447}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spillgebees.Blazor.Map.Samples.WebApp", "src\Spillgebees.Blazor.Map.Samples\Spillgebees.Blazor.Map.Samples.WebApp\Spillgebees.Blazor.Map.Samples.WebApp.csproj", "{90FC86FF-FF90-4060-9628-E0990A2B1DD8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spillgebees.Blazor.Map.Samples.Server", "src\Spillgebees.Blazor.Map.Samples\Spillgebees.Blazor.Map.Samples.Server\Spillgebees.Blazor.Map.Samples.Server.csproj", "{5A117AEC-E161-40B6-82CA-930C2BA289C5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -78,12 +82,41 @@ Global
 		{47566330-0719-C84F-6D88-491116A5F447}.Release|x64.Build.0 = Release|Any CPU
 		{47566330-0719-C84F-6D88-491116A5F447}.Release|x86.ActiveCfg = Release|Any CPU
 		{47566330-0719-C84F-6D88-491116A5F447}.Release|x86.Build.0 = Release|Any CPU
+		{90FC86FF-FF90-4060-9628-E0990A2B1DD8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90FC86FF-FF90-4060-9628-E0990A2B1DD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90FC86FF-FF90-4060-9628-E0990A2B1DD8}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{90FC86FF-FF90-4060-9628-E0990A2B1DD8}.Debug|x64.Build.0 = Debug|Any CPU
+		{90FC86FF-FF90-4060-9628-E0990A2B1DD8}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{90FC86FF-FF90-4060-9628-E0990A2B1DD8}.Debug|x86.Build.0 = Debug|Any CPU
+		{90FC86FF-FF90-4060-9628-E0990A2B1DD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90FC86FF-FF90-4060-9628-E0990A2B1DD8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{90FC86FF-FF90-4060-9628-E0990A2B1DD8}.Release|x64.ActiveCfg = Release|Any CPU
+		{90FC86FF-FF90-4060-9628-E0990A2B1DD8}.Release|x64.Build.0 = Release|Any CPU
+		{90FC86FF-FF90-4060-9628-E0990A2B1DD8}.Release|x86.ActiveCfg = Release|Any CPU
+		{90FC86FF-FF90-4060-9628-E0990A2B1DD8}.Release|x86.Build.0 = Release|Any CPU
+		{5A117AEC-E161-40B6-82CA-930C2BA289C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A117AEC-E161-40B6-82CA-930C2BA289C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A117AEC-E161-40B6-82CA-930C2BA289C5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5A117AEC-E161-40B6-82CA-930C2BA289C5}.Debug|x64.Build.0 = Debug|Any CPU
+		{5A117AEC-E161-40B6-82CA-930C2BA289C5}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5A117AEC-E161-40B6-82CA-930C2BA289C5}.Debug|x86.Build.0 = Debug|Any CPU
+		{5A117AEC-E161-40B6-82CA-930C2BA289C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A117AEC-E161-40B6-82CA-930C2BA289C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A117AEC-E161-40B6-82CA-930C2BA289C5}.Release|x64.ActiveCfg = Release|Any CPU
+		{5A117AEC-E161-40B6-82CA-930C2BA289C5}.Release|x64.Build.0 = Release|Any CPU
+		{5A117AEC-E161-40B6-82CA-930C2BA289C5}.Release|x86.ActiveCfg = Release|Any CPU
+		{5A117AEC-E161-40B6-82CA-930C2BA289C5}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{66EA0761-4DCF-0A7D-8C50-DF9EC32672C5} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{29F68285-EC39-B6B9-7D1D-4224FC56BE6E} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{1C9160F6-067F-E0FB-5466-1E3EC1633314} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
-		{47566330-0719-C84F-6D88-491116A5F447} = {1C9160F6-067F-E0FB-5466-1E3EC1633314}
 		{EAABE6BF-8916-8DE8-CE10-66C2A133CBED} = {1C9160F6-067F-E0FB-5466-1E3EC1633314}
+		{47566330-0719-C84F-6D88-491116A5F447} = {1C9160F6-067F-E0FB-5466-1E3EC1633314}
+		{90FC86FF-FF90-4060-9628-E0990A2B1DD8} = {1C9160F6-067F-E0FB-5466-1E3EC1633314}
+		{5A117AEC-E161-40B6-82CA-930C2BA289C5} = {1C9160F6-067F-E0FB-5466-1E3EC1633314}
 	EndGlobalSection
 EndGlobal
