@@ -4,7 +4,7 @@
 
 This component comes with a [JS initializer](https://learn.microsoft.com/en-us/aspnet/core/blazor/fundamentals/startup?view=aspnetcore-10.0#javascript-initializers), as such it is bootstrapped when `Blazor` launches.
 
-The only thing you need to do is to add the Leaflet CSS file for styling.
+The only thing you need to do is to add this package's CSS file for styling.
 
 Include it in the `head` tag:
 
