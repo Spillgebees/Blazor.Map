@@ -24,6 +24,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spillgebees.Blazor.Map.Samp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spillgebees.Blazor.Map.Samples.Server", "src\Spillgebees.Blazor.Map.Samples\Spillgebees.Blazor.Map.Samples.Server\Spillgebees.Blazor.Map.Samples.Server.csproj", "{5A117AEC-E161-40B6-82CA-930C2BA289C5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spillgebees.Blazor.Map.Tests", "src\Spillgebees.Blazor.Map.Tests\Spillgebees.Blazor.Map.Tests.csproj", "{22BA5D16-B514-45CD-B936-8093689552A3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -106,6 +108,18 @@ Global
 		{5A117AEC-E161-40B6-82CA-930C2BA289C5}.Release|x64.Build.0 = Release|Any CPU
 		{5A117AEC-E161-40B6-82CA-930C2BA289C5}.Release|x86.ActiveCfg = Release|Any CPU
 		{5A117AEC-E161-40B6-82CA-930C2BA289C5}.Release|x86.Build.0 = Release|Any CPU
+		{22BA5D16-B514-45CD-B936-8093689552A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22BA5D16-B514-45CD-B936-8093689552A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22BA5D16-B514-45CD-B936-8093689552A3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{22BA5D16-B514-45CD-B936-8093689552A3}.Debug|x64.Build.0 = Debug|Any CPU
+		{22BA5D16-B514-45CD-B936-8093689552A3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{22BA5D16-B514-45CD-B936-8093689552A3}.Debug|x86.Build.0 = Debug|Any CPU
+		{22BA5D16-B514-45CD-B936-8093689552A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22BA5D16-B514-45CD-B936-8093689552A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22BA5D16-B514-45CD-B936-8093689552A3}.Release|x64.ActiveCfg = Release|Any CPU
+		{22BA5D16-B514-45CD-B936-8093689552A3}.Release|x64.Build.0 = Release|Any CPU
+		{22BA5D16-B514-45CD-B936-8093689552A3}.Release|x86.ActiveCfg = Release|Any CPU
+		{22BA5D16-B514-45CD-B936-8093689552A3}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -118,5 +132,6 @@ Global
 		{47566330-0719-C84F-6D88-491116A5F447} = {1C9160F6-067F-E0FB-5466-1E3EC1633314}
 		{90FC86FF-FF90-4060-9628-E0990A2B1DD8} = {1C9160F6-067F-E0FB-5466-1E3EC1633314}
 		{5A117AEC-E161-40B6-82CA-930C2BA289C5} = {1C9160F6-067F-E0FB-5466-1E3EC1633314}
+		{22BA5D16-B514-45CD-B936-8093689552A3} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal
