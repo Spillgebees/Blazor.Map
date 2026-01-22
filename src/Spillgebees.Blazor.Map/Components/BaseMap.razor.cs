@@ -100,8 +100,6 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     protected bool IsInitialized;
     protected bool IsDisposing;
 
-    private readonly TaskCompletionSource _initializationCompletionSource = new();
-
     /// <summary>
     /// Changes the map view to fit the layers.
     /// </summary>
@@ -126,8 +124,6 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
         try
         {
-            // ensure initialization completed to avoid DotNetObjectReference disposed exceptions
-            await _initializationCompletionSource.Task;
             await MapJs.DisposeMapAsync(JsRuntime, Logger.Value, MapReference);
         }
         catch (Exception exception) when (exception is JSDisconnectedException or OperationCanceledException)
@@ -156,7 +152,6 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             return;
         }
 
-        _initializationCompletionSource.TrySetResult();
         IsInitialized = true;
 
         // the delay is required to ensure the page has rendered
