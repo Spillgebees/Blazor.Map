@@ -23,6 +23,7 @@ jobs:
         with:
           filters: |
             changed:
+              - 'src/Spillgebees.Blazor.Map.Assets/**'
               - 'src/Spillgebees.Blazor.Map.JS.Tests/**'
 
   node-test:
