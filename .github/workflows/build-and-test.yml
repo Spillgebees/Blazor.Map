@@ -25,8 +25,12 @@ jobs:
           filters: |
             changed:
               - 'src/Spillgebees.Blazor.Map/**'
+              - 'src/Spillgebees.Blazor.Map.Assets/**'
               - 'src/Spillgebees.Blazor.Map.Samples/**'
               - 'src/Spillgebees.Blazor.Map.Tests/**'
+              - 'src/Directory.Packages.props'
+              - 'src/General.targets'
+              - 'src/global.json'
 
   build-and-test:
     name: build-and-test
