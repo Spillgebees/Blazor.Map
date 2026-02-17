@@ -25,7 +25,7 @@
     "eslint": "^9.22.0",
     "rimraf": "^6.0.1",
     "tsx": "^4.20.5",
-    "typescript": "^5.8.2"
+    "typescript": "^5.9.2"
   },
   "version": "0.1.0",
   "description": "TypeScript module housing assets related to the Spillgebees.Blazor.Map NuGet package.",
