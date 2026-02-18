@@ -124,7 +124,10 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         {
             await MapJs.DisposeMapAsync(JsRuntime, Logger.Value, MapReference);
         }
-        catch (Exception exception) when (exception is JSDisconnectedException or OperationCanceledException) { }
+        catch (Exception exception) when (exception is JSDisconnectedException or OperationCanceledException)
+        {
+            Logger.Value.LogTrace(exception, "Map disposal interrupted, circuit disconnected or operation cancelled");
+        }
         catch (Exception exception)
         {
             Logger.Value.LogError(exception, "Failed to dispose map");

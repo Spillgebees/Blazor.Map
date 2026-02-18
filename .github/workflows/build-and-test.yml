@@ -14,7 +14,9 @@ jobs:
       pull-requests: read
 
     outputs:
-      changed: ${{ steps.filter.outputs.changed }}
+      any-changed: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.dotnet == 'true' || steps.filter.outputs.ts == 'true' }}
+      dotnet-changed: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.dotnet == 'true' }}
+      ts-changed: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.ts == 'true' }}
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -23,14 +25,18 @@ jobs:
         id: filter
         with:
           filters: |
-            changed:
+            dotnet:
               - 'src/Spillgebees.Blazor.Map/**'
-              - 'src/Spillgebees.Blazor.Map.Assets/**'
-              - 'src/Spillgebees.Blazor.Map.Samples/**'
               - 'src/Spillgebees.Blazor.Map.Tests/**'
+              - 'src/Spillgebees.Blazor.Map.Samples/**'
               - 'src/Directory.Packages.props'
               - 'src/General.targets'
               - 'global.json'
+              - 'Spillgebees.Blazor.Map.slnx'
+              - '.github/workflows/**'
+            ts:
+              - 'src/Spillgebees.Blazor.Map.Assets/**'
+              - '.github/workflows/**'
 
   build-and-test:
     name: build-and-test
@@ -39,6 +45,8 @@ jobs:
     needs: changes
     uses: ./.github/workflows/build-test-publish.yml
     with:
-      should-run: ${{ needs.changes.outputs.changed == 'true' }}
-      should-publish-gh-page: ${{ github.event_name == 'push' && needs.changes.outputs.changed == 'true' }}
+      should-run: ${{ needs.changes.outputs.any-changed == 'true' }}
+      dotnet-changed: ${{ needs.changes.outputs.dotnet-changed == 'true' }}
+      ts-changed: ${{ needs.changes.outputs.ts-changed == 'true' }}
+      should-publish-gh-page: ${{ github.event_name == 'push' && needs.changes.outputs.any-changed == 'true' }}
       gh-page-destination-directory: main
