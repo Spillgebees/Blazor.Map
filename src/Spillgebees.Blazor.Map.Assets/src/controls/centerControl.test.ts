@@ -27,10 +27,7 @@ describe("CenterControl", () => {
   describe("onAdd", () => {
     it("should create a container with expected classes and attributes", () => {
       // arrange
-      const control = new CenterControl(
-        mockMap as unknown as LeafletMap,
-        options,
-      );
+      const control = new CenterControl(mockMap as unknown as LeafletMap, options);
 
       // act
       const container = control.onAdd(mockMap as unknown as LeafletMap);
@@ -53,10 +50,7 @@ describe("CenterControl", () => {
 
     it("should bind click handlers via DomEvent", () => {
       // arrange
-      const control = new CenterControl(
-        mockMap as unknown as LeafletMap,
-        options,
-      );
+      const control = new CenterControl(mockMap as unknown as LeafletMap, options);
 
       // act
       control.onAdd(mockMap as unknown as LeafletMap);
@@ -64,11 +58,7 @@ describe("CenterControl", () => {
       // assert
       expect(MockDomEvent.on).toHaveBeenCalledTimes(2);
       // First call: DomEvent.on(button, 'click', DomEvent.stop)
-      expect(MockDomEvent.on).toHaveBeenCalledWith(
-        expect.any(HTMLElement),
-        "click",
-        MockDomEvent.stop,
-      );
+      expect(MockDomEvent.on).toHaveBeenCalledWith(expect.any(HTMLElement), "click", MockDomEvent.stop);
       // Second call: DomEvent.on(button, 'click', this.centerView, this)
       expect(MockDomEvent.on).toHaveBeenCalledWith(
         expect.any(HTMLElement),
@@ -82,10 +72,7 @@ describe("CenterControl", () => {
   describe("onRemove", () => {
     it("should unbind click handler via DomEvent.off", () => {
       // arrange
-      const control = new CenterControl(
-        mockMap as unknown as LeafletMap,
-        options,
-      );
+      const control = new CenterControl(mockMap as unknown as LeafletMap, options);
       control.onAdd(mockMap as unknown as LeafletMap);
       vi.clearAllMocks();
 

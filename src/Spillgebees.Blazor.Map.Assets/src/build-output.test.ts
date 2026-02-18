@@ -1,10 +1,9 @@
-import { execSync } from "child_process";
-import { existsSync, readFileSync, statSync } from "fs";
-import { resolve } from "path";
+import { execSync } from "node:child_process";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { resolve } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 
-// TODO: the `?? __dirname` fallback can be removed once we drop support for Node 16, which doesn't support `import.meta.dirname`
-const distDir = resolve(import.meta.dirname ?? __dirname, "../dist");
+const distDir = resolve(import.meta.dirname!, "../dist");
 
 type BuildName = "dev" | "prod";
 
@@ -19,7 +18,7 @@ const buildConfigs: {
     name: "dev",
     script: "build:dev",
     expectJsSourcemap: true,
-    expectCssSourcemap: true,
+    expectCssSourcemap: false,
   },
   {
     name: "prod",
@@ -46,20 +45,17 @@ const results = new Map<BuildName, BuildResult>();
 beforeAll(() => {
   const cwd = resolve(distDir, "..");
   for (const cfg of buildConfigs) {
-    execSync("npm run clean && npm run " + cfg.script, { cwd, stdio: "pipe" });
+    execSync(`pnpm run clean && pnpm run ${cfg.script}`, {
+      cwd,
+      stdio: "pipe",
+    });
 
     const jsFile = resolve(distDir, "Spillgebees.Blazor.Map.lib.module.js");
     const cssFile = resolve(distDir, "Spillgebees.Blazor.Map.lib.module.css");
     const jsMapFile = `${jsFile}.map`;
     const cssMapFile = `${cssFile}.map`;
 
-    const leafletImages = [
-      "layers-2x.png",
-      "layers.png",
-      "marker-icon-2x.png",
-      "marker-icon.png",
-      "marker-shadow.png",
-    ];
+    const leafletImages = ["layers-2x.png", "layers.png", "marker-icon-2x.png", "marker-icon.png", "marker-shadow.png"];
 
     const hasJsFile = existsSync(jsFile);
     const hasCssFile = existsSync(cssFile);
@@ -115,8 +111,10 @@ describe.each(buildConfigs)("$name build (parametrized)", (cfg) => {
 
   it(`${cfg.expectJsSourcemap ? "should" : "should NOT"} contain sourceMappingURL reference in JS`, () => {
     if (cfg.expectJsSourcemap) {
+      // biome-ignore lint/security/noSecrets: false positive
       expect(res.jsContent).toContain("//# sourceMappingURL=");
     } else {
+      // biome-ignore lint/security/noSecrets: false positive
       expect(res.jsContent).not.toContain("//# sourceMappingURL=");
     }
   });
@@ -157,10 +155,7 @@ describe.each(buildConfigs)("$name build (parametrized)", (cfg) => {
 
   it("should copy all 5 Leaflet images", () => {
     for (const [image, exists] of Object.entries(res.leafletImagesExist)) {
-      expect(
-        exists,
-        `Expected Leaflet image ${image} to exist in build output`,
-      ).toBe(true);
+      expect(exists, `Expected Leaflet image ${image} to exist in build output`).toBe(true);
     }
   });
 

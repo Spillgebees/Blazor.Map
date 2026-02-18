@@ -1,61 +1,61 @@
 // noinspection JSUnusedGlobalSymbols
 
 import { bootstrap } from "./map";
-import './styles.scss';
+import "./styles.scss";
 
-export function beforeWebStart(options: any) {
-    if (window.hasBeforeStartBeenCalledForSpillgebeesMap) {
-        return;
-    }
+export function beforeWebStart(options: unknown) {
+  if (window.hasBeforeStartBeenCalledForSpillgebeesMap) {
+    return;
+  }
 
-    beforeStart(options);
+  beforeStart(options);
 }
 
-export function afterWebStarted(options: any) {
-    if (window.hasAfterStartedBeenCalledForSpillgebeesMap) {
-        return;
-    }
+export function afterWebStarted(options: unknown) {
+  if (window.hasAfterStartedBeenCalledForSpillgebeesMap) {
+    return;
+  }
 
-    afterStarted(options);
+  afterStarted(options);
 }
 
-export function beforeWebAssemblyStart(options: any) {
-    if (window.hasBeforeStartBeenCalledForSpillgebeesMap) {
-        return;
-    }
+export function beforeWebAssemblyStart(options: unknown) {
+  if (window.hasBeforeStartBeenCalledForSpillgebeesMap) {
+    return;
+  }
 
-    beforeStart(options);
+  beforeStart(options);
 }
 
-export function afterWebAssemblyStarted(options: any) {
-    if (window.hasAfterStartedBeenCalledForSpillgebeesMap) {
-        return
-    }
+export function afterWebAssemblyStarted(options: unknown) {
+  if (window.hasAfterStartedBeenCalledForSpillgebeesMap) {
+    return;
+  }
 
-    afterStarted(options);
+  afterStarted(options);
 }
 
-export function beforeServerStart(options: any) {
-    if (window.hasBeforeStartBeenCalledForSpillgebeesMap) {
-        return;
-    }
+export function beforeServerStart(options: unknown) {
+  if (window.hasBeforeStartBeenCalledForSpillgebeesMap) {
+    return;
+  }
 
-    beforeStart(options);
+  beforeStart(options);
 }
 
-export function afterServerStarted(options: any) {
-    if (window.hasAfterStartedBeenCalledForSpillgebeesMap) {
-        return;
-    }
+export function afterServerStarted(options: unknown) {
+  if (window.hasAfterStartedBeenCalledForSpillgebeesMap) {
+    return;
+  }
 
-    afterStarted(options);
+  afterStarted(options);
 }
 
-export function beforeStart(_: any) {
-    window.hasBeforeStartBeenCalledForSpillgebeesMap = true;
-    bootstrap();
+export function beforeStart(_: unknown) {
+  window.hasBeforeStartBeenCalledForSpillgebeesMap = true;
+  bootstrap();
 }
 
-export function afterStarted(_: any) {
-    window.hasAfterStartedBeenCalledForSpillgebeesMap = true;
+export function afterStarted(_: unknown) {
+  window.hasAfterStartedBeenCalledForSpillgebeesMap = true;
 }

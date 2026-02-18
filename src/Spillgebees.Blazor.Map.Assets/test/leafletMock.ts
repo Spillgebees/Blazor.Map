@@ -100,17 +100,9 @@ export class MockControl {
   remove = vi.fn().mockReturnThis();
 }
 
-export class MockZoomControl extends MockControl {
-  constructor(options?: Record<string, unknown>) {
-    super(options);
-  }
-}
+export class MockZoomControl extends MockControl {}
 
-export class MockScaleControl extends MockControl {
-  constructor(options?: Record<string, unknown>) {
-    super(options);
-  }
-}
+export class MockScaleControl extends MockControl {}
 
 export class MockAttributionControl {
   setPrefix = vi.fn();
@@ -121,10 +113,7 @@ export class MockMap {
   _options: Record<string, unknown>;
   attributionControl = new MockAttributionControl();
 
-  constructor(
-    container?: HTMLElement | string,
-    options?: Record<string, unknown>,
-  ) {
+  constructor(container?: HTMLElement | string, options?: Record<string, unknown>) {
     if (container instanceof HTMLElement) {
       this._container = container;
     }
@@ -140,32 +129,24 @@ export class MockMap {
   remove = vi.fn().mockReturnThis();
 }
 
-export class MockDomUtil {
-  static create = vi.fn(
-    (tagName: string, className?: string, container?: HTMLElement) => {
-      const el = document.createElement(tagName);
-      if (className) {
-        el.className = className;
-      }
-      if (container) {
-        container.appendChild(el);
-      }
-      return el;
-    },
-  );
-}
+export const MockDomUtil = {
+  create: vi.fn((tagName: string, className?: string, container?: HTMLElement) => {
+    const el = document.createElement(tagName);
+    if (className) {
+      el.className = className;
+    }
+    if (container) {
+      container.appendChild(el);
+    }
+    return el;
+  }),
+};
 
-export class MockDomEvent {
-  static on = vi.fn(
-    (_el: HTMLElement, _type: string, _fn: unknown, _context?: unknown) =>
-      MockDomEvent,
-  );
-  static off = vi.fn(
-    (_el: HTMLElement, _type: string, _fn: unknown, _context?: unknown) =>
-      MockDomEvent,
-  );
-  static stop = vi.fn();
-}
+export const MockDomEvent = {
+  on: vi.fn((_el: HTMLElement, _type: string, _fn: unknown, _context?: unknown) => MockDomEvent),
+  off: vi.fn((_el: HTMLElement, _type: string, _fn: unknown, _context?: unknown) => MockDomEvent),
+  stop: vi.fn(),
+};
 
 export function createLeafletMock() {
   return {

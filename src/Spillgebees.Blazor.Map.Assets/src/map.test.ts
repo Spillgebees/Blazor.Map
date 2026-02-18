@@ -1,4 +1,4 @@
-import { Control, Map as LeafletMap } from "leaflet";
+import { Control, type Map as LeafletMap } from "leaflet";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockDotNetHelper } from "../test/dotNetHelperMock";
 import type { MockMap, MockMarker } from "../test/leafletMock";
@@ -9,6 +9,7 @@ vi.mock("leaflet", async () => {
   return createLeafletMock();
 });
 
+import { CenterControl } from "./controls";
 import type {
   ISpillgebeesCircleMarker,
   ISpillgebeesMapControlOptions,
@@ -19,7 +20,6 @@ import type {
 } from "./interfaces/map";
 import { MapTheme } from "./interfaces/map";
 import { bootstrap } from "./map";
-import { CenterControl } from "./controls";
 
 describe("bootstrap", () => {
   beforeEach(() => {
@@ -232,12 +232,7 @@ describe("mapFunctions", () => {
       ];
 
       // act
-      window.Spillgebees.Map.mapFunctions.setLayers(
-        mapContainer,
-        markers,
-        [],
-        [],
-      );
+      window.Spillgebees.Map.mapFunctions.setLayers(mapContainer, markers, [], []);
 
       // assert
       const map = window.Spillgebees.Map.maps.get(mapContainer)!;
@@ -281,12 +276,7 @@ describe("mapFunctions", () => {
       ];
 
       // act
-      window.Spillgebees.Map.mapFunctions.setLayers(
-        mapContainer,
-        [],
-        [],
-        polylines,
-      );
+      window.Spillgebees.Map.mapFunctions.setLayers(mapContainer, [], [], polylines);
 
       // assert
       const map = window.Spillgebees.Map.maps.get(mapContainer)!;
@@ -326,12 +316,7 @@ describe("mapFunctions", () => {
       ];
 
       // act
-      window.Spillgebees.Map.mapFunctions.setLayers(
-        mapContainer,
-        [],
-        circleMarkers,
-        [],
-      );
+      window.Spillgebees.Map.mapFunctions.setLayers(mapContainer, [], circleMarkers, []);
 
       // assert
       const map = window.Spillgebees.Map.maps.get(mapContainer)!;
@@ -375,21 +360,14 @@ describe("mapFunctions", () => {
       ];
 
       // act
-      window.Spillgebees.Map.mapFunctions.setLayers(
-        mapContainer,
-        markers,
-        [],
-        [],
-      );
+      window.Spillgebees.Map.mapFunctions.setLayers(mapContainer, markers, [], []);
 
       // assert
       const map = window.Spillgebees.Map.maps.get(mapContainer)!;
       const layerStorage = window.Spillgebees.Map.layers.get(map);
       const layerTuple = layerStorage!.byId.get("marker-tooltip");
       expect(layerTuple).toBeDefined();
-      expect(
-        (layerTuple!.leaflet as unknown as MockMarker).bindTooltip,
-      ).toHaveBeenCalled();
+      expect((layerTuple!.leaflet as unknown as MockMarker).bindTooltip).toHaveBeenCalled();
     });
 
     it("should handle empty arrays gracefully", async () => {
@@ -422,12 +400,7 @@ describe("mapFunctions", () => {
       const unknownContainer = document.createElement("div");
 
       // act & assert — should not throw
-      window.Spillgebees.Map.mapFunctions.setLayers(
-        unknownContainer,
-        [],
-        [],
-        [],
-      );
+      window.Spillgebees.Map.mapFunctions.setLayers(unknownContainer, [], [], []);
     });
   });
 
@@ -447,9 +420,7 @@ describe("mapFunctions", () => {
         [],
       );
 
-      const map = window.Spillgebees.Map.maps.get(
-        mapContainer,
-      )! as unknown as MockMap;
+      const map = window.Spillgebees.Map.maps.get(mapContainer)! as unknown as MockMap;
       vi.clearAllMocks();
 
       const newTileLayers: ISpillgebeesTileLayer[] = [
@@ -461,10 +432,7 @@ describe("mapFunctions", () => {
       ];
 
       // act
-      window.Spillgebees.Map.mapFunctions.setTileLayers(
-        mapContainer,
-        newTileLayers,
-      );
+      window.Spillgebees.Map.mapFunctions.setTileLayers(mapContainer, newTileLayers);
 
       // assert
       // removeLayer should have been called for each old tile layer
@@ -472,9 +440,7 @@ describe("mapFunctions", () => {
       // addLayer should have been called for the new tile layer
       expect(map.addLayer).toHaveBeenCalled();
       // Global store should be updated
-      const storedTileLayers = window.Spillgebees.Map.tileLayers.get(
-        map as unknown as LeafletMap,
-      );
+      const storedTileLayers = window.Spillgebees.Map.tileLayers.get(map as unknown as LeafletMap);
       expect(storedTileLayers).toBeDefined();
       expect(storedTileLayers!.size).toBe(1);
     });
@@ -504,9 +470,7 @@ describe("mapFunctions", () => {
         [],
       );
 
-      const map = window.Spillgebees.Map.maps.get(
-        mapContainer,
-      )! as unknown as MockMap;
+      const map = window.Spillgebees.Map.maps.get(mapContainer)! as unknown as MockMap;
       vi.clearAllMocks();
 
       const controlOptions: ISpillgebeesMapControlOptions = {
@@ -520,21 +484,14 @@ describe("mapFunctions", () => {
       };
 
       // act
-      window.Spillgebees.Map.mapFunctions.setMapControls(
-        mapContainer,
-        controlOptions,
-      );
+      window.Spillgebees.Map.mapFunctions.setMapControls(mapContainer, controlOptions);
 
       // assert
       expect(map.addControl).toHaveBeenCalled();
-      const storedControls = window.Spillgebees.Map.controls.get(
-        map as unknown as LeafletMap,
-      );
+      const storedControls = window.Spillgebees.Map.controls.get(map as unknown as LeafletMap);
       expect(storedControls).toBeDefined();
       expect(storedControls!.size).toBeGreaterThanOrEqual(1);
-      expect(storedControls!.values().next().value).toBeInstanceOf(
-        Control.Zoom,
-      );
+      expect(storedControls!.values().next().value).toBeInstanceOf(Control.Zoom);
     });
 
     it("should add scale control when enabled", async () => {
@@ -552,9 +509,7 @@ describe("mapFunctions", () => {
         [],
       );
 
-      const map = window.Spillgebees.Map.maps.get(
-        mapContainer,
-      )! as unknown as MockMap;
+      const map = window.Spillgebees.Map.maps.get(mapContainer)! as unknown as MockMap;
       vi.clearAllMocks();
 
       const controlOptions: ISpillgebeesMapControlOptions = {
@@ -568,21 +523,14 @@ describe("mapFunctions", () => {
       };
 
       // act
-      window.Spillgebees.Map.mapFunctions.setMapControls(
-        mapContainer,
-        controlOptions,
-      );
+      window.Spillgebees.Map.mapFunctions.setMapControls(mapContainer, controlOptions);
 
       // assert
       expect(map.addControl).toHaveBeenCalled();
-      const storedControls = window.Spillgebees.Map.controls.get(
-        map as unknown as LeafletMap,
-      );
+      const storedControls = window.Spillgebees.Map.controls.get(map as unknown as LeafletMap);
       expect(storedControls).toBeDefined();
       expect(storedControls!.size).toBeGreaterThanOrEqual(1);
-      expect(storedControls!.values().next().value).toBeInstanceOf(
-        Control.Scale,
-      );
+      expect(storedControls!.values().next().value).toBeInstanceOf(Control.Scale);
     });
 
     it("should add center control when enabled", async () => {
@@ -600,9 +548,7 @@ describe("mapFunctions", () => {
         [],
       );
 
-      const map = window.Spillgebees.Map.maps.get(
-        mapContainer,
-      )! as unknown as MockMap;
+      const map = window.Spillgebees.Map.maps.get(mapContainer)! as unknown as MockMap;
       vi.clearAllMocks();
 
       const controlOptions: ISpillgebeesMapControlOptions = {
@@ -616,22 +562,15 @@ describe("mapFunctions", () => {
       };
 
       // act
-      window.Spillgebees.Map.mapFunctions.setMapControls(
-        mapContainer,
-        controlOptions,
-      );
+      window.Spillgebees.Map.mapFunctions.setMapControls(mapContainer, controlOptions);
 
       // assert
       expect(map.addControl).toHaveBeenCalled();
-      const storedControls = window.Spillgebees.Map.controls.get(
-        map as unknown as LeafletMap,
-      );
+      const storedControls = window.Spillgebees.Map.controls.get(map as unknown as LeafletMap);
       expect(storedControls).toBeDefined();
       expect(storedControls!.size).toBeGreaterThanOrEqual(1);
 
-      expect(storedControls!.values().next().value).toBeInstanceOf(
-        CenterControl,
-      );
+      expect(storedControls!.values().next().value).toBeInstanceOf(CenterControl);
     });
 
     it("should remove existing controls before adding new ones", async () => {
@@ -659,21 +598,13 @@ describe("mapFunctions", () => {
           showZoomOutButton: true,
         },
       };
-      window.Spillgebees.Map.mapFunctions.setMapControls(
-        mapContainer,
-        controlOptions,
-      );
+      window.Spillgebees.Map.mapFunctions.setMapControls(mapContainer, controlOptions);
 
-      const map = window.Spillgebees.Map.maps.get(
-        mapContainer,
-      )! as unknown as MockMap;
+      const map = window.Spillgebees.Map.maps.get(mapContainer)! as unknown as MockMap;
       vi.clearAllMocks();
 
       // act — set controls again, which should remove old ones first
-      window.Spillgebees.Map.mapFunctions.setMapControls(
-        mapContainer,
-        controlOptions,
-      );
+      window.Spillgebees.Map.mapFunctions.setMapControls(mapContainer, controlOptions);
 
       // assert
       expect(map.removeControl).toHaveBeenCalled();
@@ -684,10 +615,7 @@ describe("mapFunctions", () => {
       const unknownContainer = document.createElement("div");
 
       // act & assert — should not throw
-      window.Spillgebees.Map.mapFunctions.setMapControls(
-        unknownContainer,
-        defaultControlOptions,
-      );
+      window.Spillgebees.Map.mapFunctions.setMapControls(unknownContainer, defaultControlOptions);
     });
   });
 
@@ -734,9 +662,7 @@ describe("mapFunctions", () => {
         [],
       );
 
-      const map = window.Spillgebees.Map.maps.get(
-        mapContainer,
-      )! as unknown as MockMap;
+      const map = window.Spillgebees.Map.maps.get(mapContainer)! as unknown as MockMap;
       vi.clearAllMocks();
 
       // act
@@ -787,12 +713,7 @@ describe("mapFunctions", () => {
           fillOpacity: undefined,
         },
       ];
-      window.Spillgebees.Map.mapFunctions.setLayers(
-        mapContainer,
-        markers,
-        [],
-        [],
-      );
+      window.Spillgebees.Map.mapFunctions.setLayers(mapContainer, markers, [], []);
 
       // act
       window.Spillgebees.Map.mapFunctions.disposeMap(mapContainer);

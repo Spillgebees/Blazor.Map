@@ -1,18 +1,6 @@
-import type {
-  CircleMarker,
-  Map as LeafletMap,
-  Marker,
-  Point,
-  Polyline,
-} from "leaflet";
+import type { CircleMarker, Map as LeafletMap, Marker, Point, Polyline } from "leaflet";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  MockCircleMarker,
-  MockLatLng,
-  MockMap,
-  MockMarker,
-  MockPolyline,
-} from "../../test/leafletMock";
+import { MockCircleMarker, MockLatLng, MockMap, MockMarker, MockPolyline } from "../../test/leafletMock";
 import { resetWindowGlobals } from "../../test/windowSetup";
 
 vi.mock("leaflet", async () => {
@@ -21,14 +9,15 @@ vi.mock("leaflet", async () => {
 });
 
 import type {
-  ISpillgebeesFitBoundsOptions,
   ISpillgebeesCircleMarker,
+  ISpillgebeesFitBoundsOptions,
   ISpillgebeesMarker,
   ISpillgebeesPolyline,
 } from "../interfaces/map";
 import type { LayerStorage, LayerTuple } from "../types/layers";
 import { fitBounds, fitBoundsForMap } from "./fitBoundsForMap";
 
+// biome-ignore lint/security/noSecrets: false positive
 describe("fitBoundsForMap", () => {
   let mockMap: MockMap;
 
@@ -67,10 +56,7 @@ describe("fitBoundsForMap", () => {
   it("should handle a mix of Marker and Polyline layers", () => {
     // arrange
     const marker = new MockMarker(new MockLatLng(51.5, -0.1));
-    const polyline = new MockPolyline([
-      new MockLatLng(48.8, 2.3),
-      new MockLatLng(50.0, 3.0),
-    ]);
+    const polyline = new MockPolyline([new MockLatLng(48.8, 2.3), new MockLatLng(50.0, 3.0)]);
     const layerStorage: LayerStorage = {
       byId: new Map([
         [
@@ -243,16 +229,11 @@ describe("fitBounds (wrapper)", () => {
     // Set up window globals
     window.Spillgebees = {
       Map: {
-        mapFunctions:
-          {} as unknown as typeof window.Spillgebees.Map.mapFunctions,
-        maps: new Map([
-          [mapContainer, mockMap],
-        ]) as unknown as typeof window.Spillgebees.Map.maps,
+        mapFunctions: {} as unknown as typeof window.Spillgebees.Map.mapFunctions,
+        maps: new Map([[mapContainer, mockMap]]) as unknown as typeof window.Spillgebees.Map.maps,
         layers: new Map() as unknown as typeof window.Spillgebees.Map.layers,
-        tileLayers:
-          new Map() as unknown as typeof window.Spillgebees.Map.tileLayers,
-        controls:
-          new Map() as unknown as typeof window.Spillgebees.Map.controls,
+        tileLayers: new Map() as unknown as typeof window.Spillgebees.Map.tileLayers,
+        controls: new Map() as unknown as typeof window.Spillgebees.Map.controls,
       },
     };
   });
@@ -299,10 +280,7 @@ describe("fitBounds (wrapper)", () => {
       ]),
       byLeaflet: new Map(),
     };
-    (window.Spillgebees.Map.layers as Map<unknown, LayerStorage>).set(
-      mockMap,
-      layerStorage,
-    );
+    (window.Spillgebees.Map.layers as Map<unknown, LayerStorage>).set(mockMap, layerStorage);
     const options: ISpillgebeesFitBoundsOptions = {
       layerIds: ["marker-1"],
     };

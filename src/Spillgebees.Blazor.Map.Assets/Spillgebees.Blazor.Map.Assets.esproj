@@ -7,11 +7,11 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
-    <BuildCommand>npm run build:dev</BuildCommand>
+    <BuildCommand>pnpm run build:dev</BuildCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
-    <BuildCommand>npm run build:prod</BuildCommand>
+    <BuildCommand>pnpm run build:prod</BuildCommand>
   </PropertyGroup>
 
   <Target Name="Pack" />
