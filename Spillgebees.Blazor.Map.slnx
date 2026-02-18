@@ -15,6 +15,6 @@
     <File Path="src/.editorconfig" />
     <File Path="src/Directory.Packages.props" />
     <File Path="src/General.targets" />
-    <File Path="src/global.json" />
+    <File Path="global.json" />
   </Folder>
 </Solution>

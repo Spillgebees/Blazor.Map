@@ -30,7 +30,7 @@ jobs:
               - 'src/Spillgebees.Blazor.Map.Tests/**'
               - 'src/Directory.Packages.props'
               - 'src/General.targets'
-              - 'src/global.json'
+              - 'global.json'
 
   build-and-test:
     name: build-and-test

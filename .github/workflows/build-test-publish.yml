@@ -34,7 +34,7 @@ jobs:
       - name: 📦 setup .NET
         uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
-          global-json-file: src/global.json
+          global-json-file: global.json
 
       - name: ⚙️ restore workloads
         run: dotnet workload restore Spillgebees.Blazor.Map.sln
