@@ -18,9 +18,6 @@ importers:
       '@microsoft/dotnet-js-interop':
         specifier: ^8.0.0
         version: 8.0.17
-      '@types/geojson':
-        specifier: ^7946.0.16
-        version: 7946.0.16
       '@types/leaflet':
         specifier: ^1.9.21
         version: 1.9.21

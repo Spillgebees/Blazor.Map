@@ -33,7 +33,6 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.2",
     "@microsoft/dotnet-js-interop": "^8.0.0",
-    "@types/geojson": "^7946.0.16",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^22.13.10",
     "@vitest/coverage-v8": "^4.0.18",
