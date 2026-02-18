@@ -104,10 +104,13 @@ internal static class MapJs
         {
             return jsRuntime.InvokeVoidAsync(identifier, args);
         }
-        catch (JSDisconnectedException) { }
-        catch (OperationCanceledException)
+        catch (JSDisconnectedException exception)
         {
-            logger.LogWarning("Invocation of {identifier} was cancelled.", identifier);
+            logger.LogTrace(exception, "JS interop skipped for {Identifier}, circuit disconnected.", identifier);
+        }
+        catch (OperationCanceledException exception)
+        {
+            logger.LogTrace(exception, "JS interop cancelled for {Identifier}.", identifier);
         }
 
         return ValueTask.CompletedTask;
@@ -124,10 +127,13 @@ internal static class MapJs
         {
             return jsRuntime.InvokeAsync<T>(identifier, args);
         }
-        catch (JSDisconnectedException) { }
-        catch (OperationCanceledException)
+        catch (JSDisconnectedException exception)
         {
-            logger.LogWarning("Invocation of {identifier} was cancelled.", identifier);
+            logger.LogTrace(exception, "JS interop skipped for {Identifier} — circuit disconnected.", identifier);
+        }
+        catch (OperationCanceledException exception)
+        {
+            logger.LogTrace(exception, "JS interop cancelled for {Identifier}.", identifier);
         }
 
         return ValueTask.FromResult(default(T)!);

@@ -126,7 +126,8 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         }
         catch (Exception exception) when (exception is JSDisconnectedException or OperationCanceledException)
         {
-            Logger.Value.LogTrace(exception, "Map disposal interrupted, circuit disconnected or operation cancelled");
+            // synchronous throws are already logged at trace level in SafeInvokeVoidAsync;
+            // this catch handles the rare async propagation case
         }
         catch (Exception exception)
         {

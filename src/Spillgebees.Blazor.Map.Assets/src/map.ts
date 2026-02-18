@@ -61,6 +61,7 @@ const createMap = async (
     const options: LeafletTileLayerOptions = {
       attribution: tileLayer.attribution,
       detectRetina: tileLayer.detectRetina,
+      tileSize: tileLayer.tileSize,
     };
     return new TileLayer(tileLayer.urlTemplate, options);
   });
@@ -313,5 +314,14 @@ const disposeMap = (mapContainer: HTMLElement): void => {
     window.Spillgebees.Map.tileLayers.delete(map);
   }
 
+  const controls = window.Spillgebees.Map.controls.get(map);
+  if (controls) {
+    for (const control of controls) {
+      map.removeControl(control);
+    }
+    window.Spillgebees.Map.controls.delete(map);
+  }
+
+  map.remove();
   window.Spillgebees.Map.maps.delete(mapContainer);
 };

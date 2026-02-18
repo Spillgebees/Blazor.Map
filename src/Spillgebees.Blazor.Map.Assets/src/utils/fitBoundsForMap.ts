@@ -23,10 +23,10 @@ export const fitBoundsForMap = (
       }
       return layer.getBounds();
     })
-    .forEach((bounds, index, array) => {
+    .forEach((bounds) => {
       if (!mergedLayerBounds) {
         mergedLayerBounds = bounds;
-      } else if (index > 0 && index < array.length && mergedLayerBounds) {
+      } else {
         mergedLayerBounds.extend(bounds);
       }
     });

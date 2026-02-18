@@ -1,7 +1,7 @@
 import { Control, type Map as LeafletMap } from "leaflet";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockDotNetHelper } from "../test/dotNetHelperMock";
-import type { MockMap, MockMarker } from "../test/leafletMock";
+import type { MockMap, MockMarker, MockTileLayer } from "../test/leafletMock";
 import { resetWindowGlobals } from "../test/windowSetup";
 
 vi.mock("leaflet", async () => {
@@ -196,6 +196,37 @@ describe("mapFunctions", () => {
       const storedTileLayers = window.Spillgebees.Map.tileLayers.get(map!);
       expect(storedTileLayers).toBeDefined();
       expect(storedTileLayers!.size).toBe(1);
+    });
+
+    it("should forward tileSize to Leaflet TileLayer options", async () => {
+      // arrange
+      const dotNetHelper = createMockDotNetHelper();
+      const tileLayers: ISpillgebeesTileLayer[] = [
+        {
+          urlTemplate: "https://{s}.tile.example.com/{z}/{x}/{y}.png",
+          attribution: "&copy; Test",
+          tileSize: 512,
+        },
+      ];
+
+      // act
+      await window.Spillgebees.Map.mapFunctions.createMap(
+        dotNetHelper,
+        "OnMapReady",
+        mapContainer,
+        defaultMapOptions,
+        defaultControlOptions,
+        tileLayers,
+        [],
+        [],
+        [],
+      );
+
+      // assert
+      const map = window.Spillgebees.Map.maps.get(mapContainer)!;
+      const storedTileLayers = window.Spillgebees.Map.tileLayers.get(map)!;
+      const tileLayer = storedTileLayers.values().next().value as unknown as MockTileLayer;
+      expect(tileLayer._options.tileSize).toBe(512);
     });
   });
 
@@ -719,6 +750,45 @@ describe("mapFunctions", () => {
       window.Spillgebees.Map.mapFunctions.disposeMap(mapContainer);
 
       // assert
+      expect(window.Spillgebees.Map.maps.has(mapContainer)).toBe(false);
+    });
+
+    it("should remove controls, call map.remove(), and clean up controls store", async () => {
+      // arrange
+      const dotNetHelper = createMockDotNetHelper();
+      await window.Spillgebees.Map.mapFunctions.createMap(
+        dotNetHelper,
+        "OnMapReady",
+        mapContainer,
+        defaultMapOptions,
+        defaultControlOptions,
+        defaultTileLayers,
+        [],
+        [],
+        [],
+      );
+
+      const controlOptions: ISpillgebeesMapControlOptions = {
+        ...defaultControlOptions,
+        zoomControlOptions: {
+          enable: true,
+          position: "topright",
+          showZoomInButton: true,
+          showZoomOutButton: true,
+        },
+      };
+      window.Spillgebees.Map.mapFunctions.setMapControls(mapContainer, controlOptions);
+
+      const map = window.Spillgebees.Map.maps.get(mapContainer)! as unknown as MockMap;
+      vi.clearAllMocks();
+
+      // act
+      window.Spillgebees.Map.mapFunctions.disposeMap(mapContainer);
+
+      // assert
+      expect(map.removeControl).toHaveBeenCalled();
+      expect(map.remove).toHaveBeenCalledOnce();
+      expect(window.Spillgebees.Map.controls.has(map as unknown as LeafletMap)).toBe(false);
       expect(window.Spillgebees.Map.maps.has(mapContainer)).toBe(false);
     });
 
