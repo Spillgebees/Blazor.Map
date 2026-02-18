@@ -23,8 +23,9 @@ internal static class MapJs
         List<TileLayer> tileLayers,
         List<Marker> markers,
         List<CircleMarker> circleMarkers,
-        List<Polyline> polylines)
-        => jsRuntime.SafeInvokeVoidAsync(
+        List<Polyline> polylines
+    ) =>
+        jsRuntime.SafeInvokeVoidAsync(
             logger,
             $"{JsNamespace}.createMap",
             dotNetObjectReference,
@@ -35,7 +36,8 @@ internal static class MapJs
             tileLayers,
             markers,
             circleMarkers,
-            polylines);
+            polylines
+        );
 
     internal static ValueTask SetLayersAsync(
         IJSRuntime jsRuntime,
@@ -43,82 +45,60 @@ internal static class MapJs
         ElementReference mapReference,
         List<Marker> markers,
         List<CircleMarker> circleMarkers,
-        List<Polyline> polylines)
-        => jsRuntime.SafeInvokeVoidAsync(
+        List<Polyline> polylines
+    ) =>
+        jsRuntime.SafeInvokeVoidAsync(
             logger,
             $"{JsNamespace}.setLayers",
             mapReference,
             markers,
             circleMarkers,
-            polylines);
+            polylines
+        );
 
     internal static ValueTask SetTileLayersAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
         ElementReference mapReference,
-        List<TileLayer> tileLayers)
-        => jsRuntime.SafeInvokeVoidAsync(
-            logger,
-            $"{JsNamespace}.setTileLayers",
-            mapReference,
-            tileLayers);
+        List<TileLayer> tileLayers
+    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.setTileLayers", mapReference, tileLayers);
 
     internal static ValueTask SetMapControlsAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
         ElementReference mapReference,
-        MapControlOptions mapControlOptions)
-        => jsRuntime.SafeInvokeVoidAsync(
-            logger,
-            $"{JsNamespace}.setMapControls",
-            mapReference,
-            mapControlOptions);
+        MapControlOptions mapControlOptions
+    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.setMapControls", mapReference, mapControlOptions);
 
     internal static ValueTask SetMapOptionsAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
         ElementReference mapReference,
-        MapOptions mapOptions)
-        => jsRuntime.SafeInvokeVoidAsync(
-            logger,
-            $"{JsNamespace}.setMapOptions",
-            mapReference,
-            mapOptions);
+        MapOptions mapOptions
+    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.setMapOptions", mapReference, mapOptions);
 
     internal static ValueTask InvalidateSizeAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
-        ElementReference mapReference)
-        => jsRuntime.SafeInvokeVoidAsync(
-            logger,
-            $"{JsNamespace}.invalidateSize",
-            mapReference);
+        ElementReference mapReference
+    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.invalidateSize", mapReference);
 
     internal static ValueTask FitBoundsAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
         ElementReference mapReference,
-        FitBoundsOptions fitBoundsOptions)
-        => jsRuntime.SafeInvokeVoidAsync(
-            logger,
-            $"{JsNamespace}.fitBounds",
-            mapReference,
-            fitBoundsOptions);
+        FitBoundsOptions fitBoundsOptions
+    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.fitBounds", mapReference, fitBoundsOptions);
 
-    internal static ValueTask DisposeMapAsync(
-        IJSRuntime jsRuntime,
-        ILogger logger,
-        ElementReference mapReference)
-        => jsRuntime.SafeInvokeVoidAsync(
-            logger,
-            $"{JsNamespace}.disposeMap",
-            mapReference);
+    internal static ValueTask DisposeMapAsync(IJSRuntime jsRuntime, ILogger logger, ElementReference mapReference) =>
+        jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.disposeMap", mapReference);
 
     private static ValueTask SafeInvokeVoidAsync(
         this IJSRuntime jsRuntime,
         ILogger logger,
         string identifier,
-        params object?[] args)
+        params object?[] args
+    )
     {
         try
         {
@@ -137,7 +117,8 @@ internal static class MapJs
         this IJSRuntime jsRuntime,
         ILogger logger,
         string identifier,
-        params object?[] args)
+        params object?[] args
+    )
     {
         try
         {

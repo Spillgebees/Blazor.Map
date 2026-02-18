@@ -19,7 +19,7 @@
   "scripts": {
     "build:dev": "vite build --mode development",
     "build:prod": "vite build --mode production",
-    "clean": "rimraf ./dist",
+    "clean": "rimraf ../Spillgebees.Blazor.Map/wwwroot",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",

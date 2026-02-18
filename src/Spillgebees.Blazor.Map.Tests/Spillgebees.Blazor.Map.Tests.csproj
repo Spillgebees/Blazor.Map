@@ -17,5 +17,4 @@
     <Using Include="Bunit" />
     <Using Include="Xunit" />
   </ItemGroup>
-
 </Project>

@@ -13,13 +13,10 @@ public record MapOptions(
     int Zoom,
     bool ShowLeafletPrefix,
     FitBoundsOptions? FitBoundsOptions,
-    MapTheme Theme = MapTheme.Dark)
+    MapTheme Theme = MapTheme.Dark
+)
 {
-    public static MapOptions Default => new(
-        new Coordinate(49.751667, 6.101667),
-        9,
-        true,
-        null);
+    public static MapOptions Default => new(new Coordinate(49.751667, 6.101667), 9, true, null);
 }
 
 /// <summary>
@@ -35,5 +32,5 @@ public enum MapTheme
     /// <summary>
     /// The default custom dark theme with black backgrounds and white icons.
     /// </summary>
-    Dark
+    Dark,
 }

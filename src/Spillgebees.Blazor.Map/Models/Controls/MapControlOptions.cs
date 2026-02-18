@@ -9,7 +9,8 @@ namespace Spillgebees.Blazor.Map.Models.Controls;
 public record MapControlOptions(
     ZoomControlOptions ZoomControlOptions,
     ScaleControlOptions ScaleControlOptions,
-    CenterControlOptions CenterControlOptions)
+    CenterControlOptions CenterControlOptions
+)
 {
     /// <summary>
     /// Default options for the map controls.
@@ -19,10 +20,8 @@ public record MapControlOptions(
     /// <item><description><see cref="CenterControlOptions"/>: <see cref="CenterControlOptions.Default"/></description></item>
     /// </list>
     /// </summary>
-    public static MapControlOptions Default => new(
-        ZoomControlOptions.Default,
-        ScaleControlOptions.Default,
-        CenterControlOptions.Default);
+    public static MapControlOptions Default =>
+        new(ZoomControlOptions.Default, ScaleControlOptions.Default, CenterControlOptions.Default);
 }
 
 /// <summary>
@@ -76,7 +75,13 @@ public record ScaleControlOptions(bool Enable, ControlPosition Position, bool? S
 /// If <see cref="FitBoundsOptions"/> is set, <see cref="Center"/> and <see cref="Zoom"/> are ignored.
 /// The zoom level is calculated by leaflet to fit the layer bounds.
 /// </remarks>
-public record CenterControlOptions(bool Enable, ControlPosition Position, Coordinate Center, int Zoom, FitBoundsOptions? FitBoundsOptions)
+public record CenterControlOptions(
+    bool Enable,
+    ControlPosition Position,
+    Coordinate Center,
+    int Zoom,
+    FitBoundsOptions? FitBoundsOptions
+)
 {
     /// <summary>
     /// Default options for the center control.
@@ -88,5 +93,6 @@ public record CenterControlOptions(bool Enable, ControlPosition Position, Coordi
     /// <item><description><see cref="FitBoundsOptions"/>: <see langword="null"/></description></item>
     /// </list>
     /// </summary>
-    public static CenterControlOptions Default => new(true, ControlPosition.TopRight, new Coordinate(49.751667, 6.101667), 9, null);
+    public static CenterControlOptions Default =>
+        new(true, ControlPosition.TopRight, new Coordinate(49.751667, 6.101667), 9, null);
 }

@@ -10,13 +10,11 @@ public class LowerCaseJsonStringEnumConverter : JsonStringEnumConverter
 {
     private static readonly JsonNamingPolicy _namingPolicy = new LowercaseNamingPolicy();
 
-    public LowerCaseJsonStringEnumConverter() : base(namingPolicy: _namingPolicy, allowIntegerValues: false)
-    {
-    }
+    public LowerCaseJsonStringEnumConverter()
+        : base(namingPolicy: _namingPolicy, allowIntegerValues: false) { }
 }
 
 public class LowercaseNamingPolicy : JsonNamingPolicy
 {
-    public override string ConvertName(string name)
-        => name.ToLower();
+    public override string ConvertName(string name) => name.ToLower();
 }

@@ -3,7 +3,7 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 
-const distDir = resolve(import.meta.dirname!, "../dist");
+const distDir = resolve(import.meta.dirname!, "../../Spillgebees.Blazor.Map/wwwroot");
 
 type BuildName = "dev" | "prod";
 
@@ -43,7 +43,7 @@ type BuildResult = {
 const results = new Map<BuildName, BuildResult>();
 
 beforeAll(() => {
-  const cwd = resolve(distDir, "..");
+  const cwd = resolve(import.meta.dirname!, "..");
   for (const cfg of buildConfigs) {
     execSync(`pnpm run clean && pnpm run ${cfg.script}`, {
       cwd,

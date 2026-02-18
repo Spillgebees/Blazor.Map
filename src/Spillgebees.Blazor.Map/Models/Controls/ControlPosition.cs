@@ -12,5 +12,5 @@ public enum ControlPosition
     TopLeft,
     TopRight,
     BottomLeft,
-    BottomRight
+    BottomRight,
 }

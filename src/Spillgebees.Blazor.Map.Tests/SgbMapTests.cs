@@ -31,10 +31,9 @@ public class SgbMapTests : BunitContext
         var tileLayers = new List<TileLayer> { TileLayer.OpenStreetMap };
 
         // act
-        var cut = Render<SgbMap>(parameters => parameters
-            .Add(p => p.TileLayers, tileLayers)
-            .Add(p => p.Width, "800px")
-            .Add(p => p.Height, "600px"));
+        var cut = Render<SgbMap>(parameters =>
+            parameters.Add(p => p.TileLayers, tileLayers).Add(p => p.Width, "800px").Add(p => p.Height, "600px")
+        );
 
         // assert
         var mapContainer = cut.Find("div.sgb-map-container");
@@ -50,9 +49,9 @@ public class SgbMapTests : BunitContext
         var tileLayers = new List<TileLayer> { TileLayer.OpenStreetMap };
 
         // act
-        var cut = Render<SgbMap>(parameters => parameters
-            .Add(p => p.TileLayers, tileLayers)
-            .Add(p => p.MapContainerClass, "my-custom-class"));
+        var cut = Render<SgbMap>(parameters =>
+            parameters.Add(p => p.TileLayers, tileLayers).Add(p => p.MapContainerClass, "my-custom-class")
+        );
 
         // assert
         var mapContainer = cut.Find("div.sgb-map-container.my-custom-class");
@@ -66,8 +65,7 @@ public class SgbMapTests : BunitContext
         var tileLayers = new List<TileLayer> { TileLayer.OpenStreetMap };
 
         // act
-        Render<SgbMap>(parameters => parameters
-            .Add(p => p.TileLayers, tileLayers));
+        Render<SgbMap>(parameters => parameters.Add(p => p.TileLayers, tileLayers));
 
         // assert
         JSInterop.VerifyInvoke(CreateMapIdentifier);
@@ -78,8 +76,7 @@ public class SgbMapTests : BunitContext
     {
         // arrange
         var tileLayers = new List<TileLayer> { TileLayer.OpenStreetMap };
-        var cut = Render<SgbMap>(parameters => parameters
-            .Add(p => p.TileLayers, tileLayers));
+        var cut = Render<SgbMap>(parameters => parameters.Add(p => p.TileLayers, tileLayers));
 
         // act
         // simulate map initialization completion
@@ -95,8 +92,7 @@ public class SgbMapTests : BunitContext
     {
         // arrange
         var tileLayers = new List<TileLayer> { TileLayer.OpenStreetMap };
-        var cut = Render<SgbMap>(parameters => parameters
-            .Add(p => p.TileLayers, tileLayers));
+        var cut = Render<SgbMap>(parameters => parameters.Add(p => p.TileLayers, tileLayers));
 
         // act
         await cut.Instance.DisposeAsync();

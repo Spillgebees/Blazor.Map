@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
         formats: ["es"],
         fileName: () => "Spillgebees.Blazor.Map.lib.module.js",
       },
-      outDir: "dist",
+      outDir: resolve(import.meta.dirname!, "../Spillgebees.Blazor.Map/wwwroot"),
       emptyOutDir: true,
       sourcemap: !isProduction,
       minify: isProduction,
