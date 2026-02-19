@@ -33,4 +33,5 @@ public record CircleMarker(
     bool Fill = false,
     string? FillColor = null,
     double? FillOpacity = null,
-    TooltipOptions? Tooltip = null) : IPath;
+    TooltipOptions? Tooltip = null
+) : IPath;

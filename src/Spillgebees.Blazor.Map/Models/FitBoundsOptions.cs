@@ -13,4 +13,5 @@ public record FitBoundsOptions(
     ImmutableList<string> LayerIds,
     Point? TopLeftPadding = null,
     Point? BottomRightPadding = null,
-    Point? Padding = null);
+    Point? Padding = null
+);

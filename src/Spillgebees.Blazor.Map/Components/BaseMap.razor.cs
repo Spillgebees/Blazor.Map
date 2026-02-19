@@ -85,15 +85,14 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     protected List<Polyline> InternalPolylines { get; set; } = [];
     protected List<TileLayer> InternalTileLayers { get; set; } = [];
 
-    protected string InternalMapContainerClass => new CssBuilder()
-        .AddClass("sgb-map-container")
-        .AddClass(MapContainerClass)
-        .Build();
+    protected string InternalMapContainerClass =>
+        new CssBuilder().AddClass("sgb-map-container").AddClass(MapContainerClass).Build();
 
-    protected string InternalMapContainerStyle => new StyleBuilder()
-        .AddStyle("width", Width, Width is not null)
-        .AddStyle("height", Height, Height is not null)
-        .Build();
+    protected string InternalMapContainerStyle =>
+        new StyleBuilder()
+            .AddStyle("width", Width, Width is not null)
+            .AddStyle("height", Height, Height is not null)
+            .Build();
 
     protected ElementReference MapReference;
     protected DotNetObjectReference<BaseMap>? DotNetObjectReference;
@@ -104,15 +103,14 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// Changes the map view to fit the layers.
     /// </summary>
     /// <param name="options">Options containing the layers to fit to and other display options.</param>
-    public ValueTask FitBoundsAsync(FitBoundsOptions options)
-        => MapJs.FitBoundsAsync(JsRuntime, Logger.Value, MapReference, options);
+    public ValueTask FitBoundsAsync(FitBoundsOptions options) =>
+        MapJs.FitBoundsAsync(JsRuntime, Logger.Value, MapReference, options);
 
     /// <summary>
     /// Triggers a size recalculation on the map. Useful when dynamically changing the height, especially if you notice
     /// that the map has unloaded spots.
     /// </summary>
-    public ValueTask InvalidateMapSizeAsync()
-        => MapJs.InvalidateSizeAsync(JsRuntime, Logger.Value, MapReference);
+    public ValueTask InvalidateMapSizeAsync() => MapJs.InvalidateSizeAsync(JsRuntime, Logger.Value, MapReference);
 
     public virtual async ValueTask DisposeAsync()
     {
@@ -128,6 +126,8 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         }
         catch (Exception exception) when (exception is JSDisconnectedException or OperationCanceledException)
         {
+            // synchronous throws are already logged at trace level in SafeInvokeVoidAsync;
+            // this catch handles the rare async propagation case
         }
         catch (Exception exception)
         {
@@ -167,13 +167,15 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             return;
         }
 
-        if (Markers.SequenceEqual(InternalMarkers) is false
+        if (
+            Markers.SequenceEqual(InternalMarkers) is false
             || CircleMarkers.SequenceEqual(InternalCircleMarkers) is false
-            || Polylines.SequenceEqual(InternalPolylines) is false)
+            || Polylines.SequenceEqual(InternalPolylines) is false
+        )
         {
-            InternalMarkers = [..Markers];
-            InternalCircleMarkers = [..CircleMarkers];
-            InternalPolylines = [..Polylines];
+            InternalMarkers = [.. Markers];
+            InternalCircleMarkers = [.. CircleMarkers];
+            InternalPolylines = [.. Polylines];
             await SetMarkersAsync();
         }
 
@@ -198,10 +200,8 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         await Task.CompletedTask;
     }
 
-    protected override Task OnAfterRenderAsync(bool firstRender)
-        => firstRender
-            ? InitializeMapAsync()
-            : Task.CompletedTask;
+    protected override Task OnAfterRenderAsync(bool firstRender) =>
+        firstRender ? InitializeMapAsync() : Task.CompletedTask;
 
     protected virtual async Task InitializeMapAsync()
     {
@@ -210,9 +210,9 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         InternalMapOptions = MapOptions;
         InternalMapControlOptions = MapControlOptions;
         InternalTileLayers = TileLayers;
-        InternalMarkers = [..Markers];
-        InternalCircleMarkers = [..CircleMarkers];
-        InternalPolylines = [..Polylines];
+        InternalMarkers = [.. Markers];
+        InternalCircleMarkers = [.. CircleMarkers];
+        InternalPolylines = [.. Polylines];
 
         await MapJs.CreateMapAsync(
             JsRuntime,
@@ -225,18 +225,26 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             InternalTileLayers,
             InternalMarkers,
             InternalCircleMarkers,
-            InternalPolylines);
+            InternalPolylines
+        );
     }
 
-    private ValueTask SetMarkersAsync()
-        => MapJs.SetLayersAsync(JsRuntime, Logger.Value, MapReference, InternalMarkers, InternalCircleMarkers, InternalPolylines);
+    private ValueTask SetMarkersAsync() =>
+        MapJs.SetLayersAsync(
+            JsRuntime,
+            Logger.Value,
+            MapReference,
+            InternalMarkers,
+            InternalCircleMarkers,
+            InternalPolylines
+        );
 
-    private ValueTask SetTileLayersAsync()
-        => MapJs.SetTileLayersAsync(JsRuntime, Logger.Value, MapReference, InternalTileLayers);
+    private ValueTask SetTileLayersAsync() =>
+        MapJs.SetTileLayersAsync(JsRuntime, Logger.Value, MapReference, InternalTileLayers);
 
-    private ValueTask SetMapControlsAsync()
-        => MapJs.SetMapControlsAsync(JsRuntime, Logger.Value, MapReference, InternalMapControlOptions);
+    private ValueTask SetMapControlsAsync() =>
+        MapJs.SetMapControlsAsync(JsRuntime, Logger.Value, MapReference, InternalMapControlOptions);
 
-    private ValueTask SetMapOptionsAsync()
-        => MapJs.SetMapOptionsAsync(JsRuntime, Logger.Value, MapReference, InternalMapOptions);
+    private ValueTask SetMapOptionsAsync() =>
+        MapJs.SetMapOptionsAsync(JsRuntime, Logger.Value, MapReference, InternalMapOptions);
 }

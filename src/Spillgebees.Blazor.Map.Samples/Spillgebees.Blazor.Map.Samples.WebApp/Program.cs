@@ -2,8 +2,8 @@ using Spillgebees.Blazor.Map.Samples.WebApp.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services
-    .AddRazorComponents()
+builder
+    .Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddCircuitOptions(options => options.DetailedErrors = true);
 
@@ -14,7 +14,6 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
 app.Run();

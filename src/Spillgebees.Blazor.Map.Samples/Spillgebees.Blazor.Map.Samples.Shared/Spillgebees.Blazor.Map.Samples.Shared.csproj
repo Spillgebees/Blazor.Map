@@ -11,7 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference
-      Include="..\..\Spillgebees.Blazor.Map\Spillgebees.Blazor.Map.csproj" />
+    <ProjectReference Include="..\..\Spillgebees.Blazor.Map\Spillgebees.Blazor.Map.csproj" />
   </ItemGroup>
 </Project>

@@ -1,57 +1,55 @@
-import { Map as LeafletMap, LatLngBounds, Marker as LeafletMarker, CircleMarker as LeafletCircleMarker } from "leaflet";
-import { LayerStorage } from "../types/layers";
-import {ISpillgebeesFitBoundsOptions} from "../interfaces/map";
+import {
+  LatLngBounds,
+  CircleMarker as LeafletCircleMarker,
+  type Map as LeafletMap,
+  Marker as LeafletMarker,
+} from "leaflet";
+import type { ISpillgebeesFitBoundsOptions } from "../interfaces/map";
+import type { LayerStorage } from "../types/layers";
 
-export const fitBoundsForMap = (map: LeafletMap, layerStorage: LayerStorage, fitBoundsOptions: ISpillgebeesFitBoundsOptions): void => {
-    let mergedLayerBounds: LatLngBounds | undefined;
-    fitBoundsOptions.layerIds
-        .map(layerId => {
-            const layerTuple = layerStorage.byId.get(layerId);
-            if (!layerTuple) {
-                return;
-            }
+export const fitBoundsForMap = (
+  map: LeafletMap,
+  layerStorage: LayerStorage,
+  fitBoundsOptions: ISpillgebeesFitBoundsOptions,
+): void => {
+  let mergedLayerBounds: LatLngBounds | undefined;
+  fitBoundsOptions.layerIds
+    .map((layerId) => layerStorage.byId.get(layerId))
+    .filter((layerTuple) => layerTuple !== undefined)
+    .map((layerTuple) => layerTuple.leaflet)
+    .map((layer) => {
+      if (layer instanceof LeafletMarker || layer instanceof LeafletCircleMarker) {
+        return new LatLngBounds([layer.getLatLng()]);
+      }
+      return layer.getBounds();
+    })
+    .forEach((bounds) => {
+      if (!mergedLayerBounds) {
+        mergedLayerBounds = bounds;
+      } else {
+        mergedLayerBounds.extend(bounds);
+      }
+    });
 
-            const { leaflet } = layerTuple;
-            return leaflet;
-        })
-        .filter(layer => layer !== undefined)
-        .map(layer => {
-            if (layer instanceof LeafletMarker || layer instanceof LeafletCircleMarker) {
-                return new LatLngBounds([layer.getLatLng()]);
-            } else {
-                return layer.getBounds();
-            }
-        })
-        .forEach((bounds, index, array) => {
-            if (!mergedLayerBounds)
-            {
-                mergedLayerBounds = bounds;
-            }
-            else if (index > 0 && index < array.length && mergedLayerBounds) {
-                mergedLayerBounds.extend(bounds);
-            }
-        });
-
-    if (mergedLayerBounds)
-    {
-        map.fitBounds(mergedLayerBounds, {
-            paddingTopLeft: fitBoundsOptions.topLeftPadding,
-            paddingBottomRight: fitBoundsOptions.bottomRightPadding,
-            padding: fitBoundsOptions.padding
-        });
-    }
+  if (mergedLayerBounds) {
+    map.fitBounds(mergedLayerBounds, {
+      paddingTopLeft: fitBoundsOptions.topLeftPadding,
+      paddingBottomRight: fitBoundsOptions.bottomRightPadding,
+      padding: fitBoundsOptions.padding,
+    });
+  }
 };
 
 export const fitBounds = (mapContainer: HTMLElement, fitBoundsOptions: ISpillgebeesFitBoundsOptions): void => {
-    const map = window.Spillgebees.Map.maps.get(mapContainer);
-    if (!map) {
-        return;
-    }
+  const map = window.Spillgebees.Map.maps.get(mapContainer);
+  if (!map) {
+    return;
+  }
 
-    const layerStorage = window.Spillgebees.Map.layers.get(map);
-    if (!layerStorage) {
-        return;
-    }
+  const layerStorage = window.Spillgebees.Map.layers.get(map);
+  if (!layerStorage) {
+    return;
+  }
 
-    fitBoundsForMap(map, layerStorage, fitBoundsOptions);
+  fitBoundsForMap(map, layerStorage, fitBoundsOptions);
 };

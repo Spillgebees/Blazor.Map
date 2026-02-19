@@ -1,1 +1,1 @@
-export { CenterControlOptions, CenterControl } from './centerControl';
+export { CenterControl, type CenterControlOptions } from "./centerControl";

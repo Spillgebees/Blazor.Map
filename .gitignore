@@ -525,4 +525,5 @@ fabric.properties
 
 # User-specific stuff
 
-dist
+# Generated JS/CSS build output in the Razor Class Library wwwroot
+src/Spillgebees.Blazor.Map/wwwroot/

@@ -14,5 +14,5 @@ public enum TooltipDirection
     Left,
     Right,
     Center,
-    Auto
+    Auto,
 }
