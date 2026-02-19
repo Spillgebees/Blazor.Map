@@ -1,5 +1,7 @@
 name: Build & test
 
+permissions: {}
+
 on:
   workflow_dispatch:
   push:

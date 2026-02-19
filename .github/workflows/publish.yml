@@ -1,5 +1,7 @@
 name: Publish nuget package
 
+permissions: {}
+
 on:
   release:
     types: [published]
@@ -19,6 +21,7 @@ jobs:
     name: publish
     needs: [build-and-test]
     runs-on: ubuntu-latest
+    permissions: {}
 
     steps:
       - name: 🔃 download artifacts
