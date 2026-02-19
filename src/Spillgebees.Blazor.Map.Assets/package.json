@@ -34,7 +34,7 @@
     "@biomejs/biome": "2.4.2",
     "@microsoft/dotnet-js-interop": "8.0.17",
     "@types/leaflet": "1.9.21",
-    "@types/node": "22.19.11",
+    "@types/node": "24.10.13",
     "@vitest/coverage-v8": "4.0.18",
     "jsdom": "28.1.0",
     "rimraf": "6.1.3",
