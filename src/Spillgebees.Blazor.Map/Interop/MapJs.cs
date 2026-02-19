@@ -129,7 +129,7 @@ internal static class MapJs
         }
         catch (JSDisconnectedException exception)
         {
-            logger.LogTrace(exception, "JS interop skipped for {Identifier} — circuit disconnected.", identifier);
+            logger.LogTrace(exception, "JS interop skipped for {Identifier}, circuit disconnected.", identifier);
         }
         catch (OperationCanceledException exception)
         {
