@@ -1,5 +1,7 @@
 name: Build, test, & publish
 
+permissions: {}
+
 on:
   workflow_call:
     inputs:
@@ -59,9 +61,6 @@ jobs:
         uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           global-json-file: global.json
-
-      - name: ⚙️ restore workloads
-        run: dotnet workload restore Spillgebees.Blazor.Map.slnx
 
       - name: 📦 restore packages
         run: dotnet restore Spillgebees.Blazor.Map.slnx

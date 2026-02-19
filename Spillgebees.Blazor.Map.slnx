@@ -2,12 +2,12 @@
   <Folder Name="/src/">
     <Project Path="src/Spillgebees.Blazor.Map/Spillgebees.Blazor.Map.csproj" />
     <Project Path="src/Spillgebees.Blazor.Map.Tests/Spillgebees.Blazor.Map.Tests.csproj" />
-    <Folder Name="/src/Spillgebees.Blazor.Map.Samples/">
-      <Project Path="src/Spillgebees.Blazor.Map.Samples/Spillgebees.Blazor.Map.Samples.Shared/Spillgebees.Blazor.Map.Samples.Shared.csproj" />
-      <Project Path="src/Spillgebees.Blazor.Map.Samples/Spillgebees.Blazor.Map.Samples.Wasm/Spillgebees.Blazor.Map.Samples.Wasm.csproj" />
-      <Project Path="src/Spillgebees.Blazor.Map.Samples/Spillgebees.Blazor.Map.Samples.WebApp/Spillgebees.Blazor.Map.Samples.WebApp.csproj" />
-      <Project Path="src/Spillgebees.Blazor.Map.Samples/Spillgebees.Blazor.Map.Samples.Server/Spillgebees.Blazor.Map.Samples.Server.csproj" />
-    </Folder>
+  </Folder>
+  <Folder Name="/src/Spillgebees.Blazor.Map.Samples/">
+    <Project Path="src/Spillgebees.Blazor.Map.Samples/Spillgebees.Blazor.Map.Samples.Shared/Spillgebees.Blazor.Map.Samples.Shared.csproj" />
+    <Project Path="src/Spillgebees.Blazor.Map.Samples/Spillgebees.Blazor.Map.Samples.Wasm/Spillgebees.Blazor.Map.Samples.Wasm.csproj" />
+    <Project Path="src/Spillgebees.Blazor.Map.Samples/Spillgebees.Blazor.Map.Samples.WebApp/Spillgebees.Blazor.Map.Samples.WebApp.csproj" />
+    <Project Path="src/Spillgebees.Blazor.Map.Samples/Spillgebees.Blazor.Map.Samples.Server/Spillgebees.Blazor.Map.Samples.Server.csproj" />
   </Folder>
   <Folder Name="/.files/">
     <File Path=".csharpierrc.yaml" />

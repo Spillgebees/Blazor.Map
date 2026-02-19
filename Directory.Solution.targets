@@ -6,14 +6,12 @@
 
     Set HUSKY=0 in CI to skip hook installation.
   -->
-  <Target Name="HuskySetup"
-          BeforeTargets="Restore;CollectPackageReferences"
-          Condition="'$(HUSKY)' != '0' and !Exists('$(MSBuildThisFileDirectory).husky/_/.gitignore')">
-    <Exec Command="dotnet tool restore"
-          StandardOutputImportance="Low"
-          StandardErrorImportance="High" />
-    <Exec Command="dotnet husky install"
-          StandardOutputImportance="Low"
-          StandardErrorImportance="High" />
+  <Target
+    Name="HuskySetup"
+    BeforeTargets="Restore;CollectPackageReferences"
+    Condition="'$(HUSKY)' != '0' and !Exists('$(MSBuildThisFileDirectory).husky/_/.gitignore')"
+  >
+    <Exec Command="dotnet tool restore" StandardOutputImportance="Low" StandardErrorImportance="High" />
+    <Exec Command="dotnet husky install" StandardOutputImportance="Low" StandardErrorImportance="High" />
   </Target>
 </Project>
