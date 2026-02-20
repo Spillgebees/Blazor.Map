@@ -19,8 +19,8 @@ importers:
         specifier: 2.1.3
         version: 2.1.3(vite@7.3.1(@types/node@24.10.13)(sass@1.97.3))
       '@microsoft/dotnet-js-interop':
-        specifier: 8.0.17
-        version: 8.0.17
+        specifier: 10.0.0
+        version: 10.0.0
       '@types/leaflet':
         specifier: 1.9.21
         version: 1.9.21
@@ -359,8 +359,8 @@ packages:
     peerDependencies:
       vite: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0
 
-  '@microsoft/dotnet-js-interop@8.0.17':
-    resolution: {integrity: sha512-gdLCSgUWqF99igzXgQYcwd5gsgep6sAuQTIRmk1LGRLa+a6r7iBfIClOc4ULEi8gr3gQcXeQtbcJiVgSTJvOhA==}
+  '@microsoft/dotnet-js-interop@10.0.0':
+    resolution: {integrity: sha512-cYmqSePCKSs6srwGWz6lOq/UIogKgFw0ZOq0MtQzxRI1G/YiBOhlvM4Nj8DuGBp/1guSlFApIVv85SkXJTMOIQ==}
 
   '@parcel/watcher-android-arm64@2.5.6':
     resolution: {integrity: sha512-YQxSS34tPF/6ZG7r/Ih9xy+kP/WwediEUsqmtf0cuCV5TPPKw/PQHRhueUo6JdeFJaqV3pyjm0GdYjZotbRt/A==}
@@ -1330,7 +1330,7 @@ snapshots:
       semver: 7.7.4
       vite: 7.3.1(@types/node@24.10.13)(sass@1.97.3)
 
-  '@microsoft/dotnet-js-interop@8.0.17': {}
+  '@microsoft/dotnet-js-interop@10.0.0': {}
 
   '@parcel/watcher-android-arm64@2.5.6':
     optional: true
