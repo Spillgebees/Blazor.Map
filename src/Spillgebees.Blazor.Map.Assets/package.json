@@ -3,7 +3,7 @@
   "name": "spillgebees.blazor.map.assets",
   "version": "0.1.0",
   "type": "module",
-  "packageManager": "pnpm@10.29.3",
+  "packageManager": "pnpm@10.30.0",
   "description": "TypeScript module housing assets related to the Spillgebees.Blazor.Map NuGet package.",
   "author": "Jason Rebelo Neves (igotinfected)",
   "license": "MIT",
