@@ -21,6 +21,7 @@ describe("CenterControl", () => {
       center: { latitude: 49.6, longitude: 6.1 },
       zoom: 13,
       position: "topleft",
+      fitBoundsOptions: null,
     };
   });
 

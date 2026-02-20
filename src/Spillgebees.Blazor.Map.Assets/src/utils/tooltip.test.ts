@@ -38,10 +38,17 @@ describe("convertToLeafletTooltip", () => {
     expect(options.className).toBe("custom-tooltip");
   });
 
-  it("should use [0, 0] offset when offset is undefined", () => {
+  it("should use [0, 0] offset when offset is null", () => {
     // arrange
     const input: ISpillgebeesTooltip = {
       content: "No offset",
+      offset: null,
+      direction: null,
+      permanent: false,
+      sticky: false,
+      interactive: false,
+      opacity: null,
+      className: null,
     };
 
     // act
@@ -57,6 +64,12 @@ describe("convertToLeafletTooltip", () => {
     const input: ISpillgebeesTooltip = {
       content: "With offset",
       offset: { x: 15, y: -20 },
+      direction: null,
+      permanent: false,
+      sticky: false,
+      interactive: false,
+      opacity: null,
+      className: null,
     };
 
     // act
@@ -67,10 +80,17 @@ describe("convertToLeafletTooltip", () => {
     expect(options.offset).toEqual([15, -20]);
   });
 
-  it("should pass through all optional fields as undefined when not provided", () => {
+  it("should omit null fields from Leaflet Tooltip options", () => {
     // arrange
     const input: ISpillgebeesTooltip = {
       content: "Minimal",
+      offset: null,
+      direction: null,
+      permanent: false,
+      sticky: false,
+      interactive: false,
+      opacity: null,
+      className: null,
     };
 
     // act
@@ -79,12 +99,12 @@ describe("convertToLeafletTooltip", () => {
     // assert
     const options = (result as unknown as MockTooltip)._options;
     expect(options.content).toBe("Minimal");
-    expect(options.direction).toBeUndefined();
+    expect(options).not.toHaveProperty("direction");
     expect(options.offset).toEqual([0, 0]);
-    expect(options.permanent).toBeUndefined();
-    expect(options.sticky).toBeUndefined();
-    expect(options.interactive).toBeUndefined();
-    expect(options.opacity).toBeUndefined();
-    expect(options.className).toBeUndefined();
+    expect(options.permanent).toBe(false);
+    expect(options.sticky).toBe(false);
+    expect(options.interactive).toBe(false);
+    expect(options).not.toHaveProperty("opacity");
+    expect(options).not.toHaveProperty("className");
   });
 });

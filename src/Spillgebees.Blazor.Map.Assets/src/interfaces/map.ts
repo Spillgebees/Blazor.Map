@@ -12,56 +12,56 @@ export interface ISpillgebeesTooltipOffset {
 
 export interface ISpillgebeesTooltip {
   content: string;
-  offset?: ISpillgebeesTooltipOffset | undefined;
-  direction?: "top" | "bottom" | "left" | "right" | "center" | "auto";
-  permanent?: boolean;
-  sticky?: boolean;
-  interactive?: boolean;
-  opacity?: number;
-  className?: string;
+  offset: ISpillgebeesTooltipOffset | null;
+  direction: "top" | "bottom" | "left" | "right" | "center" | "auto" | null;
+  permanent: boolean;
+  sticky: boolean;
+  interactive: boolean;
+  opacity: number | null;
+  className: string | null;
 }
 
 export interface ISpillgebeesPath {
   id: string;
-  stroke: boolean | undefined;
-  strokeColor: string | undefined;
-  strokeWeight: number | undefined;
-  strokeOpacity: number | undefined;
-  fill: boolean | undefined;
-  fillColor: string | undefined;
-  fillOpacity: number | undefined;
-  tooltip?: ISpillgebeesTooltip;
+  stroke: boolean;
+  strokeColor: string | null;
+  strokeWeight: number | null;
+  strokeOpacity: number | null;
+  fill: boolean;
+  fillColor: string | null;
+  fillOpacity: number | null;
+  tooltip: ISpillgebeesTooltip | null;
 }
 
 export interface ISpillgebeesMarker extends ISpillgebeesPath {
   coordinate: ISpillgebeesCoordinate;
-  title: string | undefined;
-  icon: string | undefined;
+  title: string | null;
+  icon: string | null;
 }
 
 export interface ISpillgebeesCircleMarker extends ISpillgebeesPath {
   coordinate: ISpillgebeesCoordinate;
-  radius: number | 10;
+  radius: number;
 }
 
 export interface ISpillgebeesPolyline extends ISpillgebeesPath {
   coordinates: ISpillgebeesCoordinate[];
-  smoothFactor: number | 1.0;
-  noClip: boolean | false;
+  smoothFactor: number | null;
+  noClip: boolean;
 }
 
 export interface ISpillgebeesTileLayer {
   urlTemplate: string;
   attribution: string;
-  detectRetina?: boolean | undefined;
-  tileSize: number | undefined;
+  detectRetina: boolean | null;
+  tileSize: number | null;
 }
 
 export interface ISpillgebeesMapOptions {
   center: ISpillgebeesCoordinate;
   zoom: number;
   showLeafletPrefix: boolean;
-  fitBoundsOptions?: ISpillgebeesFitBoundsOptions | undefined;
+  fitBoundsOptions: ISpillgebeesFitBoundsOptions | null;
   theme: number;
 }
 
@@ -75,8 +75,8 @@ export interface ISpillgebeesZoomControlOptions {
 export interface ISpillgebeesScaleControlOptions {
   enable: boolean;
   position: ControlPosition;
-  showMetric?: boolean | undefined;
-  showImperial?: boolean | undefined;
+  showMetric: boolean | null;
+  showImperial: boolean | null;
 }
 
 export interface ISpillgebeesCenterControlOptions {
@@ -84,7 +84,7 @@ export interface ISpillgebeesCenterControlOptions {
   position: ControlPosition;
   center: ISpillgebeesCoordinate;
   zoom: number;
-  fitBoundsOptions?: ISpillgebeesFitBoundsOptions | undefined;
+  fitBoundsOptions: ISpillgebeesFitBoundsOptions | null;
 }
 
 export interface ISpillgebeesMapControlOptions {
@@ -95,9 +95,9 @@ export interface ISpillgebeesMapControlOptions {
 
 export interface ISpillgebeesFitBoundsOptions {
   layerIds: string[];
-  topLeftPadding?: Point | undefined;
-  bottomRightPadding?: Point | undefined;
-  padding?: Point | undefined;
+  topLeftPadding: Point | null;
+  bottomRightPadding: Point | null;
+  padding: Point | null;
 }
 
 export enum MapTheme {

@@ -44,6 +44,9 @@ describe("fitBoundsForMap", () => {
     };
     const options: ISpillgebeesFitBoundsOptions = {
       layerIds: ["marker-1"],
+      topLeftPadding: null,
+      bottomRightPadding: null,
+      padding: null,
     };
 
     // act
@@ -78,6 +81,9 @@ describe("fitBoundsForMap", () => {
     };
     const options: ISpillgebeesFitBoundsOptions = {
       layerIds: ["marker-1", "polyline-1"],
+      topLeftPadding: null,
+      bottomRightPadding: null,
+      padding: null,
     };
 
     // act
@@ -107,6 +113,9 @@ describe("fitBoundsForMap", () => {
     };
     const options: ISpillgebeesFitBoundsOptions = {
       layerIds: ["cm-1"],
+      topLeftPadding: null,
+      bottomRightPadding: null,
+      padding: null,
     };
 
     // act
@@ -134,6 +143,9 @@ describe("fitBoundsForMap", () => {
     };
     const options: ISpillgebeesFitBoundsOptions = {
       layerIds: ["marker-1", "nonexistent-id"],
+      topLeftPadding: null,
+      bottomRightPadding: null,
+      padding: null,
     };
 
     // act
@@ -151,6 +163,9 @@ describe("fitBoundsForMap", () => {
     };
     const options: ISpillgebeesFitBoundsOptions = {
       layerIds: ["nonexistent-id"],
+      topLeftPadding: null,
+      bottomRightPadding: null,
+      padding: null,
     };
 
     // act
@@ -168,6 +183,9 @@ describe("fitBoundsForMap", () => {
     };
     const options: ISpillgebeesFitBoundsOptions = {
       layerIds: [],
+      topLeftPadding: null,
+      bottomRightPadding: null,
+      padding: null,
     };
 
     // act
@@ -243,6 +261,9 @@ describe("fitBounds (wrapper)", () => {
     const unknownContainer = document.createElement("div");
     const options: ISpillgebeesFitBoundsOptions = {
       layerIds: ["marker-1"],
+      topLeftPadding: null,
+      bottomRightPadding: null,
+      padding: null,
     };
 
     // act
@@ -256,6 +277,9 @@ describe("fitBounds (wrapper)", () => {
     // arrange
     const options: ISpillgebeesFitBoundsOptions = {
       layerIds: ["marker-1"],
+      topLeftPadding: null,
+      bottomRightPadding: null,
+      padding: null,
     };
 
     // act
@@ -283,6 +307,9 @@ describe("fitBounds (wrapper)", () => {
     (window.Spillgebees.Map.layers as Map<unknown, LayerStorage>).set(mockMap, layerStorage);
     const options: ISpillgebeesFitBoundsOptions = {
       layerIds: ["marker-1"],
+      topLeftPadding: null,
+      bottomRightPadding: null,
+      padding: null,
     };
 
     // act
