@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "Spillgebees.Blazor.Map.Samples.Wasm",
   "resources": {
-    "hash": "sha256-7+JMJQVS2rpmCCFbWz1ZHWDsFZH2bnSwW6T7GwGeXS0=",
+    "hash": "sha256-B5SXTXXZPcnF8vGb/HdR/20K+z2Amq7yB9gfbCN+POI=",
     "jsModuleNative": {
       "dotnet.native.js": "sha256-4g0GzvOXSwZvTLca4PrWJkoeltz+V9IF/hEFDcnVros="
     },
@@ -34,9 +34,9 @@
       "Microsoft.Extensions.Primitives.wasm": "sha256-Bi1hyBMWneH/ByWbqT/pNe0B7I/NQFklzD2g3Whdqlk=",
       "Microsoft.JSInterop.WebAssembly.wasm": "sha256-4soNkn8aqTulPavV5tgrBBe7jEypSOVIlJw/okXugLA=",
       "Microsoft.JSInterop.wasm": "sha256-sb5bzBlxYgvNib2Wyu9yY36HjG99FHtfQM8LpKawfAI=",
-      "Spillgebees.Blazor.Map.Samples.Shared.wasm": "sha256-R8jbR7jxuESrsIpm13T4p/Oj0iQTdn0E391LhCSP4qE=",
-      "Spillgebees.Blazor.Map.Samples.Wasm.wasm": "sha256-giU5r/i6+5ML4HqF948dc+5GpIE7MEn9fGma9LD+CBA=",
-      "Spillgebees.Blazor.Map.wasm": "sha256-CinzABvKBlKyiPQ7hFcVO6jKUBkht2KPQHahzYkR18w=",
+      "Spillgebees.Blazor.Map.Samples.Shared.wasm": "sha256-4rmLztH4hh0WfP3lxEhGVilcnqRMe6RHN4Nz+rQsrco=",
+      "Spillgebees.Blazor.Map.Samples.Wasm.wasm": "sha256-ma0FF9sMtixlkkpneCgq3zPgu7NJV+3pBzXM8ynQ42Y=",
+      "Spillgebees.Blazor.Map.wasm": "sha256-r09chXbwp8+n/Kw4NtJeTBtwbQyw69Yer2bIrdAiK3w=",
       "System.Collections.Concurrent.wasm": "sha256-n9LTkPf54+iiXAY80LUhYoSQEZA9zvPSyjtoLBsk7f4=",
       "System.Collections.Immutable.wasm": "sha256-Exi4XVerTNyJc5mHuSvd8G7AIXxd37uSTV1jiDRhyZI=",
       "System.Collections.NonGeneric.wasm": "sha256-P5kOr9l8kGIzvuAFUyOSoj3FxDVgbjDCRhKRwrVSlWE=",
