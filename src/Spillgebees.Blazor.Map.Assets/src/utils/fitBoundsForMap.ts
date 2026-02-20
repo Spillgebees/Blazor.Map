@@ -33,9 +33,9 @@ export const fitBoundsForMap = (
 
   if (mergedLayerBounds) {
     map.fitBounds(mergedLayerBounds, {
-      paddingTopLeft: fitBoundsOptions.topLeftPadding,
-      paddingBottomRight: fitBoundsOptions.bottomRightPadding,
-      padding: fitBoundsOptions.padding,
+      ...(fitBoundsOptions.topLeftPadding != null && { paddingTopLeft: fitBoundsOptions.topLeftPadding }),
+      ...(fitBoundsOptions.bottomRightPadding != null && { paddingBottomRight: fitBoundsOptions.bottomRightPadding }),
+      ...(fitBoundsOptions.padding != null && { padding: fitBoundsOptions.padding }),
     });
   }
 };

@@ -5,7 +5,7 @@ import { fitBoundsForMap } from "../utils/fitBoundsForMap";
 export interface CenterControlOptions extends ControlOptions {
   center: ISpillgebeesCoordinate;
   zoom: number;
-  fitBoundsOptions?: ISpillgebeesFitBoundsOptions | undefined;
+  fitBoundsOptions: ISpillgebeesFitBoundsOptions | null;
 }
 
 export class CenterControl extends Control {

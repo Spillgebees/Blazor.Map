@@ -159,6 +159,13 @@ describe.each(buildConfigs)("$name build (parametrized)", (cfg) => {
     }
   });
 
+  it("should reference Leaflet images as file URLs in CSS, not base64 data URIs", () => {
+    expect(res.cssContent).toContain("url(./marker-icon.png)");
+    expect(res.cssContent).toContain("url(./layers.png)");
+    expect(res.cssContent).toContain("url(./layers-2x.png)");
+    expect(res.cssContent).not.toMatch(/url\(data:image\/png;base64,/);
+  });
+
   if (cfg.expectMinifiedSmaller) {
     it("prod should produce minified JS smaller than dev JS", () => {
       const dev = results.get("dev");

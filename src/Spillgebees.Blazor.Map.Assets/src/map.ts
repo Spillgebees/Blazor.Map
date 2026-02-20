@@ -60,8 +60,8 @@ const createMap = async (
   const leafletTileLayers = tileLayers.map((tileLayer) => {
     const options: LeafletTileLayerOptions = {
       attribution: tileLayer.attribution,
-      detectRetina: tileLayer.detectRetina,
-      tileSize: tileLayer.tileSize,
+      ...(tileLayer.detectRetina != null && { detectRetina: tileLayer.detectRetina }),
+      ...(tileLayer.tileSize != null && { tileSize: tileLayer.tileSize }),
     };
     return new TileLayer(tileLayer.urlTemplate, options);
   });
@@ -133,15 +133,15 @@ const setLayers = (
     const leafletLayer = new LeafletPolyline(
       polyline.coordinates.map((coordinate) => new LatLng(coordinate.latitude, coordinate.longitude)),
       {
-        smoothFactor: polyline.smoothFactor,
+        ...(polyline.smoothFactor != null && { smoothFactor: polyline.smoothFactor }),
         noClip: polyline.noClip,
         stroke: polyline.stroke,
-        color: polyline.strokeColor,
-        weight: polyline.strokeWeight,
-        opacity: polyline.strokeOpacity,
+        ...(polyline.strokeColor != null && { color: polyline.strokeColor }),
+        ...(polyline.strokeWeight != null && { weight: polyline.strokeWeight }),
+        ...(polyline.strokeOpacity != null && { opacity: polyline.strokeOpacity }),
         fill: polyline.fill,
-        fillColor: polyline.fillColor,
-        fillOpacity: polyline.fillOpacity,
+        ...(polyline.fillColor != null && { fillColor: polyline.fillColor }),
+        ...(polyline.fillOpacity != null && { fillOpacity: polyline.fillOpacity }),
       },
     );
 
@@ -159,7 +159,7 @@ const setLayers = (
   });
   markers.forEach((marker) => {
     const leafletLayer = new LeafletMarker(new LatLng(marker.coordinate.latitude, marker.coordinate.longitude), {
-      title: marker.title,
+      ...(marker.title != null && { title: marker.title }),
     });
 
     const layerTuple: LayerTuple = { model: marker, leaflet: leafletLayer };
@@ -180,12 +180,12 @@ const setLayers = (
       {
         radius: circleMarker.radius,
         stroke: circleMarker.stroke,
-        color: circleMarker.strokeColor,
-        weight: circleMarker.strokeWeight,
-        opacity: circleMarker.strokeOpacity,
+        ...(circleMarker.strokeColor != null && { color: circleMarker.strokeColor }),
+        ...(circleMarker.strokeWeight != null && { weight: circleMarker.strokeWeight }),
+        ...(circleMarker.strokeOpacity != null && { opacity: circleMarker.strokeOpacity }),
         fill: circleMarker.fill,
-        fillColor: circleMarker.fillColor,
-        fillOpacity: circleMarker.fillOpacity,
+        ...(circleMarker.fillColor != null && { fillColor: circleMarker.fillColor }),
+        ...(circleMarker.fillOpacity != null && { fillOpacity: circleMarker.fillOpacity }),
       },
     );
 
@@ -223,8 +223,8 @@ const setTileLayers = (mapContainer: HTMLElement, tileLayers: ISpillgebeesTileLa
   tileLayers.forEach((tileLayer) => {
     const options: LeafletTileLayerOptions = {
       attribution: tileLayer.attribution,
-      detectRetina: tileLayer.detectRetina,
-      tileSize: tileLayer.tileSize,
+      ...(tileLayer.detectRetina != null && { detectRetina: tileLayer.detectRetina }),
+      ...(tileLayer.tileSize != null && { tileSize: tileLayer.tileSize }),
     };
 
     const leafletTileLayer = new TileLayer(tileLayer.urlTemplate, options);

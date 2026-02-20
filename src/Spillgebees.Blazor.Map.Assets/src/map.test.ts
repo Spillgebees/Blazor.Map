@@ -88,7 +88,8 @@ describe("mapFunctions", () => {
     {
       urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       attribution: "&copy; OSM",
-      tileSize: undefined,
+      detectRetina: null,
+      tileSize: null,
     },
   ];
 
@@ -96,6 +97,7 @@ describe("mapFunctions", () => {
     center: { latitude: 49.6, longitude: 6.1 },
     zoom: 13,
     showLeafletPrefix: false,
+    fitBoundsOptions: null,
     theme: MapTheme.Default,
   };
 
@@ -109,12 +111,15 @@ describe("mapFunctions", () => {
     scaleControlOptions: {
       enable: false,
       position: "bottomleft",
+      showMetric: null,
+      showImperial: null,
     },
     centerControlOptions: {
       enable: false,
       position: "topleft",
       center: { latitude: 49.6, longitude: 6.1 },
       zoom: 13,
+      fitBoundsOptions: null,
     },
   };
 
@@ -205,6 +210,7 @@ describe("mapFunctions", () => {
         {
           urlTemplate: "https://{s}.tile.example.com/{z}/{x}/{y}.png",
           attribution: "&copy; Test",
+          detectRetina: null,
           tileSize: 512,
         },
       ];
@@ -227,6 +233,40 @@ describe("mapFunctions", () => {
       const storedTileLayers = window.Spillgebees.Map.tileLayers.get(map)!;
       const tileLayer = storedTileLayers.values().next().value as unknown as MockTileLayer;
       expect(tileLayer._options.tileSize).toBe(512);
+    });
+
+    it("should not pass tileSize to Leaflet when C# sends null", async () => {
+      // arrange
+      const dotNetHelper = createMockDotNetHelper();
+      const tileLayers: ISpillgebeesTileLayer[] = [
+        {
+          urlTemplate: "https://{s}.tile.example.com/{z}/{x}/{y}.png",
+          attribution: "&copy; Test",
+          detectRetina: null,
+          tileSize: null,
+        },
+      ];
+
+      // act
+      await window.Spillgebees.Map.mapFunctions.createMap(
+        dotNetHelper,
+        "OnMapReady",
+        mapContainer,
+        defaultMapOptions,
+        defaultControlOptions,
+        tileLayers,
+        [],
+        [],
+        [],
+      );
+
+      // assert — null tileSize should be omitted from options entirely,
+      // letting Leaflet use its own default (256)
+      const map = window.Spillgebees.Map.maps.get(mapContainer)!;
+      const tileLayerSet = window.Spillgebees.Map.tileLayers.get(map)!;
+      const tileLayer = [...tileLayerSet][0] as unknown as { _options: Record<string, unknown> };
+      expect(tileLayer._options).not.toHaveProperty("tileSize");
+      expect(tileLayer._options).not.toHaveProperty("detectRetina");
     });
   });
 
@@ -251,14 +291,15 @@ describe("mapFunctions", () => {
           id: "marker-1",
           coordinate: { latitude: 49.6, longitude: 6.1 },
           title: "Test Marker",
-          icon: undefined,
-          stroke: undefined,
-          strokeColor: undefined,
-          strokeWeight: undefined,
-          strokeOpacity: undefined,
-          fill: undefined,
-          fillColor: undefined,
-          fillOpacity: undefined,
+          icon: null,
+          stroke: true,
+          strokeColor: null,
+          strokeWeight: null,
+          strokeOpacity: null,
+          fill: false,
+          fillColor: null,
+          fillOpacity: null,
+          tooltip: null,
         },
       ];
 
@@ -301,8 +342,9 @@ describe("mapFunctions", () => {
           strokeWeight: 3,
           strokeOpacity: 1,
           fill: false,
-          fillColor: undefined,
-          fillOpacity: undefined,
+          fillColor: null,
+          fillOpacity: null,
+          tooltip: null,
         },
       ];
 
@@ -343,6 +385,7 @@ describe("mapFunctions", () => {
           fill: true,
           fillColor: "#00ff00",
           fillOpacity: 0.5,
+          tooltip: null,
         },
       ];
 
@@ -376,16 +419,23 @@ describe("mapFunctions", () => {
           id: "marker-tooltip",
           coordinate: { latitude: 49.6, longitude: 6.1 },
           title: "Tooltip Marker",
-          icon: undefined,
-          stroke: undefined,
-          strokeColor: undefined,
-          strokeWeight: undefined,
-          strokeOpacity: undefined,
-          fill: undefined,
-          fillColor: undefined,
-          fillOpacity: undefined,
+          icon: null,
+          stroke: true,
+          strokeColor: null,
+          strokeWeight: null,
+          strokeOpacity: null,
+          fill: false,
+          fillColor: null,
+          fillOpacity: null,
           tooltip: {
             content: "Hello tooltip",
+            offset: null,
+            direction: null,
+            permanent: false,
+            sticky: false,
+            interactive: false,
+            opacity: null,
+            className: null,
           },
         },
       ];
@@ -458,6 +508,7 @@ describe("mapFunctions", () => {
         {
           urlTemplate: "https://new-tiles/{z}/{x}/{y}.png",
           attribution: "&copy; New",
+          detectRetina: null,
           tileSize: 256,
         },
       ];
@@ -589,6 +640,7 @@ describe("mapFunctions", () => {
           position: "topleft",
           center: { latitude: 49.6, longitude: 6.1 },
           zoom: 13,
+          fitBoundsOptions: null,
         },
       };
 
@@ -734,14 +786,15 @@ describe("mapFunctions", () => {
           id: "marker-disp",
           coordinate: { latitude: 49.6, longitude: 6.1 },
           title: "Disposable",
-          icon: undefined,
-          stroke: undefined,
-          strokeColor: undefined,
-          strokeWeight: undefined,
-          strokeOpacity: undefined,
-          fill: undefined,
-          fillColor: undefined,
-          fillOpacity: undefined,
+          icon: null,
+          stroke: true,
+          strokeColor: null,
+          strokeWeight: null,
+          strokeOpacity: null,
+          fill: false,
+          fillColor: null,
+          fillOpacity: null,
+          tooltip: null,
         },
       ];
       window.Spillgebees.Map.mapFunctions.setLayers(mapContainer, markers, [], []);
