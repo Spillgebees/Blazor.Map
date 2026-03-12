@@ -9,4 +9,4 @@
 
 More details in the [documentation](./src/Spillgebees.Blazor.Map/README.md).
 
-Live demo: [net8.0](https://spillgebees.github.io/Blazor.Map/main/net8.0/), [net9.0](https://spillgebees.github.io/Blazor.Map/main/net9.0/), [net10.0](https://spillgebees.github.io/Blazor.Map/main/net10.0/)
+Live demo: [net10.0](https://spillgebees.github.io/Blazor.Map/main/net10.0/)

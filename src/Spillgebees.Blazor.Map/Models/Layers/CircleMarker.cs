@@ -7,20 +7,29 @@ namespace Spillgebees.Blazor.Map.Models.Layers;
 /// </summary>
 /// <param name="Id">A unique identifier for the circle marker.</param>
 /// <param name="Coordinate">The geographical coordinate of the circle marker.</param>
-/// <param name="Radius">The radius of the circle marker in pixels. Default is 6.</param>
-/// <param name="Stroke">Whether to draw a stroke around the circle marker. Default is <see langword="false" />.</param>
+/// <param name="Radius">The radius of the circle marker in pixels. Default is 6 (Leaflet default is 10).</param>
+/// <param name="Stroke">Whether to draw a stroke around the circle marker. Default is <see langword="false" /> (Leaflet default is <see langword="true" />).</param>
 /// <param name="StrokeColor">
 /// The color of the stroke in hexadecimal format (e.g., <c>#ff0000</c> for red).
-/// Default is <see langword="null" />.
+/// Default is <see langword="null" />, which uses the Leaflet default of <c>#3388ff</c>.
 /// </param>
-/// <param name="StrokeWeight">The weight of the stroke in pixels. Default is <see langword="null" />.</param>
-/// <param name="StrokeOpacity">The opacity of the stroke (0-1.0). Default is <see langword="null" />.</param>
-/// <param name="Fill">Whether to fill the circle marker with color. Default is <see langword="false" />.</param>
+/// <param name="StrokeWeight">
+/// The weight of the stroke in pixels.
+/// Default is <see langword="null" />, which uses the Leaflet default of 3.
+/// </param>
+/// <param name="StrokeOpacity">
+/// The opacity of the stroke (0-1.0).
+/// Default is <see langword="null" />, which uses the Leaflet default of 1.0.
+/// </param>
+/// <param name="Fill">Whether to fill the circle marker with color. Default is <see langword="false" /> (Leaflet default is <see langword="true" />).</param>
 /// <param name="FillColor">
 /// The fill color in hexadecimal format (e.g., <c>#00ff00</c> for green).
-/// Default is <see langword="null" />.
+/// Default is <see langword="null" />, which uses the Leaflet default of the stroke color.
 /// </param>
-/// <param name="FillOpacity">The opacity of the fill (0-1.0). Default is <see langword="null" />.</param>
+/// <param name="FillOpacity">
+/// The opacity of the fill (0-1.0).
+/// Default is <see langword="null" />, which uses the Leaflet default of 0.2.
+/// </param>
 /// <param name="Tooltip">Optional tooltip options for the circle marker. Default is <see langword="null" />.</param>
 public record CircleMarker(
     string Id,

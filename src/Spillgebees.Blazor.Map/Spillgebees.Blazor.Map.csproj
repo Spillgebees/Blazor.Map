@@ -26,33 +26,34 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
   </ItemGroup>
 
-  <!-- JS/CSS build integration -->
-  <PropertyGroup>
-    <JsProjectDir>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), '..', 'Spillgebees.Blazor.Map.Assets'))</JsProjectDir>
-    <PnpmBuildScript Condition="'$(Configuration)' == 'Debug'">build:dev</PnpmBuildScript>
-    <PnpmBuildScript Condition="'$(Configuration)' != 'Debug'">build:prod</PnpmBuildScript>
-  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference
+      Include="..\Spillgebees.Blazor.Map.Assets\Spillgebees.Blazor.Map.Assets.csproj"
+      ReferenceOutputAssembly="false"
+      Private="false"
+    />
+  </ItemGroup>
 
+  <!--
+    This target re-evaluates the wwwroot glob at target execution time, after the Assets
+    project has built but before the SDK resolves static web assets.
+  -->
   <Target
-    Name="PnpmInstall"
-    BeforeTargets="PnpmBuild"
-    Inputs="$(JsProjectDir)/pnpm-lock.yaml"
-    Outputs="$(JsProjectDir)/node_modules/.pnpm/lock.yaml"
+    Name="IncludeViteBuildOutputs"
+    BeforeTargets="ResolveProjectStaticWebAssets"
+    DependsOnTargets="ResolveProjectReferences"
   >
-    <Exec Command="pnpm install --frozen-lockfile" WorkingDirectory="$(JsProjectDir)" />
-  </Target>
-
-  <Target
-    Name="PnpmBuild"
-    BeforeTargets="DispatchToInnerBuilds;ResolveStaticWebAssets"
-    Condition="'$(DesignTimeBuild)' != 'true'"
-    Inputs="$(JsProjectDir)/src/**/*;$(JsProjectDir)/vite.config.ts;$(JsProjectDir)/package.json;$(JsProjectDir)/pnpm-lock.yaml"
-    Outputs="$(MSBuildProjectDirectory)/wwwroot/Spillgebees.Blazor.Map.lib.module.js;$(MSBuildProjectDirectory)/wwwroot/Spillgebees.Blazor.Map.lib.module.css"
-  >
-    <Exec Command="pnpm run $(PnpmBuildScript)" WorkingDirectory="$(JsProjectDir)" />
-  </Target>
-
-  <Target Name="PnpmClean" AfterTargets="Clean">
-    <RemoveDir Directories="$(MSBuildProjectDirectory)/wwwroot" />
+    <ItemGroup>
+      <Content Remove="wwwroot\**" />
+      <Content
+        Include="wwwroot\**"
+        Condition="Exists('$(MSBuildProjectDirectory)\wwwroot')"
+        ExcludeFromSingleFile="true"
+        CopyToPublishDirectory="PreserveNewest"
+        Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)"
+      />
+      <_ContentIncludedByDefault Remove="wwwroot\**" />
+      <_ContentIncludedByDefault Include="wwwroot\**" Condition="Exists('$(MSBuildProjectDirectory)\wwwroot')" />
+    </ItemGroup>
   </Target>
 </Project>

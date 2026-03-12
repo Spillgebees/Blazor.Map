@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Spillgebees.Blazor.Map.Models.Tooltips;
 
 namespace Spillgebees.Blazor.Map.Models.Layers;
@@ -7,26 +8,38 @@ namespace Spillgebees.Blazor.Map.Models.Layers;
 /// </summary>
 /// <param name="Id">A unique identifier for the polyline.</param>
 /// <param name="Coordinates">A list of geographical coordinates that make up the polyline.</param>
-/// <param name="SmoothFactor">How much to simplify the polyline on each zoom level. Default is <see langword="null" />.</param>
+/// <param name="SmoothFactor">
+/// How much to simplify the polyline on each zoom level.
+/// Default is <see langword="null" />, which uses the Leaflet default of 1.0.
+/// </param>
 /// <param name="NoClip">Whether to disable polyline clipping. Default is <see langword="false" />.</param>
-/// <param name="Stroke">Whether to draw a stroke along the polyline. Default is <see langword="false" />.</param>
+/// <param name="Stroke">Whether to draw a stroke along the polyline. Default is <see langword="false" /> (Leaflet default is <see langword="true" />).</param>
 /// <param name="StrokeColor">
 /// The color of the stroke in hexadecimal format (e.g., <c>#ff0000</c> for red).
-/// Default is <see langword="null" />.
+/// Default is <see langword="null" />, which uses the Leaflet default of <c>#3388ff</c>.
 /// </param>
-/// <param name="StrokeWeight">The weight of the stroke in pixels. Default is <see langword="null" />.</param>
-/// <param name="StrokeOpacity">The opacity of the stroke (0-1.0). Default is <see langword="null" />.</param>
+/// <param name="StrokeWeight">
+/// The weight of the stroke in pixels.
+/// Default is <see langword="null" />, which uses the Leaflet default of 3.
+/// </param>
+/// <param name="StrokeOpacity">
+/// The opacity of the stroke (0-1.0).
+/// Default is <see langword="null" />, which uses the Leaflet default of 1.0.
+/// </param>
 /// <param name="Fill">Whether to fill the polyline with color. Default is <see langword="false" />.</param>
 /// <param name="FillColor">
 /// The fill color in hexadecimal format (e.g., <c>#00ff00</c> for green).
-/// Default is <see langword="null" />.
+/// Default is <see langword="null" />, which uses the Leaflet default of the stroke color.
 /// </param>
-/// <param name="FillOpacity">The opacity of the fill (0-1.0). Default is <see langword="null" />.</param>
+/// <param name="FillOpacity">
+/// The opacity of the fill (0-1.0).
+/// Default is <see langword="null" />, which uses the Leaflet default of 0.2.
+/// </param>
 /// <param name="Tooltip">Optional tooltip options for the polyline. Default is <see langword="null" />.</param>
 public record Polyline(
     string Id,
-    List<Coordinate> Coordinates,
-    int? SmoothFactor = null,
+    ImmutableList<Coordinate> Coordinates,
+    double? SmoothFactor = null,
     bool NoClip = false,
     bool Stroke = false,
     string? StrokeColor = null,
