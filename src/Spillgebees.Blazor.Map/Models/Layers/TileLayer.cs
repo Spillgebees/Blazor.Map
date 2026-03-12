@@ -10,7 +10,7 @@ namespace Spillgebees.Blazor.Map.Models.Layers;
 /// <param name="Attribution">The attribution text to be displayed on the map.</param>
 /// <param name="DetectRetina">
 /// Whether to use high-DPI tiles if the browser supports them.
-/// Default is <see langword="null" />.
+/// Default is <see langword="null" />, which uses the Leaflet default of <see langword="false" />.
 /// </param>
 /// <param name="TileSize">
 /// The size of the tiles in pixels. Default is <see langword="null" />

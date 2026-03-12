@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Spillgebees.Blazor.Map/Spillgebees.Blazor.Map.csproj" />
+    <Project Path="src/Spillgebees.Blazor.Map.Assets/Spillgebees.Blazor.Map.Assets.csproj" />
     <Project Path="src/Spillgebees.Blazor.Map.Tests/Spillgebees.Blazor.Map.Tests.csproj" />
   </Folder>
   <Folder Name="/src/Spillgebees.Blazor.Map.Samples/">
