@@ -12,6 +12,7 @@
   <Target
     Name="PnpmInstall"
     BeforeTargets="PnpmBuild"
+    Condition="'$(DesignTimeBuild)' != 'true'"
     Inputs="$(MSBuildProjectDirectory)/package.json;$(MSBuildProjectDirectory)/pnpm-lock.yaml"
     Outputs="$(MSBuildProjectDirectory)/node_modules/.pnpm/lock.yaml"
   >
