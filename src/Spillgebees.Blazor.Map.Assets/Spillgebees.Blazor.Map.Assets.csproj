@@ -6,6 +6,7 @@
 
     <PnpmBuildScript Condition="'$(Configuration)' == 'Debug'">build:dev</PnpmBuildScript>
     <PnpmBuildScript Condition="'$(Configuration)' != 'Debug'">build:prod</PnpmBuildScript>
+    <PnpmBuildMarker>$(MSBuildProjectDirectory)/obj/pnpm-build.$(Configuration).marker</PnpmBuildMarker>
   </PropertyGroup>
 
   <Target
@@ -22,9 +23,11 @@
     BeforeTargets="Build"
     Condition="'$(DesignTimeBuild)' != 'true'"
     Inputs="$(MSBuildProjectDirectory)/src/**/*;$(MSBuildProjectDirectory)/vite.config.ts;$(MSBuildProjectDirectory)/package.json;$(MSBuildProjectDirectory)/pnpm-lock.yaml"
-    Outputs="$(ViteOutputDir)/Spillgebees.Blazor.Map.lib.module.js;$(ViteOutputDir)/Spillgebees.Blazor.Map.lib.module.css"
+    Outputs="$(ViteOutputDir)/Spillgebees.Blazor.Map.lib.module.js;$(ViteOutputDir)/Spillgebees.Blazor.Map.lib.module.css;$(PnpmBuildMarker)"
   >
+    <Delete Files="$(MSBuildProjectDirectory)/obj/pnpm-build.Debug.marker;$(MSBuildProjectDirectory)/obj/pnpm-build.Release.marker" />
     <Exec Command="pnpm run $(PnpmBuildScript)" WorkingDirectory="$(MSBuildProjectDirectory)" />
+    <Touch Files="$(PnpmBuildMarker)" AlwaysCreate="true" />
   </Target>
 
   <Target Name="PnpmClean" AfterTargets="Clean">

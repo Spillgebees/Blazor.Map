@@ -9,8 +9,8 @@ It supports Blazor Server, WebAssembly, and the unified .NET 8+ web app model.
 
 ### Solution structure
 
-```
-Spillgebees.Blazor.Map.slnx                               # XML solution (root)
+```text
+Spillgebees.Blazor.Map.slnx                                # XML solution (root)
 ├── src/Spillgebees.Blazor.Map/                            # Razor Class Library (NuGet package)
 ├── src/Spillgebees.Blazor.Map.Assets/                     # TypeScript/SCSS source (Vite + pnpm)
 ├── src/Spillgebees.Blazor.Map.Tests/                      # TUnit + bUnit tests
@@ -30,7 +30,7 @@ It owns the MSBuild targets (`PnpmInstall`, `PnpmBuild`, `PnpmClean`) that invok
 
 The main Razor Class Library references the Assets project via `<ProjectReference>` with
 `ReferenceOutputAssembly="false"` to establish a build-order dependency. This ensures pnpm
-runs exactly once before any of the library's multi-targeted inner builds proceed.
+runs exactly once before any of the library's inner builds proceed.
 
 - **Entry**: `src/index.ts` (Blazor JS initializer lifecycle hooks)
 - **Bundler**: Vite (library mode, ES2022, ESM)
@@ -43,10 +43,10 @@ runs exactly once before any of the library's multi-targeted inner builds procee
 Uses Blazor's JS initializer pattern with a global `window.Spillgebees` namespace.
 The C# side calls into `Spillgebees.Map.mapFunctions.*` via `IJSRuntime`.
 
-### Multi-targeting
+### .NET target
 
-The library targets `net8.0;net9.0;net10.0` (configured in `src/General.targets`).
-ASP.NET Core package versions are pinned per-TFM in `src/Directory.Packages.props`.
+The library targets `net10.0` (configured in `src/General.targets`).
+ASP.NET Core package versions are pinned in `src/Directory.Packages.props`.
 
 ## Testing
 
