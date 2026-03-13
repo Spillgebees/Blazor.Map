@@ -50,18 +50,18 @@ export function bootstrap() {
 const createLeafletTileLayer = (tileLayer: ISpillgebeesTileLayer): TileLayer => {
   const commonOptions: LeafletTileLayerOptions = {
     attribution: tileLayer.attribution,
-    ...(tileLayer.detectRetina != null && { detectRetina: tileLayer.detectRetina }),
-    ...(tileLayer.tileSize != null && { tileSize: tileLayer.tileSize }),
+    ...(tileLayer.tile?.detectRetina != null && { detectRetina: tileLayer.tile.detectRetina }),
+    ...(tileLayer.tile?.tileSize != null && { tileSize: tileLayer.tile.tileSize }),
   };
 
-  if (tileLayer.layers != null) {
+  if (tileLayer.wms != null) {
     const wmsOptions: LeafletWmsOptions = {
       ...commonOptions,
-      layers: tileLayer.layers,
-      ...(tileLayer.format != null && { format: tileLayer.format }),
-      ...(tileLayer.transparent != null && { transparent: tileLayer.transparent }),
-      ...(tileLayer.version != null && { version: tileLayer.version }),
-      ...(tileLayer.styles != null && { styles: tileLayer.styles }),
+      layers: tileLayer.wms.layers,
+      ...(tileLayer.wms.format != null && { format: tileLayer.wms.format }),
+      ...(tileLayer.wms.transparent != null && { transparent: tileLayer.wms.transparent }),
+      ...(tileLayer.wms.version != null && { version: tileLayer.wms.version }),
+      ...(tileLayer.wms.styles != null && { styles: tileLayer.wms.styles }),
     };
 
     return new TileLayer.WMS(tileLayer.urlTemplate, wmsOptions);

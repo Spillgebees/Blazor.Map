@@ -27,7 +27,9 @@ export function beforeStart() {
             delete element.dataset.highlighted;
             element.textContent = content;
             // noinspection JSUnresolvedReference
-            hljs.highlightElement(element);
+            if (typeof hljs !== "undefined") {
+                hljs.highlightElement(element);
+            }
         }
     };
 }

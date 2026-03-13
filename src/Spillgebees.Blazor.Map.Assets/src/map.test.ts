@@ -17,6 +17,8 @@ import type {
   ISpillgebeesMarker,
   ISpillgebeesPolyline,
   ISpillgebeesTileLayer,
+  ISpillgebeesTileLayerOptions,
+  ISpillgebeesWmsLayerOptions,
 } from "./interfaces/map";
 import { MapTheme } from "./interfaces/map";
 import { bootstrap } from "./map";
@@ -87,9 +89,20 @@ describe("mapFunctions", () => {
   const createTileLayer = (overrides: Partial<ISpillgebeesTileLayer> = {}): ISpillgebeesTileLayer => ({
     urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     attribution: "&copy; OSM",
+    tile: null,
+    wms: null,
+    ...overrides,
+  });
+
+  const createTileOptions = (overrides: Partial<ISpillgebeesTileLayerOptions> = {}): ISpillgebeesTileLayerOptions => ({
     detectRetina: null,
     tileSize: null,
-    layers: null,
+    ...overrides,
+  });
+
+  const createWmsOptions = (
+    overrides: Partial<ISpillgebeesWmsLayerOptions> & Pick<ISpillgebeesWmsLayerOptions, "layers">,
+  ): ISpillgebeesWmsLayerOptions => ({
     format: null,
     transparent: null,
     version: null,
@@ -216,7 +229,7 @@ describe("mapFunctions", () => {
         createTileLayer({
           urlTemplate: "https://{s}.tile.example.com/{z}/{x}/{y}.png",
           attribution: "&copy; Test",
-          tileSize: 512,
+          tile: createTileOptions({ tileSize: 512 }),
         }),
       ];
 
@@ -247,6 +260,7 @@ describe("mapFunctions", () => {
         createTileLayer({
           urlTemplate: "https://{s}.tile.example.com/{z}/{x}/{y}.png",
           attribution: "&copy; Test",
+          tile: createTileOptions(),
         }),
       ];
 
@@ -279,11 +293,13 @@ describe("mapFunctions", () => {
         createTileLayer({
           urlTemplate: "https://wms.example.com/service",
           attribution: "&copy; WMS",
-          layers: "basemap,labels",
-          format: "image/png",
-          transparent: true,
-          version: "1.3.0",
-          styles: "",
+          wms: createWmsOptions({
+            layers: "basemap,labels",
+            format: "image/png",
+            transparent: true,
+            version: "1.3.0",
+            styles: "",
+          }),
         }),
       ];
 
@@ -551,7 +567,7 @@ describe("mapFunctions", () => {
         createTileLayer({
           urlTemplate: "https://new-tiles/{z}/{x}/{y}.png",
           attribution: "&copy; New",
-          tileSize: 256,
+          tile: createTileOptions({ tileSize: 256 }),
         }),
       ];
 
@@ -600,9 +616,11 @@ describe("mapFunctions", () => {
         createTileLayer({
           urlTemplate: "https://wms.example.com/service",
           attribution: "&copy; WMS",
-          layers: "basemap",
-          format: "image/png",
-          transparent: true,
+          wms: createWmsOptions({
+            layers: "basemap",
+            format: "image/png",
+            transparent: true,
+          }),
         }),
       ]);
 

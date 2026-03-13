@@ -22,11 +22,13 @@ WMS tile layers use the same `TileLayer` API as regular tile layers:
 ```csharp
 var tileLayers = new List<TileLayer>
 {
-    TileLayer.Wms(
-        baseUrl: "https://wms.geoportail.lu/geoserver/opendata/wms",
-        attribution: "&copy; OpenData Luxembourg",
-        layers: "basemap",
-        format: "image/png",
-        version: "1.3.0")
+    new(
+        UrlTemplate: "https://wms.geoportail.lu/geoserver/opendata/wms",
+        Attribution: "&copy; OpenData Luxembourg",
+        Wms: new WmsLayerOptions(
+            Layers: "basemap",
+            Format: "image/png",
+            Version: "1.3.0",
+            Transparent: false))
 };
 ```
