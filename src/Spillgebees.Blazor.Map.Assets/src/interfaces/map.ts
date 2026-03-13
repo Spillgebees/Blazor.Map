@@ -33,10 +33,27 @@ export interface ISpillgebeesPath {
   tooltip: ISpillgebeesTooltip | null;
 }
 
+export interface ISpillgebeesMarkerIcon {
+  iconUrl: string;
+  iconSize: [number, number] | null;
+  iconAnchor: [number, number] | null;
+  popupAnchor: [number, number] | null;
+  tooltipAnchor: [number, number] | null;
+  shadowUrl: string | null;
+  shadowSize: [number, number] | null;
+  shadowAnchor: [number, number] | null;
+  className: string | null;
+}
+
 export interface ISpillgebeesMarker extends ISpillgebeesPath {
   coordinate: ISpillgebeesCoordinate;
   title: string | null;
-  icon: string | null;
+  icon: ISpillgebeesMarkerIcon | null;
+  rotationAngle: number | null;
+  rotationOrigin: string | null;
+  zIndexOffset: number | null;
+  riseOnHover: boolean | null;
+  riseOffset: number | null;
 }
 
 export interface ISpillgebeesCircleMarker extends ISpillgebeesPath {

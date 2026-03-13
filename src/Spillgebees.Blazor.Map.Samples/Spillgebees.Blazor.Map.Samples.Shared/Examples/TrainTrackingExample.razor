@@ -1,0 +1,407 @@
+﻿@using System.Threading
+@using Spillgebees.Blazor.Map.Components
+@using Spillgebees.Blazor.Map.Models
+@using Spillgebees.Blazor.Map.Models.Controls
+@using Spillgebees.Blazor.Map.Models.Layers
+@using Spillgebees.Blazor.Map.Models.Tooltips
+@implements IAsyncDisposable
+
+<style>
+    .leaflet-tooltip.sgb-text-label {
+        background: none;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        white-space: nowrap;
+        -webkit-text-stroke: 1px white;
+        paint-order: stroke fill;
+    }
+
+    .leaflet-tooltip.sgb-text-label::before {
+        display: none;
+    }
+
+    .leaflet-tooltip-top.sgb-text-label,
+    .leaflet-tooltip-bottom.sgb-text-label,
+    .leaflet-tooltip-left.sgb-text-label,
+    .leaflet-tooltip-right.sgb-text-label {
+        margin: 0;
+    }
+
+    /* Google Fonts: Martian Mono (service numbers) + DM Sans (route labels) */
+    @@import url("https://fonts.googleapis.com/css2?family=Martian+Mono:wght@@700&family=DM+Sans:wght@@600&display=swap");
+
+    .train-label {
+        line-height: 1.2;
+    }
+
+    .train-label-service {
+        display: inline-block;
+        font-family: "Martian Mono", monospace;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        color: white;
+        padding: 1px 5px;
+        border-radius: 3px;
+        -webkit-text-stroke: 0;
+    }
+
+    .train-label-route {
+        display: block;
+        font-family: "DM Sans", sans-serif;
+        font-size: 7.5px;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        color: #334155;
+    }
+</style>
+
+<div>
+    <h3>Simulated train tracking</h3>
+    <p>Real-time simulation of trains on Luxembourg's CFL rail network using marker rotation, custom icons, and incremental layer updates.</p>
+    <CodeSnippet Code="@Code">
+        <Component>
+            <SgbMap @ref="_map"
+                    MapOptions="@_mapOptions"
+                    MapControlOptions="@_mapControlOptions"
+                    TileLayers="@_tileLayers"
+                    Markers="@_markers"
+                    Height="600px" />
+        </Component>
+    </CodeSnippet>
+</div>
+
+@code {
+    private const string Code =
+@"<SgbMap @ref=""_map""
+        MapOptions=""@_mapOptions""
+        MapControlOptions=""@_mapControlOptions""
+        TileLayers=""@_tileLayers""
+        Markers=""@_markers""
+        Height=""600px"" />
+
+// Two tile layers: OSM base + OpenRailwayMap overlay
+private readonly List<TileLayer> _tileLayers =
+    [TileLayer.OpenStreetMap, TileLayer.OpenRailwayMap];
+
+// Per-line colored teardrop icon via SVG data URI
+private static MarkerIcon CreateTrainIcon(string color) =>
+    new(IconUrl: $""data:image/svg+xml,{Uri.EscapeDataString(svg)}"",
+        IconSize: [22, 22], IconAnchor: [11, 11], TooltipAnchor: [17, 5]);
+
+// HTML tooltip — service number as colored pill badge
+var tooltipHtml = $""<span style='background: {color}'>{svc}</span>""
+    + $""<span class='train-label-route'>{route}</span>"";
+new TooltipOptions(tooltipHtml, Permanent: true, Interactive: true, ClassName: ""sgb-text-label"")
+
+// RiseOnHover: true — bring marker + tooltip to front on hover
+// Periodic timer updates _markers + calls StateHasChanged()";
+
+    private SgbMap _map = null!;
+    private PeriodicTimer? _timer;
+    private CancellationTokenSource? _cts;
+    private Task? _simulationTask;
+
+    private readonly List<TileLayer> _tileLayers = [TileLayer.OpenStreetMap with { DetectRetina = true }, TileLayer.OpenRailwayMap];
+
+    private readonly MapOptions _mapOptions = new(
+        Center: new Coordinate(49.75, 6.12),
+        Zoom: 10,
+        ShowLeafletPrefix: true,
+        FitBoundsOptions: null
+    );
+
+    private readonly MapControlOptions _mapControlOptions = MapControlOptions.Default;
+
+    private static MarkerIcon CreateTrainIcon(string color)
+    {
+        var svg =
+            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22' width='22' height='22'>"
+            + "<filter id='s'><feDropShadow dx='0' dy='0.5' stdDeviation='0.5' flood-color='#000' flood-opacity='0.15'/></filter>"
+            + $"<path d='M21 11 C18.5 8 14.5 4.5 10 4.5 A6.5 6.5 0 0 0 10 17.5 C14.5 17.5 18.5 14 21 11 Z' fill='{color}' stroke='white' stroke-width='1.6' stroke-linejoin='round' filter='url(#s)'/>"
+            + "</svg>";
+
+        return new MarkerIcon(
+            IconUrl: $"data:image/svg+xml,{Uri.EscapeDataString(svg)}",
+            IconSize: [22, 22],
+            IconAnchor: [11, 11],
+            TooltipAnchor: [17, 5],
+            ClassName: ""
+        );
+    }
+
+    private List<Marker> _markers = [];
+    private readonly List<TrainState> _trains = [];
+
+    protected override void OnInitialized()
+    {
+        InitializeTrains();
+        _markers = _trains.Select(CreateMarker).ToList();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _cts = new CancellationTokenSource();
+            _timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1000));
+
+            // small delay to ensure map JS is initialized
+            await Task.Delay(500, _cts.Token);
+
+            _simulationTask = RunSimulationLoop(_cts.Token);
+        }
+    }
+
+    private async Task RunSimulationLoop(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (await _timer!.WaitForNextTickAsync(cancellationToken))
+            {
+                foreach (var train in _trains)
+                {
+                    AdvanceTrain(train);
+                }
+
+                _markers = _trains.Select(CreateMarker).ToList();
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // expected during disposal
+        }
+    }
+
+    private static Marker CreateMarker(TrainState train)
+    {
+        var bearing = CalculateBearing(train.CurrentPosition, train.NextPosition);
+        var tooltipHtml =
+            $"<span class='train-label'>"
+            + $"<span class='train-label-service' style='background: {train.Color}'>{train.ServiceNumber}</span>"
+            + $"<span class='train-label-route'>{train.Route}</span>"
+            + "</span>";
+
+        return new Marker(
+            Id: train.Id,
+            Coordinate: train.CurrentPosition,
+            Title: train.ServiceNumber,
+            Icon: train.Icon,
+            RotationAngle: bearing,
+            RotationOrigin: "center center",
+            RiseOnHover: true,
+            Tooltip: new TooltipOptions(
+                tooltipHtml,
+                Permanent: true,
+                Direction: TooltipDirection.Right,
+                Offset: new TooltipOffset(0, 0),
+                Opacity: 1.0,
+                Interactive: true,
+                ClassName: "sgb-text-label")
+        );
+    }
+
+    private static void AdvanceTrain(TrainState train)
+    {
+        train.Progress += train.Speed;
+
+        while (train.Progress >= 1.0)
+        {
+            train.Progress -= 1.0;
+            train.WaypointIndex++;
+
+            if (train.WaypointIndex >= train.Waypoints.Count - 1)
+            {
+                train.WaypointIndex = 0;
+                train.Progress = 0;
+            }
+        }
+
+        var from = train.Waypoints[train.WaypointIndex];
+        var to = train.Waypoints[train.WaypointIndex + 1];
+
+        train.CurrentPosition = Interpolate(from, to, train.Progress);
+        train.NextPosition = to;
+    }
+
+    private static Coordinate Interpolate(Coordinate from, Coordinate to, double t) =>
+        new(
+            Latitude: from.Latitude + (to.Latitude - from.Latitude) * t,
+            Longitude: from.Longitude + (to.Longitude - from.Longitude) * t
+        );
+
+    /// <summary>
+    /// Calculates the bearing in degrees for CSS rotation.
+    /// The train icon faces east (right) at 0 degrees, so we offset by -90 degrees
+    /// from the standard geographic bearing (where 0 = north).
+    /// </summary>
+    private static double CalculateBearing(Coordinate from, Coordinate to)
+    {
+        var lat1 = from.Latitude * Math.PI / 180.0;
+        var lat2 = to.Latitude * Math.PI / 180.0;
+        var deltaLon = (to.Longitude - from.Longitude) * Math.PI / 180.0;
+
+        var y = Math.Sin(deltaLon) * Math.Cos(lat2);
+        var x = Math.Cos(lat1) * Math.Sin(lat2) - Math.Sin(lat1) * Math.Cos(lat2) * Math.Cos(deltaLon);
+
+        var bearingRadians = Math.Atan2(y, x);
+        var bearingDegrees = bearingRadians * 180.0 / Math.PI;
+
+        // Geographic bearing: 0 = north, 90 = east
+        // Our icon faces east at 0 CSS degrees, so subtract 90
+        var cssDegrees = (bearingDegrees - 90 + 360) % 360;
+
+        return cssDegrees;
+    }
+
+    private void InitializeTrains()
+    {
+        _trains.AddRange(
+        [
+            new TrainState
+            {
+                Id = "train-1",
+                ServiceNumber = "RE 11",
+                Route = "Luxembourg > Ettelbruck",
+                Color = "#2563eb",
+                Icon = CreateTrainIcon("#2563eb"),
+                Speed = 0.08,
+                Waypoints =
+                [
+                    new Coordinate(49.6000, 6.1333),
+                    new Coordinate(49.6295, 6.1315),
+                    new Coordinate(49.6590, 6.1300),
+                    new Coordinate(49.6940, 6.1200),
+                    new Coordinate(49.7490, 6.1060),
+                    new Coordinate(49.7910, 6.1040),
+                    new Coordinate(49.8475, 6.1042)
+                ]
+            },
+            new TrainState
+            {
+                Id = "train-2",
+                ServiceNumber = "RE 12",
+                Route = "Ettelbruck > Luxembourg",
+                Color = "#059669",
+                Icon = CreateTrainIcon("#059669"),
+                Speed = 0.07,
+                Waypoints =
+                [
+                    new Coordinate(49.8475, 6.1042),
+                    new Coordinate(49.7910, 6.1040),
+                    new Coordinate(49.7490, 6.1060),
+                    new Coordinate(49.6940, 6.1200),
+                    new Coordinate(49.6590, 6.1300),
+                    new Coordinate(49.6295, 6.1315),
+                    new Coordinate(49.6000, 6.1333)
+                ]
+            },
+            new TrainState
+            {
+                Id = "train-3",
+                ServiceNumber = "RE 30",
+                Route = "Luxembourg > Bettembourg",
+                Color = "#d97706",
+                Icon = CreateTrainIcon("#d97706"),
+                Speed = 0.10,
+                Waypoints =
+                [
+                    new Coordinate(49.6000, 6.1333),
+                    new Coordinate(49.5843, 6.1290),
+                    new Coordinate(49.5686, 6.1250),
+                    new Coordinate(49.5436, 6.1136),
+                    new Coordinate(49.5186, 6.1022)
+                ]
+            },
+            new TrainState
+            {
+                Id = "train-4",
+                ServiceNumber = "RB 60",
+                Route = "Bettembourg > Esch",
+                Color = "#dc2626",
+                Icon = CreateTrainIcon("#dc2626"),
+                Speed = 0.06,
+                Waypoints =
+                [
+                    new Coordinate(49.5186, 6.1022),
+                    new Coordinate(49.5158, 6.0726),
+                    new Coordinate(49.5130, 6.0430),
+                    new Coordinate(49.5044, 6.0118),
+                    new Coordinate(49.4958, 5.9806)
+                ]
+            },
+            new TrainState
+            {
+                Id = "train-5",
+                ServiceNumber = "RB 10",
+                Route = "Ettelbruck > Diekirch",
+                Color = "#7c3aed",
+                Icon = CreateTrainIcon("#7c3aed"),
+                Speed = 0.12,
+                Waypoints =
+                [
+                    new Coordinate(49.8475, 6.1042),
+                    new Coordinate(49.8528, 6.1171),
+                    new Coordinate(49.8580, 6.1300),
+                    new Coordinate(49.8633, 6.1449),
+                    new Coordinate(49.8686, 6.1597)
+                ]
+            }
+        ]);
+
+        // stagger initial positions so trains don't all start at the first waypoint
+        _trains[1].WaypointIndex = 2;
+        _trains[1].Progress = 0.5;
+        _trains[3].WaypointIndex = 1;
+        _trains[3].Progress = 0.3;
+
+        // initialize current/next positions
+        foreach (var train in _trains)
+        {
+            var from = train.Waypoints[train.WaypointIndex];
+            var to = train.Waypoints[train.WaypointIndex + 1];
+            train.CurrentPosition = Interpolate(from, to, train.Progress);
+            train.NextPosition = to;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_cts is not null)
+        {
+            await _cts.CancelAsync();
+            _cts.Dispose();
+        }
+
+        if (_simulationTask is not null)
+        {
+            try
+            {
+                await _simulationTask;
+            }
+            catch (OperationCanceledException)
+            {
+                // expected during disposal
+            }
+        }
+
+        _timer?.Dispose();
+    }
+
+    private sealed class TrainState
+    {
+        public required string Id { get; init; }
+        public required string ServiceNumber { get; init; }
+        public required string Route { get; init; }
+        public required string Color { get; init; }
+        public required MarkerIcon Icon { get; init; }
+        public required double Speed { get; init; }
+        public required List<Coordinate> Waypoints { get; init; }
+        public int WaypointIndex { get; set; }
+        public double Progress { get; set; }
+        public Coordinate CurrentPosition { get; set; } = new(0, 0);
+        public Coordinate NextPosition { get; set; } = new(0, 0);
+    }
+}

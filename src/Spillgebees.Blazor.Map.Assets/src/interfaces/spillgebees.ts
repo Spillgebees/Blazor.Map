@@ -35,11 +35,23 @@ interface MapFunctions {
     circleMarkers: ISpillgebeesCircleMarker[],
     polylines: ISpillgebeesPolyline[],
   ) => Promise<void>;
-  setLayers: (
+  addLayers: (
     mapContainer: HTMLElement,
     markers: ISpillgebeesMarker[],
     circleMarkers: ISpillgebeesCircleMarker[],
     polylines: ISpillgebeesPolyline[],
+  ) => void;
+  updateLayers: (
+    mapContainer: HTMLElement,
+    markers: ISpillgebeesMarker[],
+    circleMarkers: ISpillgebeesCircleMarker[],
+    polylines: ISpillgebeesPolyline[],
+  ) => void;
+  removeLayers: (
+    mapContainer: HTMLElement,
+    markerIds: string[],
+    circleMarkerIds: string[],
+    polylineIds: string[],
   ) => void;
   setTileLayers: (mapContainer: HTMLElement, tileLayers: ISpillgebeesTileLayer[]) => void;
   setMapControls: (mapContainer: HTMLElement, mapControlOptions: ISpillgebeesMapControlOptions) => void;
