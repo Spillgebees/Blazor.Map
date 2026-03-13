@@ -16,3 +16,17 @@ Include it in the `head` tag:
 ### Usage
 
 You can take a look at the demo pages for a few general usage examples: [net10.0](https://spillgebees.github.io/Blazor.Map/main/net10.0/)
+
+WMS tile layers use the same `TileLayer` API as regular tile layers:
+
+```csharp
+var tileLayers = new List<TileLayer>
+{
+    TileLayer.Wms(
+        baseUrl: "https://wms.geoportail.lu/geoserver/opendata/wms",
+        attribution: "&copy; OpenData Luxembourg",
+        layers: "basemap",
+        format: "image/png",
+        version: "1.3.0")
+};
+```

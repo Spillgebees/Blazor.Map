@@ -55,6 +55,11 @@ export interface ISpillgebeesTileLayer {
   attribution: string;
   detectRetina: boolean | null;
   tileSize: number | null;
+  layers: string | null;
+  format: string | null;
+  transparent: boolean | null;
+  version: string | null;
+  styles: string | null;
 }
 
 export interface ISpillgebeesMapOptions {

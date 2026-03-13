@@ -1,0 +1,34 @@
+@using Spillgebees.Blazor.Map.Components
+@using Spillgebees.Blazor.Map.Models
+@using Spillgebees.Blazor.Map.Models.Layers
+
+<div>
+    <h3>WMS tile layer usage</h3>
+    <CodeSnippet Code="@Code">
+        <Component>
+            <SgbMap MapOptions="@_mapOptions" TileLayers="@_tileLayers" />
+        </Component>
+    </CodeSnippet>
+</div>
+
+@code {
+    private const string Code =
+@"<SgbMap MapOptions=""@_mapOptions""
+        TileLayers=""@_tileLayers"" />";
+
+    private readonly MapOptions _mapOptions = MapOptions.Default with
+    {
+        Center = new Coordinate(49.6117, 6.1319),
+        Zoom = 13
+    };
+
+    private readonly List<TileLayer> _tileLayers =
+    [
+        TileLayer.Wms(
+            baseUrl: "https://wms.geoportail.lu/geoserver/opendata/wms",
+            attribution: "&copy; OpenData Luxembourg",
+            layers: "basemap",
+            format: "image/png",
+            version: "1.3.0")
+    ];
+}

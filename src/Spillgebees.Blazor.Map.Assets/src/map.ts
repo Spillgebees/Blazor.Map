@@ -10,6 +10,7 @@ import {
   Marker as LeafletMarker,
   Polyline as LeafletPolyline,
   type TileLayerOptions as LeafletTileLayerOptions,
+  type WMSOptions as LeafletWmsOptions,
   type MapOptions,
   TileLayer,
 } from "leaflet";
@@ -46,6 +47,29 @@ export function bootstrap() {
   window.Spillgebees.Map.controls = window.Spillgebees.Map.controls || new Map<LeafletMap, Set<Control>>();
 }
 
+const createLeafletTileLayer = (tileLayer: ISpillgebeesTileLayer): TileLayer => {
+  const commonOptions: LeafletTileLayerOptions = {
+    attribution: tileLayer.attribution,
+    ...(tileLayer.detectRetina != null && { detectRetina: tileLayer.detectRetina }),
+    ...(tileLayer.tileSize != null && { tileSize: tileLayer.tileSize }),
+  };
+
+  if (tileLayer.layers != null) {
+    const wmsOptions: LeafletWmsOptions = {
+      ...commonOptions,
+      layers: tileLayer.layers,
+      ...(tileLayer.format != null && { format: tileLayer.format }),
+      ...(tileLayer.transparent != null && { transparent: tileLayer.transparent }),
+      ...(tileLayer.version != null && { version: tileLayer.version }),
+      ...(tileLayer.styles != null && { styles: tileLayer.styles }),
+    };
+
+    return new TileLayer.WMS(tileLayer.urlTemplate, wmsOptions);
+  }
+
+  return new TileLayer(tileLayer.urlTemplate, commonOptions);
+};
+
 const createMap = async (
   dotNetHelper: DotNetObject,
   invokableDotNetMethodName: string,
@@ -57,14 +81,7 @@ const createMap = async (
   circleMarkers: ISpillgebeesCircleMarker[],
   polylines: ISpillgebeesPolyline[],
 ): Promise<void> => {
-  const leafletTileLayers = tileLayers.map((tileLayer) => {
-    const options: LeafletTileLayerOptions = {
-      attribution: tileLayer.attribution,
-      ...(tileLayer.detectRetina != null && { detectRetina: tileLayer.detectRetina }),
-      ...(tileLayer.tileSize != null && { tileSize: tileLayer.tileSize }),
-    };
-    return new TileLayer(tileLayer.urlTemplate, options);
-  });
+  const leafletTileLayers = tileLayers.map(createLeafletTileLayer);
 
   const leafletMapOptions: MapOptions = {
     center: new LatLng(mapOptions.center.latitude, mapOptions.center.longitude),
@@ -221,13 +238,7 @@ const setTileLayers = (mapContainer: HTMLElement, tileLayers: ISpillgebeesTileLa
     existingTileLayers.clear();
   }
   tileLayers.forEach((tileLayer) => {
-    const options: LeafletTileLayerOptions = {
-      attribution: tileLayer.attribution,
-      ...(tileLayer.detectRetina != null && { detectRetina: tileLayer.detectRetina }),
-      ...(tileLayer.tileSize != null && { tileSize: tileLayer.tileSize }),
-    };
-
-    const leafletTileLayer = new TileLayer(tileLayer.urlTemplate, options);
+    const leafletTileLayer = createLeafletTileLayer(tileLayer);
     map.addLayer(leafletTileLayer);
     existingTileLayers.add(leafletTileLayer);
   });
