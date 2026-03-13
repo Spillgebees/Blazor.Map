@@ -6,18 +6,20 @@ namespace Spillgebees.Blazor.Map.Tests;
 public class TileLayerTests
 {
     [Test]
-    public void Wms_factory_should_set_wms_properties()
+    public void Wms_record_should_group_wms_properties()
     {
         // act
-        var tileLayer = TileLayer.CreateWms(
-            baseUrl: "https://wms.example.com/service",
-            attribution: "&copy; Example",
-            layers: "basemap,labels",
-            format: "image/png",
-            transparent: true,
-            version: "1.3.0",
-            styles: "default",
-            tileSize: 512
+        var tileLayer = new TileLayer(
+            UrlTemplate: "https://wms.example.com/service",
+            Attribution: "&copy; Example",
+            Tile: new TileLayerOptions(TileSize: 512),
+            Wms: new WmsLayerOptions(
+                Layers: "basemap,labels",
+                Format: "image/png",
+                Transparent: true,
+                Version: "1.3.0",
+                Styles: "default"
+            )
         );
 
         // assert
@@ -54,14 +56,13 @@ public class TileLayerTests
     }
 
     [Test]
-    public void Regular_tile_constructor_should_group_tile_specific_options()
+    public void Regular_tile_record_should_group_tile_specific_options()
     {
         // act
         var tileLayer = new TileLayer(
-            urlTemplate: "https://{s}.tile.example.com/{z}/{x}/{y}.png",
-            attribution: "&copy; Example",
-            detectRetina: true,
-            tileSize: 512
+            UrlTemplate: "https://{s}.tile.example.com/{z}/{x}/{y}.png",
+            Attribution: "&copy; Example",
+            Tile: new TileLayerOptions(DetectRetina: true, TileSize: 512)
         );
 
         // assert
