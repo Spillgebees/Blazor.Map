@@ -23,6 +23,10 @@ public static class LayerDiffer
     /// Diffs two layer collections, producing added, removed, and updated buckets.
     /// Uses record value equality to detect updates.
     /// </summary>
+    /// <remarks>
+    /// Layer IDs are expected to be unique within each collection.
+    /// If duplicates exist, later entries silently overwrite earlier ones.
+    /// </remarks>
     /// <param name="oldLayers">The previous layer collection.</param>
     /// <param name="newLayers">The current layer collection.</param>
     /// <param name="idSelector">A function that extracts the string ID from a layer.</param>
@@ -40,9 +44,7 @@ public static class LayerDiffer
 
         if (oldLayers.Count == 0)
         {
-            return newLayers.Count == 0
-                ? EmptyResult<T>()
-                : new LayerDiffResult<T>([.. newLayers], [], []);
+            return newLayers.Count == 0 ? EmptyResult<T>() : new LayerDiffResult<T>([.. newLayers], [], []);
         }
 
         if (newLayers.Count == 0)
@@ -53,11 +55,7 @@ public static class LayerDiffer
                 allRemovedIds.Add(idSelector(oldLayers[i]));
             }
 
-            return new LayerDiffResult<T>(
-                [],
-                allRemovedIds.MoveToImmutable(),
-                []
-            );
+            return new LayerDiffResult<T>([], allRemovedIds.MoveToImmutable(), []);
         }
 
         var oldById = new Dictionary<string, T>(oldLayers.Count);
@@ -107,6 +105,5 @@ public static class LayerDiffer
         return new LayerDiffResult<T>(added.ToImmutable(), removed.ToImmutable(), updated.ToImmutable());
     }
 
-    private static LayerDiffResult<T> EmptyResult<T>() =>
-        new([], [], []);
+    private static LayerDiffResult<T> EmptyResult<T>() => new([], [], []);
 }

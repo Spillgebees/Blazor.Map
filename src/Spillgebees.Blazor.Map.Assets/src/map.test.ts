@@ -186,6 +186,21 @@ describe("mapFunctions", () => {
     mapContainer = document.createElement("div");
   });
 
+  const createMapWithLayers = async () => {
+    const dotNetHelper = createMockDotNetHelper();
+    await window.Spillgebees.Map.mapFunctions.createMap(
+      dotNetHelper,
+      "OnMapReady",
+      mapContainer,
+      defaultMapOptions,
+      defaultControlOptions,
+      defaultTileLayers,
+      [],
+      [],
+      [],
+    );
+  };
+
   describe("createMap", () => {
     it("should create map, apply tile layers, store in globals, and call dotNetHelper", async () => {
       // arrange
@@ -1081,21 +1096,6 @@ describe("mapFunctions", () => {
   });
 
   describe("updateLayers", () => {
-    const createMapWithLayers = async () => {
-      const dotNetHelper = createMockDotNetHelper();
-      await window.Spillgebees.Map.mapFunctions.createMap(
-        dotNetHelper,
-        "OnMapReady",
-        mapContainer,
-        defaultMapOptions,
-        defaultControlOptions,
-        defaultTileLayers,
-        [],
-        [],
-        [],
-      );
-    };
-
     it("should update marker position via setLatLng", async () => {
       // arrange
       await createMapWithLayers();
@@ -1578,21 +1578,6 @@ describe("mapFunctions", () => {
   });
 
   describe("removeLayers", () => {
-    const createMapWithLayers = async () => {
-      const dotNetHelper = createMockDotNetHelper();
-      await window.Spillgebees.Map.mapFunctions.createMap(
-        dotNetHelper,
-        "OnMapReady",
-        mapContainer,
-        defaultMapOptions,
-        defaultControlOptions,
-        defaultTileLayers,
-        [],
-        [],
-        [],
-      );
-    };
-
     it("should remove marker by ID", async () => {
       // arrange
       await createMapWithLayers();

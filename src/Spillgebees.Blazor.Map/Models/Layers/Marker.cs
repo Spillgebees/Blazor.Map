@@ -38,10 +38,10 @@ public record Marker(
     string Id,
     Coordinate Coordinate,
     string? Title,
+    TooltipOptions? Tooltip = null,
     MarkerIcon? Icon = null,
     double? RotationAngle = null,
     string? RotationOrigin = null,
-    TooltipOptions? Tooltip = null,
     int? ZIndexOffset = null,
     bool? RiseOnHover = null,
     int? RiseOffset = null

@@ -82,7 +82,7 @@ public class MarkerTests
     }
 
     [Test]
-    public void Should_keep_tooltip_as_last_parameter_with_default_null()
+    public void Should_default_tooltip_to_null_when_not_specified()
     {
         // arrange & act — positional construction with only required + icon
         var marker = new Marker("id", new Coordinate(0, 0), null, Icon: new MarkerIcon("/icon.png"));
