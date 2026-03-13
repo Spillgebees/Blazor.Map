@@ -19,18 +19,12 @@
     private readonly MapOptions _mapOptions = MapOptions.Default with
     {
         Center = new Coordinate(49.6117, 6.1319),
-        Zoom = 13
     };
 
     private readonly List<TileLayer> _tileLayers =
     [
-        new(
-            UrlTemplate: "https://wms.geoportail.lu/geoserver/opendata/wms",
-            Attribution: "&copy; OpenData Luxembourg",
-            Wms: new WmsLayerOptions(
-                Layers: "basemap",
-                Format: "image/png",
-                Transparent: false,
-                Version: "1.3.0"))
-    ];
+        TileLayer.OpenDataBaseMapWms with
+        {
+            Wms = TileLayer.OpenDataBaseMapWms.Wms! with {Layers = "basemap_3d_hd"}
+        }];
 }

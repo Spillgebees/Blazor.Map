@@ -45,7 +45,7 @@ public record TileLayer(string UrlTemplate, string Attribution, TileLayerOptions
     /// Luxembourg open data WMS base map layer, free to use with attribution.
     /// </summary>
     public static readonly TileLayer OpenDataBaseMapWms = new(
-        UrlTemplate: "https://wms.geoportail.lu/geoserver/opendata/wms",
+        UrlTemplate: "https://wmts1.geoportail.lu/opendata/service",
         Attribution: "&copy;  <a href='https://data.public.lu/en/datasets/carte-de-base-webservices-wms-et-wmts'>OpenData</a> <a href='https://creativecommons.org/publicdomain/zero/1.0/'>CC0</a>/<a href='https://creativecommons.org/licenses/by/4.0/deed.en'>CC-BY</a> | &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
         Wms: new WmsLayerOptions(
             Layers: "basemap",
