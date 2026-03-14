@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createMockDotNetHelper } from "../test/dotNetHelperMock";
 import {
   fireLoadEvent,
+  fireMapEvent,
   getLatestMockMapInstance,
   getMockMapConstructor,
   getMockMarkerConstructor,
@@ -9,17 +10,20 @@ import {
 } from "../test/maplibreMock";
 import { resetWindowGlobals } from "../test/windowSetup";
 import type { IMapControlOptions } from "./interfaces/controls";
-import type { IMarker } from "./interfaces/features";
-import type { IMapOptions, IMapStyle } from "./interfaces/map";
+import type { IMarker, IPolyline } from "./interfaces/features";
+import type { IFitBoundsOptions, IMapOptions, IMapStyle, ITileOverlay } from "./interfaces/map";
 import {
   bootstrap,
   buildStyleFromOptions,
   createMap,
   disposeMap,
+  fitBounds,
+  flyTo,
   PROTOCOL_VERSION,
   resize,
   setControls,
   setMapOptions,
+  setOverlays,
   setTheme,
   syncFeatures,
 } from "./map";
@@ -1241,5 +1245,735 @@ describe("syncFeatures", () => {
     const markerInstance = markerConstructor.mock.results[0]?.value;
     expect(markerInstance.setLngLat).toHaveBeenCalledWith([2.3522, 48.8566]);
     expect(markerInstance.addTo).toHaveBeenCalled();
+  });
+});
+
+// --- Phase 6: Tile overlays ---
+
+function createDefaultOverlay(overrides?: Partial<ITileOverlay>): ITileOverlay {
+  return {
+    id: "overlay-1",
+    urlTemplate: "https://tiles.example.com/{z}/{x}/{y}.png",
+    attribution: "© Example",
+    tileSize: 256,
+    opacity: 0.7,
+    ...overrides,
+  };
+}
+
+describe("setOverlays", () => {
+  beforeEach(() => {
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+  });
+
+  it("should add raster source and layer for each overlay", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+    const mockMap = getLatestMockMapInstance()!;
+
+    const overlay = createDefaultOverlay();
+
+    // act
+    setOverlays(mapElement, [overlay]);
+
+    // assert
+    expect(mockMap.addSource).toHaveBeenCalledWith("sgb-overlay-overlay-1", {
+      type: "raster",
+      tiles: ["https://tiles.example.com/{z}/{x}/{y}.png"],
+      tileSize: 256,
+      attribution: "© Example",
+    });
+    expect(mockMap.addLayer).toHaveBeenCalledWith({
+      id: "sgb-overlay-overlay-1",
+      type: "raster",
+      source: "sgb-overlay-overlay-1",
+      paint: {
+        "raster-opacity": 0.7,
+      },
+    });
+  });
+
+  it("should remove overlays not in new list", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+    const mockMap = getLatestMockMapInstance()!;
+
+    // Add an overlay first
+    setOverlays(mapElement, [createDefaultOverlay({ id: "to-remove" })]);
+
+    // Mock getLayer/getSource to return truthy for existing overlays
+    mockMap.getLayer.mockImplementation((id: string) => (id === "sgb-overlay-to-remove" ? {} : undefined));
+
+    // act — set overlays with an empty list
+    setOverlays(mapElement, []);
+
+    // assert
+    expect(mockMap.removeLayer).toHaveBeenCalledWith("sgb-overlay-to-remove");
+    expect(mockMap.removeSource).toHaveBeenCalledWith("sgb-overlay-to-remove");
+  });
+
+  it("should not duplicate existing overlays", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+    const mockMap = getLatestMockMapInstance()!;
+
+    const overlay = createDefaultOverlay({ id: "existing" });
+    setOverlays(mapElement, [overlay]);
+
+    // Clear call counts
+    mockMap.addSource.mockClear();
+    mockMap.addLayer.mockClear();
+
+    // act — call setOverlays again with the same overlay
+    setOverlays(mapElement, [overlay]);
+
+    // assert — should not add source/layer again
+    expect(mockMap.addSource).not.toHaveBeenCalledWith("sgb-overlay-existing", expect.anything());
+    expect(mockMap.addLayer).not.toHaveBeenCalledWith(expect.objectContaining({ id: "sgb-overlay-existing" }));
+  });
+
+  it("should be a no-op for unknown elements", () => {
+    // arrange
+    const unknownElement = document.createElement("div");
+
+    // act & assert — should not throw
+    expect(() => setOverlays(unknownElement, [createDefaultOverlay()])).not.toThrow();
+  });
+});
+
+// --- Phase 7: FitBounds + FlyTo ---
+
+function createDefaultPolyline(overrides?: Partial<IPolyline>): IPolyline {
+  return {
+    id: "polyline-1",
+    coordinates: [
+      { latitude: 51.505, longitude: -0.09 },
+      { latitude: 51.51, longitude: -0.1 },
+    ],
+    color: null,
+    width: null,
+    opacity: null,
+    popup: null,
+    ...overrides,
+  };
+}
+
+describe("fitBounds", () => {
+  beforeEach(() => {
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+  });
+
+  it("should calculate correct bounds from marker coordinates", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+    const mockMap = getLatestMockMapInstance()!;
+
+    // Add markers
+    const marker1 = createDefaultMarker({ id: "m1", position: { latitude: 48.0, longitude: 2.0 } });
+    const marker2 = createDefaultMarker({ id: "m2", position: { latitude: 52.0, longitude: 4.0 } });
+    syncFeatures(mapElement, {
+      markers: { added: [marker1, marker2], updated: [], removedIds: [] },
+      circles: { added: [], updated: [], removedIds: [] },
+      polylines: { added: [], updated: [], removedIds: [] },
+    });
+
+    // Mock getLngLat to return the right coordinates for each marker
+    const map = window.Spillgebees.Map.maps.get(mapElement)!;
+    const storage = window.Spillgebees.Map.features.get(map)!;
+    const markerEntry1 = storage.markers.get("m1")!;
+    const markerEntry2 = storage.markers.get("m2")!;
+    (markerEntry1.marker.getLngLat as ReturnType<typeof import("vitest").vi.fn>).mockReturnValue({
+      lng: 2.0,
+      lat: 48.0,
+    });
+    (markerEntry2.marker.getLngLat as ReturnType<typeof import("vitest").vi.fn>).mockReturnValue({
+      lng: 4.0,
+      lat: 52.0,
+    });
+
+    const options: IFitBoundsOptions = {
+      featureIds: ["m1", "m2"],
+      padding: null,
+      topLeftPadding: null,
+      bottomRightPadding: null,
+    };
+
+    // act
+    fitBounds(mapElement, options);
+
+    // assert — bounds should be [[minLng, minLat], [maxLng, maxLat]]
+    expect(mockMap.fitBounds).toHaveBeenCalledWith(
+      [
+        [2.0, 48.0],
+        [4.0, 52.0],
+      ],
+      {},
+    );
+  });
+
+  it("should include padding options", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+    const mockMap = getLatestMockMapInstance()!;
+
+    // Add a marker
+    const marker = createDefaultMarker({ id: "m1", position: { latitude: 48.0, longitude: 2.0 } });
+    syncFeatures(mapElement, {
+      markers: { added: [marker], updated: [], removedIds: [] },
+      circles: { added: [], updated: [], removedIds: [] },
+      polylines: { added: [], updated: [], removedIds: [] },
+    });
+
+    const map = window.Spillgebees.Map.maps.get(mapElement)!;
+    const storage = window.Spillgebees.Map.features.get(map)!;
+    const entry = storage.markers.get("m1")!;
+    (entry.marker.getLngLat as ReturnType<typeof import("vitest").vi.fn>).mockReturnValue({
+      lng: 2.0,
+      lat: 48.0,
+    });
+
+    const options: IFitBoundsOptions = {
+      featureIds: ["m1"],
+      padding: { x: 50, y: 30 },
+      topLeftPadding: null,
+      bottomRightPadding: null,
+    };
+
+    // act
+    fitBounds(mapElement, options);
+
+    // assert
+    expect(mockMap.fitBounds).toHaveBeenCalledWith(
+      [
+        [2.0, 48.0],
+        [2.0, 48.0],
+      ],
+      { padding: { top: 30, bottom: 30, left: 50, right: 50 } },
+    );
+  });
+
+  it("should be a no-op when no features match", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+    const mockMap = getLatestMockMapInstance()!;
+
+    const options: IFitBoundsOptions = {
+      featureIds: ["nonexistent"],
+      padding: null,
+      topLeftPadding: null,
+      bottomRightPadding: null,
+    };
+
+    // act
+    fitBounds(mapElement, options);
+
+    // assert
+    expect(mockMap.fitBounds).not.toHaveBeenCalled();
+  });
+
+  it("should handle polyline coordinates with multiple points", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+    const mockMap = getLatestMockMapInstance()!;
+
+    // Add a polyline
+    const polyline = createDefaultPolyline({
+      id: "p1",
+      coordinates: [
+        { latitude: 48.0, longitude: 2.0 },
+        { latitude: 50.0, longitude: 3.0 },
+        { latitude: 52.0, longitude: 1.0 },
+      ],
+    });
+    syncFeatures(mapElement, {
+      markers: { added: [], updated: [], removedIds: [] },
+      circles: { added: [], updated: [], removedIds: [] },
+      polylines: { added: [polyline], updated: [], removedIds: [] },
+    });
+
+    const options: IFitBoundsOptions = {
+      featureIds: ["p1"],
+      padding: null,
+      topLeftPadding: null,
+      bottomRightPadding: null,
+    };
+
+    // act
+    fitBounds(mapElement, options);
+
+    // assert — bounds should encompass all polyline points
+    expect(mockMap.fitBounds).toHaveBeenCalledWith(
+      [
+        [1.0, 48.0],
+        [3.0, 52.0],
+      ],
+      {},
+    );
+  });
+
+  it("should handle topLeftPadding and bottomRightPadding", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+    const mockMap = getLatestMockMapInstance()!;
+
+    const marker = createDefaultMarker({ id: "m1", position: { latitude: 48.0, longitude: 2.0 } });
+    syncFeatures(mapElement, {
+      markers: { added: [marker], updated: [], removedIds: [] },
+      circles: { added: [], updated: [], removedIds: [] },
+      polylines: { added: [], updated: [], removedIds: [] },
+    });
+
+    const map = window.Spillgebees.Map.maps.get(mapElement)!;
+    const storage = window.Spillgebees.Map.features.get(map)!;
+    const entry = storage.markers.get("m1")!;
+    (entry.marker.getLngLat as ReturnType<typeof import("vitest").vi.fn>).mockReturnValue({
+      lng: 2.0,
+      lat: 48.0,
+    });
+
+    const options: IFitBoundsOptions = {
+      featureIds: ["m1"],
+      padding: null,
+      topLeftPadding: { x: 10, y: 20 },
+      bottomRightPadding: { x: 30, y: 40 },
+    };
+
+    // act
+    fitBounds(mapElement, options);
+
+    // assert
+    expect(mockMap.fitBounds).toHaveBeenCalledWith(
+      [
+        [2.0, 48.0],
+        [2.0, 48.0],
+      ],
+      { padding: { top: 20, left: 10, bottom: 40, right: 30 } },
+    );
+  });
+});
+
+describe("flyTo", () => {
+  beforeEach(() => {
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+  });
+
+  it("should call map.flyTo with correct coordinate swap", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const mockMap = getLatestMockMapInstance()!;
+
+    // act
+    flyTo(mapElement, { latitude: 48.8566, longitude: 2.3522 }, null, null, null);
+
+    // assert — center should be [lng, lat]
+    expect(mockMap.flyTo).toHaveBeenCalledWith({
+      center: [2.3522, 48.8566],
+    });
+  });
+
+  it("should pass optional zoom, bearing, and pitch", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const mockMap = getLatestMockMapInstance()!;
+
+    // act
+    flyTo(mapElement, { latitude: 48.8566, longitude: 2.3522 }, 15, 90, 45);
+
+    // assert
+    expect(mockMap.flyTo).toHaveBeenCalledWith({
+      center: [2.3522, 48.8566],
+      zoom: 15,
+      bearing: 90,
+      pitch: 45,
+    });
+  });
+
+  it("should be a no-op for unknown elements", () => {
+    // arrange
+    const unknownElement = document.createElement("div");
+
+    // act & assert
+    expect(() => flyTo(unknownElement, { latitude: 0, longitude: 0 }, null, null, null)).not.toThrow();
+  });
+});
+
+// --- Phase 8: Map events ---
+
+describe("map events", () => {
+  beforeEach(() => {
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+  });
+
+  it("should call dotNetHelper on map click with correct coordinate swap", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+
+    // act — simulate a map click event
+    fireMapEvent("click", { lngLat: { lat: 48.8566, lng: 2.3522 } });
+
+    // assert — should convert lng/lat back to latitude/longitude
+    // biome-ignore lint/security/noSecrets: C# callback method name, not a secret
+    expect(dotNetHelper.invokeMethodAsync).toHaveBeenCalledWith("OnMapClickCallbackAsync", {
+      position: { latitude: 48.8566, longitude: 2.3522 },
+    });
+  });
+
+  it("should call dotNetHelper on move end with map state", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getCenter.mockReturnValue({ lng: 2.3522, lat: 48.8566 });
+    mockMap.getZoom.mockReturnValue(12);
+    mockMap.getBearing.mockReturnValue(45);
+    mockMap.getPitch.mockReturnValue(30);
+
+    // act
+    fireMapEvent("moveend");
+
+    // assert
+    // biome-ignore lint/security/noSecrets: C# callback method name, not a secret
+    expect(dotNetHelper.invokeMethodAsync).toHaveBeenCalledWith("OnMoveEndCallbackAsync", {
+      center: { latitude: 48.8566, longitude: 2.3522 },
+      zoom: 12,
+      bearing: 45,
+      pitch: 30,
+    });
+  });
+
+  it("should call dotNetHelper on zoom end with map state", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getCenter.mockReturnValue({ lng: -0.09, lat: 51.505 });
+    mockMap.getZoom.mockReturnValue(15);
+    mockMap.getBearing.mockReturnValue(0);
+    mockMap.getPitch.mockReturnValue(0);
+
+    // act
+    fireMapEvent("zoomend");
+
+    // assert
+    // biome-ignore lint/security/noSecrets: C# callback method name, not a secret
+    expect(dotNetHelper.invokeMethodAsync).toHaveBeenCalledWith("OnZoomEndCallbackAsync", {
+      center: { latitude: 51.505, longitude: -0.09 },
+      zoom: 15,
+      bearing: 0,
+      pitch: 0,
+    });
+  });
+
+  it("should call dotNetHelper on marker click with marker ID and position", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+
+    // Add a marker
+    const marker = createDefaultMarker({ id: "m1", position: { latitude: 48.0, longitude: 2.0 } });
+    syncFeatures(mapElement, {
+      markers: { added: [marker], updated: [], removedIds: [] },
+      circles: { added: [], updated: [], removedIds: [] },
+      polylines: { added: [], updated: [], removedIds: [] },
+    });
+
+    // Get the marker element and mock getLngLat
+    const map = window.Spillgebees.Map.maps.get(mapElement)!;
+    const storage = window.Spillgebees.Map.features.get(map)!;
+    const markerEntry = storage.markers.get("m1")!;
+    (markerEntry.marker.getLngLat as ReturnType<typeof import("vitest").vi.fn>).mockReturnValue({
+      lng: 2.0,
+      lat: 48.0,
+    });
+
+    // act — simulate click on the marker element
+    const markerElement = markerEntry.marker.getElement();
+    const clickEvent = new Event("click", { bubbles: true });
+    markerElement.dispatchEvent(clickEvent);
+
+    // assert
+    expect(dotNetHelper.invokeMethodAsync).toHaveBeenCalledWith("OnMarkerClickCallbackAsync", {
+      markerId: "m1",
+      position: { latitude: 48.0, longitude: 2.0 },
+    });
+  });
+
+  it("should call dotNetHelper on marker drag end with new position", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+
+    // Add a draggable marker
+    const marker = createDefaultMarker({
+      id: "drag-marker",
+      position: { latitude: 48.0, longitude: 2.0 },
+      draggable: true,
+    });
+    syncFeatures(mapElement, {
+      markers: { added: [marker], updated: [], removedIds: [] },
+      circles: { added: [], updated: [], removedIds: [] },
+      polylines: { added: [], updated: [], removedIds: [] },
+    });
+
+    // Get the marker instance from the mock constructor and mock getLngLat on it
+    const markerConstructor = getMockMarkerConstructor();
+    const mockMarkerInstance = markerConstructor.mock.results[markerConstructor.mock.results.length - 1]?.value;
+    mockMarkerInstance.getLngLat.mockReturnValue({ lng: 3.0, lat: 49.0 });
+
+    // Find the "dragend" callback registered via marker.on("dragend", ...)
+    const onCalls = mockMarkerInstance.on.mock.calls;
+    const dragEndCall = onCalls.find((call: unknown[]) => call[0] === "dragend");
+    expect(dragEndCall).toBeDefined();
+
+    // act — invoke the dragend callback
+    dragEndCall![1]();
+
+    // assert
+    // biome-ignore lint/security/noSecrets: C# callback method name, not a secret
+    expect(dotNetHelper.invokeMethodAsync).toHaveBeenCalledWith("OnMarkerDragEndCallbackAsync", {
+      markerId: "drag-marker",
+      position: { latitude: 49.0, longitude: 3.0 },
+    });
+  });
+
+  it("should store and clean up dotNetHelpers on dispose", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const map = window.Spillgebees.Map.maps.get(mapElement)!;
+    expect(window.Spillgebees.Map.dotNetHelpers.get(map)).toBe(dotNetHelper);
+
+    // act
+    disposeMap(mapElement);
+
+    // assert — dotNetHelper should be cleaned up
+    expect(window.Spillgebees.Map.dotNetHelpers.size).toBe(0);
   });
 });

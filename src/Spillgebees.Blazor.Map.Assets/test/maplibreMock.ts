@@ -19,6 +19,12 @@ export interface MockMapInstance {
   addLayer: ReturnType<typeof vi.fn>;
   getLayer: ReturnType<typeof vi.fn>;
   getCanvas: ReturnType<typeof vi.fn>;
+  removeLayer: ReturnType<typeof vi.fn>;
+  removeSource: ReturnType<typeof vi.fn>;
+  getCenter: ReturnType<typeof vi.fn>;
+  getZoom: ReturnType<typeof vi.fn>;
+  getBearing: ReturnType<typeof vi.fn>;
+  getPitch: ReturnType<typeof vi.fn>;
 }
 
 export interface MockMarkerInstance {
@@ -31,6 +37,7 @@ export interface MockMarkerInstance {
   setOffset: ReturnType<typeof vi.fn>;
   setDraggable: ReturnType<typeof vi.fn>;
   on: ReturnType<typeof vi.fn>;
+  getLngLat: ReturnType<typeof vi.fn>;
 }
 
 export interface MockPopupInstance {
@@ -47,6 +54,7 @@ export interface MockPopupInstance {
 
 let latestMockMapInstance: MockMapInstance | null = null;
 const loadCallbacks: Array<() => void> = [];
+const eventCallbacks = new Map<string, Array<(e?: unknown) => void>>();
 const mockSources = new Map<string, { setData: ReturnType<typeof vi.fn>; [key: string]: unknown }>();
 
 export function getLatestMockMapInstance(): MockMapInstance | null {
@@ -64,9 +72,23 @@ export function getMockMapSources() {
 export function resetMockMapState(): void {
   latestMockMapInstance = null;
   loadCallbacks.length = 0;
+  eventCallbacks.clear();
   mockSources.clear();
   MockMarker.mockClear();
   MockPopup.mockClear();
+}
+
+/**
+ * Fires a registered map event callback (e.g., "click", "moveend", "zoomend").
+ * Call this in tests after createMap + fireLoadEvent to simulate MapLibre events.
+ */
+export function fireMapEvent(event: string, eventData?: unknown): void {
+  const callbacks = eventCallbacks.get(event);
+  if (callbacks) {
+    for (const cb of callbacks) {
+      cb(eventData);
+    }
+  }
 }
 
 /**
@@ -82,9 +104,19 @@ export function fireLoadEvent(): void {
 
 // Must use function declaration (not arrow) so it can be called with `new`
 const MockMapConstructor = vi.fn().mockImplementation(function (this: MockMapInstance) {
-  this.on = vi.fn().mockImplementation((event: string, callback: () => void) => {
-    if (event === "load") {
+  this.on = vi.fn().mockImplementation((...args: unknown[]) => {
+    const event = args[0] as string;
+    // MapLibre supports both map.on(event, callback) and map.on(event, layerId, callback)
+    // Only store callbacks (functions), not layer-scoped events (where args[1] is a string)
+    const callback = typeof args[1] === "function" ? (args[1] as (e?: unknown) => void) : undefined;
+    if (event === "load" && callback) {
       loadCallbacks.push(callback);
+    }
+    if (callback) {
+      if (!eventCallbacks.has(event)) {
+        eventCallbacks.set(event, []);
+      }
+      eventCallbacks.get(event)!.push(callback);
     }
     return this;
   });
@@ -107,6 +139,12 @@ const MockMapConstructor = vi.fn().mockImplementation(function (this: MockMapIns
   this.addLayer = vi.fn();
   this.getLayer = vi.fn();
   this.getCanvas = vi.fn().mockReturnValue({ style: {} });
+  this.removeLayer = vi.fn();
+  this.removeSource = vi.fn();
+  this.getCenter = vi.fn().mockReturnValue({ lng: 0, lat: 0 });
+  this.getZoom = vi.fn().mockReturnValue(0);
+  this.getBearing = vi.fn().mockReturnValue(0);
+  this.getPitch = vi.fn().mockReturnValue(0);
   latestMockMapInstance = this;
 });
 
@@ -128,6 +166,7 @@ const MockMarker = vi.fn().mockImplementation(function (this: MockMarkerInstance
   this.setOffset = vi.fn().mockReturnThis();
   this.setDraggable = vi.fn().mockReturnThis();
   this.on = vi.fn().mockReturnThis();
+  this.getLngLat = vi.fn().mockReturnValue({ lng: 0, lat: 0 });
 });
 
 /**

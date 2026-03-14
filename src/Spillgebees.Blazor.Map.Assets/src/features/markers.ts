@@ -118,6 +118,30 @@ function createMarkerEntry(map: MapLibreMap, data: IMarker): MarkerEntry {
     }
   }
 
+  // Wire marker click event
+  marker.getElement().addEventListener("click", (e: Event) => {
+    e.stopPropagation(); // prevent map click from firing too
+    const lngLat = marker.getLngLat();
+    const dotNetHelper = window.Spillgebees.Map.dotNetHelpers.get(map);
+    dotNetHelper?.invokeMethodAsync("OnMarkerClickCallbackAsync", {
+      markerId: data.id,
+      position: { latitude: lngLat.lat, longitude: lngLat.lng },
+    });
+  });
+
+  // Wire marker drag end event for draggable markers
+  if (data.draggable) {
+    marker.on("dragend", () => {
+      const lngLat = marker.getLngLat();
+      const dotNetHelper = window.Spillgebees.Map.dotNetHelpers.get(map);
+      // biome-ignore lint/security/noSecrets: C# callback method name, not a secret
+      dotNetHelper?.invokeMethodAsync("OnMarkerDragEndCallbackAsync", {
+        markerId: data.id,
+        position: { latitude: lngLat.lat, longitude: lngLat.lng },
+      });
+    });
+  }
+
   return { marker, popup, hoverPopup };
 }
 

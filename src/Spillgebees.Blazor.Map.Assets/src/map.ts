@@ -22,7 +22,7 @@ import {
 } from "./features/shapes";
 import type { IMapControlOptions } from "./interfaces/controls";
 import type { ICircle, IMarker, IPolyline } from "./interfaces/features";
-import type { IFitBoundsOptions, IMapOptions, IMapStyle, ITileOverlay } from "./interfaces/map";
+import type { ICoordinate, IFitBoundsOptions, IMapOptions, IMapStyle, ITileOverlay } from "./interfaces/map";
 import type { FeatureStorage } from "./types/feature-storage";
 
 export const PROTOCOL_VERSION = 1;
@@ -57,6 +57,7 @@ function initializeNamespace(): void {
     overlays: new Map<MapLibreMap, Map<string, unknown>>(),
     controls: new Map<MapLibreMap, Set<IControl>>(),
     styles: new Map<MapLibreMap, string | StyleSpecification>(),
+    dotNetHelpers: new Map<MapLibreMap, DotNet.DotNetObject>(),
   };
 }
 
@@ -172,6 +173,9 @@ export function createMap(
   // Store the map instance
   window.Spillgebees.Map.maps.set(mapElement, map);
 
+  // Store the dotNetHelper for event callbacks
+  window.Spillgebees.Map.dotNetHelpers.set(map, dotNetHelper);
+
   // Initialize empty feature storage
   const featureStorage: FeatureStorage = {
     markers: new Map(),
@@ -223,6 +227,36 @@ export function createMap(
       fitBounds(mapElement, mapOptions.fitBoundsOptions);
     }
 
+    // Wire map events for C# callbacks
+    map.on("click", (e: { lngLat: { lat: number; lng: number } }) => {
+      // biome-ignore lint/security/noSecrets: C# callback method name, not a secret
+      dotNetHelper.invokeMethodAsync("OnMapClickCallbackAsync", {
+        position: { latitude: e.lngLat.lat, longitude: e.lngLat.lng },
+      });
+    });
+
+    map.on("moveend", () => {
+      const center = map.getCenter();
+      // biome-ignore lint/security/noSecrets: C# callback method name, not a secret
+      dotNetHelper.invokeMethodAsync("OnMoveEndCallbackAsync", {
+        center: { latitude: center.lat, longitude: center.lng },
+        zoom: map.getZoom(),
+        bearing: map.getBearing(),
+        pitch: map.getPitch(),
+      });
+    });
+
+    map.on("zoomend", () => {
+      const center = map.getCenter();
+      // biome-ignore lint/security/noSecrets: C# callback method name, not a secret
+      dotNetHelper.invokeMethodAsync("OnZoomEndCallbackAsync", {
+        center: { latitude: center.lat, longitude: center.lng },
+        zoom: map.getZoom(),
+        bearing: map.getBearing(),
+        pitch: map.getPitch(),
+      });
+    });
+
     // Notify C# that the map is ready
     dotNetHelper.invokeMethodAsync(callbackName);
   });
@@ -246,6 +280,9 @@ export function disposeMap(mapElement: HTMLElement): void {
 
   // Clean up style storage
   window.Spillgebees.Map.styles.delete(map);
+
+  // Clean up dotNetHelper storage
+  window.Spillgebees.Map.dotNetHelpers.delete(map);
 
   // Destroy the MapLibre map and release WebGL resources
   map.remove();
@@ -358,8 +395,51 @@ export function syncFeatures(mapElement: HTMLElement, payload: IFeatureSyncPaylo
   }
 }
 
-export function setOverlays(_mapElement: HTMLElement, _overlays: ITileOverlay[]): void {
-  // Not yet implemented — Phase 6
+export function setOverlays(mapElement: HTMLElement, overlays: ITileOverlay[]): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) return;
+
+  const existingOverlays = window.Spillgebees.Map.overlays.get(map) ?? new Map<string, unknown>();
+  const newOverlayIds = new Set(overlays.map((o) => o.id));
+
+  // Remove overlays that are no longer in the list
+  for (const [id] of existingOverlays) {
+    if (!newOverlayIds.has(id)) {
+      if (map.getLayer(`sgb-overlay-${id}`)) {
+        map.removeLayer(`sgb-overlay-${id}`);
+      }
+      if (map.getSource(`sgb-overlay-${id}`)) {
+        map.removeSource(`sgb-overlay-${id}`);
+      }
+      existingOverlays.delete(id);
+    }
+  }
+
+  // Add new overlays
+  for (const overlay of overlays) {
+    if (existingOverlays.has(overlay.id)) continue; // already exists
+
+    const sourceId = `sgb-overlay-${overlay.id}`;
+    map.addSource(sourceId, {
+      type: "raster",
+      tiles: [overlay.urlTemplate],
+      tileSize: overlay.tileSize,
+      attribution: overlay.attribution,
+    });
+
+    map.addLayer({
+      id: sourceId, // use same ID for source and layer for simplicity
+      type: "raster",
+      source: sourceId,
+      paint: {
+        "raster-opacity": overlay.opacity,
+      },
+    });
+
+    existingOverlays.set(overlay.id, overlay);
+  }
+
+  window.Spillgebees.Map.overlays.set(map, existingOverlays);
 }
 
 export function setControls(mapElement: HTMLElement, controlOptions: IMapControlOptions): void {
@@ -431,16 +511,103 @@ export function setControls(mapElement: HTMLElement, controlOptions: IMapControl
   window.Spillgebees.Map.controls.set(map, controls);
 }
 
-export function fitBounds(_mapElement: HTMLElement, _options: IFitBoundsOptions): void {
-  // Not yet implemented — Phase 7
+export function fitBounds(mapElement: HTMLElement, options: IFitBoundsOptions): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) return;
+
+  const storage = window.Spillgebees.Map.features.get(map);
+  if (!storage) return;
+
+  // Collect all coordinates for the requested feature IDs
+  const coordinates: [number, number][] = [];
+
+  for (const id of options.featureIds) {
+    // Check markers
+    const markerEntry = storage.markers.get(id);
+    if (markerEntry) {
+      const lngLat = markerEntry.marker.getLngLat();
+      coordinates.push([lngLat.lng, lngLat.lat]);
+      continue;
+    }
+
+    // Check circles
+    const circleFeature = storage.circleData.get(id);
+    if (circleFeature && circleFeature.geometry.type === "Point") {
+      const coords = (circleFeature.geometry as GeoJSON.Point).coordinates;
+      coordinates.push([coords[0], coords[1]]);
+      continue;
+    }
+
+    // Check polylines
+    const polylineFeature = storage.polylineData.get(id);
+    if (polylineFeature && polylineFeature.geometry.type === "LineString") {
+      const lineCoords = (polylineFeature.geometry as GeoJSON.LineString).coordinates;
+      for (const coord of lineCoords) {
+        coordinates.push([coord[0], coord[1]]);
+      }
+    }
+  }
+
+  if (coordinates.length === 0) return;
+
+  // Calculate bounds
+  let minLng = coordinates[0][0];
+  let maxLng = coordinates[0][0];
+  let minLat = coordinates[0][1];
+  let maxLat = coordinates[0][1];
+
+  for (const [lng, lat] of coordinates) {
+    if (lng < minLng) minLng = lng;
+    if (lng > maxLng) maxLng = lng;
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+  }
+
+  // Build padding options
+  const fitOptions: Record<string, unknown> = {};
+
+  if (options.padding) {
+    fitOptions.padding = {
+      top: options.padding.y,
+      bottom: options.padding.y,
+      left: options.padding.x,
+      right: options.padding.x,
+    };
+  } else if (options.topLeftPadding || options.bottomRightPadding) {
+    fitOptions.padding = {
+      top: options.topLeftPadding?.y ?? 0,
+      left: options.topLeftPadding?.x ?? 0,
+      bottom: options.bottomRightPadding?.y ?? 0,
+      right: options.bottomRightPadding?.x ?? 0,
+    };
+  }
+
+  map.fitBounds(
+    [
+      [minLng, minLat],
+      [maxLng, maxLat],
+    ],
+    fitOptions,
+  );
 }
 
 export function flyTo(
-  _mapElement: HTMLElement,
-  _center: { latitude: number; longitude: number },
-  _zoom: number | null,
-  _bearing: number | null,
-  _pitch: number | null,
+  mapElement: HTMLElement,
+  center: ICoordinate,
+  zoom: number | null,
+  bearing: number | null,
+  pitch: number | null,
 ): void {
-  // Not yet implemented — Phase 7
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) return;
+
+  const options: Record<string, unknown> = {
+    center: [center.longitude, center.latitude],
+  };
+
+  if (zoom !== null) options.zoom = zoom;
+  if (bearing !== null) options.bearing = bearing;
+  if (pitch !== null) options.pitch = pitch;
+
+  map.flyTo(options);
 }
