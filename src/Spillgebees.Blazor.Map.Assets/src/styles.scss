@@ -94,12 +94,8 @@ $border-radius: 8px;
   }
 
   .maplibregl-ctrl-attrib {
-    background: $dark-bg-attribution !important;
+    background-color: $dark-bg-attribution !important;
     color: $dark-text-secondary !important;
-    border: none !important;
-    box-shadow: none !important;
-    border-radius: $border-radius !important;
-    margin: 4px !important;
 
     a {
       color: $dark-link-color !important;
@@ -109,6 +105,11 @@ $border-radius: 8px;
         color: $dark-link-hover !important;
         text-decoration: underline !important;
       }
+    }
+
+    // Compact mode (collapsed info button)
+    &.maplibregl-compact {
+      background-color: $dark-bg-primary !important;
     }
 
     .maplibregl-ctrl-attrib-button {

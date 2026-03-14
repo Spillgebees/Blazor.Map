@@ -16,6 +16,14 @@ namespace Spillgebees.Blazor.Map.Models.Layers;
 /// <param name="Color">CSS color for the default marker pin. Ignored when <paramref name="Icon"/> is set.</param>
 /// <param name="Scale">Scale factor for the default marker pin. Ignored when <paramref name="Icon"/> is set.</param>
 /// <param name="Rotation">Rotation angle in degrees, clockwise. Default is <see langword="null"/> (no rotation).</param>
+/// <param name="RotationAlignment">
+/// Controls how the marker rotation aligns with the map.
+/// <c>"map"</c> aligns to the map plane (rotates with the map), <c>"viewport"</c> keeps fixed on screen, <c>"auto"</c> (default).
+/// </param>
+/// <param name="PitchAlignment">
+/// Controls how the marker tilts with the map pitch.
+/// <c>"map"</c> makes the marker parallel to the ground (tilts with the map), <c>"viewport"</c> keeps it upright, <c>"auto"</c> (default).
+/// </param>
 /// <param name="Draggable">Whether the marker can be dragged by the user. Default is <see langword="false"/>.</param>
 /// <param name="Opacity">The opacity of the marker (0.0–1.0). Default is <see langword="null"/>.</param>
 /// <param name="ClassName">A custom CSS class name to apply to the marker element.</param>
@@ -28,6 +36,8 @@ public record Marker(
     string? Color = null,
     double? Scale = null,
     double? Rotation = null,
+    string? RotationAlignment = null,
+    string? PitchAlignment = null,
     bool Draggable = false,
     double? Opacity = null,
     string? ClassName = null

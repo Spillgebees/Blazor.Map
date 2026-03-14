@@ -9,6 +9,8 @@ export interface IMarker {
   color: string | null;
   scale: number | null;
   rotation: number | null;
+  rotationAlignment: string | null;
+  pitchAlignment: string | null;
   draggable: boolean;
   opacity: number | null;
   className: string | null;

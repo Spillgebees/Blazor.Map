@@ -77,6 +77,12 @@ function createMarkerEntry(map: MapLibreMap, data: IMarker): MarkerEntry {
   if (data.rotation !== null) {
     options.rotation = data.rotation;
   }
+  if (data.rotationAlignment) {
+    options.rotationAlignment = data.rotationAlignment as "map" | "viewport" | "auto";
+  }
+  if (data.pitchAlignment) {
+    options.pitchAlignment = data.pitchAlignment as "map" | "viewport" | "auto";
+  }
   if (data.draggable) {
     options.draggable = data.draggable;
   }
