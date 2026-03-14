@@ -1,37 +1,13 @@
 @use "maplibre-gl/dist/maplibre-gl.css";
 
-$dark-bg-primary: rgba(0, 0, 0, 0.53);
-$dark-bg-secondary: rgba(0, 0, 0, 0.7);
-$dark-text-primary: white;
-$dark-text-secondary: rgba(255, 255, 255, 0.8);
-$dark-link-color: #00bcd4;
+// Dark theme palette
+$dark-bg: rgba(0, 0, 0, 0.53);
+$dark-bg-hover: rgba(0, 0, 0, 0.7);
+$dark-text: white;
+$dark-link: #00bcd4;
 $dark-link-hover: #4dd0e1;
 
-$border-radius: 8px;
-
-@mixin control-button-base {
-  background: $dark-bg-primary !important;
-  color: $dark-text-primary !important;
-  border: none !important;
-  box-shadow: none !important;
-  border-radius: $border-radius !important;
-  outline: none !important;
-}
-
-@mixin control-interactive {
-  &:hover,
-  &:focus {
-    background: $dark-bg-secondary !important;
-    color: $dark-text-primary !important;
-  }
-}
-
-@mixin dark-overlay {
-  background: $dark-bg-primary;
-  color: $dark-text-primary;
-  border: none;
-  box-shadow: none;
-}
+// ── Base container ──
 
 .sgb-map-container {
   // Mirror maplibregl-map's critical layout properties so they survive
@@ -42,9 +18,12 @@ $border-radius: 8px;
   z-index: 1;
 }
 
+// Rise-on-hover for markers (needs !important to override inline z-index)
 .maplibregl-marker:hover {
   z-index: 10 !important;
 }
+
+// ── Custom center control ──
 
 .sgb-map-center-control {
   .sgb-map-center-control-button {
@@ -60,120 +39,143 @@ $border-radius: 8px;
   }
 }
 
-.sgb-map-dark {
+// ── Dark theme ──
+// Uses .sgb-map-container.sgb-map-dark (compound selector = 2 classes)
+// to beat MapLibre's single-class selectors without !important.
+
+.sgb-map-container.sgb-map-dark {
+  // --- Control groups (zoom, compass, etc.) ---
   .maplibregl-ctrl-group {
-    background: $dark-bg-primary !important;
-    border: none !important;
-    box-shadow: none !important;
-    border-radius: $border-radius !important;
-    overflow: hidden !important;
+    background: $dark-bg;
+    border: none;
+    box-shadow: none;
+    overflow: hidden;
 
     button {
-      @include control-button-base;
-      border-radius: 0 !important;
-      @include control-interactive;
+      background: $dark-bg;
+      color: $dark-text;
+      border: none;
+      box-shadow: none;
+      outline: none;
+
+      &:hover,
+      &:focus {
+        background: $dark-bg-hover;
+        color: $dark-text;
+      }
 
       .maplibregl-ctrl-icon {
         // Force white icons for zoom/terrain/geolocate buttons
         filter: brightness(0) invert(1);
       }
 
-      // Compass: use the exact MapLibre SVG paths but with dark-mode colors.
-      // Light theme has #333 (north) + #ccc (south).
-      // Dark theme uses #fff (north) + #666 (south) — same contrast, inverted.
+      // Compass: exact MapLibre SVG paths with dark-mode colors.
+      // Light theme = #333 north + #ccc south. Dark = #fff north + #666 south.
       &.maplibregl-ctrl-compass .maplibregl-ctrl-icon {
         filter: none;
-        background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23fff' viewBox='0 0 29 29'%3E%3Cpath d='m10.5 14 4-8 4 8z'/%3E%3Cpath fill='%23666' d='m10.5 16 4 8 4-8z'/%3E%3C/svg%3E") !important;
+        background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23fff' viewBox='0 0 29 29'%3E%3Cpath d='m10.5 14 4-8 4 8z'/%3E%3Cpath fill='%23666' d='m10.5 16 4 8 4-8z'/%3E%3C/svg%3E");
       }
     }
 
     button + button {
-      border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
     }
   }
 
+  // --- Attribution control ---
   .maplibregl-ctrl-attrib {
-    background-color: $dark-bg-primary !important;
-    color: $dark-text-primary !important;
+    background-color: $dark-bg;
+    color: $dark-text;
 
     a {
-      color: $dark-link-color !important;
-      text-decoration: none !important;
+      color: $dark-link;
+      text-decoration: none;
 
       &:hover {
-        color: $dark-link-hover !important;
-        text-decoration: underline !important;
+        color: $dark-link-hover;
+        text-decoration: underline;
       }
     }
-
-    // Compact mode (collapsed info button) — match control group background
-    &.maplibregl-compact {
-      background-color: $dark-bg-primary !important;
-    }
-
-    // Expanded state button background — subtle highlight
-    &.maplibregl-compact-show .maplibregl-ctrl-attrib-button {
-      background-color: rgba(255, 255, 255, 0.1) !important;
-    }
-
-    .maplibregl-ctrl-attrib-button {
-      background-color: $dark-bg-primary !important;
-      filter: brightness(0) invert(1);
-    }
   }
 
+  // Compact (collapsed) attribution — the info button circle
+  .maplibregl-ctrl-attrib.maplibregl-compact {
+    background-color: $dark-bg;
+  }
+
+  // The ::after pseudo-element IS the visual info icon in MapLibre v5.
+  // It needs a dark background and inverted icon for visibility.
+  .maplibregl-ctrl-attrib.maplibregl-compact::after {
+    background-color: $dark-bg;
+    border-radius: 12px;
+    filter: brightness(0) invert(1);
+  }
+
+  // Expanded attribution — subtle highlight on the toggle area
+  .maplibregl-ctrl-attrib.maplibregl-compact-show {
+    background-color: $dark-bg;
+  }
+
+  // --- Scale control ---
   .maplibregl-ctrl-scale {
-    background: $dark-bg-primary !important;
-    color: $dark-text-primary !important;
-    border: 1px solid $dark-text-primary !important;
-    border-top: none !important;
-    border-radius: $border-radius !important;
+    background: $dark-bg;
+    color: $dark-text;
+    border: 1px solid $dark-text;
+    border-top: none;
   }
 
+  // --- Popups ---
   .maplibregl-popup-content {
-    @include dark-overlay;
-    border-radius: $border-radius !important;
+    background: $dark-bg;
+    color: $dark-text;
+    border: none;
+    box-shadow: none;
+  }
+
+  .maplibregl-popup-close-button {
+    color: $dark-text;
   }
 
   // Popup tips (arrows) are CSS triangles — only the border opposite the
-  // anchor direction is visible. Set per-anchor-direction colors to match
-  // the popup content background.
+  // anchor direction is visible. Set per-direction colors to match content.
   .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
-    border-top-color: $dark-bg-primary !important;
+    border-top-color: $dark-bg;
   }
 
   .maplibregl-popup-anchor-top .maplibregl-popup-tip {
-    border-bottom-color: $dark-bg-primary !important;
+    border-bottom-color: $dark-bg;
   }
 
   .maplibregl-popup-anchor-left .maplibregl-popup-tip {
-    border-right-color: $dark-bg-primary !important;
+    border-right-color: $dark-bg;
   }
 
   .maplibregl-popup-anchor-right .maplibregl-popup-tip {
-    border-left-color: $dark-bg-primary !important;
+    border-left-color: $dark-bg;
   }
 
-  // For diagonal anchors (top-left, top-right, bottom-left, bottom-right),
-  // MapLibre uses a rotated tip — the top-border trick still applies
   .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
   .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
-    border-top-color: $dark-bg-primary !important;
+    border-top-color: $dark-bg;
   }
 
   .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
   .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
-    border-bottom-color: $dark-bg-primary !important;
+    border-bottom-color: $dark-bg;
   }
 
-  .maplibregl-popup-close-button {
-    color: $dark-text-primary !important;
-  }
+  // --- Custom center control ---
+  .sgb-map-center-control .sgb-map-center-control-button {
+    background: $dark-bg;
+    color: $dark-text;
+    border: none;
+    box-shadow: none;
+    outline: none;
 
-  .sgb-map-center-control {
-    .sgb-map-center-control-button {
-      @include control-button-base;
-      @include control-interactive;
+    &:hover,
+    &:focus {
+      background: $dark-bg-hover;
+      color: $dark-text;
     }
   }
 }
