@@ -1,4 +1,4 @@
-import type { IControl, Map as MapLibreMap } from "maplibre-gl";
+import type { IControl, Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
 import type { FeatureStorage } from "../types/feature-storage";
 
 export interface SpillgebeesMapNamespace {
@@ -8,4 +8,5 @@ export interface SpillgebeesMapNamespace {
   features: Map<MapLibreMap, FeatureStorage>;
   overlays: Map<MapLibreMap, Map<string, unknown>>;
   controls: Map<MapLibreMap, Set<IControl>>;
+  styles: Map<MapLibreMap, string | StyleSpecification>;
 }

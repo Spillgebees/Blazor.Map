@@ -1,48 +1,34 @@
-using Spillgebees.Blazor.Map.Models.Tooltips;
+using Spillgebees.Blazor.Map.Models.Popups;
 
 namespace Spillgebees.Blazor.Map.Models.Layers;
 
 /// <summary>
-/// A marker is an icon placed at a specific coordinate on the map.
+/// A marker placed at a specific coordinate on the map.
 /// </summary>
 /// <param name="Id">A unique identifier for the marker.</param>
-/// <param name="Coordinate">The geographical coordinate of the marker.</param>
-/// <param name="Title">The title of the marker, displayed as a tooltip on hover.</param>
+/// <param name="Position">The geographical coordinate of the marker.</param>
+/// <param name="Title">The title of the marker, displayed as a browser tooltip on hover.</param>
+/// <param name="Popup">Optional popup options for the marker. Default is <see langword="null"/>.</param>
 /// <param name="Icon">
 /// Optional custom icon for the marker.
-/// When <see langword="null" />, Leaflet uses its default marker icon, which is a blue location pin.
+/// When <see langword="null"/>, MapLibre uses its default marker pin.
 /// </param>
-/// <param name="RotationAngle">
-/// Rotation angle in degrees, clockwise.
-/// When <see langword="null" /> or 0, no rotation is applied.
-/// </param>
-/// <param name="RotationOrigin">
-/// CSS transform-origin for rotation (e.g., "center center").
-/// When <see langword="null" />, defaults to "center center".
-/// </param>
-/// <param name="Tooltip">Optional tooltip options for the marker. Default is <see langword="null" />.</param>
-/// <param name="ZIndexOffset">
-/// Offsets the marker's z-index from its default value.
-/// Positive values bring the marker closer to the top; negative values push it further back.
-/// When <see langword="null" />, defaults to 0.
-/// </param>
-/// <param name="RiseOnHover">
-/// When <see langword="true" />, the marker will rise to the top of the z-order on hover.
-/// When <see langword="null" />, defaults to <see langword="false" />.
-/// </param>
-/// <param name="RiseOffset">
-/// The z-index offset applied when <paramref name="RiseOnHover" /> is active.
-/// When <see langword="null" />, defaults to 250.
-/// </param>
+/// <param name="Color">CSS color for the default marker pin. Ignored when <paramref name="Icon"/> is set.</param>
+/// <param name="Scale">Scale factor for the default marker pin. Ignored when <paramref name="Icon"/> is set.</param>
+/// <param name="Rotation">Rotation angle in degrees, clockwise. Default is <see langword="null"/> (no rotation).</param>
+/// <param name="Draggable">Whether the marker can be dragged by the user. Default is <see langword="false"/>.</param>
+/// <param name="Opacity">The opacity of the marker (0.0–1.0). Default is <see langword="null"/>.</param>
+/// <param name="ClassName">A custom CSS class name to apply to the marker element.</param>
 public record Marker(
     string Id,
-    Coordinate Coordinate,
-    string? Title,
-    TooltipOptions? Tooltip = null,
+    Coordinate Position,
+    string? Title = null,
+    PopupOptions? Popup = null,
     MarkerIcon? Icon = null,
-    double? RotationAngle = null,
-    string? RotationOrigin = null,
-    int? ZIndexOffset = null,
-    bool? RiseOnHover = null,
-    int? RiseOffset = null
+    string? Color = null,
+    double? Scale = null,
+    double? Rotation = null,
+    bool Draggable = false,
+    double? Opacity = null,
+    string? ClassName = null
 );

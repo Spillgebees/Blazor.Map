@@ -5,11 +5,15 @@ using Microsoft.JSInterop;
 using Spillgebees.Blazor.Map.Interop;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Controls;
+using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Layers;
 using Spillgebees.Blazor.Map.Utilities;
 
 namespace Spillgebees.Blazor.Map.Components;
 
+/// <summary>
+/// Base map component providing core map functionality.
+/// </summary>
 public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 {
     [Inject]
@@ -17,25 +21,27 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     [Inject]
     private ILoggerFactory _loggerFactory { get; set; } = null!;
+
     protected Lazy<ILogger> Logger => new(() => _loggerFactory.CreateLogger(GetType()));
 
     /// <summary>
-    /// Options for the map.
+    /// Options for the map (center, zoom, style, pitch, bearing, etc.).
     /// </summary>
     [Parameter]
     public MapOptions MapOptions { get; set; } = MapOptions.Default;
 
     /// <summary>
-    /// Options for the map controls.
+    /// Options for the map controls (navigation, scale, fullscreen, etc.).
     /// </summary>
     [Parameter]
-    public MapControlOptions MapControlOptions { get; set; } = MapControlOptions.Default;
+    public MapControlOptions ControlOptions { get; set; } = MapControlOptions.Default;
 
     /// <summary>
-    /// The tile layers to display on the map.
+    /// The visual theme for UI controls, popups, and attribution.
+    /// This does NOT affect the map tiles — use <see cref="MapOptions.Style"/> for that.
     /// </summary>
-    [Parameter, EditorRequired]
-    public required List<TileLayer> TileLayers { get; set; }
+    [Parameter]
+    public MapTheme Theme { get; set; } = MapTheme.Light;
 
     /// <summary>
     /// The markers to display on the map.
@@ -44,10 +50,10 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     public List<Marker> Markers { get; set; } = [];
 
     /// <summary>
-    /// The circle markers to display on the map.
+    /// The circles to display on the map.
     /// </summary>
     [Parameter]
-    public List<CircleMarker> CircleMarkers { get; set; } = [];
+    public List<Circle> Circles { get; set; } = [];
 
     /// <summary>
     /// The polylines to display on the map.
@@ -56,13 +62,19 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     public List<Polyline> Polylines { get; set; } = [];
 
     /// <summary>
+    /// Additional raster tile overlays to render on top of the base map style.
+    /// </summary>
+    [Parameter]
+    public List<TileOverlay> Overlays { get; set; } = [];
+
+    /// <summary>
     /// The width of the map. If not set, the map will take the full width of its container.
     /// </summary>
     [Parameter]
     public string? Width { get; set; }
 
     /// <summary>
-    /// The height of the map. Default is "500px", a fixed height is required for the map to be displayed.
+    /// The height of the map. Default is "500px". A fixed height is required for the map to be displayed.
     /// </summary>
     [Parameter]
     public string? Height { get; set; } = "500px";
@@ -71,25 +83,60 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// The HTML id attribute for the map container. If not set, a unique id will be generated.
     /// </summary>
     [Parameter]
-    public string MapContainerHtmlId { get; set; } = $"map-container-{Guid.NewGuid()}";
+    public string ContainerId { get; set; } = $"map-container-{Guid.NewGuid()}";
 
     /// <summary>
     /// Additional CSS classes for the map container.
     /// </summary>
     [Parameter]
-    public string MapContainerClass { get; set; } = string.Empty;
+    public string ContainerClass { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Callback invoked when the user clicks on the map.
+    /// </summary>
+    [Parameter]
+    public EventCallback<MapClickEventArgs> OnMapClick { get; set; }
+
+    /// <summary>
+    /// Callback invoked when the map finishes a move (pan) transition.
+    /// </summary>
+    [Parameter]
+    public EventCallback<MapViewEventArgs> OnMoveEnd { get; set; }
+
+    /// <summary>
+    /// Callback invoked when the map finishes a zoom transition.
+    /// </summary>
+    [Parameter]
+    public EventCallback<MapViewEventArgs> OnZoomEnd { get; set; }
+
+    /// <summary>
+    /// Callback invoked when a marker is clicked.
+    /// </summary>
+    [Parameter]
+    public EventCallback<MarkerClickEventArgs> OnMarkerClick { get; set; }
+
+    /// <summary>
+    /// Callback invoked when a draggable marker is released after dragging.
+    /// </summary>
+    [Parameter]
+    public EventCallback<MarkerDragEventArgs> OnMarkerDragEnd { get; set; }
 
     protected MapOptions InternalMapOptions = null!;
-    protected MapControlOptions InternalMapControlOptions = null!;
+    protected MapControlOptions InternalControlOptions = null!;
+    protected MapTheme InternalTheme;
     protected List<Marker> InternalMarkers { get; set; } = [];
-    protected List<CircleMarker> InternalCircleMarkers { get; set; } = [];
+    protected List<Circle> InternalCircles { get; set; } = [];
     protected List<Polyline> InternalPolylines { get; set; } = [];
-    protected List<TileLayer> InternalTileLayers { get; set; } = [];
+    protected List<TileOverlay> InternalOverlays { get; set; } = [];
 
-    protected string InternalMapContainerClass =>
-        new CssBuilder().AddClass("sgb-map-container").AddClass(MapContainerClass).Build();
+    protected string InternalContainerClass =>
+        new CssBuilder()
+            .AddClass("sgb-map-container")
+            .AddClass("sgb-map-dark", Theme == MapTheme.Dark)
+            .AddClass(ContainerClass)
+            .Build();
 
-    protected string InternalMapContainerStyle =>
+    protected string InternalContainerStyle =>
         new StyleBuilder()
             .AddStyle("width", Width, Width is not null)
             .AddStyle("height", Height, Height is not null)
@@ -101,18 +148,29 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     protected bool IsDisposing;
 
     /// <summary>
-    /// Changes the map view to fit the layers.
+    /// Performs an animated camera flight to the specified position.
     /// </summary>
-    /// <param name="options">Options containing the layers to fit to and other display options.</param>
+    /// <param name="center">The target center coordinate.</param>
+    /// <param name="zoom">Optional target zoom level.</param>
+    /// <param name="bearing">Optional target bearing (rotation) in degrees.</param>
+    /// <param name="pitch">Optional target pitch (tilt) in degrees.</param>
+    public ValueTask FlyToAsync(Coordinate center, int? zoom = null, double? bearing = null, double? pitch = null) =>
+        MapJs.FlyToAsync(JsRuntime, Logger.Value, MapReference, center, zoom, bearing, pitch);
+
+    /// <summary>
+    /// Changes the map view to fit the specified features.
+    /// </summary>
+    /// <param name="options">Options containing the features to fit to and other display options.</param>
     public ValueTask FitBoundsAsync(FitBoundsOptions options) =>
         MapJs.FitBoundsAsync(JsRuntime, Logger.Value, MapReference, options);
 
     /// <summary>
-    /// Triggers a size recalculation on the map. Useful when dynamically changing the height, especially if you notice
-    /// that the map has unloaded spots.
+    /// Triggers a size recalculation on the map.
+    /// Useful when dynamically changing the map container dimensions.
     /// </summary>
-    public ValueTask InvalidateMapSizeAsync() => MapJs.InvalidateSizeAsync(JsRuntime, Logger.Value, MapReference);
+    public ValueTask ResizeAsync() => MapJs.ResizeAsync(JsRuntime, Logger.Value, MapReference);
 
+    /// <inheritdoc/>
     public virtual async ValueTask DisposeAsync()
     {
         if (IsDisposing)
@@ -157,10 +215,71 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
         // the delay is required to ensure the page has rendered
         await Task.Delay(50);
-        // since content may have shifted after rendering, we must tell leaflet to check the map size
-        await InvalidateMapSizeAsync();
+        // since content may have shifted after rendering, we must tell the map to recalculate its size
+        await ResizeAsync();
     }
 
+    /// <summary>
+    /// This method is called from JavaScript when the map is clicked. Don't call it manually.
+    /// </summary>
+    [JSInvokable]
+    public async Task OnMapClickCallbackAsync(MapClickEventArgs args)
+    {
+        if (OnMapClick.HasDelegate)
+        {
+            await OnMapClick.InvokeAsync(args);
+        }
+    }
+
+    /// <summary>
+    /// This method is called from JavaScript when the map finishes moving. Don't call it manually.
+    /// </summary>
+    [JSInvokable]
+    public async Task OnMoveEndCallbackAsync(MapViewEventArgs args)
+    {
+        if (OnMoveEnd.HasDelegate)
+        {
+            await OnMoveEnd.InvokeAsync(args);
+        }
+    }
+
+    /// <summary>
+    /// This method is called from JavaScript when the map finishes zooming. Don't call it manually.
+    /// </summary>
+    [JSInvokable]
+    public async Task OnZoomEndCallbackAsync(MapViewEventArgs args)
+    {
+        if (OnZoomEnd.HasDelegate)
+        {
+            await OnZoomEnd.InvokeAsync(args);
+        }
+    }
+
+    /// <summary>
+    /// This method is called from JavaScript when a marker is clicked. Don't call it manually.
+    /// </summary>
+    [JSInvokable]
+    public async Task OnMarkerClickCallbackAsync(MarkerClickEventArgs args)
+    {
+        if (OnMarkerClick.HasDelegate)
+        {
+            await OnMarkerClick.InvokeAsync(args);
+        }
+    }
+
+    /// <summary>
+    /// This method is called from JavaScript when a marker is dragged. Don't call it manually.
+    /// </summary>
+    [JSInvokable]
+    public async Task OnMarkerDragEndCallbackAsync(MarkerDragEventArgs args)
+    {
+        if (OnMarkerDragEnd.HasDelegate)
+        {
+            await OnMarkerDragEnd.InvokeAsync(args);
+        }
+    }
+
+    /// <inheritdoc/>
     protected override async Task OnParametersSetAsync()
     {
         if (IsInitialized is false)
@@ -168,18 +287,18 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             return;
         }
 
-        await SyncLayersAsync();
+        await SyncFeaturesAsync();
 
-        if (TileLayers != InternalTileLayers)
+        if (Overlays != InternalOverlays)
         {
-            InternalTileLayers = TileLayers;
-            await SetTileLayersAsync();
+            InternalOverlays = Overlays;
+            await SetOverlaysAsync();
         }
 
-        if (InternalMapControlOptions != MapControlOptions)
+        if (InternalControlOptions != ControlOptions)
         {
-            InternalMapControlOptions = MapControlOptions;
-            await SetMapControlsAsync();
+            InternalControlOptions = ControlOptions;
+            await SetControlsAsync();
         }
 
         if (InternalMapOptions != MapOptions)
@@ -187,21 +306,44 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             InternalMapOptions = MapOptions;
             await SetMapOptionsAsync();
         }
+
+        if (InternalTheme != Theme)
+        {
+            InternalTheme = Theme;
+            await SetThemeAsync();
+        }
     }
 
+    /// <inheritdoc/>
     protected override Task OnAfterRenderAsync(bool firstRender) =>
         firstRender ? InitializeMapAsync() : Task.CompletedTask;
 
+    /// <summary>
+    /// Initializes the map by validating the protocol version and creating the map instance.
+    /// </summary>
     protected virtual async Task InitializeMapAsync()
     {
         DotNetObjectReference = Microsoft.JSInterop.DotNetObjectReference.Create(this);
 
+        // Protocol version handshake — safety net for cached JS modules
+        var jsProtocolVersion = await MapJs.GetProtocolVersionAsync(JsRuntime, Logger.Value);
+        if (jsProtocolVersion != MapJs.ProtocolVersion)
+        {
+            throw new InvalidOperationException(
+                $"Spillgebees.Blazor.Map: JavaScript/C# version mismatch. "
+                    + $"The loaded JavaScript module is protocol version {jsProtocolVersion} "
+                    + $"but the .NET library expects protocol version {MapJs.ProtocolVersion}. "
+                    + "Clear your browser cache and reload the page."
+            );
+        }
+
         InternalMapOptions = MapOptions;
-        InternalMapControlOptions = MapControlOptions;
-        InternalTileLayers = TileLayers;
+        InternalControlOptions = ControlOptions;
+        InternalTheme = Theme;
         InternalMarkers = [.. Markers];
-        InternalCircleMarkers = [.. CircleMarkers];
+        InternalCircles = [.. Circles];
         InternalPolylines = [.. Polylines];
+        InternalOverlays = [.. Overlays];
 
         await MapJs.CreateMapAsync(
             JsRuntime,
@@ -210,76 +352,42 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             nameof(OnMapInitializedAsync),
             MapReference,
             InternalMapOptions,
-            InternalMapControlOptions,
-            InternalTileLayers,
+            InternalControlOptions,
+            InternalTheme,
             InternalMarkers,
-            InternalCircleMarkers,
-            InternalPolylines
+            InternalCircles,
+            InternalPolylines,
+            InternalOverlays
         );
     }
 
-    private async Task SyncLayersAsync()
+    private async Task SyncFeaturesAsync()
     {
-        var markerDiff = LayerDiffer.Diff(InternalMarkers, Markers, static m => m.Id);
-        var circleMarkerDiff = LayerDiffer.Diff(InternalCircleMarkers, CircleMarkers, static cm => cm.Id);
-        var polylineDiff = LayerDiffer.Diff(InternalPolylines, Polylines, static p => p.Id);
+        var markerDiff = FeatureDiffer.Diff(InternalMarkers, Markers, static m => m.Id);
+        var circleDiff = FeatureDiffer.Diff(InternalCircles, Circles, static c => c.Id);
+        var polylineDiff = FeatureDiffer.Diff(InternalPolylines, Polylines, static p => p.Id);
 
-        if (!markerDiff.HasChanges && !circleMarkerDiff.HasChanges && !polylineDiff.HasChanges)
+        if (!markerDiff.HasChanges && !circleDiff.HasChanges && !polylineDiff.HasChanges)
         {
             return;
         }
 
-        // remove deleted layers
-        if (markerDiff.Removed.Length > 0 || circleMarkerDiff.Removed.Length > 0 || polylineDiff.Removed.Length > 0)
-        {
-            await MapJs.RemoveLayersAsync(
-                JsRuntime,
-                Logger.Value,
-                MapReference,
-                markerDiff.Removed,
-                circleMarkerDiff.Removed,
-                polylineDiff.Removed
-            );
-        }
-
-        // add new layers
-        if (markerDiff.Added.Length > 0 || circleMarkerDiff.Added.Length > 0 || polylineDiff.Added.Length > 0)
-        {
-            await MapJs.AddLayersAsync(
-                JsRuntime,
-                Logger.Value,
-                MapReference,
-                markerDiff.Added,
-                circleMarkerDiff.Added,
-                polylineDiff.Added
-            );
-        }
-
-        // update existing layers
-        if (markerDiff.Updated.Length > 0 || circleMarkerDiff.Updated.Length > 0 || polylineDiff.Updated.Length > 0)
-        {
-            await MapJs.UpdateLayersAsync(
-                JsRuntime,
-                Logger.Value,
-                MapReference,
-                markerDiff.Updated,
-                circleMarkerDiff.Updated,
-                polylineDiff.Updated
-            );
-        }
+        await MapJs.SyncFeaturesAsync(JsRuntime, Logger.Value, MapReference, markerDiff, circleDiff, polylineDiff);
 
         // snapshot new state
         InternalMarkers = [.. Markers];
-        InternalCircleMarkers = [.. CircleMarkers];
+        InternalCircles = [.. Circles];
         InternalPolylines = [.. Polylines];
     }
 
-    private ValueTask SetTileLayersAsync() =>
-        MapJs.SetTileLayersAsync(JsRuntime, Logger.Value, MapReference, InternalTileLayers);
+    private ValueTask SetOverlaysAsync() =>
+        MapJs.SetOverlaysAsync(JsRuntime, Logger.Value, MapReference, InternalOverlays);
 
-    private ValueTask SetMapControlsAsync() =>
-        MapJs.SetMapControlsAsync(JsRuntime, Logger.Value, MapReference, InternalMapControlOptions);
+    private ValueTask SetControlsAsync() =>
+        MapJs.SetControlsAsync(JsRuntime, Logger.Value, MapReference, InternalControlOptions);
 
     private ValueTask SetMapOptionsAsync() =>
         MapJs.SetMapOptionsAsync(JsRuntime, Logger.Value, MapReference, InternalMapOptions);
+
+    private ValueTask SetThemeAsync() => MapJs.SetThemeAsync(JsRuntime, Logger.Value, MapReference, InternalTheme);
 }
