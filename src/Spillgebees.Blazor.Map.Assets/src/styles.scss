@@ -35,6 +35,9 @@ $border-radius: 8px;
 }
 
 .sgb-map-container {
+  // Mirror maplibregl-map's critical layout properties so they survive
+  // Blazor's class attribute re-renders (which can strip maplibregl-map).
+  font: 12px/20px "Helvetica Neue", Arial, Helvetica, sans-serif;
   position: relative;
   overflow: hidden;
   z-index: 1;
@@ -76,11 +79,12 @@ $border-radius: 8px;
         filter: brightness(0) invert(1);
       }
 
-      // Compass needs a custom approach — filter-based inversion makes one half
-      // invisible on dark backgrounds. Replace with a dark-mode-friendly SVG.
+      // Compass: use the exact MapLibre SVG paths but with dark-mode colors.
+      // Light theme has #333 (north) + #ccc (south).
+      // Dark theme uses #fff (north) + #666 (south) — same contrast, inverted.
       &.maplibregl-ctrl-compass .maplibregl-ctrl-icon {
         filter: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpolygon fill='%23e74c3c' points='10,2 7,10 10,8 13,10'/%3E%3Cpolygon fill='%23cccccc' points='10,18 7,10 10,12 13,10'/%3E%3C/svg%3E") !important;
+        background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23fff' viewBox='0 0 29 29'%3E%3Cpath d='m10.5 14 4-8 4 8z'/%3E%3Cpath fill='%23666' d='m10.5 16 4 8 4-8z'/%3E%3C/svg%3E") !important;
       }
     }
 

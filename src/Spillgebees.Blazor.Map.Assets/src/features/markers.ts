@@ -150,12 +150,17 @@ function createMarkerEntry(map: MapLibreMap, data: IMarker): MarkerEntry {
             markerEl.style.zIndex = "";
             popupEl.style.zIndex = "";
           });
-          // Let scroll/wheel events pass through to the map for zoom
-          popupEl.addEventListener("wheel", (e) => {
-            e.stopPropagation();
-            // Re-dispatch the event on the map canvas so MapLibre handles zoom
-            map.getCanvas().dispatchEvent(new WheelEvent("wheel", e));
-          });
+          // Prevent scroll/wheel events on the popup from scrolling the page.
+          // Instead, forward them to the map canvas for proper zoom handling.
+          popupEl.addEventListener(
+            "wheel",
+            (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              map.getCanvas().dispatchEvent(new WheelEvent("wheel", e));
+            },
+            { passive: false },
+          );
         }
         break;
       }
