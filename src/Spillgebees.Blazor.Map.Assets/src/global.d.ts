@@ -1,9 +1,11 @@
-import type { Spillgebees } from "./interfaces/spillgebees";
+import type { SpillgebeesMapNamespace } from "./interfaces/spillgebees";
 
 declare global {
   // noinspection JSUnusedGlobalSymbols
   interface Window {
-    Spillgebees: Spillgebees;
+    Spillgebees: {
+      Map: SpillgebeesMapNamespace;
+    };
     hasBeforeStartBeenCalledForSpillgebeesMap: boolean;
     hasAfterStartedBeenCalledForSpillgebeesMap: boolean;
   }
