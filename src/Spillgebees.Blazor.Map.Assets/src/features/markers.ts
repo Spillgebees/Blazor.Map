@@ -23,17 +23,22 @@ function createMarkerElement(icon: IMarkerIcon): HTMLElement {
 }
 
 function createPopup(options: IPopupOptions): MapLibrePopup {
+  // Permanent and hover popups should never show close buttons
+  const showCloseButton = options.trigger === "click" && options.closeButton;
+
   const popupOptions: PopupOptions = {
-    closeButton: options.trigger === "permanent" ? false : options.closeButton,
-    closeOnClick: options.trigger !== "permanent",
+    closeButton: showCloseButton,
+    closeOnClick: options.trigger === "click",
     closeOnMove: false,
     maxWidth: options.maxWidth ?? "240px",
     className: options.className ?? undefined,
   };
 
-  // Handle anchor
+  // Handle anchor — default to "bottom" for hover/click popups so they appear above the marker
   if (options.anchor !== "auto") {
     popupOptions.anchor = options.anchor;
+  } else if (options.trigger === "hover" || options.trigger === "click") {
+    popupOptions.anchor = "bottom";
   }
 
   // Handle offset
@@ -111,8 +116,9 @@ function createMarkerEntry(map: MapLibreMap, data: IMarker): MarkerEntry {
       }
 
       case "permanent":
-        // Always visible — add immediately and don't attach to marker
-        popupInstance.setLngLat([data.position.longitude, data.position.latitude]).addTo(map);
+        // Always visible — attach to marker so it follows z-index on hover
+        marker.setPopup(popupInstance);
+        marker.togglePopup();
         popup = popupInstance;
         break;
     }

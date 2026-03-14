@@ -246,12 +246,10 @@ describe("addMarkers", () => {
     // act
     addMarkers(map as unknown as Parameters<typeof addMarkers>[0], [marker], storage);
 
-    // assert — permanent popup should be added to map directly, not attached via setPopup
+    // assert — permanent popup is attached to marker so it follows z-index on hover
     const markerInstance = getMockMarkerConstructor().mock.results[0]?.value;
-    expect(markerInstance.setPopup).not.toHaveBeenCalled();
-    const popupInstance = getMockPopupConstructor().mock.results[0]?.value;
-    expect(popupInstance.setLngLat).toHaveBeenCalledWith([-0.09, 51.505]);
-    expect(popupInstance.addTo).toHaveBeenCalledWith(map);
+    expect(markerInstance.setPopup).toHaveBeenCalled();
+    expect(markerInstance.togglePopup).toHaveBeenCalled();
     // Permanent popups should have no close button
     const popupConstructorArgs = getMockPopupConstructor().mock.calls[0]?.[0];
     expect(popupConstructorArgs.closeButton).toBe(false);

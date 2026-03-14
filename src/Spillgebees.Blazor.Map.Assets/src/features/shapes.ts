@@ -1,4 +1,4 @@
-import { type GeoJSONSource, type LngLat, type Map as MapLibreMap, Popup } from "maplibre-gl";
+import { type GeoJSONSource, type LngLatLike, type Map as MapLibreMap, Popup } from "maplibre-gl";
 import type { ICircle, IPolyline, IPopupOptions } from "../interfaces/features";
 import type { FeatureStorage } from "../types/feature-storage";
 
@@ -167,15 +167,18 @@ export function removePolylines(map: MapLibreMap, polylineIds: string[], storage
 // WeakMap so entries are GC'd when the MapLibreMap instance is collected (e.g., after disposeMap)
 const activeHoverPopups = new WeakMap<MapLibreMap, Popup>();
 
-function showShapePopup(map: MapLibreMap, lngLat: LngLat, options: IPopupOptions): void {
+function showShapePopup(map: MapLibreMap, lngLat: LngLatLike, options: IPopupOptions): void {
   removeActiveHoverPopup(map);
 
+  // Hover popups should not show close buttons
+  const showCloseButton = options.trigger === "click" && options.closeButton;
+
   const popup = new Popup({
-    closeButton: options.closeButton,
-    closeOnClick: options.trigger !== "permanent",
+    closeButton: showCloseButton,
+    closeOnClick: options.trigger === "click",
     maxWidth: options.maxWidth ?? "240px",
     className: options.className ?? undefined,
-    anchor: options.anchor !== "auto" ? options.anchor : undefined,
+    anchor: options.anchor !== "auto" ? options.anchor : "bottom",
     offset: options.offset ? [options.offset.x, options.offset.y] : undefined,
   })
     .setLngLat(lngLat)
@@ -195,12 +198,26 @@ function removeActiveHoverPopup(map: MapLibreMap): void {
   }
 }
 
+/**
+ * Extracts the popup position from a feature. For Point geometries (circles),
+ * uses the feature's center coordinates. For other geometries (polylines),
+ * falls back to the event's lngLat (the mouse/click position on the shape).
+ */
+function getPopupLngLat(feature: GeoJSON.Feature, fallback: LngLatLike): LngLatLike {
+  if (feature.geometry.type === "Point") {
+    const [lng, lat] = (feature.geometry as GeoJSON.Point).coordinates;
+    return { lng, lat };
+  }
+  return fallback;
+}
+
 function attachLayerPopupHandlers(map: MapLibreMap, layerId: string): void {
   map.on("click", layerId, (e) => {
     if (!e.features?.length) {
       return;
     }
-    const props = e.features[0].properties;
+    const feature = e.features[0];
+    const props = feature.properties;
     if (!props?.popup) {
       return;
     }
@@ -211,14 +228,15 @@ function attachLayerPopupHandlers(map: MapLibreMap, layerId: string): void {
       return;
     }
 
-    showShapePopup(map, e.lngLat, popupData);
+    showShapePopup(map, getPopupLngLat(feature as GeoJSON.Feature, e.lngLat), popupData);
   });
 
   map.on("mouseenter", layerId, (e) => {
     if (!e.features?.length) {
       return;
     }
-    const props = e.features[0].properties;
+    const feature = e.features[0];
+    const props = feature.properties;
     if (!props?.popup) {
       return;
     }
@@ -229,7 +247,7 @@ function attachLayerPopupHandlers(map: MapLibreMap, layerId: string): void {
     }
 
     map.getCanvas().style.cursor = "pointer";
-    showShapePopup(map, e.lngLat, popupData);
+    showShapePopup(map, getPopupLngLat(feature as GeoJSON.Feature, e.lngLat), popupData);
   });
 
   map.on("mouseleave", layerId, () => {

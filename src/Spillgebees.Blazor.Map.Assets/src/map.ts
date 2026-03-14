@@ -107,6 +107,8 @@ export function buildStyleFromOptions(style: IMapStyle | null): string | StyleSp
 
   if (style.wmsSource) {
     const { baseUrl, layers, format, transparent, version, tileSize } = style.wmsSource;
+    // WMS 1.3.0 introduced CRS; all earlier versions (1.0.0, 1.1.0, 1.1.1) use SRS
+    const crsParam = version === "1.3.0" ? "CRS" : "SRS";
     const wmsUrl = [
       `${baseUrl}?SERVICE=WMS`,
       `&VERSION=${version}`,
@@ -115,7 +117,7 @@ export function buildStyleFromOptions(style: IMapStyle | null): string | StyleSp
       `&LAYERS=${layers}`,
       `&FORMAT=${format}`,
       `&TRANSPARENT=${String(transparent)}`,
-      "&SRS=EPSG:3857",
+      `&${crsParam}=EPSG:3857`,
       "&STYLES=",
       `&WIDTH=${String(tileSize)}`,
       `&HEIGHT=${String(tileSize)}`,

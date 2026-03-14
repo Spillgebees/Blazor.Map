@@ -72,7 +72,13 @@ $border-radius: 8px;
       @include control-interactive;
 
       .maplibregl-ctrl-icon {
+        // Force white icons for zoom/terrain/geolocate buttons
         filter: brightness(0) invert(1);
+      }
+
+      // Compass uses invert only — preserves red (north) vs teal (south) distinction
+      &.maplibregl-ctrl-compass .maplibregl-ctrl-icon {
+        filter: invert(1);
       }
     }
 

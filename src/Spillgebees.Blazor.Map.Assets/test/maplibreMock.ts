@@ -32,6 +32,7 @@ export interface MockMarkerInstance {
   addTo: ReturnType<typeof vi.fn>;
   remove: ReturnType<typeof vi.fn>;
   setPopup: ReturnType<typeof vi.fn>;
+  togglePopup: ReturnType<typeof vi.fn>;
   getElement: ReturnType<typeof vi.fn>;
   setRotation: ReturnType<typeof vi.fn>;
   setOffset: ReturnType<typeof vi.fn>;
@@ -161,6 +162,7 @@ const MockMarker = vi.fn().mockImplementation(function (this: MockMarkerInstance
   this.addTo = vi.fn().mockReturnThis();
   this.remove = vi.fn();
   this.setPopup = vi.fn().mockReturnThis();
+  this.togglePopup = vi.fn().mockReturnThis();
   this.getElement = vi.fn().mockReturnValue(document.createElement("div"));
   this.setRotation = vi.fn().mockReturnThis();
   this.setOffset = vi.fn().mockReturnThis();
