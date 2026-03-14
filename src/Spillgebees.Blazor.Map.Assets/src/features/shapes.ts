@@ -244,6 +244,6 @@ export function setupShapePopupHandlers(map: MapLibreMap): void {
 }
 
 export function ensureShapeLayers(map: MapLibreMap): void {
-  ensureCircleLayer(map);
-  ensurePolylineLayer(map);
+  ensurePolylineLayer(map); // lines below
+  ensureCircleLayer(map); // circles on top
 }

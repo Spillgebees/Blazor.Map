@@ -35,8 +35,13 @@ $border-radius: 8px;
 }
 
 .sgb-map-container {
-  // ensures elements outside of the map container aren't affected by map z-indices
+  position: relative;
+  overflow: hidden;
   z-index: 1;
+}
+
+.maplibregl-marker:hover {
+  z-index: 10 !important;
 }
 
 .sgb-map-center-control {
@@ -67,7 +72,7 @@ $border-radius: 8px;
       @include control-interactive;
 
       .maplibregl-ctrl-icon {
-        filter: invert(1);
+        filter: brightness(0) invert(1);
       }
     }
 
@@ -95,7 +100,8 @@ $border-radius: 8px;
     }
 
     .maplibregl-ctrl-attrib-button {
-      filter: invert(1);
+      filter: brightness(0) invert(1);
+      background-color: transparent !important;
     }
   }
 

@@ -18,7 +18,7 @@ public class BaseMapSyncFeaturesTests : BunitContext
     /// </summary>
     private const int TestTimeoutMs = 5000;
 
-    public BaseMapSyncLayersTests()
+    public BaseMapSyncFeaturesTests()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 

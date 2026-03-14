@@ -16,17 +16,17 @@ public record MapStyle
     /// <summary>
     /// The MapLibre style specification URL (for vector or JSON-based styles).
     /// </summary>
-    internal string? Url { get; }
+    public string? Url { get; }
 
     /// <summary>
     /// The raster tile source configuration, when using raster tiles directly.
     /// </summary>
-    internal RasterTileSource? RasterSource { get; }
+    public RasterTileSource? RasterSource { get; }
 
     /// <summary>
     /// The WMS tile source configuration, when using a WMS endpoint.
     /// </summary>
-    internal WmsTileSource? WmsSource { get; }
+    public WmsTileSource? WmsSource { get; }
 
     /// <summary>
     /// Creates a <see cref="MapStyle"/> from a MapLibre style specification URL.
@@ -106,7 +106,7 @@ public record MapStyle
 /// <param name="UrlTemplate">The tile URL template with <c>{z}</c>, <c>{x}</c>, <c>{y}</c> placeholders.</param>
 /// <param name="Attribution">The attribution text to display on the map.</param>
 /// <param name="TileSize">The tile size in pixels.</param>
-internal sealed record RasterTileSource(string UrlTemplate, string Attribution, int TileSize);
+public sealed record RasterTileSource(string UrlTemplate, string Attribution, int TileSize);
 
 /// <summary>
 /// Configuration for a WMS tile source.
@@ -118,7 +118,7 @@ internal sealed record RasterTileSource(string UrlTemplate, string Attribution, 
 /// <param name="Transparent">Whether to request transparent tiles.</param>
 /// <param name="Version">The WMS service version.</param>
 /// <param name="TileSize">The tile size in pixels.</param>
-internal sealed record WmsTileSource(
+public sealed record WmsTileSource(
     string BaseUrl,
     string Layers,
     string Attribution,
