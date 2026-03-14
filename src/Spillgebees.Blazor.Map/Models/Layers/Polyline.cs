@@ -49,4 +49,52 @@ public record Polyline(
     string? FillColor = null,
     double? FillOpacity = null,
     TooltipOptions? Tooltip = null
-) : IPath;
+) : IPath
+{
+    public virtual bool Equals(Polyline? other)
+    {
+        if (other is null)
+        {
+            return false;
+        }
+
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+
+        return Id == other.Id
+            && Coordinates.SequenceEqual(other.Coordinates)
+            && SmoothFactor == other.SmoothFactor
+            && NoClip == other.NoClip
+            && Stroke == other.Stroke
+            && StrokeColor == other.StrokeColor
+            && StrokeWeight == other.StrokeWeight
+            && StrokeOpacity == other.StrokeOpacity
+            && Fill == other.Fill
+            && FillColor == other.FillColor
+            && FillOpacity == other.FillOpacity
+            && Equals(Tooltip, other.Tooltip);
+    }
+
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(Id);
+        foreach (var coordinate in Coordinates)
+        {
+            hash.Add(coordinate);
+        }
+        hash.Add(SmoothFactor);
+        hash.Add(NoClip);
+        hash.Add(Stroke);
+        hash.Add(StrokeColor);
+        hash.Add(StrokeWeight);
+        hash.Add(StrokeOpacity);
+        hash.Add(Fill);
+        hash.Add(FillColor);
+        hash.Add(FillOpacity);
+        hash.Add(Tooltip);
+        return hash.ToHashCode();
+    }
+}

@@ -6,6 +6,8 @@ import {
   Control,
   LatLng,
   CircleMarker as LeafletCircleMarker,
+  Icon as LeafletIcon,
+  type Layer as LeafletLayer,
   Map as LeafletMap,
   Marker as LeafletMarker,
   Polyline as LeafletPolyline,
@@ -20,6 +22,7 @@ import {
   type ISpillgebeesMapControlOptions,
   type ISpillgebeesMapOptions,
   type ISpillgebeesMarker,
+  type ISpillgebeesMarkerIcon,
   type ISpillgebeesPolyline,
   type ISpillgebeesTileLayer,
   MapTheme,
@@ -28,12 +31,28 @@ import type { LayerStorage, LayerTuple } from "./types/layers";
 import { fitBounds, fitBoundsForMap } from "./utils/fitBoundsForMap";
 import { convertToLeafletTooltip } from "./utils/tooltip";
 
+const createLeafletIcon = (icon: ISpillgebeesMarkerIcon): LeafletIcon => {
+  return new LeafletIcon({
+    iconUrl: icon.iconUrl,
+    ...(icon.iconSize != null && { iconSize: icon.iconSize }),
+    ...(icon.iconAnchor != null && { iconAnchor: icon.iconAnchor }),
+    ...(icon.popupAnchor != null && { popupAnchor: icon.popupAnchor }),
+    ...(icon.tooltipAnchor != null && { tooltipAnchor: icon.tooltipAnchor }),
+    ...(icon.shadowUrl != null && { shadowUrl: icon.shadowUrl }),
+    ...(icon.shadowSize != null && { shadowSize: icon.shadowSize }),
+    ...(icon.shadowAnchor != null && { shadowAnchor: icon.shadowAnchor }),
+    ...(icon.className != null && { className: icon.className }),
+  });
+};
+
 export function bootstrap() {
   window.Spillgebees = window.Spillgebees || {};
   window.Spillgebees.Map = window.Spillgebees.Map || {};
   window.Spillgebees.Map.mapFunctions = window.Spillgebees.Map.mapFunctions || {
     createMap: createMap,
-    setLayers: setLayers,
+    addLayers: addLayers,
+    updateLayers: updateLayers,
+    removeLayers: removeLayers,
     setTileLayers: setTileLayers,
     setMapControls: setMapControls,
     setMapOptions: setMapOptions,
@@ -111,7 +130,7 @@ const createMap = async (
     setMapControls(mapContainer, mapControlOptions);
   }
 
-  setLayers(mapContainer, markers, circleMarkers, polylines);
+  addLayers(mapContainer, markers, circleMarkers, polylines);
 
   if (mapOptions.fitBoundsOptions) {
     const layerStorage = window.Spillgebees.Map.layers.get(map);
@@ -123,7 +142,11 @@ const createMap = async (
   await dotNetHelper.invokeMethodAsync(invokableDotNetMethodName);
 };
 
-const setLayers = (
+/**
+ * Adds new layers to the map without affecting existing layers.
+ * Initializes layer storage if it doesn't exist yet.
+ */
+const addLayers = (
   mapContainer: HTMLElement,
   markers: ISpillgebeesMarker[],
   circleMarkers: ISpillgebeesCircleMarker[],
@@ -138,15 +161,9 @@ const setLayers = (
   if (!layerStorage) {
     layerStorage = { byId: new Map(), byLeaflet: new Map() };
     window.Spillgebees.Map.layers.set(map, layerStorage);
-  } else {
-    for (const leafletLayer of layerStorage.byLeaflet.keys()) {
-      map.removeLayer(leafletLayer);
-    }
-    layerStorage.byId.clear();
-    layerStorage.byLeaflet.clear();
   }
 
-  polylines.forEach((polyline) => {
+  for (const polyline of polylines) {
     const leafletLayer = new LeafletPolyline(
       polyline.coordinates.map((coordinate) => new LatLng(coordinate.latitude, coordinate.longitude)),
       {
@@ -173,10 +190,17 @@ const setLayers = (
     }
 
     map.addLayer(leafletLayer);
-  });
-  markers.forEach((marker) => {
+  }
+
+  for (const marker of markers) {
     const leafletLayer = new LeafletMarker(new LatLng(marker.coordinate.latitude, marker.coordinate.longitude), {
       ...(marker.title != null && { title: marker.title }),
+      ...(marker.icon != null && { icon: createLeafletIcon(marker.icon) }),
+      ...(marker.rotationAngle != null && { rotationAngle: marker.rotationAngle }),
+      ...(marker.rotationOrigin != null && { rotationOrigin: marker.rotationOrigin }),
+      ...(marker.zIndexOffset != null && { zIndexOffset: marker.zIndexOffset }),
+      ...(marker.riseOnHover != null && { riseOnHover: marker.riseOnHover }),
+      ...(marker.riseOffset != null && { riseOffset: marker.riseOffset }),
     });
 
     const layerTuple: LayerTuple = { model: marker, leaflet: leafletLayer };
@@ -190,8 +214,9 @@ const setLayers = (
     }
 
     map.addLayer(leafletLayer);
-  });
-  circleMarkers.forEach((circleMarker) => {
+  }
+
+  for (const circleMarker of circleMarkers) {
     const leafletLayer = new LeafletCircleMarker(
       new LatLng(circleMarker.coordinate.latitude, circleMarker.coordinate.longitude),
       {
@@ -217,9 +242,181 @@ const setLayers = (
     }
 
     map.addLayer(leafletLayer);
-  });
+  }
+};
 
-  map.invalidateSize();
+/**
+ * Incrementally updates existing layers by ID without recreating them.
+ * Layers not found by ID are silently skipped. Use `addLayers` to add new layers.
+ *
+ * For markers: updates position, rotation, icon (when non-null), and tooltip.
+ * When `marker.icon` is null, the icon is not changed (the icon set during `addLayers` is preserved).
+ *
+ * For circleMarkers: updates position, radius, path styles, and tooltip.
+ *
+ * For polylines: updates coordinates, path styles, and tooltip.
+ */
+const updateLayers = (
+  mapContainer: HTMLElement,
+  markers: ISpillgebeesMarker[],
+  circleMarkers: ISpillgebeesCircleMarker[],
+  polylines: ISpillgebeesPolyline[],
+): void => {
+  const map = window.Spillgebees.Map.maps.get(mapContainer);
+  if (!map) {
+    return;
+  }
+
+  const layerStorage = window.Spillgebees.Map.layers.get(map);
+  if (!layerStorage) {
+    return;
+  }
+
+  for (const marker of markers) {
+    const existing = layerStorage.byId.get(marker.id);
+    if (!existing) {
+      continue;
+    }
+
+    const leafletMarker = existing.leaflet as LeafletMarker;
+
+    leafletMarker.setLatLng(new LatLng(marker.coordinate.latitude, marker.coordinate.longitude));
+
+    if (marker.rotationAngle != null) {
+      leafletMarker.setRotationAngle(marker.rotationAngle);
+    } else {
+      leafletMarker.setRotationAngle(0);
+    }
+
+    if (marker.icon != null) {
+      leafletMarker.setIcon(createLeafletIcon(marker.icon));
+    }
+
+    if (marker.zIndexOffset != null) {
+      leafletMarker.setZIndexOffset(marker.zIndexOffset);
+    } else {
+      leafletMarker.setZIndexOffset(0);
+    }
+
+    // Only rebind tooltip if it actually changed which avoids DOM recreation jitter and
+    // tooltip disappearing during map interactions (mousedown/drag).
+    // Note: JSON.stringify comparison relies on deterministic property ordering from
+    // System.Text.Json serialization on the C# side.
+    if (JSON.stringify(marker.tooltip) !== JSON.stringify(existing.model.tooltip)) {
+      leafletMarker.unbindTooltip();
+      if (marker.tooltip) {
+        leafletMarker.bindTooltip(convertToLeafletTooltip(marker.tooltip));
+      }
+    }
+
+    // Update the stored model
+    const updatedTuple: LayerTuple = { model: marker, leaflet: leafletMarker };
+    layerStorage.byId.set(marker.id, updatedTuple);
+    layerStorage.byLeaflet.set(leafletMarker as unknown as LeafletLayer, updatedTuple);
+  }
+
+  for (const circleMarker of circleMarkers) {
+    const existing = layerStorage.byId.get(circleMarker.id);
+    if (!existing) {
+      continue;
+    }
+
+    const leafletCircleMarker = existing.leaflet as LeafletCircleMarker;
+
+    leafletCircleMarker.setLatLng(new LatLng(circleMarker.coordinate.latitude, circleMarker.coordinate.longitude));
+    leafletCircleMarker.setRadius(circleMarker.radius);
+    leafletCircleMarker.setStyle({
+      stroke: circleMarker.stroke,
+      ...(circleMarker.strokeColor != null && { color: circleMarker.strokeColor }),
+      ...(circleMarker.strokeWeight != null && { weight: circleMarker.strokeWeight }),
+      ...(circleMarker.strokeOpacity != null && { opacity: circleMarker.strokeOpacity }),
+      fill: circleMarker.fill,
+      ...(circleMarker.fillColor != null && { fillColor: circleMarker.fillColor }),
+      ...(circleMarker.fillOpacity != null && { fillOpacity: circleMarker.fillOpacity }),
+    });
+
+    // See marker updateLayers for JSON.stringify ordering note
+    if (JSON.stringify(circleMarker.tooltip) !== JSON.stringify(existing.model.tooltip)) {
+      leafletCircleMarker.unbindTooltip();
+      if (circleMarker.tooltip) {
+        leafletCircleMarker.bindTooltip(convertToLeafletTooltip(circleMarker.tooltip));
+      }
+    }
+
+    // Update the stored model
+    const updatedTuple: LayerTuple = { model: circleMarker, leaflet: leafletCircleMarker };
+    layerStorage.byId.set(circleMarker.id, updatedTuple);
+    layerStorage.byLeaflet.set(leafletCircleMarker as unknown as LeafletLayer, updatedTuple);
+  }
+
+  for (const polyline of polylines) {
+    const existing = layerStorage.byId.get(polyline.id);
+    if (!existing) {
+      continue;
+    }
+
+    const leafletPolyline = existing.leaflet as LeafletPolyline;
+
+    leafletPolyline.setLatLngs(
+      polyline.coordinates.map((coordinate) => new LatLng(coordinate.latitude, coordinate.longitude)),
+    );
+    leafletPolyline.setStyle({
+      stroke: polyline.stroke,
+      ...(polyline.strokeColor != null && { color: polyline.strokeColor }),
+      ...(polyline.strokeWeight != null && { weight: polyline.strokeWeight }),
+      ...(polyline.strokeOpacity != null && { opacity: polyline.strokeOpacity }),
+      fill: polyline.fill,
+      ...(polyline.fillColor != null && { fillColor: polyline.fillColor }),
+      ...(polyline.fillOpacity != null && { fillOpacity: polyline.fillOpacity }),
+    });
+
+    // See marker updateLayers for JSON.stringify ordering note
+    if (JSON.stringify(polyline.tooltip) !== JSON.stringify(existing.model.tooltip)) {
+      leafletPolyline.unbindTooltip();
+      if (polyline.tooltip) {
+        leafletPolyline.bindTooltip(convertToLeafletTooltip(polyline.tooltip));
+      }
+    }
+
+    // Update the stored model
+    const updatedTuple: LayerTuple = { model: polyline, leaflet: leafletPolyline };
+    layerStorage.byId.set(polyline.id, updatedTuple);
+    layerStorage.byLeaflet.set(leafletPolyline as unknown as LeafletLayer, updatedTuple);
+  }
+};
+
+/**
+ * Removes specific layers by their IDs.
+ * Unknown IDs are silently skipped.
+ */
+const removeLayers = (
+  mapContainer: HTMLElement,
+  markerIds: string[],
+  circleMarkerIds: string[],
+  polylineIds: string[],
+): void => {
+  const map = window.Spillgebees.Map.maps.get(mapContainer);
+  if (!map) {
+    return;
+  }
+
+  const layerStorage = window.Spillgebees.Map.layers.get(map);
+  if (!layerStorage) {
+    return;
+  }
+
+  const allIds = [...markerIds, ...circleMarkerIds, ...polylineIds];
+
+  for (const id of allIds) {
+    const existing = layerStorage.byId.get(id);
+    if (!existing) {
+      continue;
+    }
+
+    map.removeLayer(existing.leaflet);
+    layerStorage.byId.delete(id);
+    layerStorage.byLeaflet.delete(existing.leaflet as unknown as LeafletLayer);
+  }
 };
 
 const setTileLayers = (mapContainer: HTMLElement, tileLayers: ISpillgebeesTileLayer[]): void => {

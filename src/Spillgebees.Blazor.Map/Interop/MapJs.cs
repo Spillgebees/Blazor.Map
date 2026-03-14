@@ -39,21 +39,55 @@ internal static class MapJs
             polylines
         );
 
-    internal static ValueTask SetLayersAsync(
+    internal static ValueTask AddLayersAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
         ElementReference mapReference,
-        List<Marker> markers,
-        List<CircleMarker> circleMarkers,
-        List<Polyline> polylines
+        IReadOnlyList<Marker> markers,
+        IReadOnlyList<CircleMarker> circleMarkers,
+        IReadOnlyList<Polyline> polylines
     ) =>
         jsRuntime.SafeInvokeVoidAsync(
             logger,
-            $"{JsNamespace}.setLayers",
+            $"{JsNamespace}.addLayers",
             mapReference,
             markers,
             circleMarkers,
             polylines
+        );
+
+    internal static ValueTask UpdateLayersAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        IReadOnlyList<Marker> markers,
+        IReadOnlyList<CircleMarker> circleMarkers,
+        IReadOnlyList<Polyline> polylines
+    ) =>
+        jsRuntime.SafeInvokeVoidAsync(
+            logger,
+            $"{JsNamespace}.updateLayers",
+            mapReference,
+            markers,
+            circleMarkers,
+            polylines
+        );
+
+    internal static ValueTask RemoveLayersAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        IReadOnlyList<string> markerIds,
+        IReadOnlyList<string> circleMarkerIds,
+        IReadOnlyList<string> polylineIds
+    ) =>
+        jsRuntime.SafeInvokeVoidAsync(
+            logger,
+            $"{JsNamespace}.removeLayers",
+            mapReference,
+            markerIds,
+            circleMarkerIds,
+            polylineIds
         );
 
     internal static ValueTask SetTileLayersAsync(

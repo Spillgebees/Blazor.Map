@@ -10,7 +10,12 @@ namespace Spillgebees.Blazor.Map.Models.Layers;
 /// <param name="Attribution">The attribution text to be displayed on the map.</param>
 /// <param name="Tile">Options that apply to regular tile requests.</param>
 /// <param name="Wms">Options that apply to WMS requests.</param>
-public record TileLayer(string UrlTemplate, string Attribution, TileLayerOptions? Tile = null, WmsLayerOptions? Wms = null)
+public record TileLayer(
+    string UrlTemplate,
+    string Attribution,
+    TileLayerOptions? Tile = null,
+    WmsLayerOptions? Wms = null
+)
 {
     /// <summary>
     /// OpenStreetMap tile layer, free to use with attribution.
@@ -36,6 +41,9 @@ public record TileLayer(string UrlTemplate, string Attribution, TileLayerOptions
         Attribution: "&copy; <a href='memomaps.de'>memomaps.de</a> <a href='https://creativecommons.org/licenses/by-sa/2.0/CC-BY-SA'>CC-BY-SA</a> | &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
     );
 
+    /// <summary>
+    /// Luxembourg OpenData base map from Geoportail.lu.
+    /// </summary>
     public static readonly TileLayer OpenDataBaseMap = new(
         UrlTemplate: "https://wmts1.geoportail.lu/opendata/wmts/basemap/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png",
         Attribution: "&copy;  <a href='https://data.public.lu/en/datasets/carte-de-base-webservices-wms-et-wmts'>OpenData</a> <a href='https://creativecommons.org/publicdomain/zero/1.0/'>CC0</a>/<a href='https://creativecommons.org/licenses/by/4.0/deed.en'>CC-BY</a> | &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
@@ -47,11 +55,16 @@ public record TileLayer(string UrlTemplate, string Attribution, TileLayerOptions
     public static readonly TileLayer OpenDataBaseMapWms = new(
         UrlTemplate: "https://wmts1.geoportail.lu/opendata/service",
         Attribution: "&copy;  <a href='https://data.public.lu/en/datasets/carte-de-base-webservices-wms-et-wmts'>OpenData</a> <a href='https://creativecommons.org/publicdomain/zero/1.0/'>CC0</a>/<a href='https://creativecommons.org/licenses/by/4.0/deed.en'>CC-BY</a> | &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
-        Wms: new WmsLayerOptions(
-            Layers: "basemap",
-            Format: "image/png",
-            Transparent: false,
-            Version: "1.3.0"
-        )
+        Wms: new WmsLayerOptions(Layers: "basemap", Format: "image/png", Transparent: false, Version: "1.3.0")
+    );
+
+    /// <summary>
+    /// OpenRailwayMap overlay showing railway infrastructure.
+    /// Renders on a transparent background, should be used as an overlay on top of a base map.
+    /// See <a href="https://www.openrailwaymap.org/">OpenRailwayMap</a>.
+    /// </summary>
+    public static readonly TileLayer OpenRailwayMap = new(
+        UrlTemplate: "https://tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png",
+        Attribution: "Style: <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA 2.0</a> <a href=\"https://www.openrailwaymap.org/\">OpenRailwayMap</a>"
     );
 }
