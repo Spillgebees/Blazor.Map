@@ -6,6 +6,7 @@ using Spillgebees.Blazor.Map.Interop;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Layers;
+using Spillgebees.Blazor.Map.Utilities;
 
 namespace Spillgebees.Blazor.Map.Components;
 
@@ -167,17 +168,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             return;
         }
 
-        if (
-            Markers.SequenceEqual(InternalMarkers) is false
-            || CircleMarkers.SequenceEqual(InternalCircleMarkers) is false
-            || Polylines.SequenceEqual(InternalPolylines) is false
-        )
-        {
-            InternalMarkers = [.. Markers];
-            InternalCircleMarkers = [.. CircleMarkers];
-            InternalPolylines = [.. Polylines];
-            await SetMarkersAsync();
-        }
+        await SyncLayersAsync();
 
         if (TileLayers != InternalTileLayers)
         {
@@ -196,8 +187,6 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             InternalMapOptions = MapOptions;
             await SetMapOptionsAsync();
         }
-
-        await Task.CompletedTask;
     }
 
     protected override Task OnAfterRenderAsync(bool firstRender) =>
@@ -229,15 +218,61 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         );
     }
 
-    private ValueTask SetMarkersAsync() =>
-        MapJs.SetLayersAsync(
-            JsRuntime,
-            Logger.Value,
-            MapReference,
-            InternalMarkers,
-            InternalCircleMarkers,
-            InternalPolylines
-        );
+    private async Task SyncLayersAsync()
+    {
+        var markerDiff = LayerDiffer.Diff(InternalMarkers, Markers, static m => m.Id);
+        var circleMarkerDiff = LayerDiffer.Diff(InternalCircleMarkers, CircleMarkers, static cm => cm.Id);
+        var polylineDiff = LayerDiffer.Diff(InternalPolylines, Polylines, static p => p.Id);
+
+        if (!markerDiff.HasChanges && !circleMarkerDiff.HasChanges && !polylineDiff.HasChanges)
+        {
+            return;
+        }
+
+        // remove deleted layers
+        if (markerDiff.Removed.Length > 0 || circleMarkerDiff.Removed.Length > 0 || polylineDiff.Removed.Length > 0)
+        {
+            await MapJs.RemoveLayersAsync(
+                JsRuntime,
+                Logger.Value,
+                MapReference,
+                markerDiff.Removed,
+                circleMarkerDiff.Removed,
+                polylineDiff.Removed
+            );
+        }
+
+        // add new layers
+        if (markerDiff.Added.Length > 0 || circleMarkerDiff.Added.Length > 0 || polylineDiff.Added.Length > 0)
+        {
+            await MapJs.AddLayersAsync(
+                JsRuntime,
+                Logger.Value,
+                MapReference,
+                markerDiff.Added,
+                circleMarkerDiff.Added,
+                polylineDiff.Added
+            );
+        }
+
+        // update existing layers
+        if (markerDiff.Updated.Length > 0 || circleMarkerDiff.Updated.Length > 0 || polylineDiff.Updated.Length > 0)
+        {
+            await MapJs.UpdateLayersAsync(
+                JsRuntime,
+                Logger.Value,
+                MapReference,
+                markerDiff.Updated,
+                circleMarkerDiff.Updated,
+                polylineDiff.Updated
+            );
+        }
+
+        // snapshot new state
+        InternalMarkers = [.. Markers];
+        InternalCircleMarkers = [.. CircleMarkers];
+        InternalPolylines = [.. Polylines];
+    }
 
     private ValueTask SetTileLayersAsync() =>
         MapJs.SetTileLayersAsync(JsRuntime, Logger.Value, MapReference, InternalTileLayers);

@@ -35,6 +35,13 @@ export class MockTooltip {
   }
 }
 
+export class MockIcon {
+  _options: Record<string, unknown>;
+  constructor(options?: Record<string, unknown>) {
+    this._options = options ?? {};
+  }
+}
+
 export class MockTileLayer {
   _url: string;
   _options: Record<string, unknown>;
@@ -54,6 +61,19 @@ export class MockMarker {
     this._options = options ?? {};
   }
   getLatLng = vi.fn(() => this._latlng);
+  setLatLng = vi.fn((latlng: MockLatLng) => {
+    this._latlng = latlng;
+    return this;
+  });
+  setIcon = vi.fn().mockReturnThis();
+  setRotationAngle = vi.fn((angle: number) => {
+    this._options.rotationAngle = angle;
+    return this;
+  });
+  setZIndexOffset = vi.fn((offset: number) => {
+    this._options.zIndexOffset = offset;
+    return this;
+  });
   getBounds = vi.fn(() => new MockLatLngBounds([this._latlng]));
   bindTooltip = vi.fn().mockReturnThis();
   unbindTooltip = vi.fn().mockReturnThis();
@@ -69,6 +89,12 @@ export class MockCircleMarker {
     this._options = options ?? {};
   }
   getLatLng = vi.fn(() => this._latlng);
+  setLatLng = vi.fn((latlng: MockLatLng) => {
+    this._latlng = latlng;
+    return this;
+  });
+  setRadius = vi.fn().mockReturnThis();
+  setStyle = vi.fn().mockReturnThis();
   getBounds = vi.fn(() => new MockLatLngBounds([this._latlng]));
   bindTooltip = vi.fn().mockReturnThis();
   unbindTooltip = vi.fn().mockReturnThis();
@@ -84,6 +110,11 @@ export class MockPolyline {
     this._options = options ?? {};
   }
   getLatLng = vi.fn();
+  setLatLngs = vi.fn((latlngs: MockLatLng[]) => {
+    this._latlngs = latlngs;
+    return this;
+  });
+  setStyle = vi.fn().mockReturnThis();
   getBounds = vi.fn(() => new MockLatLngBounds(this._latlngs));
   bindTooltip = vi.fn().mockReturnThis();
   unbindTooltip = vi.fn().mockReturnThis();
@@ -151,6 +182,7 @@ export const MockDomEvent = {
 export function createLeafletMock() {
   return {
     Map: MockMap,
+    Icon: MockIcon,
     LatLng: MockLatLng,
     LatLngBounds: MockLatLngBounds,
     Marker: MockMarker,

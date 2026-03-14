@@ -29,10 +29,10 @@ $border-radius: 8px;
 }
 
 @mixin dark-overlay {
-    background: $dark-bg-primary !important;
-    color: $dark-text-primary !important;
-    border: none !important;
-    box-shadow: none !important;
+    background: $dark-bg-primary;
+    color: $dark-text-primary;
+    border: none;
+    box-shadow: none;
 }
 
 .sgb-map-container {
