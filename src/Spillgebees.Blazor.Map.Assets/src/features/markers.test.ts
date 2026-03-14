@@ -217,12 +217,17 @@ describe("addMarkers", () => {
     // act
     addMarkers(map as unknown as Parameters<typeof addMarkers>[0], [marker], storage);
 
-    // assert — hover popup should have event listeners on the marker element, not setPopup
+    // assert — hover popup is attached to marker via setPopup, toggled on mouseenter/mouseleave
     const markerInstance = getMockMarkerConstructor().mock.results[0]?.value;
-    expect(markerInstance.setPopup).not.toHaveBeenCalled();
+    expect(markerInstance.setPopup).toHaveBeenCalled();
+    // togglePopup is NOT called initially (only on mouseenter)
+    expect(markerInstance.togglePopup).not.toHaveBeenCalled();
     const markerElement = markerInstance.getElement();
     // Verify addEventListener was called for mouseenter and mouseleave
     expect(markerElement.addEventListener).toBeDefined();
+    // Hover popups should not have close button
+    const popupConstructorArgs = getMockPopupConstructor().mock.calls[0]?.[0];
+    expect(popupConstructorArgs.closeButton).toBe(false);
   });
 
   it("should create marker with permanent popup (always visible, no close button)", () => {

@@ -98,29 +98,67 @@ function createMarkerEntry(map: MapLibreMap, data: IMarker): MarkerEntry {
 
     switch (data.popup.trigger) {
       case "click":
+        // MapLibre positions click popups relative to the marker automatically
         marker.setPopup(popupInstance);
         popup = popupInstance;
         break;
 
       case "hover": {
-        // Show on mouseenter, hide on mouseleave
+        // Attach to marker so MapLibre positions it correctly above the icon.
+        // Manually toggle on mouseenter/mouseleave.
+        marker.setPopup(popupInstance);
         const markerEl = marker.getElement();
+        let isHovering = false;
         markerEl.addEventListener("mouseenter", () => {
-          popupInstance.setLngLat([data.position.longitude, data.position.latitude]).addTo(map);
+          if (!isHovering) {
+            isHovering = true;
+            marker.togglePopup();
+          }
         });
         markerEl.addEventListener("mouseleave", () => {
-          popupInstance.remove();
+          if (isHovering) {
+            isHovering = false;
+            marker.togglePopup();
+          }
         });
         hoverPopup = popupInstance;
         break;
       }
 
-      case "permanent":
-        // Always visible — attach to marker so it follows z-index on hover
+      case "permanent": {
+        // Attach to marker and open immediately
         marker.setPopup(popupInstance);
         marker.togglePopup();
         popup = popupInstance;
+
+        // Sync z-index between marker and popup on hover so both rise together
+        const markerEl = marker.getElement();
+        const popupEl = popupInstance.getElement();
+        if (popupEl) {
+          markerEl.addEventListener("mouseenter", () => {
+            popupEl.style.zIndex = "10";
+          });
+          markerEl.addEventListener("mouseleave", () => {
+            popupEl.style.zIndex = "";
+          });
+          // Also rise when hovering the popup itself
+          popupEl.addEventListener("mouseenter", () => {
+            markerEl.style.zIndex = "10";
+            popupEl.style.zIndex = "10";
+          });
+          popupEl.addEventListener("mouseleave", () => {
+            markerEl.style.zIndex = "";
+            popupEl.style.zIndex = "";
+          });
+          // Let scroll/wheel events pass through to the map for zoom
+          popupEl.addEventListener("wheel", (e) => {
+            e.stopPropagation();
+            // Re-dispatch the event on the map canvas so MapLibre handles zoom
+            map.getCanvas().dispatchEvent(new WheelEvent("wheel", e));
+          });
+        }
         break;
+      }
     }
   }
 

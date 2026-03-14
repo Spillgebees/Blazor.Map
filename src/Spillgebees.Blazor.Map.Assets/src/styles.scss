@@ -76,9 +76,11 @@ $border-radius: 8px;
         filter: brightness(0) invert(1);
       }
 
-      // Compass uses invert only — preserves red (north) vs teal (south) distinction
+      // Compass needs a custom approach — filter-based inversion makes one half
+      // invisible on dark backgrounds. Replace with a dark-mode-friendly SVG.
       &.maplibregl-ctrl-compass .maplibregl-ctrl-icon {
-        filter: invert(1);
+        filter: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpolygon fill='%23e74c3c' points='10,2 7,10 10,8 13,10'/%3E%3Cpolygon fill='%23cccccc' points='10,18 7,10 10,12 13,10'/%3E%3C/svg%3E") !important;
       }
     }
 
@@ -124,11 +126,35 @@ $border-radius: 8px;
     border-radius: $border-radius !important;
   }
 
-  .maplibregl-popup-tip {
+  // Popup tips (arrows) are CSS triangles — only the border opposite the
+  // anchor direction is visible. Set per-anchor-direction colors to match
+  // the popup content background.
+  .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
     border-top-color: $dark-bg-primary !important;
+  }
+
+  .maplibregl-popup-anchor-top .maplibregl-popup-tip {
     border-bottom-color: $dark-bg-primary !important;
-    border-left-color: $dark-bg-primary !important;
+  }
+
+  .maplibregl-popup-anchor-left .maplibregl-popup-tip {
     border-right-color: $dark-bg-primary !important;
+  }
+
+  .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+    border-left-color: $dark-bg-primary !important;
+  }
+
+  // For diagonal anchors (top-left, top-right, bottom-left, bottom-right),
+  // MapLibre uses a rotated tip — the top-border trick still applies
+  .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+  .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+    border-top-color: $dark-bg-primary !important;
+  }
+
+  .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+  .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+    border-bottom-color: $dark-bg-primary !important;
   }
 
   .maplibregl-popup-close-button {
