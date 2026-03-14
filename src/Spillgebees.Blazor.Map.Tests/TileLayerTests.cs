@@ -44,7 +44,7 @@ public class TileLayerTests
         var tileLayer = TileLayer.OpenDataBaseMapWms;
 
         // assert
-        tileLayer.UrlTemplate.Should().Be("https://wms.geoportail.lu/geoserver/opendata/wms");
+        tileLayer.UrlTemplate.Should().Be("https://wmts1.geoportail.lu/opendata/service");
         tileLayer.Wms.Should().BeEquivalentTo(
             new WmsLayerOptions(
                 Layers: "basemap",

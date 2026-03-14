@@ -23,7 +23,7 @@ WMS tile layers use the same `TileLayer` API as regular tile layers:
 var tileLayers = new List<TileLayer>
 {
     new(
-        UrlTemplate: "https://wms.geoportail.lu/geoserver/opendata/wms",
+        UrlTemplate: "https://wmts1.geoportail.lu/opendata/service",
         Attribution: "&copy; OpenData Luxembourg",
         Wms: new WmsLayerOptions(
             Layers: "basemap",
