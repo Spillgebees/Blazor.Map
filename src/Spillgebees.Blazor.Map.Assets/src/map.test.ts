@@ -16,6 +16,7 @@ import {
   disposeMap,
   PROTOCOL_VERSION,
   resize,
+  setControls,
   setMapOptions,
   setTheme,
 } from "./map";
@@ -805,5 +806,316 @@ describe("setMapOptions", () => {
 
     // act & assert
     expect(() => setMapOptions(unknownElement, options)).not.toThrow();
+  });
+});
+
+describe("setControls", () => {
+  beforeEach(() => {
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+  });
+
+  it("should add navigation control when enabled", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions();
+    const controlOptions = createDefaultControlOptions();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
+    const mockMap = getLatestMockMapInstance()!;
+
+    const navControlOptions: IMapControlOptions = {
+      ...createDefaultControlOptions(),
+      navigation: {
+        enable: true,
+        position: "top-right",
+        showCompass: true,
+        showZoom: true,
+      },
+    };
+
+    // act
+    setControls(mapElement, navControlOptions);
+
+    // assert
+    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
+    expect(mockMap.addControl).toHaveBeenCalledWith(expect.anything(), "top-right");
+  });
+
+  it("should add scale control when enabled", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions();
+    const controlOptions = createDefaultControlOptions();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
+    const mockMap = getLatestMockMapInstance()!;
+
+    const scaleControlOptions: IMapControlOptions = {
+      ...createDefaultControlOptions(),
+      scale: {
+        enable: true,
+        position: "bottom-left",
+        unit: "metric",
+      },
+    };
+
+    // act
+    setControls(mapElement, scaleControlOptions);
+
+    // assert
+    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
+    expect(mockMap.addControl).toHaveBeenCalledWith(expect.anything(), "bottom-left");
+  });
+
+  it("should add multiple controls when multiple are enabled", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions();
+    const controlOptions = createDefaultControlOptions();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
+    const mockMap = getLatestMockMapInstance()!;
+
+    const multiControlOptions: IMapControlOptions = {
+      navigation: {
+        enable: true,
+        position: "top-right",
+        showCompass: true,
+        showZoom: true,
+      },
+      scale: {
+        enable: true,
+        position: "bottom-left",
+        unit: "metric",
+      },
+      fullscreen: {
+        enable: true,
+        position: "top-right",
+      },
+      geolocate: null,
+      terrain: null,
+      center: null,
+    };
+
+    // act
+    setControls(mapElement, multiControlOptions);
+
+    // assert
+    expect(mockMap.addControl).toHaveBeenCalledTimes(3);
+  });
+
+  it("should remove existing controls before adding new ones", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions();
+    const controlOptions = createDefaultControlOptions();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
+    const mockMap = getLatestMockMapInstance()!;
+
+    const firstControlOptions: IMapControlOptions = {
+      ...createDefaultControlOptions(),
+      navigation: {
+        enable: true,
+        position: "top-right",
+        showCompass: true,
+        showZoom: true,
+      },
+    };
+
+    // Add initial controls
+    setControls(mapElement, firstControlOptions);
+    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
+
+    const secondControlOptions: IMapControlOptions = {
+      ...createDefaultControlOptions(),
+      scale: {
+        enable: true,
+        position: "bottom-left",
+        unit: "metric",
+      },
+    };
+
+    // act — replace controls
+    setControls(mapElement, secondControlOptions);
+
+    // assert — the first control was removed, and the new one was added
+    expect(mockMap.removeControl).toHaveBeenCalledTimes(1);
+    expect(mockMap.addControl).toHaveBeenCalledTimes(2); // 1 from first + 1 from second
+  });
+
+  it("should handle all controls being null gracefully", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions();
+    const controlOptions = createDefaultControlOptions();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
+    const mockMap = getLatestMockMapInstance()!;
+
+    const emptyControlOptions = createDefaultControlOptions();
+
+    // act
+    setControls(mapElement, emptyControlOptions);
+
+    // assert
+    expect(mockMap.addControl).not.toHaveBeenCalled();
+  });
+
+  it("should add center control when enabled", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions();
+    const controlOptions = createDefaultControlOptions();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
+    const mockMap = getLatestMockMapInstance()!;
+
+    const centerControlOptions: IMapControlOptions = {
+      ...createDefaultControlOptions(),
+      center: {
+        enable: true,
+        position: "bottom-right",
+        center: { latitude: 51.505, longitude: -0.09 },
+        zoom: 13,
+        fitBoundsOptions: null,
+      },
+    };
+
+    // act
+    setControls(mapElement, centerControlOptions);
+
+    // assert
+    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
+    expect(mockMap.addControl).toHaveBeenCalledWith(expect.anything(), "bottom-right");
+  });
+
+  it("should add geolocate control when enabled", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions();
+    const controlOptions = createDefaultControlOptions();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
+    const mockMap = getLatestMockMapInstance()!;
+
+    const geolocateControlOptions: IMapControlOptions = {
+      ...createDefaultControlOptions(),
+      geolocate: {
+        enable: true,
+        position: "top-left",
+        trackUser: true,
+      },
+    };
+
+    // act
+    setControls(mapElement, geolocateControlOptions);
+
+    // assert
+    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
+    expect(mockMap.addControl).toHaveBeenCalledWith(expect.anything(), "top-left");
+  });
+
+  it("should add terrain control when enabled", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions();
+    const controlOptions = createDefaultControlOptions();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
+    const mockMap = getLatestMockMapInstance()!;
+
+    const terrainControlOptions: IMapControlOptions = {
+      ...createDefaultControlOptions(),
+      terrain: {
+        enable: true,
+        position: "top-right",
+      },
+    };
+
+    // act
+    setControls(mapElement, terrainControlOptions);
+
+    // assert
+    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
+    expect(mockMap.addControl).toHaveBeenCalledWith(expect.anything(), "top-right");
+  });
+
+  it("should not add controls that are disabled", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions();
+    const controlOptions = createDefaultControlOptions();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
+    const mockMap = getLatestMockMapInstance()!;
+
+    const disabledControlOptions: IMapControlOptions = {
+      navigation: {
+        enable: false,
+        position: "top-right",
+        showCompass: true,
+        showZoom: true,
+      },
+      scale: {
+        enable: false,
+        position: "bottom-left",
+        unit: "metric",
+      },
+      fullscreen: null,
+      geolocate: null,
+      terrain: null,
+      center: null,
+    };
+
+    // act
+    setControls(mapElement, disabledControlOptions);
+
+    // assert
+    expect(mockMap.addControl).not.toHaveBeenCalled();
+  });
+
+  it("should be a no-op for unknown elements", () => {
+    // arrange
+    const unknownElement = document.createElement("div");
+    const controlOptions = createDefaultControlOptions();
+
+    // act & assert
+    expect(() => setControls(unknownElement, controlOptions)).not.toThrow();
+  });
+
+  it("should track controls in the controls store", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions();
+    const controlOptions = createDefaultControlOptions();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
+    const map = window.Spillgebees.Map.maps.get(mapElement)!;
+
+    const navControlOptions: IMapControlOptions = {
+      ...createDefaultControlOptions(),
+      navigation: {
+        enable: true,
+        position: "top-right",
+        showCompass: true,
+        showZoom: true,
+      },
+      scale: {
+        enable: true,
+        position: "bottom-left",
+        unit: "metric",
+      },
+    };
+
+    // act
+    setControls(mapElement, navControlOptions);
+
+    // assert
+    const controls = window.Spillgebees.Map.controls.get(map);
+    expect(controls).toBeDefined();
+    expect(controls!.size).toBe(2);
   });
 });

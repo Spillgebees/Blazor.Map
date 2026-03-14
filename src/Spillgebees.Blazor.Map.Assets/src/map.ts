@@ -1,6 +1,14 @@
 import type { DotNet } from "@microsoft/dotnet-js-interop";
 import type { IControl, StyleSpecification } from "maplibre-gl";
-import { Map as MapLibreMap } from "maplibre-gl";
+import {
+  FullscreenControl,
+  GeolocateControl,
+  Map as MapLibreMap,
+  NavigationControl,
+  ScaleControl,
+  TerrainControl,
+} from "maplibre-gl";
+import { CenterControl } from "./controls/centerControl";
 import type { IMapControlOptions } from "./interfaces/controls";
 import type { ICircle, IMarker, IPolyline } from "./interfaces/features";
 import type { IFitBoundsOptions, IMapOptions, IMapStyle, ITileOverlay } from "./interfaces/map";
@@ -298,8 +306,73 @@ export function setOverlays(_mapElement: HTMLElement, _overlays: ITileOverlay[])
   // Not yet implemented — Phase 6
 }
 
-export function setControls(_mapElement: HTMLElement, _controlOptions: IMapControlOptions): void {
-  // Not yet implemented — Phase 3
+export function setControls(mapElement: HTMLElement, controlOptions: IMapControlOptions): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return;
+  }
+
+  // Remove all existing controls
+  const existingControls = window.Spillgebees.Map.controls.get(map);
+  if (existingControls) {
+    for (const control of existingControls) {
+      map.removeControl(control);
+    }
+    existingControls.clear();
+  }
+
+  const controls = window.Spillgebees.Map.controls.get(map) ?? new Set<IControl>();
+
+  // Navigation control (zoom + compass)
+  if (controlOptions.navigation?.enable) {
+    const nav = new NavigationControl({
+      showCompass: controlOptions.navigation.showCompass,
+      showZoom: controlOptions.navigation.showZoom,
+    });
+    map.addControl(nav, controlOptions.navigation.position);
+    controls.add(nav);
+  }
+
+  // Scale control
+  if (controlOptions.scale?.enable) {
+    const scale = new ScaleControl({
+      unit: controlOptions.scale.unit,
+    });
+    map.addControl(scale, controlOptions.scale.position);
+    controls.add(scale);
+  }
+
+  // Fullscreen control
+  if (controlOptions.fullscreen?.enable) {
+    const fs = new FullscreenControl();
+    map.addControl(fs, controlOptions.fullscreen.position);
+    controls.add(fs);
+  }
+
+  // Geolocate control
+  if (controlOptions.geolocate?.enable) {
+    const geo = new GeolocateControl({
+      trackUserLocation: controlOptions.geolocate.trackUser,
+    });
+    map.addControl(geo, controlOptions.geolocate.position);
+    controls.add(geo);
+  }
+
+  // Terrain control
+  if (controlOptions.terrain?.enable) {
+    const terrain = new TerrainControl();
+    map.addControl(terrain, controlOptions.terrain.position);
+    controls.add(terrain);
+  }
+
+  // Custom center control
+  if (controlOptions.center?.enable) {
+    const center = new CenterControl(controlOptions.center);
+    map.addControl(center, controlOptions.center.position);
+    controls.add(center);
+  }
+
+  window.Spillgebees.Map.controls.set(map, controls);
 }
 
 export function fitBounds(_mapElement: HTMLElement, _options: IFitBoundsOptions): void {
