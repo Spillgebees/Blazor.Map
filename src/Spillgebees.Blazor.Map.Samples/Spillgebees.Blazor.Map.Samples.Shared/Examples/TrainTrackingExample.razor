@@ -7,6 +7,9 @@
 @implements IAsyncDisposable
 
 <style>
+    /* Google Fonts: Martian Mono (service numbers) + DM Sans (route labels) */
+    @@import url("https://fonts.googleapis.com/css2?family=Martian+Mono:wght@@700&family=DM+Sans:wght@@600&display=swap");
+
     .leaflet-tooltip.sgb-text-label {
         background: none;
         border: none;
@@ -27,9 +30,6 @@
     .leaflet-tooltip-right.sgb-text-label {
         margin: 0;
     }
-
-    /* Google Fonts: Martian Mono (service numbers) + DM Sans (route labels) */
-    @@import url("https://fonts.googleapis.com/css2?family=Martian+Mono:wght@@700&family=DM+Sans:wght@@600&display=swap");
 
     .train-label {
         line-height: 1.2;
@@ -147,8 +147,15 @@ new TooltipOptions(tooltipHtml, Permanent: true, Interactive: true, ClassName: "
             _cts = new CancellationTokenSource();
             _timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1000));
 
-            // small delay to ensure map JS is initialized
-            await Task.Delay(500, _cts.Token);
+            try
+            {
+                // small delay to ensure map JS is initialized
+                await Task.Delay(500, _cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
 
             _simulationTask = RunSimulationLoop(_cts.Token);
         }

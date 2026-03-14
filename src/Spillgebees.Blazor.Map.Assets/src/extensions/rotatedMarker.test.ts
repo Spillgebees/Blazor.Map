@@ -109,6 +109,31 @@ describe("rotatedMarker", () => {
     expect(shadowElement.style.transform).not.toContain("rotateZ");
   });
 
+  it("should not duplicate rotateZ when _setPos is called twice", () => {
+    // arrange — Leaflet's real _setPos calls DomUtil.setPosition which replaces
+    // the entire transform with a fresh translate3d(...). Our test mock doesn't
+    // have a real DOM setup, so we simulate this by resetting the transform
+    // between calls as Leaflet would.
+    marker.options.rotationAngle = 45;
+    iconElement.style.transform = INITIAL_TRANSFORM;
+    shadowElement.style.transform = INITIAL_TRANSFORM;
+
+    // act — first call appends rotateZ to the initial transform
+    marker._setPos(new Point(100, 200));
+
+    // Simulate Leaflet's DomUtil.setPosition resetting the base transform
+    // (as originalSetPos would do in production before our patched code runs)
+    iconElement.style.transform = "translate3d(150px, 250px, 0px)";
+    marker._setPos(new Point(150, 250));
+
+    // assert — rotateZ should appear exactly once after the fresh base transform
+    const transform = iconElement.style.transform;
+    const rotateCount = (transform.match(/rotateZ/g) ?? []).length;
+    expect(rotateCount).toBe(1);
+    expect(transform).toContain("rotateZ(45deg)");
+    expect(shadowElement.style.transform).not.toContain("rotateZ");
+  });
+
   it("should update rotationOrigin via setRotationOrigin()", () => {
     // arrange
     marker.update = vi.fn().mockReturnThis();

@@ -41,37 +41,37 @@ describe("riseTooltip", () => {
     marker.getTooltip = vi.fn(() => mockTooltip as unknown as ReturnType<Marker["getTooltip"]>);
   });
 
-  it("should raise tooltip z-index on marker mouseover", () => {
+  it("should raise tooltip z-index on marker mouseenter", () => {
     // arrange
     marker._initIcon();
 
     // act
-    iconElement.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    iconElement.dispatchEvent(new MouseEvent("mouseenter", { bubbles: false }));
 
     // assert
     expect(tooltipContainer.style.zIndex).toBe("10000");
   });
 
-  it("should reset tooltip z-index on marker mouseout when not moving to tooltip", () => {
+  it("should reset tooltip z-index on marker mouseleave when not moving to tooltip", () => {
     // arrange
     marker._initIcon();
-    iconElement.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    iconElement.dispatchEvent(new MouseEvent("mouseenter", { bubbles: false }));
     const unrelatedElement = document.createElement("div");
 
     // act
-    iconElement.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: unrelatedElement }));
+    iconElement.dispatchEvent(new MouseEvent("mouseleave", { bubbles: false, relatedTarget: unrelatedElement }));
 
     // assert
     expect(tooltipContainer.style.zIndex).toBe("");
   });
 
-  it("should not reset tooltip z-index on marker mouseout when moving to tooltip", () => {
+  it("should not reset tooltip z-index on marker mouseleave when moving to tooltip", () => {
     // arrange
     marker._initIcon();
-    iconElement.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    iconElement.dispatchEvent(new MouseEvent("mouseenter", { bubbles: false }));
 
     // act
-    iconElement.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: tooltipContainer }));
+    iconElement.dispatchEvent(new MouseEvent("mouseleave", { bubbles: false, relatedTarget: tooltipContainer }));
 
     // assert
     expect(tooltipContainer.style.zIndex).toBe("10000");
@@ -121,7 +121,7 @@ describe("riseTooltip", () => {
     marker._initIcon();
 
     // act
-    iconElement.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    iconElement.dispatchEvent(new MouseEvent("mouseenter", { bubbles: false }));
 
     // assert
     expect(tooltipContainer.style.zIndex).toBe("");
@@ -136,8 +136,8 @@ describe("riseTooltip", () => {
     marker._initIcon();
 
     // assert
-    expect(removeEventSpy).toHaveBeenCalledWith("mouseover", expect.any(Function));
-    expect(removeEventSpy).toHaveBeenCalledWith("mouseout", expect.any(Function));
+    expect(removeEventSpy).toHaveBeenCalledWith("mouseenter", expect.any(Function));
+    expect(removeEventSpy).toHaveBeenCalledWith("mouseleave", expect.any(Function));
   });
 
   it("should listen for tooltipopen to attach tooltip listeners", () => {
@@ -154,7 +154,7 @@ describe("riseTooltip", () => {
     marker._initIcon();
 
     // act — should not throw
-    iconElement.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    iconElement.dispatchEvent(new MouseEvent("mouseenter", { bubbles: false }));
 
     // assert — no error thrown, tooltip z-index stays default
     expect(tooltipContainer.style.zIndex).toBe("");

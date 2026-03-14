@@ -61,11 +61,11 @@ Marker.prototype._initIcon = function (this: Marker): void {
     }
   };
 
-  const onMarkerMouseOver = (): void => {
+  const onMarkerMouseEnter = (): void => {
     raiseTooltip();
   };
 
-  const onMarkerMouseOut = (e: MouseEvent): void => {
+  const onMarkerMouseLeave = (e: MouseEvent): void => {
     const related = e.relatedTarget as Node | null;
     const tooltipContainer = getTooltipContainer();
 
@@ -94,8 +94,8 @@ Marker.prototype._initIcon = function (this: Marker): void {
     resetTooltip();
   };
 
-  markerIcon.addEventListener("mouseover", onMarkerMouseOver);
-  markerIcon.addEventListener("mouseout", onMarkerMouseOut);
+  markerIcon.addEventListener("mouseenter", onMarkerMouseEnter);
+  markerIcon.addEventListener("mouseleave", onMarkerMouseLeave);
 
   // Tooltip may not be bound yet at _initIcon time, so we also listen for
   // tooltipopen to attach tooltip-side listeners dynamically.
@@ -122,8 +122,8 @@ Marker.prototype._initIcon = function (this: Marker): void {
   this.on("tooltipopen", attachTooltipListeners);
 
   this._riseTooltipCleanup = (): void => {
-    markerIcon.removeEventListener("mouseover", onMarkerMouseOver);
-    markerIcon.removeEventListener("mouseout", onMarkerMouseOut);
+    markerIcon.removeEventListener("mouseenter", onMarkerMouseEnter);
+    markerIcon.removeEventListener("mouseleave", onMarkerMouseLeave);
 
     if (currentTooltipContainer) {
       currentTooltipContainer.removeEventListener("mouseenter", onTooltipMouseEnter);
