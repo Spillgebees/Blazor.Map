@@ -9,6 +9,7 @@ import {
   TerrainControl,
 } from "maplibre-gl";
 import { CenterControl } from "./controls/centerControl";
+import { addMarkers, removeMarkers, updateMarkers } from "./features/markers";
 import type { IMapControlOptions } from "./interfaces/controls";
 import type { ICircle, IMarker, IPolyline } from "./interfaces/features";
 import type { IFitBoundsOptions, IMapOptions, IMapStyle, ITileOverlay } from "./interfaces/map";
@@ -298,8 +299,30 @@ export interface IFeatureSyncPayload {
   polylines: { added: IPolyline[]; updated: IPolyline[]; removedIds: string[] };
 }
 
-export function syncFeatures(_mapElement: HTMLElement, _payload: IFeatureSyncPayload): void {
-  // Not yet implemented — Phase 4/5
+export function syncFeatures(mapElement: HTMLElement, payload: IFeatureSyncPayload): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return;
+  }
+
+  const storage = window.Spillgebees.Map.features.get(map);
+  if (!storage) {
+    return;
+  }
+
+  // Handle markers
+  if (payload.markers.removedIds.length > 0) {
+    removeMarkers(payload.markers.removedIds, storage);
+  }
+  if (payload.markers.added.length > 0) {
+    addMarkers(map, payload.markers.added, storage);
+  }
+  if (payload.markers.updated.length > 0) {
+    updateMarkers(map, payload.markers.updated, storage);
+  }
+
+  // Circles — Phase 5
+  // Polylines — Phase 5
 }
 
 export function setOverlays(_mapElement: HTMLElement, _overlays: ITileOverlay[]): void {

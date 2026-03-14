@@ -4,10 +4,12 @@ import {
   fireLoadEvent,
   getLatestMockMapInstance,
   getMockMapConstructor,
+  getMockMarkerConstructor,
   resetMockMapState,
 } from "../test/maplibreMock";
 import { resetWindowGlobals } from "../test/windowSetup";
 import type { IMapControlOptions } from "./interfaces/controls";
+import type { IMarker } from "./interfaces/features";
 import type { IMapOptions, IMapStyle } from "./interfaces/map";
 import {
   bootstrap,
@@ -19,6 +21,7 @@ import {
   setControls,
   setMapOptions,
   setTheme,
+  syncFeatures,
 } from "./map";
 
 function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions {
@@ -1117,5 +1120,126 @@ describe("setControls", () => {
     const controls = window.Spillgebees.Map.controls.get(map);
     expect(controls).toBeDefined();
     expect(controls!.size).toBe(2);
+  });
+});
+
+function createDefaultMarker(overrides?: Partial<IMarker>): IMarker {
+  return {
+    id: "marker-1",
+    position: { latitude: 51.505, longitude: -0.09 },
+    title: null,
+    popup: null,
+    icon: null,
+    color: null,
+    scale: null,
+    rotation: null,
+    draggable: false,
+    opacity: null,
+    className: null,
+    ...overrides,
+  };
+}
+
+describe("syncFeatures", () => {
+  beforeEach(() => {
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+  });
+
+  it("should delegate to marker add/update/remove", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions();
+    const controlOptions = createDefaultControlOptions();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
+    fireLoadEvent();
+
+    const marker = createDefaultMarker({ id: "m1" });
+
+    // act — add a marker
+    syncFeatures(mapElement, {
+      markers: { added: [marker], updated: [], removedIds: [] },
+      circles: { added: [], updated: [], removedIds: [] },
+      polylines: { added: [], updated: [], removedIds: [] },
+    });
+
+    // assert — marker was created
+    const map = window.Spillgebees.Map.maps.get(mapElement)!;
+    const storage = window.Spillgebees.Map.features.get(map)!;
+    expect(storage.markers.size).toBe(1);
+    expect(storage.markers.has("m1")).toBe(true);
+
+    // act — update the marker
+    const updatedMarker = createDefaultMarker({
+      id: "m1",
+      position: { latitude: 52.0, longitude: 0.0 },
+    });
+    syncFeatures(mapElement, {
+      markers: { added: [], updated: [updatedMarker], removedIds: [] },
+      circles: { added: [], updated: [], removedIds: [] },
+      polylines: { added: [], updated: [], removedIds: [] },
+    });
+
+    // assert — still one marker in storage (updated, not added)
+    expect(storage.markers.size).toBe(1);
+
+    // act — remove the marker
+    syncFeatures(mapElement, {
+      markers: { added: [], updated: [], removedIds: ["m1"] },
+      circles: { added: [], updated: [], removedIds: [] },
+      polylines: { added: [], updated: [], removedIds: [] },
+    });
+
+    // assert
+    expect(storage.markers.size).toBe(0);
+  });
+
+  it("should be a no-op for unknown elements", () => {
+    // arrange
+    const unknownElement = document.createElement("div");
+
+    // act & assert — should not throw
+    expect(() =>
+      syncFeatures(unknownElement, {
+        markers: { added: [], updated: [], removedIds: [] },
+        circles: { added: [], updated: [], removedIds: [] },
+        polylines: { added: [], updated: [], removedIds: [] },
+      }),
+    ).not.toThrow();
+  });
+
+  it("should create markers with correct coordinates on initial sync in createMap", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions();
+    const controlOptions = createDefaultControlOptions();
+    const initialMarker = createDefaultMarker({
+      id: "init-1",
+      position: { latitude: 48.8566, longitude: 2.3522 },
+    });
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      mapOptions,
+      controlOptions,
+      "light",
+      [initialMarker],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+
+    // assert — marker was created via syncFeatures during load
+    const markerConstructor = getMockMarkerConstructor();
+    const markerInstance = markerConstructor.mock.results[0]?.value;
+    expect(markerInstance.setLngLat).toHaveBeenCalledWith([2.3522, 48.8566]);
+    expect(markerInstance.addTo).toHaveBeenCalled();
   });
 });
