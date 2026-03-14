@@ -10,6 +10,16 @@ import {
 } from "maplibre-gl";
 import { CenterControl } from "./controls/centerControl";
 import { addMarkers, removeMarkers, updateMarkers } from "./features/markers";
+import {
+  addCircles,
+  addPolylines,
+  ensureShapeLayers,
+  removeCircles,
+  removePolylines,
+  setupShapePopupHandlers,
+  updateCircles,
+  updatePolylines,
+} from "./features/shapes";
 import type { IMapControlOptions } from "./interfaces/controls";
 import type { ICircle, IMarker, IPolyline } from "./interfaces/features";
 import type { IFitBoundsOptions, IMapOptions, IMapStyle, ITileOverlay } from "./interfaces/map";
@@ -191,17 +201,21 @@ export function createMap(
       map.setProjection("globe");
     }
 
-    // Apply controls (stub — Phase 3)
+    // Apply controls
     setControls(mapElement, controlOptions);
 
-    // Apply features (stub — Phase 4/5)
+    // Set up shape layers (circles + polylines) — needed for popup event handlers
+    ensureShapeLayers(map);
+    setupShapePopupHandlers(map);
+
+    // Apply features
     syncFeatures(mapElement, {
       markers: { added: markers, updated: [], removedIds: [] },
       circles: { added: circles, updated: [], removedIds: [] },
       polylines: { added: polylines, updated: [], removedIds: [] },
     });
 
-    // Apply overlays (stub — Phase 6)
+    // Apply overlays — Phase 6
     setOverlays(mapElement, overlays);
 
     // Handle fitBoundsOptions
@@ -321,8 +335,27 @@ export function syncFeatures(mapElement: HTMLElement, payload: IFeatureSyncPaylo
     updateMarkers(map, payload.markers.updated, storage);
   }
 
-  // Circles — Phase 5
-  // Polylines — Phase 5
+  // Handle circles
+  if (payload.circles.removedIds.length > 0) {
+    removeCircles(map, payload.circles.removedIds, storage);
+  }
+  if (payload.circles.added.length > 0) {
+    addCircles(map, payload.circles.added, storage);
+  }
+  if (payload.circles.updated.length > 0) {
+    updateCircles(map, payload.circles.updated, storage);
+  }
+
+  // Handle polylines
+  if (payload.polylines.removedIds.length > 0) {
+    removePolylines(map, payload.polylines.removedIds, storage);
+  }
+  if (payload.polylines.added.length > 0) {
+    addPolylines(map, payload.polylines.added, storage);
+  }
+  if (payload.polylines.updated.length > 0) {
+    updatePolylines(map, payload.polylines.updated, storage);
+  }
 }
 
 export function setOverlays(_mapElement: HTMLElement, _overlays: ITileOverlay[]): void {

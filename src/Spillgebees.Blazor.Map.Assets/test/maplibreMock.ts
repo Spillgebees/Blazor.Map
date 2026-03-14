@@ -14,6 +14,11 @@ export interface MockMapInstance {
   getContainer: ReturnType<typeof vi.fn>;
   fitBounds: ReturnType<typeof vi.fn>;
   flyTo: ReturnType<typeof vi.fn>;
+  getSource: ReturnType<typeof vi.fn>;
+  addSource: ReturnType<typeof vi.fn>;
+  addLayer: ReturnType<typeof vi.fn>;
+  getLayer: ReturnType<typeof vi.fn>;
+  getCanvas: ReturnType<typeof vi.fn>;
 }
 
 export interface MockMarkerInstance {
@@ -42,14 +47,24 @@ export interface MockPopupInstance {
 
 let latestMockMapInstance: MockMapInstance | null = null;
 const loadCallbacks: Array<() => void> = [];
+const mockSources = new Map<string, { setData: ReturnType<typeof vi.fn>; [key: string]: unknown }>();
 
 export function getLatestMockMapInstance(): MockMapInstance | null {
   return latestMockMapInstance;
 }
 
+/**
+ * Returns the mock sources map, allowing tests to inspect sources
+ * added via `map.addSource()`.
+ */
+export function getMockMapSources() {
+  return mockSources;
+}
+
 export function resetMockMapState(): void {
   latestMockMapInstance = null;
   loadCallbacks.length = 0;
+  mockSources.clear();
   MockMarker.mockClear();
   MockPopup.mockClear();
 }
@@ -85,6 +100,13 @@ const MockMapConstructor = vi.fn().mockImplementation(function (this: MockMapIns
   this.getContainer = vi.fn().mockReturnValue(document.createElement("div"));
   this.fitBounds = vi.fn();
   this.flyTo = vi.fn();
+  this.getSource = vi.fn().mockImplementation((id: string) => mockSources.get(id));
+  this.addSource = vi.fn().mockImplementation((id: string, source: Record<string, unknown>) => {
+    mockSources.set(id, { setData: vi.fn(), ...source });
+  });
+  this.addLayer = vi.fn();
+  this.getLayer = vi.fn();
+  this.getCanvas = vi.fn().mockReturnValue({ style: {} });
   latestMockMapInstance = this;
 });
 
