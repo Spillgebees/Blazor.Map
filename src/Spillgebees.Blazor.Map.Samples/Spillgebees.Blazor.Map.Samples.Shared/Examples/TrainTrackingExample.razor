@@ -3,14 +3,14 @@
 @using Spillgebees.Blazor.Map.Models
 @using Spillgebees.Blazor.Map.Models.Controls
 @using Spillgebees.Blazor.Map.Models.Layers
-@using Spillgebees.Blazor.Map.Models.Tooltips
+@using Spillgebees.Blazor.Map.Models.Popups
 @implements IAsyncDisposable
 
 <style>
     /* Google Fonts: Martian Mono (service numbers) + DM Sans (route labels) */
     @@import url("https://fonts.googleapis.com/css2?family=Martian+Mono:wght@@700&family=DM+Sans:wght@@600&display=swap");
 
-    .leaflet-tooltip.sgb-text-label {
+    .maplibregl-popup.sgb-text-label .maplibregl-popup-content {
         background: none;
         border: none;
         box-shadow: none;
@@ -20,15 +20,8 @@
         paint-order: stroke fill;
     }
 
-    .leaflet-tooltip.sgb-text-label::before {
+    .maplibregl-popup.sgb-text-label .maplibregl-popup-tip {
         display: none;
-    }
-
-    .leaflet-tooltip-top.sgb-text-label,
-    .leaflet-tooltip-bottom.sgb-text-label,
-    .leaflet-tooltip-left.sgb-text-label,
-    .leaflet-tooltip-right.sgb-text-label {
-        margin: 0;
     }
 
     .train-label {
@@ -64,9 +57,9 @@
         <Component>
             <SgbMap @ref="_map"
                     MapOptions="@_mapOptions"
-                    MapControlOptions="@_mapControlOptions"
-                    TileLayers="@_tileLayers"
+                    ControlOptions="@_mapControlOptions"
                     Markers="@_markers"
+                    Overlays="@_overlays"
                     Height="600px" />
         </Component>
     </CodeSnippet>
@@ -76,26 +69,27 @@
     private const string Code =
 @"<SgbMap @ref=""_map""
         MapOptions=""@_mapOptions""
-        MapControlOptions=""@_mapControlOptions""
-        TileLayers=""@_tileLayers""
+        ControlOptions=""@_mapControlOptions""
         Markers=""@_markers""
+        Overlays=""@_overlays""
         Height=""600px"" />
 
-// Two tile layers: OSM base + OpenRailwayMap overlay
-private readonly List<TileLayer> _tileLayers =
-    [TileLayer.OpenStreetMap, TileLayer.OpenRailwayMap];
+// OpenRailwayMap raster overlay on top of OpenFreeMap vector base
+private readonly List<TileOverlay> _overlays =
+    [new TileOverlay(""openrailwaymap"",
+        ""https://tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png"",
+        ""Style: CC-BY-SA 2.0 OpenRailwayMap"")];
 
 // Per-line colored teardrop icon via SVG data URI
 private static MarkerIcon CreateTrainIcon(string color) =>
-    new(IconUrl: $""data:image/svg+xml,{Uri.EscapeDataString(svg)}"",
-        IconSize: [22, 22], IconAnchor: [11, 11], TooltipAnchor: [17, 5]);
+    new(Url: $""data:image/svg+xml,{Uri.EscapeDataString(svg)}"",
+        Size: new Point(22, 22), Anchor: new Point(11, 11));
 
-// HTML tooltip — service number as colored pill badge
-var tooltipHtml = $""<span style='background: {color}'>{svc}</span>""
+// HTML popup — service number as colored pill badge
+var popupHtml = $""<span style='background: {color}'>{svc}</span>""
     + $""<span class='train-label-route'>{route}</span>"";
-new TooltipOptions(tooltipHtml, Permanent: true, Interactive: true, ClassName: ""sgb-text-label"")
+new PopupOptions(popupHtml, Trigger: PopupTrigger.Permanent, Anchor: PopupAnchor.Left, ClassName: ""sgb-text-label"")
 
-// RiseOnHover: true — bring marker + tooltip to front on hover
 // Periodic timer updates _markers + calls StateHasChanged()";
 
     private SgbMap _map = null!;
@@ -103,13 +97,18 @@ new TooltipOptions(tooltipHtml, Permanent: true, Interactive: true, ClassName: "
     private CancellationTokenSource? _cts;
     private Task? _simulationTask;
 
-    private readonly List<TileLayer> _tileLayers = [TileLayer.OpenStreetMap with { Tile = new TileLayerOptions(DetectRetina: true) }, TileLayer.OpenRailwayMap];
+    private readonly List<TileOverlay> _overlays =
+    [
+        new TileOverlay(
+            "openrailwaymap",
+            "https://tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png",
+            "Style: <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA 2.0</a> <a href=\"https://www.openrailwaymap.org/\">OpenRailwayMap</a>")
+    ];
 
     private readonly MapOptions _mapOptions = new(
         Center: new Coordinate(49.75, 6.12),
         Zoom: 10,
-        ShowLeafletPrefix: true,
-        FitBoundsOptions: null
+        Style: MapStyle.OpenFreeMap.Liberty
     );
 
     private readonly MapControlOptions _mapControlOptions = MapControlOptions.Default;
@@ -123,11 +122,9 @@ new TooltipOptions(tooltipHtml, Permanent: true, Interactive: true, ClassName: "
             + "</svg>";
 
         return new MarkerIcon(
-            IconUrl: $"data:image/svg+xml,{Uri.EscapeDataString(svg)}",
-            IconSize: [22, 22],
-            IconAnchor: [11, 11],
-            TooltipAnchor: [17, 5],
-            ClassName: ""
+            Url: $"data:image/svg+xml,{Uri.EscapeDataString(svg)}",
+            Size: new Point(22, 22),
+            Anchor: new Point(11, 11)
         );
     }
 
@@ -185,7 +182,7 @@ new TooltipOptions(tooltipHtml, Permanent: true, Interactive: true, ClassName: "
     private static Marker CreateMarker(TrainState train)
     {
         var bearing = CalculateBearing(train.CurrentPosition, train.NextPosition);
-        var tooltipHtml =
+        var popupHtml =
             $"<span class='train-label'>"
             + $"<span class='train-label-service' style='background: {train.Color}'>{train.ServiceNumber}</span>"
             + $"<span class='train-label-route'>{train.Route}</span>"
@@ -193,19 +190,15 @@ new TooltipOptions(tooltipHtml, Permanent: true, Interactive: true, ClassName: "
 
         return new Marker(
             Id: train.Id,
-            Coordinate: train.CurrentPosition,
+            Position: train.CurrentPosition,
             Title: train.ServiceNumber,
             Icon: train.Icon,
-            RotationAngle: bearing,
-            RotationOrigin: "center center",
-            RiseOnHover: true,
-            Tooltip: new TooltipOptions(
-                tooltipHtml,
-                Permanent: true,
-                Direction: TooltipDirection.Right,
-                Offset: new TooltipOffset(0, 0),
-                Opacity: 1.0,
-                Interactive: true,
+            Rotation: bearing,
+            Popup: new PopupOptions(
+                popupHtml,
+                Trigger: PopupTrigger.Permanent,
+                Anchor: PopupAnchor.Left,
+                Offset: new Point(0, 0),
                 ClassName: "sgb-text-label")
         );
     }
