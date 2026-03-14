@@ -2,7 +2,6 @@
 
 $dark-bg-primary: rgba(0, 0, 0, 0.53);
 $dark-bg-secondary: rgba(0, 0, 0, 0.7);
-$dark-bg-attribution: rgba(0, 0, 0, 0.75);
 $dark-text-primary: white;
 $dark-text-secondary: rgba(255, 255, 255, 0.8);
 $dark-link-color: #00bcd4;
@@ -94,8 +93,8 @@ $border-radius: 8px;
   }
 
   .maplibregl-ctrl-attrib {
-    background-color: $dark-bg-attribution !important;
-    color: $dark-text-secondary !important;
+    background-color: $dark-bg-primary !important;
+    color: $dark-text-primary !important;
 
     a {
       color: $dark-link-color !important;
@@ -107,14 +106,19 @@ $border-radius: 8px;
       }
     }
 
-    // Compact mode (collapsed info button)
+    // Compact mode (collapsed info button) — match control group background
     &.maplibregl-compact {
       background-color: $dark-bg-primary !important;
     }
 
+    // Expanded state button background — subtle highlight
+    &.maplibregl-compact-show .maplibregl-ctrl-attrib-button {
+      background-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
     .maplibregl-ctrl-attrib-button {
+      background-color: $dark-bg-primary !important;
       filter: brightness(0) invert(1);
-      background-color: transparent !important;
     }
   }
 
