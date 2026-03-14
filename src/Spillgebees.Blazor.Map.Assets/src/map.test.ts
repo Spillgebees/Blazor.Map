@@ -1,7 +1,15 @@
 import { Control, type Map as LeafletMap } from "leaflet";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockDotNetHelper } from "../test/dotNetHelperMock";
-import type { MockCircleMarker, MockIcon, MockMap, MockMarker, MockPolyline, MockTileLayer } from "../test/leafletMock";
+import type {
+  MockCircleMarker,
+  MockIcon,
+  MockMap,
+  MockMarker,
+  MockPolyline,
+  MockTileLayer,
+  MockWmsTileLayer,
+} from "../test/leafletMock";
 import { resetWindowGlobals } from "../test/windowSetup";
 
 vi.mock("leaflet", async () => {
@@ -17,6 +25,8 @@ import type {
   ISpillgebeesMarker,
   ISpillgebeesPolyline,
   ISpillgebeesTileLayer,
+  ISpillgebeesTileLayerOptions,
+  ISpillgebeesWmsLayerOptions,
 } from "./interfaces/map";
 import { MapTheme } from "./interfaces/map";
 import { bootstrap } from "./map";
@@ -86,14 +96,31 @@ describe("bootstrap", () => {
 describe("mapFunctions", () => {
   let mapContainer: HTMLElement;
 
-  const defaultTileLayers: ISpillgebeesTileLayer[] = [
-    {
-      urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      attribution: "&copy; OSM",
-      detectRetina: null,
-      tileSize: null,
-    },
-  ];
+  const createTileLayer = (overrides: Partial<ISpillgebeesTileLayer> = {}): ISpillgebeesTileLayer => ({
+    urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: "&copy; OSM",
+    tile: null,
+    wms: null,
+    ...overrides,
+  });
+
+  const createTileOptions = (overrides: Partial<ISpillgebeesTileLayerOptions> = {}): ISpillgebeesTileLayerOptions => ({
+    detectRetina: null,
+    tileSize: null,
+    ...overrides,
+  });
+
+  const createWmsOptions = (
+    overrides: Partial<ISpillgebeesWmsLayerOptions> & Pick<ISpillgebeesWmsLayerOptions, "layers">,
+  ): ISpillgebeesWmsLayerOptions => ({
+    format: null,
+    transparent: null,
+    version: null,
+    styles: null,
+    ...overrides,
+  });
+
+  const defaultTileLayers: ISpillgebeesTileLayer[] = [createTileLayer()];
 
   const defaultMapOptions: ISpillgebeesMapOptions = {
     center: { latitude: 49.6, longitude: 6.1 },
@@ -279,12 +306,11 @@ describe("mapFunctions", () => {
       // arrange
       const dotNetHelper = createMockDotNetHelper();
       const tileLayers: ISpillgebeesTileLayer[] = [
-        {
+        createTileLayer({
           urlTemplate: "https://{s}.tile.example.com/{z}/{x}/{y}.png",
           attribution: "&copy; Test",
-          detectRetina: null,
-          tileSize: 512,
-        },
+          tile: createTileOptions({ tileSize: 512 }),
+        }),
       ];
 
       // act
@@ -311,12 +337,11 @@ describe("mapFunctions", () => {
       // arrange
       const dotNetHelper = createMockDotNetHelper();
       const tileLayers: ISpillgebeesTileLayer[] = [
-        {
+        createTileLayer({
           urlTemplate: "https://{s}.tile.example.com/{z}/{x}/{y}.png",
           attribution: "&copy; Test",
-          detectRetina: null,
-          tileSize: null,
-        },
+          tile: createTileOptions(),
+        }),
       ];
 
       // act
@@ -339,6 +364,48 @@ describe("mapFunctions", () => {
       const tileLayer = [...tileLayerSet][0] as unknown as { _options: Record<string, unknown> };
       expect(tileLayer._options).not.toHaveProperty("tileSize");
       expect(tileLayer._options).not.toHaveProperty("detectRetina");
+    });
+
+    it("should create WMS tile layers when layers are provided", async () => {
+      // arrange
+      const dotNetHelper = createMockDotNetHelper();
+      const tileLayers: ISpillgebeesTileLayer[] = [
+        createTileLayer({
+          urlTemplate: "https://wms.example.com/service",
+          attribution: "&copy; WMS",
+          wms: createWmsOptions({
+            layers: "basemap,labels",
+            format: "image/png",
+            transparent: true,
+            version: "1.3.0",
+            styles: "",
+          }),
+        }),
+      ];
+
+      // act
+      await window.Spillgebees.Map.mapFunctions.createMap(
+        dotNetHelper,
+        "OnMapReady",
+        mapContainer,
+        defaultMapOptions,
+        defaultControlOptions,
+        tileLayers,
+        [],
+        [],
+        [],
+      );
+
+      // assert
+      const map = window.Spillgebees.Map.maps.get(mapContainer)!;
+      const storedTileLayers = window.Spillgebees.Map.tileLayers.get(map)!;
+      const tileLayer = storedTileLayers.values().next().value as unknown as MockWmsTileLayer;
+      expect(tileLayer._url).toBe("https://wms.example.com/service");
+      expect(tileLayer._options.layers).toBe("basemap,labels");
+      expect(tileLayer._options.format).toBe("image/png");
+      expect(tileLayer._options.transparent).toBe(true);
+      expect(tileLayer._options.version).toBe("1.3.0");
+      expect(tileLayer._options.styles).toBe("");
     });
   });
 
@@ -761,12 +828,11 @@ describe("mapFunctions", () => {
       vi.clearAllMocks();
 
       const newTileLayers: ISpillgebeesTileLayer[] = [
-        {
+        createTileLayer({
           urlTemplate: "https://new-tiles/{z}/{x}/{y}.png",
           attribution: "&copy; New",
-          detectRetina: null,
-          tileSize: 256,
-        },
+          tile: createTileOptions({ tileSize: 256 }),
+        }),
       ];
 
       // act
@@ -789,6 +855,47 @@ describe("mapFunctions", () => {
 
       // act & assert — should not throw
       window.Spillgebees.Map.mapFunctions.setTileLayers(unknownContainer, []);
+    });
+
+    it("should replace tile layers with WMS tile layers", async () => {
+      // arrange
+      const dotNetHelper = createMockDotNetHelper();
+      await window.Spillgebees.Map.mapFunctions.createMap(
+        dotNetHelper,
+        "OnMapReady",
+        mapContainer,
+        defaultMapOptions,
+        defaultControlOptions,
+        defaultTileLayers,
+        [],
+        [],
+        [],
+      );
+
+      const map = window.Spillgebees.Map.maps.get(mapContainer)! as unknown as MockMap;
+      vi.clearAllMocks();
+
+      // act
+      window.Spillgebees.Map.mapFunctions.setTileLayers(mapContainer, [
+        createTileLayer({
+          urlTemplate: "https://wms.example.com/service",
+          attribution: "&copy; WMS",
+          wms: createWmsOptions({
+            layers: "basemap",
+            format: "image/png",
+            transparent: true,
+          }),
+        }),
+      ]);
+
+      // assert
+      expect(map.removeLayer).toHaveBeenCalled();
+      expect(map.addLayer).toHaveBeenCalled();
+
+      const storedTileLayers = window.Spillgebees.Map.tileLayers.get(map as unknown as LeafletMap)!;
+      const tileLayer = storedTileLayers.values().next().value as unknown as MockWmsTileLayer;
+      expect(tileLayer._options.layers).toBe("basemap");
+      expect(tileLayer._options.transparent).toBe(true);
     });
   });
 

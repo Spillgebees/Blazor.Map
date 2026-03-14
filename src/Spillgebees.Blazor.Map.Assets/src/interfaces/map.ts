@@ -67,11 +67,24 @@ export interface ISpillgebeesPolyline extends ISpillgebeesPath {
   noClip: boolean;
 }
 
+export interface ISpillgebeesTileLayerOptions {
+  detectRetina: boolean | null;
+  tileSize: number | null;
+}
+
+export interface ISpillgebeesWmsLayerOptions {
+  layers: string;
+  format: string | null;
+  transparent: boolean | null;
+  version: string | null;
+  styles: string | null;
+}
+
 export interface ISpillgebeesTileLayer {
   urlTemplate: string;
   attribution: string;
-  detectRetina: boolean | null;
-  tileSize: number | null;
+  tile: ISpillgebeesTileLayerOptions | null;
+  wms: ISpillgebeesWmsLayerOptions | null;
 }
 
 export interface ISpillgebeesMapOptions {

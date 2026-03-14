@@ -53,6 +53,8 @@ export class MockTileLayer {
   remove = vi.fn().mockReturnThis();
 }
 
+export class MockWmsTileLayer extends MockTileLayer {}
+
 export class MockMarker {
   _latlng: MockLatLng;
   _options: Record<string, unknown>;
@@ -180,6 +182,10 @@ export const MockDomEvent = {
 };
 
 export function createLeafletMock() {
+  const TileLayerWithWms = Object.assign(MockTileLayer, {
+    WMS: MockWmsTileLayer,
+  });
+
   return {
     Map: MockMap,
     Icon: MockIcon,
@@ -188,7 +194,7 @@ export function createLeafletMock() {
     Marker: MockMarker,
     CircleMarker: MockCircleMarker,
     Polyline: MockPolyline,
-    TileLayer: MockTileLayer,
+    TileLayer: TileLayerWithWms,
     Tooltip: MockTooltip,
     Control: Object.assign(MockControl, {
       Zoom: MockZoomControl,

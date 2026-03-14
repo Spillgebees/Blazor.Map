@@ -103,7 +103,7 @@ new TooltipOptions(tooltipHtml, Permanent: true, Interactive: true, ClassName: "
     private CancellationTokenSource? _cts;
     private Task? _simulationTask;
 
-    private readonly List<TileLayer> _tileLayers = [TileLayer.OpenStreetMap with { DetectRetina = true }, TileLayer.OpenRailwayMap];
+    private readonly List<TileLayer> _tileLayers = [TileLayer.OpenStreetMap with { Tile = new TileLayerOptions(DetectRetina: true) }, TileLayer.OpenRailwayMap];
 
     private readonly MapOptions _mapOptions = new(
         Center: new Coordinate(49.75, 6.12),

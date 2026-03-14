@@ -8,15 +8,14 @@ namespace Spillgebees.Blazor.Map.Models.Layers;
 /// See <see href="https://leafletjs.com/reference.html#tilelayer">leaflet</see> for details.
 /// </param>
 /// <param name="Attribution">The attribution text to be displayed on the map.</param>
-/// <param name="DetectRetina">
-/// Whether to use high-DPI tiles if the browser supports them.
-/// Default is <see langword="null" />, which uses the Leaflet default of <see langword="false" />.
-/// </param>
-/// <param name="TileSize">
-/// The size of the tiles in pixels. Default is <see langword="null" />
-/// which uses the Leaflet default of 256.
-/// </param>
-public record TileLayer(string UrlTemplate, string Attribution, bool? DetectRetina = null, int? TileSize = null)
+/// <param name="Tile">Options that apply to regular tile requests.</param>
+/// <param name="Wms">Options that apply to WMS requests.</param>
+public record TileLayer(
+    string UrlTemplate,
+    string Attribution,
+    TileLayerOptions? Tile = null,
+    WmsLayerOptions? Wms = null
+)
 {
     /// <summary>
     /// OpenStreetMap tile layer, free to use with attribution.
@@ -48,6 +47,15 @@ public record TileLayer(string UrlTemplate, string Attribution, bool? DetectReti
     public static readonly TileLayer OpenDataBaseMap = new(
         UrlTemplate: "https://wmts1.geoportail.lu/opendata/wmts/basemap/GLOBAL_WEBMERCATOR/{z}/{x}/{y}.png",
         Attribution: "&copy;  <a href='https://data.public.lu/en/datasets/carte-de-base-webservices-wms-et-wmts'>OpenData</a> <a href='https://creativecommons.org/publicdomain/zero/1.0/'>CC0</a>/<a href='https://creativecommons.org/licenses/by/4.0/deed.en'>CC-BY</a> | &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
+    );
+
+    /// <summary>
+    /// Luxembourg open data WMS base map layer, free to use with attribution.
+    /// </summary>
+    public static readonly TileLayer OpenDataBaseMapWms = new(
+        UrlTemplate: "https://wmts1.geoportail.lu/opendata/service",
+        Attribution: "&copy;  <a href='https://data.public.lu/en/datasets/carte-de-base-webservices-wms-et-wmts'>OpenData</a> <a href='https://creativecommons.org/publicdomain/zero/1.0/'>CC0</a>/<a href='https://creativecommons.org/licenses/by/4.0/deed.en'>CC-BY</a> | &copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
+        Wms: new WmsLayerOptions(Layers: "basemap", Format: "image/png", Transparent: false, Version: "1.3.0")
     );
 
     /// <summary>
