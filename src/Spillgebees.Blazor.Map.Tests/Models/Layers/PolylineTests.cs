@@ -106,8 +106,8 @@ public class PolylineTests
     {
         // arrange
         var coordinates = ImmutableList.Create(new Coordinate(49.6, 6.1), new Coordinate(50.0, 7.0));
-        var polyline1 = new Polyline("test-id", coordinates, StrokeColor: "#ff0000");
-        var polyline2 = new Polyline("test-id", coordinates, StrokeColor: "#00ff00");
+        var polyline1 = new Polyline("test-id", coordinates, Color: "#ff0000");
+        var polyline2 = new Polyline("test-id", coordinates, Color: "#00ff00");
 
         // act & assert
         polyline1.Should().NotBe(polyline2);

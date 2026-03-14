@@ -1,6 +1,5 @@
 using AwesomeAssertions;
 using Spillgebees.Blazor.Map.Components;
-using Spillgebees.Blazor.Map.Models.Layers;
 
 namespace Spillgebees.Blazor.Map.Tests;
 
@@ -8,7 +7,8 @@ public class SgbMapTests : BunitContext
 {
     private const string CreateMapIdentifier = "Spillgebees.Map.mapFunctions.createMap";
     private const string DisposeMapIdentifier = "Spillgebees.Map.mapFunctions.disposeMap";
-    private const string InvalidateSizeIdentifier = "Spillgebees.Map.mapFunctions.invalidateSize";
+    private const string ResizeIdentifier = "Spillgebees.Map.mapFunctions.resize";
+    private const string GetProtocolVersionIdentifier = "Spillgebees.Map.getProtocolVersion";
 
     /// <summary>
     /// Timeout in milliseconds for tests to prevent hanging.
@@ -19,21 +19,17 @@ public class SgbMapTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(1);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
-        JSInterop.SetupVoid(InvalidateSizeIdentifier);
+        JSInterop.SetupVoid(ResizeIdentifier);
     }
 
     [Test, Timeout(TestTimeoutMs)]
     public void Should_render_with_custom_dimensions(CancellationToken cancellationToken)
     {
-        // arrange
-        var tileLayers = new List<TileLayer> { TileLayer.OpenStreetMap };
-
-        // act
-        var cut = Render<SgbMap>(parameters =>
-            parameters.Add(p => p.TileLayers, tileLayers).Add(p => p.Width, "800px").Add(p => p.Height, "600px")
-        );
+        // arrange & act
+        var cut = Render<SgbMap>(parameters => parameters.Add(p => p.Width, "800px").Add(p => p.Height, "600px"));
 
         // assert
         var mapContainer = cut.Find("div.sgb-map-container");
@@ -45,13 +41,8 @@ public class SgbMapTests : BunitContext
     [Test, Timeout(TestTimeoutMs)]
     public void Should_add_custom_css_to_map_container(CancellationToken cancellationToken)
     {
-        // arrange
-        var tileLayers = new List<TileLayer> { TileLayer.OpenStreetMap };
-
-        // act
-        var cut = Render<SgbMap>(parameters =>
-            parameters.Add(p => p.TileLayers, tileLayers).Add(p => p.MapContainerClass, "my-custom-class")
-        );
+        // arrange & act
+        var cut = Render<SgbMap>(parameters => parameters.Add(p => p.ContainerClass, "my-custom-class"));
 
         // assert
         var mapContainer = cut.Find("div.sgb-map-container.my-custom-class");
@@ -61,11 +52,8 @@ public class SgbMapTests : BunitContext
     [Test, Timeout(TestTimeoutMs)]
     public void Should_trigger_map_initialization_after_render(CancellationToken cancellationToken)
     {
-        // arrange
-        var tileLayers = new List<TileLayer> { TileLayer.OpenStreetMap };
-
-        // act
-        Render<SgbMap>(parameters => parameters.Add(p => p.TileLayers, tileLayers));
+        // arrange & act
+        Render<SgbMap>();
 
         // assert
         JSInterop.VerifyInvoke(CreateMapIdentifier);
@@ -77,8 +65,7 @@ public class SgbMapTests : BunitContext
     )
     {
         // arrange
-        var tileLayers = new List<TileLayer> { TileLayer.OpenStreetMap };
-        var cut = Render<SgbMap>(parameters => parameters.Add(p => p.TileLayers, tileLayers));
+        var cut = Render<SgbMap>();
 
         // act
         // simulate map initialization completion
@@ -95,8 +82,7 @@ public class SgbMapTests : BunitContext
     )
     {
         // arrange
-        var tileLayers = new List<TileLayer> { TileLayer.OpenStreetMap };
-        var cut = Render<SgbMap>(parameters => parameters.Add(p => p.TileLayers, tileLayers));
+        var cut = Render<SgbMap>();
 
         // act
         await cut.Instance.DisposeAsync();
