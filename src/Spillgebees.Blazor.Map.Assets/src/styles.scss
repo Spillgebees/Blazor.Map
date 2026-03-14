@@ -98,9 +98,12 @@ $dark-link-hover: #4dd0e1;
     }
   }
 
-  // Compact (collapsed) attribution — the info button circle
+  // Compact (collapsed) attribution — the info button circle.
+  // Use consistent right padding between collapsed/expanded to prevent
+  // the button from jumping sideways on toggle (MapLibre defaults differ by 4px).
   .maplibregl-ctrl-attrib.maplibregl-compact {
     background-color: $dark-bg;
+    padding-right: 28px;
   }
 
   // The ::after pseudo-element IS the visual info icon in MapLibre v5.
@@ -111,7 +114,7 @@ $dark-link-hover: #4dd0e1;
     filter: brightness(0) invert(1);
   }
 
-  // Expanded attribution — subtle highlight on the toggle area
+  // Expanded attribution banner — same background as controls
   .maplibregl-ctrl-attrib.maplibregl-compact-show {
     background-color: $dark-bg;
   }
