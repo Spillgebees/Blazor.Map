@@ -363,7 +363,7 @@ public class TrainTrackingExampleTests : BunitContext
         var trainsToggle = cut.Find("input[data-testid='map-legend-toggle-trains']");
 
         // assert
-        JSInterop.VerifyInvoke(SetLegendControlIdentifier);
+        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetLegendControlIdentifier));
         cut.Markup.Should().Contain("Tracks &amp; tunnels");
         cut.Markup.Should().Contain("Tram &amp; metro");
         cut.Markup.Should().Contain("Stations &amp; borders");
