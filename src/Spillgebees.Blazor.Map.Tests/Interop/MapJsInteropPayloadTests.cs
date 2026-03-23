@@ -1,0 +1,160 @@
+using AwesomeAssertions;
+using Spillgebees.Blazor.Map.Components;
+using Spillgebees.Blazor.Map.Models;
+using Spillgebees.Blazor.Map.Models.Controls;
+using Spillgebees.Blazor.Map.Models.Layers;
+
+namespace Spillgebees.Blazor.Map.Tests.Interop;
+
+public class MapJsInteropPayloadTests : BunitContext
+{
+    private const string CreateMapIdentifier = "Spillgebees.Map.mapFunctions.createMap";
+    private const string DisposeMapIdentifier = "Spillgebees.Map.mapFunctions.disposeMap";
+    private const string ResizeIdentifier = "Spillgebees.Map.mapFunctions.resize";
+    private const string SyncFeaturesIdentifier = "Spillgebees.Map.mapFunctions.syncFeatures";
+    private const string GetProtocolVersionIdentifier = "Spillgebees.Map.getProtocolVersion";
+    private const int TestTimeoutMs = 5000;
+
+    public MapJsInteropPayloadTests()
+    {
+        JSInterop.Mode = JSRuntimeMode.Loose;
+
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(8);
+        JSInterop.SetupVoid(CreateMapIdentifier);
+        JSInterop.SetupVoid(DisposeMapIdentifier);
+        JSInterop.SetupVoid(ResizeIdentifier);
+        JSInterop.SetupVoid(SyncFeaturesIdentifier);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_send_fit_bounds_feature_ids_as_arrays_when_initializing_map(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        Render<SgbMap>(parameters =>
+            parameters.Add(
+                p => p.MapOptions,
+                new MapOptions(
+                    new Coordinate(49.61, 6.13),
+                    FitBoundsOptions: new FitBoundsOptions(["route-1", "route-2"], Padding: new Point(20, 30))
+                )
+            )
+        );
+
+        // assert
+        var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
+        var mapOptionsPayload = invocation.Arguments[3];
+        var fitBoundsPayload = GetRequiredPropertyValue(mapOptionsPayload!, "FitBoundsOptions");
+        var featureIds = GetRequiredPropertyValue(fitBoundsPayload, "FeatureIds");
+
+        featureIds.Should().BeOfType<string[]>();
+        ((string[])featureIds).Should().BeEquivalentTo(["route-1", "route-2"]);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_send_center_control_fit_bounds_feature_ids_as_arrays_when_initializing_map(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange & act
+        Render<SgbMap>(parameters =>
+            parameters.Add(
+                p => p.ControlOptions,
+                new MapControlOptions(
+                    Center: new CenterControlOptions(
+                        Center: new Coordinate(49.61, 6.13),
+                        FitBoundsOptions: new FitBoundsOptions(["station-1"])
+                    )
+                )
+            )
+        );
+
+        // assert
+        var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
+        var controlOptionsPayload = invocation.Arguments[4];
+        var centerPayload = GetRequiredPropertyValue(controlOptionsPayload!, "Center");
+        var fitBoundsPayload = GetRequiredPropertyValue(centerPayload, "FitBoundsOptions");
+        var featureIds = GetRequiredPropertyValue(fitBoundsPayload, "FeatureIds");
+
+        featureIds.Should().BeOfType<string[]>();
+        ((string[])featureIds).Should().Equal("station-1");
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_send_polyline_coordinates_as_arrays_when_initializing_map(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        Render<SgbMap>(parameters =>
+            parameters.Add(
+                p => p.Polylines,
+                new List<Polyline>
+                {
+                    new(
+                        "route-1",
+                        [new Coordinate(49.60, 6.10), new Coordinate(49.61, 6.13)],
+                        Color: "#3B82F6"
+                    ),
+                }
+            )
+        );
+
+        // assert
+        var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
+        var polylinePayloads = invocation.Arguments[8].Should().BeAssignableTo<Array>().Subject;
+        var polylinePayload = polylinePayloads.GetValue(0);
+        polylinePayload.Should().NotBeNull();
+        var coordinates = GetRequiredPropertyValue(polylinePayload!, "Coordinates");
+
+        coordinates.Should().BeOfType<Coordinate[]>();
+        ((Coordinate[])coordinates).Should().HaveCount(2);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_send_sync_feature_payload_using_arrays_for_updated_polylines(CancellationToken cancellationToken)
+    {
+        // arrange
+        var initialPolylines = new List<Polyline>
+        {
+            new("route-1", [new Coordinate(49.60, 6.10), new Coordinate(49.61, 6.13)], Width: 4),
+        };
+        var cut = Render<SgbMap>(parameters => parameters.Add(p => p.Polylines, initialPolylines));
+        await cut.Instance.OnMapInitializedAsync();
+
+        // act
+        cut.Render(parameters =>
+            parameters.Add(
+                p => p.Polylines,
+                new List<Polyline>
+                {
+                    new("route-1", [new Coordinate(49.60, 6.10), new Coordinate(49.62, 6.14)], Width: 5),
+                }
+            )
+        );
+
+        // assert
+        var invocation = JSInterop.Invocations[SyncFeaturesIdentifier].Single();
+        var payload = invocation.Arguments[1];
+        var polylinePayload = GetRequiredPropertyValue(payload!, "polylines");
+        var updated = GetRequiredPropertyValue(polylinePayload, "updated").Should().BeAssignableTo<Array>().Subject;
+        var removedIds = GetRequiredPropertyValue(polylinePayload, "removedIds");
+
+        updated.Length.Should().Be(1);
+        removedIds.Should().BeOfType<string[]>();
+        ((string[])removedIds).Should().BeEmpty();
+
+        var updatedPolylinePayload = updated.GetValue(0);
+        updatedPolylinePayload.Should().NotBeNull();
+        var coordinates = GetRequiredPropertyValue(updatedPolylinePayload!, "Coordinates");
+        coordinates.Should().BeOfType<Coordinate[]>();
+        ((Coordinate[])coordinates).Should().HaveCount(2);
+    }
+
+    private static object GetRequiredPropertyValue(object source, string propertyName)
+    {
+        var property = source.GetType().GetProperty(propertyName);
+        property.Should().NotBeNull($"property {propertyName} should exist on {source.GetType().Name}");
+
+        var value = property!.GetValue(source);
+        value.Should().NotBeNull($"property {propertyName} should have a value");
+        return value!;
+    }
+}
