@@ -6,6 +6,10 @@ on:
 
 jobs:
   deploy:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     uses: Spillgebees/Blazor.Docs.Sdk/.github/workflows/deploy-docs.yml@main
     with:
       docs-project-path: src/Spillgebees.Blazor.Map.Docs/Spillgebees.Blazor.Map.Docs.csproj
