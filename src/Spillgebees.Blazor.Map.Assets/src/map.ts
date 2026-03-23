@@ -9,6 +9,7 @@ import {
   TerrainControl,
 } from "maplibre-gl";
 import { CenterControl } from "./controls/centerControl";
+import { LegendControl } from "./controls/legendControl";
 import { addMarkers, removeMarkers, updateMarkers } from "./features/markers";
 import {
   addCircles,
@@ -20,12 +21,43 @@ import {
   updateCircles,
   updatePolylines,
 } from "./features/shapes";
-import type { IMapControlOptions } from "./interfaces/controls";
+import type { ILegendControlOptions, IMapControlOptions } from "./interfaces/controls";
 import type { ICircle, IMarker, IPolyline } from "./interfaces/features";
 import type { ICoordinate, IFitBoundsOptions, IMapOptions, IMapStyle, ITileOverlay } from "./interfaces/map";
+import type {
+  ComposedStyleLayerRegistration,
+  LayerEventSubscription,
+  RegisteredMapImage,
+  RegisteredMapLayer,
+  RegisteredMapSource,
+  VisibilityGroupRegistration,
+} from "./interfaces/spillgebees";
+import { applySceneMutations, replayStyleReloadState } from "./runtime/sceneMutations";
+import {
+  addImage,
+  addMapLayer,
+  addMapSource,
+  closePopup,
+  getClusterExpansionZoom,
+  moveMapLayer,
+  removeMapLayer,
+  removeMapSource,
+  setFeatureState,
+  setFilter,
+  setLayerVisibility,
+  setLayerZoomRange,
+  setLayoutProperty,
+  setPaintProperty,
+  setSourceData,
+  setSourceDataAnimated,
+  showPopup,
+  unregisterLayerEvents,
+  wireLayerEvents,
+} from "./sources/geojson";
+import { applyOverlayStyles, validateComposedGlyphs } from "./styles/composition";
 import type { FeatureStorage } from "./types/feature-storage";
 
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 8;
 
 const DEFAULT_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 
@@ -45,20 +77,221 @@ function initializeNamespace(): void {
       syncFeatures,
       setOverlays,
       setControls,
+      setLegendControl,
+      removeLegendControl,
       setMapOptions,
       setTheme,
       fitBounds,
       flyTo,
       resize,
       disposeMap,
+      applySceneMutations,
+      addMapSource,
+      removeMapSource,
+      setSourceData,
+      setSourceDataAnimated,
+      addMapLayer,
+      moveMapLayer,
+      removeMapLayer,
+      addImage,
+      showPopup,
+      closePopup,
+      setFeatureState,
+      setTrackedEntityFeatureState,
+      getClusterExpansionZoom,
+      getCenter,
+      hasLayer,
+      hasStyleLayer,
+      getZoom,
+      getBounds,
+      queryRenderedFeatures,
+      setFilter,
+      setLayerVisibility,
+      setStyleLayerVisibility,
+      setLayerZoomRange,
+      setLayoutProperty,
+      setPaintProperty,
+      wireLayerEvents,
+      unregisterLayerEvents,
     },
     maps: new Map<HTMLElement, MapLibreMap>(),
     features: new Map<MapLibreMap, FeatureStorage>(),
     overlays: new Map<MapLibreMap, Map<string, unknown>>(),
     controls: new Map<MapLibreMap, Set<IControl>>(),
+    legendControls: new Map<MapLibreMap, IControl>(),
+    legendControlOptions: new Map<MapLibreMap, ILegendControlOptions | null>(),
     styles: new Map<MapLibreMap, string | StyleSpecification>(),
+    mapOptions: new Map<MapLibreMap, IMapOptions>(),
     dotNetHelpers: new Map<MapLibreMap, DotNet.DotNetObject>(),
+    controlOptions: new Map<MapLibreMap, IMapControlOptions>(),
+    sourceSpecs: new Map<MapLibreMap, Map<string, RegisteredMapSource>>(),
+    layerSpecs: new Map<MapLibreMap, Map<string, RegisteredMapLayer>>(),
+    imageRegistrations: new Map<MapLibreMap, Map<string, RegisteredMapImage>>(),
+    layerEventSubscriptions: new Map<MapLibreMap, Map<string, LayerEventSubscription>>(),
+    visibilityGroups: new Map<MapLibreMap, Map<string, VisibilityGroupRegistration>>(),
+    overlayStyleUrls: new Map<MapLibreMap, string[]>(),
+    composedStyleLayerIds: new Map<MapLibreMap, Map<string, ComposedStyleLayerRegistration>>(),
+    pendingStyleReloads: new WeakSet<MapLibreMap>(),
   };
+}
+
+function _getRegisteredSourceStore(map: MapLibreMap): Map<string, RegisteredMapSource> {
+  const existing = window.Spillgebees.Map.sourceSpecs.get(map);
+  if (existing) {
+    return existing;
+  }
+
+  const created = new Map<string, RegisteredMapSource>();
+  window.Spillgebees.Map.sourceSpecs.set(map, created);
+  return created;
+}
+
+function _getRegisteredLayerStore(map: MapLibreMap): Map<string, RegisteredMapLayer> {
+  const existing = window.Spillgebees.Map.layerSpecs.get(map);
+  if (existing) {
+    return existing;
+  }
+
+  const created = new Map<string, RegisteredMapLayer>();
+  window.Spillgebees.Map.layerSpecs.set(map, created);
+  return created;
+}
+
+function getRegisteredImageStore(map: MapLibreMap): Map<string, RegisteredMapImage> {
+  const existing = window.Spillgebees.Map.imageRegistrations.get(map);
+  if (existing) {
+    return existing;
+  }
+
+  const created = new Map<string, RegisteredMapImage>();
+  window.Spillgebees.Map.imageRegistrations.set(map, created);
+  return created;
+}
+
+function getComposedStyleLayerStore(map: MapLibreMap): Map<string, ComposedStyleLayerRegistration> {
+  const existing = window.Spillgebees.Map.composedStyleLayerIds.get(map);
+  if (existing) {
+    return existing;
+  }
+
+  const created = new Map<string, ComposedStyleLayerRegistration>();
+  window.Spillgebees.Map.composedStyleLayerIds.set(map, created);
+  return created;
+}
+
+function getComposedStyleLayerKey(styleId: string, layerId: string): string {
+  return `${styleId}\u0000${layerId}`;
+}
+
+function getResolvedStyleLayerId(map: MapLibreMap, styleId: string, layerId: string): string | null {
+  const registration = getComposedStyleLayerStore(map).get(getComposedStyleLayerKey(styleId, layerId));
+  return registration?.runtimeLayerId ?? null;
+}
+
+function getComposedOverlayStyles(mapOptions: IMapOptions): Array<{ styleId: string; url: string }> {
+  const stylesList = mapOptions.styles ?? (mapOptions.style ? [mapOptions.style] : [null]);
+
+  return stylesList
+    .slice(1)
+    .filter((style): style is IMapStyle & { id: string; url: string } => style?.id != null && style.url != null)
+    .map((style) => ({ styleId: style.id, url: style.url }));
+}
+
+function getBaseStyleId(mapOptions: IMapOptions): string | null {
+  const stylesList = mapOptions.styles ?? (mapOptions.style ? [mapOptions.style] : [null]);
+  return stylesList[0]?.id ?? null;
+}
+
+function replayRegisteredImages(mapElement: HTMLElement): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return;
+  }
+
+  const images = getRegisteredImageStore(map);
+  for (const registration of images.values()) {
+    void addImage(
+      mapElement,
+      registration.name,
+      registration.url,
+      registration.width,
+      registration.height,
+      registration.pixelRatio,
+    );
+  }
+}
+
+function registerStyleReloadHandlers(mapElement: HTMLElement, map: MapLibreMap): void {
+  map.on("styledata", async () => {
+    if (!window.Spillgebees.Map.pendingStyleReloads.has(map)) {
+      return;
+    }
+
+    window.Spillgebees.Map.pendingStyleReloads.delete(map);
+    ensureShapeLayers(map);
+    setupShapePopupHandlers(map);
+
+    const featureStorage = window.Spillgebees.Map.features.get(map);
+    if (featureStorage) {
+      const markers = Array.from(featureStorage.markers.values()).map((entry) => entry.data);
+      const markerIds = markers.map((marker) => marker.id);
+
+      if (markerIds.length > 0) {
+        removeMarkers(markerIds, featureStorage);
+        addMarkers(map, markers, featureStorage);
+      }
+
+      const circles = Array.from(featureStorage.circles.values());
+      if (circles.length > 0) {
+        updateCircles(map, circles, featureStorage);
+      }
+
+      const polylines = Array.from(featureStorage.polylines.values());
+      if (polylines.length > 0) {
+        updatePolylines(map, polylines, featureStorage);
+      }
+    }
+
+    const controlOptions = window.Spillgebees.Map.controlOptions.get(map);
+    if (controlOptions) {
+      setControls(mapElement, controlOptions);
+    }
+
+    const overlays = Array.from((window.Spillgebees.Map.overlays.get(map) ?? new Map()).values()) as ITileOverlay[];
+    setOverlays(mapElement, overlays);
+
+    await replayStyleReloadState(mapElement, {
+      replayImages: () => replayRegisteredImages(mapElement),
+      replayComposedOverlays: async () => {
+        const mapOptions = window.Spillgebees.Map.mapOptions.get(map);
+        const overlayStyles = mapOptions ? getComposedOverlayStyles(mapOptions) : [];
+        if (overlayStyles.length === 0) {
+          return;
+        }
+
+        const composedGlyphsUrl = mapOptions?.composedGlyphsUrl ?? null;
+        if (composedGlyphsUrl) {
+          const currentGlyphs = map.getStyle()?.glyphs;
+          if (currentGlyphs !== composedGlyphsUrl) {
+            const style = map.getStyle();
+            style.glyphs = composedGlyphsUrl;
+            map.setStyle(style, { diff: true });
+          }
+        }
+
+        await applyOverlayStyles(map, overlayStyles, { forceReapply: true });
+      },
+      onAfterReplay: async () => {
+        const dotNetHelper = window.Spillgebees.Map.dotNetHelpers.get(map);
+        if (!dotNetHelper) {
+          return;
+        }
+
+        // biome-ignore lint/security/noSecrets: C# callback method name, not a secret
+        await dotNetHelper.invokeMethodAsync("OnMapStyleReloadedAsync");
+      },
+    });
+  });
 }
 
 export function bootstrap(): void {
@@ -156,17 +389,34 @@ export function createMap(
   polylines: IPolyline[],
   overlays: ITileOverlay[],
 ): void {
-  const style = buildStyleFromOptions(mapOptions.style);
+  // preload web fonts (fire-and-forget — fonts load in parallel with map init)
+  if (mapOptions.webFonts) {
+    for (const font of mapOptions.webFonts) {
+      document.fonts.load(font);
+    }
+  }
+
+  // Resolve styles: Styles list takes precedence over single Style
+  const stylesList = mapOptions.styles ?? (mapOptions.style ? [mapOptions.style] : [null]);
+  const baseStyle = buildStyleFromOptions(stylesList[0] ?? null);
+  const overlayStyles = getComposedOverlayStyles(mapOptions);
+  const overlayStyleUrls = overlayStyles.map((style) => style.url);
 
   const map = new MapLibreMap({
     container: mapElement,
-    style,
+    style: baseStyle,
     center: [mapOptions.center.longitude, mapOptions.center.latitude],
     zoom: mapOptions.zoom,
     pitch: mapOptions.pitch,
     bearing: mapOptions.bearing,
     minZoom: mapOptions.minZoom ?? undefined,
     maxZoom: mapOptions.maxZoom ?? undefined,
+    maxBounds: mapOptions.maxBounds
+      ? [
+          [mapOptions.maxBounds.southwest.longitude, mapOptions.maxBounds.southwest.latitude],
+          [mapOptions.maxBounds.northeast.longitude, mapOptions.maxBounds.northeast.latitude],
+        ]
+      : undefined,
     interactive: mapOptions.interactive,
     cooperativeGestures: mapOptions.cooperativeGestures,
     attributionControl: true,
@@ -181,6 +431,8 @@ export function createMap(
   // Initialize empty feature storage
   const featureStorage: FeatureStorage = {
     markers: new Map(),
+    circles: new Map(),
+    polylines: new Map(),
     circleData: new Map(),
     polylineData: new Map(),
   };
@@ -191,9 +443,23 @@ export function createMap(
 
   // Initialize control storage
   window.Spillgebees.Map.controls.set(map, new Set());
+  window.Spillgebees.Map.controlOptions.set(map, controlOptions);
+  window.Spillgebees.Map.legendControlOptions.set(map, null);
+  window.Spillgebees.Map.mapOptions.set(map, mapOptions);
+
+  // Initialize custom style state stores
+  window.Spillgebees.Map.sourceSpecs.set(map, new Map());
+  window.Spillgebees.Map.layerSpecs.set(map, new Map());
+  window.Spillgebees.Map.imageRegistrations.set(map, new Map());
+  window.Spillgebees.Map.layerEventSubscriptions.set(map, new Map());
+  window.Spillgebees.Map.visibilityGroups.set(map, new Map());
+  window.Spillgebees.Map.overlayStyleUrls.set(map, [...overlayStyleUrls]);
+  window.Spillgebees.Map.composedStyleLayerIds.set(map, new Map());
 
   // Track the current style for diffing in setMapOptions
-  window.Spillgebees.Map.styles.set(map, style);
+  window.Spillgebees.Map.styles.set(map, baseStyle);
+
+  registerStyleReloadHandlers(mapElement, map);
 
   // Apply theme
   if (theme === "dark") {
@@ -224,10 +490,8 @@ export function createMap(
     // Apply overlays — Phase 6
     setOverlays(mapElement, overlays);
 
-    // Handle fitBoundsOptions
-    if (mapOptions.fitBoundsOptions) {
-      fitBounds(mapElement, mapOptions.fitBoundsOptions);
-    }
+    // fitBoundsOptions is applied from C# after resize (OnMapInitializedAsync)
+    // to ensure the container has its final dimensions
 
     // Wire map events for C# callbacks
     map.on("click", (e: { lngLat: { lat: number; lng: number } }) => {
@@ -259,8 +523,26 @@ export function createMap(
       });
     });
 
-    // Notify C# that the map is ready
-    dotNetHelper.invokeMethodAsync(callbackName);
+    // Apply overlay styles (async — fetches style JSONs and merges sources/layers)
+    if (overlayStyles.length > 0) {
+      (async () => {
+        const glyphResult = await validateComposedGlyphs(map, overlayStyleUrls, mapOptions.composedGlyphsUrl);
+
+        if (glyphResult.proceed) {
+          if (glyphResult.effectiveGlyphsUrl) {
+            const style = map.getStyle();
+            style.glyphs = glyphResult.effectiveGlyphsUrl;
+            map.setStyle(style, { diff: true });
+          }
+
+          await applyOverlayStyles(map, overlayStyles);
+        }
+
+        dotNetHelper.invokeMethodAsync(callbackName);
+      })();
+    } else {
+      dotNetHelper.invokeMethodAsync(callbackName);
+    }
   });
 }
 
@@ -279,9 +561,22 @@ export function disposeMap(mapElement: HTMLElement): void {
 
   // Clean up control storage
   window.Spillgebees.Map.controls.delete(map);
+  window.Spillgebees.Map.legendControls.delete(map);
+  window.Spillgebees.Map.legendControlOptions.delete(map);
+  window.Spillgebees.Map.controlOptions.delete(map);
 
   // Clean up style storage
   window.Spillgebees.Map.styles.delete(map);
+  window.Spillgebees.Map.mapOptions.delete(map);
+
+  // Clean up custom style state stores
+  window.Spillgebees.Map.sourceSpecs.delete(map);
+  window.Spillgebees.Map.layerSpecs.delete(map);
+  window.Spillgebees.Map.imageRegistrations.delete(map);
+  window.Spillgebees.Map.layerEventSubscriptions.delete(map);
+  window.Spillgebees.Map.visibilityGroups.delete(map);
+  window.Spillgebees.Map.overlayStyleUrls.delete(map);
+  window.Spillgebees.Map.composedStyleLayerIds.delete(map);
 
   // Clean up dotNetHelper storage
   window.Spillgebees.Map.dotNetHelpers.delete(map);
@@ -300,6 +595,8 @@ export function setMapOptions(mapElement: HTMLElement, mapOptions: IMapOptions):
     return;
   }
 
+  window.Spillgebees.Map.mapOptions.set(map, mapOptions);
+
   // Update center and zoom
   map.jumpTo({
     center: [mapOptions.center.longitude, mapOptions.center.latitude],
@@ -310,15 +607,55 @@ export function setMapOptions(mapElement: HTMLElement, mapOptions: IMapOptions):
   map.setPitch(mapOptions.pitch);
   map.setBearing(mapOptions.bearing);
 
-  // Update style only if it actually changed (setStyle triggers a full tile reload)
-  const newStyle = buildStyleFromOptions(mapOptions.style);
+  // Update maxBounds
+  if (mapOptions.maxBounds) {
+    map.setMaxBounds([
+      [mapOptions.maxBounds.southwest.longitude, mapOptions.maxBounds.southwest.latitude],
+      [mapOptions.maxBounds.northeast.longitude, mapOptions.maxBounds.northeast.latitude],
+    ]);
+  } else {
+    map.setMaxBounds(undefined as unknown as Parameters<typeof map.setMaxBounds>[0]);
+  }
+
+  // Resolve styles list
+  const stylesList = mapOptions.styles ?? (mapOptions.style ? [mapOptions.style] : [null]);
+  const newBaseStyle = buildStyleFromOptions(stylesList[0] ?? null);
+  const overlayStyles = getComposedOverlayStyles(mapOptions);
+  const overlayStyleUrls = overlayStyles.map((style) => style.url);
+  window.Spillgebees.Map.overlayStyleUrls.set(map, [...overlayStyleUrls]);
+
+  // Update base style only if it actually changed (setStyle triggers a full tile reload)
   const currentStyle = window.Spillgebees.Map.styles.get(map);
-  const newStyleKey = typeof newStyle === "string" ? newStyle : JSON.stringify(newStyle);
+  const newStyleKey = typeof newBaseStyle === "string" ? newBaseStyle : JSON.stringify(newBaseStyle);
   const currentStyleKey = typeof currentStyle === "string" ? currentStyle : JSON.stringify(currentStyle);
 
+  getComposedStyleLayerStore(map).clear();
+
   if (newStyleKey !== currentStyleKey) {
-    map.setStyle(newStyle);
-    window.Spillgebees.Map.styles.set(map, newStyle);
+    window.Spillgebees.Map.pendingStyleReloads.add(map);
+    map.setStyle(newBaseStyle);
+    window.Spillgebees.Map.styles.set(map, newBaseStyle);
+  } else {
+    // Base style unchanged — validate glyphs and update overlays
+    void (async () => {
+      const glyphResult = await validateComposedGlyphs(
+        map,
+        overlayStyles.map((s) => s.url),
+        mapOptions.composedGlyphsUrl,
+      );
+
+      if (!glyphResult.proceed) {
+        return;
+      }
+
+      if (glyphResult.effectiveGlyphsUrl) {
+        const style = map.getStyle();
+        style.glyphs = glyphResult.effectiveGlyphsUrl;
+        map.setStyle(style, { diff: true });
+      }
+
+      await applyOverlayStyles(map, overlayStyles);
+    })();
   }
 
   // Handle projection
@@ -419,9 +756,12 @@ export function setOverlays(mapElement: HTMLElement, overlays: ITileOverlay[]): 
 
   // Add new overlays
   for (const overlay of overlays) {
-    if (existingOverlays.has(overlay.id)) continue; // already exists
-
     const sourceId = `sgb-overlay-${overlay.id}`;
+
+    if (existingOverlays.has(overlay.id) && map.getSource(sourceId) && map.getLayer(sourceId)) {
+      continue;
+    }
+
     map.addSource(sourceId, {
       type: "raster",
       tiles: [overlay.urlTemplate],
@@ -449,6 +789,8 @@ export function setControls(mapElement: HTMLElement, controlOptions: IMapControl
   if (!map) {
     return;
   }
+
+  window.Spillgebees.Map.controlOptions.set(map, structuredClone(controlOptions));
 
   // Remove all existing controls
   const existingControls = window.Spillgebees.Map.controls.get(map);
@@ -511,6 +853,70 @@ export function setControls(mapElement: HTMLElement, controlOptions: IMapControl
   }
 
   window.Spillgebees.Map.controls.set(map, controls);
+}
+
+export function setLegendControl(
+  mapElement: HTMLElement,
+  options: ILegendControlOptions,
+  placeholderHost: HTMLElement,
+  contentRoot: HTMLElement,
+): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return;
+  }
+
+  const previousOptions = window.Spillgebees.Map.legendControlOptions.get(map);
+  window.Spillgebees.Map.legendControlOptions.set(map, structuredClone(options));
+
+  if (!options.enable) {
+    const existingControl = window.Spillgebees.Map.legendControls.get(map);
+    if (existingControl) {
+      map.removeControl(existingControl);
+      window.Spillgebees.Map.legendControls.delete(map);
+    }
+
+    contentRoot.hidden = true;
+    if (!placeholderHost.contains(contentRoot)) {
+      placeholderHost.appendChild(contentRoot);
+    }
+    return;
+  }
+
+  const existingControl = window.Spillgebees.Map.legendControls.get(map);
+  if (existingControl instanceof LegendControl) {
+    if (previousOptions && previousOptions.position !== options.position) {
+      map.removeControl(existingControl);
+      window.Spillgebees.Map.legendControls.delete(map);
+      const legendControl = new LegendControl(options, placeholderHost, contentRoot);
+      window.Spillgebees.Map.legendControls.set(map, legendControl);
+      map.addControl(legendControl, options.position);
+      return;
+    }
+
+    existingControl.update(options);
+    return;
+  }
+
+  const legendControl = new LegendControl(options, placeholderHost, contentRoot);
+  window.Spillgebees.Map.legendControls.set(map, legendControl);
+  map.addControl(legendControl, options.position);
+}
+
+export function removeLegendControl(mapElement: HTMLElement): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return;
+  }
+
+  const legendControl = window.Spillgebees.Map.legendControls.get(map);
+  if (!legendControl) {
+    return;
+  }
+
+  map.removeControl(legendControl);
+  window.Spillgebees.Map.legendControls.delete(map);
+  window.Spillgebees.Map.legendControlOptions.delete(map);
 }
 
 export function fitBounds(mapElement: HTMLElement, options: IFitBoundsOptions): void {
@@ -612,4 +1018,125 @@ export function flyTo(
   if (pitch !== null) options.pitch = pitch;
 
   map.flyTo(options);
+}
+
+export function getCenter(mapElement: HTMLElement): ICoordinate | null {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return null;
+  }
+
+  const center = map.getCenter();
+  return { latitude: center.lat, longitude: center.lng };
+}
+
+export function getZoom(mapElement: HTMLElement): number | null {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return null;
+  }
+
+  return map.getZoom();
+}
+
+export function hasLayer(mapElement: HTMLElement, layerId: string): boolean {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return false;
+  }
+
+  return map.getLayer(layerId) !== undefined;
+}
+
+export function hasStyleLayer(mapElement: HTMLElement, styleId: string, layerId: string): boolean {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return false;
+  }
+
+  const mapOptions = window.Spillgebees.Map.mapOptions.get(map);
+  if (mapOptions && getBaseStyleId(mapOptions) === styleId) {
+    return map.getLayer(layerId) !== undefined;
+  }
+
+  const runtimeLayerId = getResolvedStyleLayerId(map, styleId, layerId);
+  if (!runtimeLayerId) {
+    return false;
+  }
+
+  return map.getLayer(runtimeLayerId) !== undefined;
+}
+
+export function getBounds(mapElement: HTMLElement): { southwest: ICoordinate; northeast: ICoordinate } | null {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return null;
+  }
+
+  const bounds = map.getBounds();
+  const southwest = bounds.getSouthWest();
+  const northeast = bounds.getNorthEast();
+
+  return {
+    southwest: { latitude: southwest.lat, longitude: southwest.lng },
+    northeast: { latitude: northeast.lat, longitude: northeast.lng },
+  };
+}
+
+export function queryRenderedFeatures(
+  mapElement: HTMLElement,
+  point: { x: number; y: number },
+  layerIds: string[] | null,
+): Array<{ id: unknown; layerId: string | null; geometry: unknown; properties: unknown }> {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return [];
+  }
+
+  const features = map.queryRenderedFeatures([point.x, point.y], layerIds?.length ? { layers: layerIds } : undefined);
+  return features.map((feature) => ({
+    id: feature.id,
+    layerId: feature.layer?.id ?? null,
+    geometry: feature.geometry,
+    properties: feature.properties ?? null,
+  }));
+}
+
+export function setStyleLayerVisibility(
+  mapElement: HTMLElement,
+  styleId: string,
+  layerId: string,
+  visible: boolean,
+): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return;
+  }
+
+  const mapOptions = window.Spillgebees.Map.mapOptions.get(map);
+  if (mapOptions && getBaseStyleId(mapOptions) === styleId) {
+    setLayerVisibility(mapElement, layerId, visible);
+    return;
+  }
+
+  const runtimeLayerId = getResolvedStyleLayerId(map, styleId, layerId);
+  if (!runtimeLayerId) {
+    return;
+  }
+
+  setLayerVisibility(mapElement, runtimeLayerId, visible);
+}
+
+export function setTrackedEntityFeatureState(
+  mapElement: HTMLElement,
+  primarySourceId: string,
+  decorationSourceId: string | null,
+  entityId: string,
+  state: Record<string, unknown>,
+): void {
+  setFeatureState(mapElement, primarySourceId, entityId, state);
+
+  if (decorationSourceId) {
+    setFeatureState(mapElement, decorationSourceId, entityId, state);
+  }
 }

@@ -7,13 +7,22 @@ import type { ICircle, IPolyline, IPopupOptions } from "../interfaces/features";
 import type { IMapOptions } from "../interfaces/map";
 import { bootstrap, createMap } from "../map";
 import type { FeatureStorage } from "../types/feature-storage";
-import { addCircles, addPolylines, removeCircles, removePolylines, updateCircles, updatePolylines } from "./shapes";
+import {
+  addCircles,
+  addPolylines,
+  removeCircles,
+  removePolylines,
+  setupShapePopupHandlers,
+  updateCircles,
+  updatePolylines,
+} from "./shapes";
 
 function createDefaultMapOptions(): IMapOptions {
   return {
     center: { latitude: 51.505, longitude: -0.09 },
     zoom: 13,
     style: null,
+    composedGlyphsUrl: null,
     pitch: 0,
     bearing: 0,
     projection: "mercator",
@@ -41,6 +50,8 @@ function createDefaultControlOptions(): IMapControlOptions {
 function createEmptyFeatureStorage(): FeatureStorage {
   return {
     markers: new Map(),
+    circles: new Map(),
+    polylines: new Map(),
     circleData: new Map(),
     polylineData: new Map(),
   };
@@ -285,6 +296,32 @@ describe("addCircles", () => {
     // assert
     const feature = storage.circleData.get("my-circle")!;
     expect(feature.id).toBe("my-circle");
+  });
+});
+
+describe("setupShapePopupHandlers", () => {
+  beforeEach(() => {
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+  });
+
+  it("should replace existing shape popup handlers instead of accumulating them", () => {
+    // arrange
+    const mockMap = setupMapAndGetMockMap();
+    const mockMapInstance = getLatestMockMapInstance()!;
+
+    // act
+    setupShapePopupHandlers(mockMap);
+    setupShapePopupHandlers(mockMap);
+
+    // assert
+    expect(mockMapInstance.off).toHaveBeenCalledWith("click", "sgb-circles-layer", expect.any(Function));
+    expect(mockMapInstance.off).toHaveBeenCalledWith("mouseenter", "sgb-circles-layer", expect.any(Function));
+    expect(mockMapInstance.off).toHaveBeenCalledWith("mouseleave", "sgb-circles-layer", expect.any(Function));
+    expect(mockMapInstance.off).toHaveBeenCalledWith("click", "sgb-polylines-layer", expect.any(Function));
+    expect(mockMapInstance.off).toHaveBeenCalledWith("mouseenter", "sgb-polylines-layer", expect.any(Function));
+    expect(mockMapInstance.off).toHaveBeenCalledWith("mouseleave", "sgb-polylines-layer", expect.any(Function));
   });
 });
 

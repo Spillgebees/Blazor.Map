@@ -1,0 +1,35 @@
+<SgbMap MapOptions="@_mapOptions"
+        ControlOptions="@MapControlOptions.Default"
+        Markers="@_markers"
+        Polylines="@_polylines"
+        Height="400px"
+        Width="100%" />
+
+@code {
+    private readonly MapOptions _mapOptions = new(
+        Center: new Coordinate(49.75, 6.10),
+        Zoom: 9,
+        FitBoundsOptions: new FitBoundsOptions(
+            FeatureIds: ["route-1"],
+            Padding: new Point(60, 60))
+    );
+
+    private readonly List<Marker> _markers =
+    [
+        new("marker-lux-city", new Coordinate(49.6117, 6.1319), Title: "Luxembourg City")
+    ];
+
+    private readonly List<Polyline> _polylines =
+    [
+        new(
+            "route-1",
+            [
+                new Coordinate(49.5099, 5.9999),
+                new Coordinate(49.6117, 6.1319),
+                new Coordinate(49.7513, 6.1062),
+                new Coordinate(49.8422, 6.1043)
+            ],
+            Color: "#3B82F6",
+            Width: 4)
+    ];
+}

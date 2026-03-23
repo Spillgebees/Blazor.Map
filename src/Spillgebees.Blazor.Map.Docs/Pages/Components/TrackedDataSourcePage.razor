@@ -1,0 +1,31 @@
+@page "/components/tracked-data-source"
+
+<PageTitle>TrackedDataSource | Spillgebees.Blazor.Map</PageTitle>
+
+<Breadcrumb Section="components" PageName="TrackedDataSource"
+            ApiReferenceUrl="api/Spillgebees.Blazor.Map.Components.Layers.TrackedDataSource`1"
+            SourceUrl="https://github.com/Spillgebees/Blazor.Map/blob/main/src/Spillgebees.Blazor.Map/Components/Layers/TrackedDataSource.razor" />
+<OnThisPage />
+
+<h1>TrackedDataSource</h1>
+<p>High-performance real-time entity rendering with smooth animation, decorations, clustering, and interaction.</p>
+
+<h2 id="train_tracking">// train_tracking</h2>
+<p>This example simulates 47 trains across the Luxembourg rail network. Each train is a tracked entity whose position, rotation, and feature-state properties update every tick without re-creating the underlying MapLibre source.</p>
+
+<p>Features demonstrated:</p>
+<ul>
+    <li><code>TrackedDataSymbolOptions</code> for icon, position, rotation, and color selectors</li>
+    <li>Multi-layer decorations with conditional display modes (always, hover, selected)</li>
+    <li>Zoom-to-dissolve clustering via <code>TrackedDataClusterOptions</code></li>
+    <li>Hover and select interaction through feature-state</li>
+    <li>Smooth position interpolation via <code>AnimationOptions</code></li>
+    <li>SVG-to-data-URI custom icon registration via <code>AddImageAsync</code></li>
+    <li>Style composition with a railway overlay on a Positron base</li>
+    <li>Interactive <a href="components/map-legend">MapLegend</a> with custom swatch templates</li>
+</ul>
+
+<ExampleView TComponent="TrainTrackingExample"
+             AdditionalSources="@(new[] { typeof(TrainTrackingPresentation), typeof(TrainSampleSimulation) })">
+    <TrainTrackingExample />
+</ExampleView>

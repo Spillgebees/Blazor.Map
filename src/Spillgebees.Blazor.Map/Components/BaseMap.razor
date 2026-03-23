@@ -2,9 +2,12 @@
 
 @code {
     protected virtual RenderFragment Render
-        => @<div id="@ContainerId"
-                 class="@InternalContainerClass"
-                 style="@InternalContainerStyle"
-                 @ref="@MapReference">
-            </div>;
+        => @<CascadingValue Value="this">
+                <div id="@ContainerId"
+                     class="@InternalContainerClass"
+                     style="@InternalContainerStyle"
+                     @ref="@MapReference">
+                </div>
+                @ChildContent
+            </CascadingValue>;
 }

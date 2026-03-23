@@ -12,6 +12,8 @@ export interface IMapOptions {
   center: ICoordinate;
   zoom: number;
   style: IMapStyle | null;
+  styles: IMapStyle[] | null;
+  composedGlyphsUrl: string | null;
   pitch: number;
   bearing: number;
   projection: "mercator" | "globe";
@@ -20,11 +22,19 @@ export interface IMapOptions {
   fitBoundsOptions: IFitBoundsOptions | null;
   minZoom: number | null;
   maxZoom: number | null;
+  maxBounds: IMapBounds | null;
   interactive: boolean;
   cooperativeGestures: boolean;
+  webFonts: string[] | null;
+}
+
+export interface IMapBounds {
+  southwest: ICoordinate;
+  northeast: ICoordinate;
 }
 
 export interface IMapStyle {
+  id: string | null;
   url: string | null;
   rasterSource: IRasterTileSource | null;
   wmsSource: IWmsTileSource | null;

@@ -6,12 +6,18 @@ namespace Spillgebees.Blazor.Map.Models;
 /// </summary>
 public record MapStyle
 {
-    private MapStyle(string? url, RasterTileSource? rasterSource, WmsTileSource? wmsSource)
+    private MapStyle(string? id, string? url, RasterTileSource? rasterSource, WmsTileSource? wmsSource)
     {
+        Id = id;
         Url = url;
         RasterSource = rasterSource;
         WmsSource = wmsSource;
     }
+
+    /// <summary>
+    /// Stable identifier for this style when used in multi-style composition.
+    /// </summary>
+    public string? Id { get; init; }
 
     /// <summary>
     /// The MapLibre style specification URL (for vector or JSON-based styles).
@@ -29,10 +35,26 @@ public record MapStyle
     public WmsTileSource? WmsSource { get; }
 
     /// <summary>
+    /// Returns a copy of this style with the given stable identifier.
+    /// </summary>
+    public MapStyle WithId(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            throw new ArgumentException("Map style ID must not be empty.", nameof(id));
+        }
+
+        return this with
+        {
+            Id = id,
+        };
+    }
+
+    /// <summary>
     /// Creates a <see cref="MapStyle"/> from a MapLibre style specification URL.
     /// </summary>
     /// <param name="url">The URL to a MapLibre-compatible style JSON.</param>
-    public static MapStyle FromUrl(string url) => new(url, null, null);
+    public static MapStyle FromUrl(string url) => new(null, url, null, null);
 
     /// <summary>
     /// Creates a <see cref="MapStyle"/> from a raster tile URL template.
@@ -41,7 +63,7 @@ public record MapStyle
     /// <param name="attribution">The attribution text to display on the map.</param>
     /// <param name="tileSize">The tile size in pixels. Default is 256.</param>
     public static MapStyle FromRasterUrl(string urlTemplate, string attribution, int tileSize = 256) =>
-        new(null, new RasterTileSource(urlTemplate, attribution, tileSize), null);
+        new(null, null, new RasterTileSource(urlTemplate, attribution, tileSize), null);
 
     /// <summary>
     /// Creates a <see cref="MapStyle"/> from a WMS endpoint.
@@ -61,7 +83,45 @@ public record MapStyle
         bool transparent = false,
         string version = "1.1.1",
         int tileSize = 256
-    ) => new(null, null, new WmsTileSource(baseUrl, layers, attribution, format, transparent, version, tileSize));
+    ) => new(null, null, null, new WmsTileSource(baseUrl, layers, attribution, format, transparent, version, tileSize));
+
+    /// <summary>
+    /// Creates a <see cref="MapStyle"/> from a WMTS (Web Map Tile Service) endpoint.
+    /// This is the standard protocol for ArcGIS cached tile services.
+    /// </summary>
+    /// <param name="baseUrl">The WMTS base URL (e.g., <c>https://server/arcgis/rest/services/Name/MapServer/WMTS</c>).</param>
+    /// <param name="layer">The WMTS layer identifier.</param>
+    /// <param name="attribution">The attribution text to display on the map.</param>
+    /// <param name="tileMatrixSet">The tile matrix set identifier. Default is <c>"default028mm"</c>.</param>
+    /// <param name="style">The WMTS style. Default is <c>"default"</c>.</param>
+    /// <param name="format">The image format extension. Default is <c>"png"</c>.</param>
+    /// <param name="tileSize">The tile size in pixels. Default is 256.</param>
+    public static MapStyle FromWmtsUrl(
+        string baseUrl,
+        string layer,
+        string attribution,
+        string tileMatrixSet = "default028mm",
+        string style = "default",
+        string format = "png",
+        int tileSize = 256
+    )
+    {
+        var urlTemplate =
+            $"{baseUrl.TrimEnd('/')}/tile/1.0.0/{layer}/{style}/{tileMatrixSet}/{{z}}/{{y}}/{{x}}.{format}";
+        return FromRasterUrl(urlTemplate, attribution, tileSize);
+    }
+
+    /// <summary>
+    /// Creates a <see cref="MapStyle"/> from an ArcGIS MapServer tile endpoint.
+    /// </summary>
+    /// <param name="mapServerUrl">The MapServer URL (e.g., <c>https://server/arcgis/rest/services/Name/MapServer</c>).</param>
+    /// <param name="attribution">The attribution text to display on the map.</param>
+    /// <param name="tileSize">The tile size in pixels. Default is 256.</param>
+    public static MapStyle FromArcGisMapServer(string mapServerUrl, string attribution, int tileSize = 256)
+    {
+        var urlTemplate = $"{mapServerUrl.TrimEnd('/')}/tile/{{z}}/{{y}}/{{x}}";
+        return FromRasterUrl(urlTemplate, attribution, tileSize);
+    }
 
     /// <summary>
     /// Preset styles from <a href="https://openfreemap.org/">OpenFreeMap</a> — free vector tiles, no API key required.
@@ -71,17 +131,18 @@ public record MapStyle
         /// <summary>
         /// A clean, modern vector style.
         /// </summary>
-        public static MapStyle Liberty => FromUrl("https://tiles.openfreemap.org/styles/liberty");
+        public static MapStyle Liberty => FromUrl("https://tiles.openfreemap.org/styles/liberty").WithId("sgb-liberty");
 
         /// <summary>
         /// A colorful vector style.
         /// </summary>
-        public static MapStyle Bright => FromUrl("https://tiles.openfreemap.org/styles/bright");
+        public static MapStyle Bright => FromUrl("https://tiles.openfreemap.org/styles/bright").WithId("sgb-bright");
 
         /// <summary>
         /// A light, minimal vector style — ideal for data visualization.
         /// </summary>
-        public static MapStyle Positron => FromUrl("https://tiles.openfreemap.org/styles/positron");
+        public static MapStyle Positron =>
+            FromUrl("https://tiles.openfreemap.org/styles/positron").WithId("sgb-positron");
     }
 
     /// <summary>
@@ -94,9 +155,10 @@ public record MapStyle
         /// </summary>
         public static MapStyle Standard =>
             FromRasterUrl(
-                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors"
-            );
+                    "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                    "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors"
+                )
+                .WithId("sgb-openstreetmap-standard");
     }
 }
 

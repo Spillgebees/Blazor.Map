@@ -5,6 +5,7 @@ using Spillgebees.Blazor.Map.Components;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Layers;
+using Spillgebees.Blazor.Map.Runtime.Scene;
 using Spillgebees.Blazor.Map.Utilities;
 
 namespace Spillgebees.Blazor.Map.Interop;
@@ -18,7 +19,7 @@ internal static class MapJs
     /// The protocol version this C# library expects from the JS module.
     /// Bumped whenever the JS interop contract changes (function names, parameter shapes, return types).
     /// </summary>
-    internal const int ProtocolVersion = 1;
+    internal const int ProtocolVersion = 8;
 
     private const string JsNamespace = "Spillgebees.Map.mapFunctions";
     private const string JsProtocolVersionFunction = "Spillgebees.Map.getProtocolVersion";
@@ -99,6 +100,13 @@ internal static class MapJs
             }
         );
 
+    internal static ValueTask ApplySceneMutationsAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        MapSceneMutationBatch mutationBatch
+    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.applySceneMutations", mapReference, mutationBatch);
+
     /// <summary>
     /// Sets the raster tile overlays on the map.
     /// </summary>
@@ -118,6 +126,29 @@ internal static class MapJs
         ElementReference mapReference,
         MapControlOptions mapControlOptions
     ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.setControls", mapReference, mapControlOptions);
+
+    internal static ValueTask SetLegendControlAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        LegendControlOptions legendControlOptions,
+        ElementReference placeholderReference,
+        ElementReference contentReference
+    ) =>
+        jsRuntime.SafeInvokeVoidAsync(
+            logger,
+            $"{JsNamespace}.setLegendControl",
+            mapReference,
+            legendControlOptions,
+            placeholderReference,
+            contentReference
+        );
+
+    internal static ValueTask RemoveLegendControlAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference
+    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.removeLegendControl", mapReference);
 
     /// <summary>
     /// Updates map options (style, pitch, bearing, terrain, projection).
@@ -167,6 +198,98 @@ internal static class MapJs
     /// </summary>
     internal static ValueTask ResizeAsync(IJSRuntime jsRuntime, ILogger logger, ElementReference mapReference) =>
         jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.resize", mapReference);
+
+    internal static ValueTask<Coordinate?> GetCenterAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference
+    ) => jsRuntime.SafeInvokeAsync<Coordinate?>(logger, $"{JsNamespace}.getCenter", mapReference);
+
+    internal static ValueTask<double?> GetZoomAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference
+    ) => jsRuntime.SafeInvokeAsync<double?>(logger, $"{JsNamespace}.getZoom", mapReference);
+
+    internal static ValueTask<bool> HasLayerAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        string layerId
+    ) => jsRuntime.SafeInvokeAsync<bool>(logger, $"{JsNamespace}.hasLayer", mapReference, layerId);
+
+    internal static ValueTask<bool> HasStyleLayerAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        string styleId,
+        string layerId
+    ) => jsRuntime.SafeInvokeAsync<bool>(logger, $"{JsNamespace}.hasStyleLayer", mapReference, styleId, layerId);
+
+    internal static ValueTask<MapBounds?> GetBoundsAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference
+    ) => jsRuntime.SafeInvokeAsync<MapBounds?>(logger, $"{JsNamespace}.getBounds", mapReference);
+
+    internal static ValueTask<List<object>> QueryRenderedFeaturesAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        Point point,
+        IReadOnlyList<string>? layerIds = null
+    ) =>
+        jsRuntime.SafeInvokeAsync<List<object>>(
+            logger,
+            $"{JsNamespace}.queryRenderedFeatures",
+            mapReference,
+            point,
+            layerIds
+        );
+
+    internal static ValueTask MoveLayerAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        string layerId,
+        string? beforeId = null
+    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.moveMapLayer", mapReference, layerId, beforeId);
+
+    internal static ValueTask SetStyleLayerVisibilityAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        string styleId,
+        string layerId,
+        bool visible
+    ) =>
+        jsRuntime.SafeInvokeVoidAsync(
+            logger,
+            $"{JsNamespace}.setStyleLayerVisibility",
+            mapReference,
+            styleId,
+            layerId,
+            visible
+        );
+
+    internal static ValueTask SetTrackedEntityFeatureStateAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        string primarySourceId,
+        string? decorationSourceId,
+        string entityId,
+        IReadOnlyDictionary<string, object> state
+    ) =>
+        jsRuntime.SafeInvokeVoidAsync(
+            logger,
+            $"{JsNamespace}.setTrackedEntityFeatureState",
+            mapReference,
+            primarySourceId,
+            decorationSourceId,
+            entityId,
+            state
+        );
 
     /// <summary>
     /// Disposes the map instance and cleans up all associated resources.

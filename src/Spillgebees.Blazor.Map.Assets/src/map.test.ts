@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockDotNetHelper } from "../test/dotNetHelperMock";
 import {
   fireLoadEvent,
@@ -9,6 +9,7 @@ import {
   resetMockMapState,
 } from "../test/maplibreMock";
 import { resetWindowGlobals } from "../test/windowSetup";
+import { LegendControl } from "./controls/legendControl";
 import type { IMapControlOptions } from "./interfaces/controls";
 import type { IMarker, IPolyline } from "./interfaces/features";
 import type { IFitBoundsOptions, IMapOptions, IMapStyle, ITileOverlay } from "./interfaces/map";
@@ -19,20 +20,34 @@ import {
   disposeMap,
   fitBounds,
   flyTo,
+  getBounds,
+  getCenter,
+  getZoom,
+  hasLayer,
+  hasStyleLayer,
   PROTOCOL_VERSION,
+  queryRenderedFeatures,
   resize,
   setControls,
   setMapOptions,
   setOverlays,
+  setStyleLayerVisibility,
   setTheme,
+  setTrackedEntityFeatureState,
   syncFeatures,
 } from "./map";
+import * as composition from "./styles/composition";
+
+const applyOverlayStylesSpy = vi.spyOn(composition, "applyOverlayStyles");
+const validateComposedGlyphsSpy = vi.spyOn(composition, "validateComposedGlyphs");
 
 function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions {
   return {
     center: { latitude: 51.505, longitude: -0.09 },
     zoom: 13,
     style: null,
+    styles: null,
+    composedGlyphsUrl: null,
     pitch: 0,
     bearing: 0,
     projection: "mercator",
@@ -41,8 +56,10 @@ function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions 
     fitBoundsOptions: null,
     minZoom: null,
     maxZoom: null,
+    maxBounds: null,
     interactive: true,
     cooperativeGestures: false,
+    webFonts: null,
     ...overrides,
   };
 }
@@ -61,6 +78,11 @@ function createDefaultControlOptions(): IMapControlOptions {
 describe("bootstrap", () => {
   beforeEach(() => {
     resetWindowGlobals();
+    resetMockMapState();
+    applyOverlayStylesSpy.mockReset();
+    applyOverlayStylesSpy.mockResolvedValue(undefined);
+    validateComposedGlyphsSpy.mockReset();
+    validateComposedGlyphsSpy.mockResolvedValue({ proceed: true, effectiveGlyphsUrl: null });
   });
 
   it("should initialize the namespace when none exists", () => {
@@ -89,6 +111,13 @@ describe("bootstrap", () => {
     expect(mapFunctions.flyTo).toBeTypeOf("function");
     expect(mapFunctions.resize).toBeTypeOf("function");
     expect(mapFunctions.disposeMap).toBeTypeOf("function");
+    expect(mapFunctions.addMapSource).toBeTypeOf("function");
+    expect(mapFunctions.removeMapSource).toBeTypeOf("function");
+    expect(mapFunctions.setSourceData).toBeTypeOf("function");
+    expect(mapFunctions.addMapLayer).toBeTypeOf("function");
+    expect(mapFunctions.removeMapLayer).toBeTypeOf("function");
+    expect(mapFunctions.hasStyleLayer).toBeTypeOf("function");
+    expect(mapFunctions.setStyleLayerVisibility).toBeTypeOf("function");
   });
 
   it("should initialize empty stores", () => {
@@ -104,6 +133,27 @@ describe("bootstrap", () => {
     expect(window.Spillgebees.Map.overlays.size).toBe(0);
     expect(window.Spillgebees.Map.controls).toBeInstanceOf(Map);
     expect(window.Spillgebees.Map.controls.size).toBe(0);
+    expect(window.Spillgebees.Map.legendControls).toBeInstanceOf(Map);
+    expect(window.Spillgebees.Map.legendControls.size).toBe(0);
+  });
+
+  it("should register legend interop functions", () => {
+    // arrange & act
+    bootstrap();
+
+    // assert
+    const { mapFunctions } = window.Spillgebees.Map;
+    expect(mapFunctions.setLegendControl).toBeTypeOf("function");
+    expect(mapFunctions.removeLegendControl).toBeTypeOf("function");
+  });
+
+  it("should initialize legend stores", () => {
+    // arrange & act
+    bootstrap();
+
+    // assert
+    expect(window.Spillgebees.Map.legendControlOptions).toBeInstanceOf(Map);
+    expect(window.Spillgebees.Map.legendControlOptions.size).toBe(0);
   });
 
   it("should be a no-op when the protocol version already matches", () => {
@@ -245,6 +295,7 @@ describe("buildStyleFromOptions", () => {
   it("should return the style URL directly when url is set", () => {
     // arrange
     const style: IMapStyle = {
+      id: null,
       url: "https://example.com/style.json",
       rasterSource: null,
       wmsSource: null,
@@ -260,6 +311,7 @@ describe("buildStyleFromOptions", () => {
   it("should build a raster style from rasterSource", () => {
     // arrange
     const style: IMapStyle = {
+      id: null,
       url: null,
       rasterSource: {
         urlTemplate: "https://tiles.example.com/{z}/{x}/{y}.png",
@@ -290,6 +342,7 @@ describe("buildStyleFromOptions", () => {
   it("should build a WMS-compatible raster style from wmsSource", () => {
     // arrange
     const style: IMapStyle = {
+      id: null,
       url: null,
       rasterSource: null,
       wmsSource: {
@@ -327,6 +380,7 @@ describe("buildStyleFromOptions", () => {
   it("should prefer url over rasterSource when both are set", () => {
     // arrange
     const style: IMapStyle = {
+      id: null,
       url: "https://example.com/style.json",
       rasterSource: {
         urlTemplate: "https://tiles.example.com/{z}/{x}/{y}.png",
@@ -410,6 +464,7 @@ describe("createMap", () => {
     const dotNetHelper = createMockDotNetHelper();
     const mapOptions = createDefaultMapOptions({
       style: {
+        id: null,
         url: null,
         rasterSource: {
           urlTemplate: "https://tiles.example.com/{z}/{x}/{y}.png",
@@ -814,6 +869,569 @@ describe("setMapOptions", () => {
     // act & assert
     expect(() => setMapOptions(unknownElement, options)).not.toThrow();
   });
+
+  it("should rehydrate custom sources and layers after style changes", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const initialOptions = createDefaultMapOptions();
+    const controlOptions = createDefaultControlOptions();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, initialOptions, controlOptions, "light", [], [], [], []);
+    fireLoadEvent();
+
+    const sourceSpec = {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] },
+    };
+    const layerSpec = {
+      id: "rehydrated-layer",
+      type: "line",
+      source: "rehydrated-source",
+    };
+
+    window.Spillgebees.Map.mapFunctions.addMapSource(mapElement, "rehydrated-source", sourceSpec);
+    window.Spillgebees.Map.mapFunctions.addMapLayer(mapElement, layerSpec, null, {
+      declarationOrder: 1,
+      stack: null,
+      beforeStack: null,
+      afterStack: null,
+    });
+
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getSource.mockImplementation((id: string) => (id === "rehydrated-source" ? undefined : null));
+    mockMap.getLayer.mockImplementation((id: string) => (id === "rehydrated-layer" ? undefined : null));
+    mockMap.addSource.mockClear();
+    mockMap.addLayer.mockClear();
+
+    const newOptions = createDefaultMapOptions({
+      style: { id: "sgb-new-style", url: "https://example.com/new-style.json", rasterSource: null, wmsSource: null },
+    });
+
+    // act
+    setMapOptions(mapElement, newOptions);
+    fireMapEvent("styledata");
+
+    // assert
+    expect(mockMap.addSource).toHaveBeenCalledWith("rehydrated-source", sourceSpec);
+    expect(mockMap.addLayer).toHaveBeenCalledWith(layerSpec, undefined);
+  });
+
+  it("should rewire layer events after style rehydration recreates a layer", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+
+    const sourceSpec = {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] },
+    };
+    const layerSpec = {
+      id: "interactive-layer",
+      type: "symbol",
+      source: "interactive-source",
+    };
+
+    window.Spillgebees.Map.mapFunctions.addMapSource(mapElement, "interactive-source", sourceSpec);
+    window.Spillgebees.Map.mapFunctions.addMapLayer(mapElement, layerSpec, null, {
+      declarationOrder: 1,
+      stack: null,
+      beforeStack: null,
+      afterStack: null,
+    });
+    window.Spillgebees.Map.mapFunctions.wireLayerEvents(
+      mapElement,
+      "interactive-layer",
+      dotNetHelper,
+      true,
+      true,
+      true,
+    );
+
+    const mockMap = getLatestMockMapInstance()!;
+    let interactiveLayerExists = false;
+    mockMap.getSource.mockImplementation((id: string) => (id === "interactive-source" ? undefined : null));
+    mockMap.addLayer.mockImplementation((layer: { id?: string }) => {
+      if (layer.id === "interactive-layer") {
+        interactiveLayerExists = true;
+      }
+    });
+    mockMap.getLayer.mockImplementation((id: string) =>
+      id === "interactive-layer" && interactiveLayerExists ? {} : undefined,
+    );
+    mockMap.on.mockClear();
+    mockMap.addSource.mockClear();
+    mockMap.addLayer.mockClear();
+
+    // act
+    setMapOptions(
+      mapElement,
+      createDefaultMapOptions({
+        style: { id: "sgb-new-style", url: "https://example.com/new-style.json", rasterSource: null, wmsSource: null },
+      }),
+    );
+    fireMapEvent("styledata");
+
+    // assert
+    expect(mockMap.addSource).toHaveBeenCalledWith("interactive-source", sourceSpec);
+    expect(mockMap.addLayer.mock.calls).toContainEqual([layerSpec, undefined]);
+    expect(mockMap.on).toHaveBeenCalledWith("click", "interactive-layer", expect.any(Function));
+    expect(mockMap.on).toHaveBeenCalledWith("mouseenter", "interactive-layer", expect.any(Function));
+    expect(mockMap.on).toHaveBeenCalledWith("mouseleave", "interactive-layer", expect.any(Function));
+  });
+
+  it("should rehydrate a multi-layer custom chain after style reload without missing beforeId targets", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+
+    const sourceSpec = {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] },
+    };
+
+    window.Spillgebees.Map.mapFunctions.addMapSource(mapElement, "rehydrated-source", sourceSpec);
+    window.Spillgebees.Map.mapFunctions.addMapLayer(
+      mapElement,
+      { id: "layer-a", type: "line", source: "rehydrated-source" },
+      null,
+      {
+        declarationOrder: 1,
+        stack: "stack-a",
+        beforeStack: null,
+        afterStack: null,
+      },
+    );
+    window.Spillgebees.Map.mapFunctions.addMapLayer(
+      mapElement,
+      { id: "layer-b", type: "line", source: "rehydrated-source" },
+      null,
+      {
+        declarationOrder: 2,
+        stack: "stack-b",
+        beforeStack: null,
+        afterStack: "stack-a",
+      },
+    );
+    window.Spillgebees.Map.mapFunctions.addMapLayer(
+      mapElement,
+      { id: "layer-c", type: "line", source: "rehydrated-source" },
+      null,
+      {
+        declarationOrder: 3,
+        stack: "stack-c",
+        beforeStack: null,
+        afterStack: "stack-b",
+      },
+    );
+
+    const mockMap = getLatestMockMapInstance()!;
+    const existingLayers = new Set<string>();
+    mockMap.getSource.mockImplementation((id: string) => (id === "rehydrated-source" ? undefined : null));
+    mockMap.getStyle.mockReturnValue({ layers: [] });
+    mockMap.getLayer.mockImplementation((id: string) => (existingLayers.has(id) ? {} : undefined));
+    mockMap.addLayer.mockImplementation((layer: { id?: string }, beforeId?: string) => {
+      if (beforeId && !existingLayers.has(beforeId)) {
+        throw new Error(`Unknown beforeId: ${beforeId}`);
+      }
+
+      if (layer.id) {
+        existingLayers.add(layer.id);
+      }
+    });
+    mockMap.moveLayer.mockImplementation((layerId: string, beforeId?: string) => {
+      if (!existingLayers.has(layerId)) {
+        throw new Error(`Unknown layer: ${layerId}`);
+      }
+
+      if (beforeId && !existingLayers.has(beforeId)) {
+        throw new Error(`Unknown beforeId: ${beforeId}`);
+      }
+    });
+    mockMap.addSource.mockClear();
+    mockMap.addLayer.mockClear();
+    mockMap.moveLayer.mockClear();
+
+    // act
+    const act = () => {
+      setMapOptions(
+        mapElement,
+        createDefaultMapOptions({
+          style: {
+            id: "sgb-new-style",
+            url: "https://example.com/new-style.json",
+            rasterSource: null,
+            wmsSource: null,
+          },
+        }),
+      );
+      fireMapEvent("styledata");
+    };
+
+    // assert
+    expect(act).not.toThrow();
+    expect(mockMap.addSource).toHaveBeenCalledWith("rehydrated-source", sourceSpec);
+    expect(mockMap.addLayer).toHaveBeenCalledWith(
+      { id: "layer-b", type: "line", source: "rehydrated-source" },
+      "layer-c",
+    );
+    expect(mockMap.addLayer).toHaveBeenCalledWith(
+      { id: "layer-a", type: "line", source: "rehydrated-source" },
+      "layer-b",
+    );
+  });
+
+  it("should ignore unrelated styledata events when no style reload is pending", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const initialOptions = createDefaultMapOptions();
+    const controlOptions = createDefaultControlOptions();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, initialOptions, controlOptions, "light", [], [], [], []);
+    fireLoadEvent();
+
+    const sourceSpec = {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] },
+    };
+
+    window.Spillgebees.Map.mapFunctions.addMapSource(mapElement, "rehydrated-source", sourceSpec);
+
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getSource.mockImplementation(() => undefined);
+    mockMap.addSource.mockClear();
+
+    // act
+    fireMapEvent("styledata");
+
+    // assert
+    expect(mockMap.addSource).not.toHaveBeenCalled();
+  });
+
+  it("should expose unregisterLayerEvents in the JS namespace", () => {
+    // arrange & act
+    const { mapFunctions } = window.Spillgebees.Map;
+
+    // assert
+    expect(mapFunctions.unregisterLayerEvents).toBeTypeOf("function");
+  });
+
+  it("should rehydrate from current control and overlay state instead of initial createMap values", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.addControl.mockClear();
+    mockMap.addSource.mockClear();
+    mockMap.addLayer.mockClear();
+
+    const updatedControls: IMapControlOptions = {
+      ...createDefaultControlOptions(),
+      navigation: {
+        enable: true,
+        position: "top-right",
+        showCompass: true,
+        showZoom: true,
+      },
+    };
+    setControls(mapElement, updatedControls);
+
+    const overlay = createDefaultOverlay({ id: "live-overlay" });
+    setOverlays(mapElement, [overlay]);
+
+    mockMap.addControl.mockClear();
+    mockMap.addSource.mockClear();
+    mockMap.addLayer.mockClear();
+    mockMap.getSource.mockImplementation((id: string) => (id === "sgb-overlay-live-overlay" ? undefined : null));
+    mockMap.getLayer.mockImplementation((id: string) => (id === "sgb-overlay-live-overlay" ? undefined : null));
+
+    // act
+    setMapOptions(
+      mapElement,
+      createDefaultMapOptions({
+        style: { id: "sgb-alt-style", url: "https://example.com/alt-style.json", rasterSource: null, wmsSource: null },
+      }),
+    );
+    fireMapEvent("styledata");
+
+    // assert
+    expect(mockMap.addControl).toHaveBeenCalled();
+    expect(mockMap.addSource).toHaveBeenCalledWith(
+      "sgb-overlay-live-overlay",
+      expect.objectContaining({
+        tiles: [overlay.urlTemplate],
+      }),
+    );
+    expect(mockMap.addLayer).toHaveBeenCalledWith(expect.objectContaining({ id: "sgb-overlay-live-overlay" }));
+  });
+
+  it("should force reapply overlay styles after base style reload when overlay URLs are unchanged", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions({
+        styles: [
+          { id: "sgb-base-style", url: "https://example.com/base-style.json", rasterSource: null, wmsSource: null },
+          {
+            id: "sgb-overlay-style",
+            url: "https://example.com/overlay-style.json",
+            rasterSource: null,
+            wmsSource: null,
+          },
+        ],
+      }),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+    applyOverlayStylesSpy.mockClear();
+
+    // act
+    setMapOptions(
+      mapElement,
+      createDefaultMapOptions({
+        styles: [
+          {
+            id: "sgb-alt-base-style",
+            url: "https://example.com/alt-base-style.json",
+            rasterSource: null,
+            wmsSource: null,
+          },
+          {
+            id: "sgb-overlay-style",
+            url: "https://example.com/overlay-style.json",
+            rasterSource: null,
+            wmsSource: null,
+          },
+        ],
+      }),
+    );
+    fireMapEvent("styledata");
+
+    // assert
+    expect(applyOverlayStylesSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      [{ styleId: "sgb-overlay-style", url: "https://example.com/overlay-style.json" }],
+      {
+        forceReapply: true,
+      },
+    );
+  });
+
+  it("should notify .NET about style reload only after async composed overlays finish applying", async () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    let completeOverlayComposition: (() => void) | null = null;
+    const overlayCompositionCompleted = new Promise<void>((resolve) => {
+      completeOverlayComposition = resolve;
+    });
+    applyOverlayStylesSpy.mockImplementationOnce(async () => {});
+    applyOverlayStylesSpy.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          overlayCompositionCompleted.then(() => resolve());
+        }),
+    );
+
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions({
+        styles: [
+          { id: "sgb-base-style", url: "https://example.com/base-style.json", rasterSource: null, wmsSource: null },
+          {
+            id: "sgb-overlay-style",
+            url: "https://example.com/overlay-style.json",
+            rasterSource: null,
+            wmsSource: null,
+          },
+        ],
+      }),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+    await Promise.resolve();
+    const invokeMethodAsync = vi.mocked(dotNetHelper.invokeMethodAsync);
+    invokeMethodAsync.mockClear();
+
+    // act
+    setMapOptions(
+      mapElement,
+      createDefaultMapOptions({
+        styles: [
+          {
+            id: "sgb-alt-base-style",
+            url: "https://example.com/alt-base-style.json",
+            rasterSource: null,
+            wmsSource: null,
+          },
+          {
+            id: "sgb-overlay-style",
+            url: "https://example.com/overlay-style.json",
+            rasterSource: null,
+            wmsSource: null,
+          },
+        ],
+      }),
+    );
+    fireMapEvent("styledata");
+    await Promise.resolve();
+
+    // assert
+    expect(applyOverlayStylesSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      [{ styleId: "sgb-overlay-style", url: "https://example.com/overlay-style.json" }],
+      { forceReapply: true },
+    );
+    // biome-ignore lint/security/noSecrets: C# callback method name under test, not a secret
+    expect(invokeMethodAsync).not.toHaveBeenCalledWith("OnMapStyleReloadedAsync");
+
+    // act
+    completeOverlayComposition?.();
+    await overlayCompositionCompleted;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // assert
+    // biome-ignore lint/security/noSecrets: C# callback method name under test, not a secret
+    expect(invokeMethodAsync).toHaveBeenCalledWith("OnMapStyleReloadedAsync");
+  });
+
+  it("should notify .NET about style reload after custom replay applies visibility groups", async () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getStyle.mockReturnValue({ layers: [] });
+    let layerExists = false;
+    mockMap.getSource.mockImplementation((id: string) => (id === "visibility-source" ? undefined : null));
+    mockMap.addLayer.mockImplementation((layer: { id?: string }) => {
+      if (layer.id === "visibility-layer") {
+        layerExists = true;
+      }
+    });
+    mockMap.getLayer.mockImplementation((id: string) => (id === "visibility-layer" && layerExists ? {} : undefined));
+
+    window.Spillgebees.Map.mapFunctions.applySceneMutations(mapElement, {
+      mutations: [
+        {
+          kind: "addSource",
+          sourceId: "visibility-source",
+          sourceSpec: {
+            type: "geojson",
+            data: { type: "FeatureCollection", features: [] },
+          },
+        },
+        {
+          kind: "addLayer",
+          layerId: "visibility-layer",
+          layerSpec: {
+            id: "visibility-layer",
+            type: "line",
+            source: "visibility-source",
+          },
+          beforeId: null,
+          ordering: {
+            declarationOrder: 1,
+            stack: null,
+            beforeStack: null,
+            afterStack: null,
+          },
+        },
+        {
+          kind: "setVisibilityGroup",
+          groupId: "legend:stations",
+          visible: false,
+          targets: [{ styleId: "sgb-base-style", layerIds: ["visibility-layer"] }],
+        },
+      ],
+    });
+
+    const invokeMethodAsync = vi.mocked(dotNetHelper.invokeMethodAsync);
+    invokeMethodAsync.mockClear();
+
+    // act
+    setMapOptions(
+      mapElement,
+      createDefaultMapOptions({
+        style: { id: "sgb-base-style", url: "https://example.com/new-style.json", rasterSource: null, wmsSource: null },
+      }),
+    );
+    fireMapEvent("styledata");
+    await Promise.resolve();
+
+    // assert
+    expect(mockMap.setLayoutProperty).toHaveBeenCalledWith("visibility-layer", "visibility", "none");
+    // biome-ignore lint/security/noSecrets: C# callback method name under test, not a secret
+    expect(invokeMethodAsync).toHaveBeenCalledWith("OnMapStyleReloadedAsync");
+  });
 });
 
 describe("setControls", () => {
@@ -1127,6 +1745,195 @@ describe("setControls", () => {
   });
 });
 
+describe("setLegendControl", () => {
+  beforeEach(() => {
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+  });
+
+  it("should create the legend control once and update it in place", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions();
+    const placeholder = document.createElement("div");
+    const content = document.createElement("div");
+    const updateSpy = vi.spyOn(LegendControl.prototype, "update");
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      mapOptions,
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const mockMap = getLatestMockMapInstance()!;
+
+    // act
+    window.Spillgebees.Map.mapFunctions.setLegendControl(
+      mapElement,
+      {
+        enable: true,
+        position: "top-right",
+        title: "Legend",
+        collapsible: true,
+        initiallyOpen: true,
+        className: null,
+      },
+      placeholder,
+      content,
+    );
+    window.Spillgebees.Map.mapFunctions.setLegendControl(
+      mapElement,
+      {
+        enable: true,
+        position: "top-right",
+        title: "Updated legend",
+        collapsible: true,
+        initiallyOpen: true,
+        className: "custom",
+      },
+      placeholder,
+      content,
+    );
+
+    // assert
+    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
+    expect(updateSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("should remove the legend control when disabled", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions();
+    const placeholder = document.createElement("div");
+    const content = document.createElement("div");
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      mapOptions,
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const mockMap = getLatestMockMapInstance()!;
+
+    window.Spillgebees.Map.mapFunctions.setLegendControl(
+      mapElement,
+      {
+        enable: true,
+        position: "top-right",
+        title: "Legend",
+        collapsible: true,
+        initiallyOpen: true,
+        className: null,
+      },
+      placeholder,
+      content,
+    );
+
+    // act
+    window.Spillgebees.Map.mapFunctions.setLegendControl(
+      mapElement,
+      {
+        enable: false,
+        position: "top-right",
+        title: "Legend",
+        collapsible: true,
+        initiallyOpen: true,
+        className: null,
+      },
+      placeholder,
+      content,
+    );
+
+    // assert
+    expect(mockMap.removeControl).toHaveBeenCalledTimes(1);
+    expect(content.hidden).toBe(true);
+    expect(placeholder.contains(content)).toBe(true);
+  });
+
+  it("should remove and re-add the legend control when position changes", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions();
+    const placeholder = document.createElement("div");
+    const content = document.createElement("div");
+    const removeSpy = vi.spyOn(window.Spillgebees.Map.mapFunctions, "removeLegendControl");
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      mapOptions,
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const mockMap = getLatestMockMapInstance()!;
+
+    window.Spillgebees.Map.mapFunctions.setLegendControl(
+      mapElement,
+      {
+        enable: true,
+        position: "top-right",
+        title: "Legend",
+        collapsible: true,
+        initiallyOpen: true,
+        className: null,
+      },
+      placeholder,
+      content,
+    );
+    const originalLegendControl = window.Spillgebees.Map.legendControls.get(
+      window.Spillgebees.Map.maps.get(mapElement)!,
+    );
+    mockMap.addControl.mockClear();
+    mockMap.removeControl.mockClear();
+
+    // act
+    window.Spillgebees.Map.mapFunctions.setLegendControl(
+      mapElement,
+      {
+        enable: true,
+        position: "bottom-left",
+        title: "Legend",
+        collapsible: true,
+        initiallyOpen: true,
+        className: null,
+      },
+      placeholder,
+      content,
+    );
+
+    // assert
+    expect(removeSpy).not.toHaveBeenCalled();
+    expect(mockMap.removeControl).toHaveBeenCalledTimes(1);
+    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
+    expect(mockMap.addControl).toHaveBeenCalledWith(expect.any(LegendControl), "bottom-left");
+    const legendControl = window.Spillgebees.Map.legendControls.get(window.Spillgebees.Map.maps.get(mapElement)!);
+    const controlOptions = window.Spillgebees.Map.legendControlOptions.get(
+      window.Spillgebees.Map.maps.get(mapElement)!,
+    );
+    expect(legendControl).toBeDefined();
+    expect(legendControl).not.toBe(originalLegendControl);
+    expect(controlOptions?.position).toBe("bottom-left");
+  });
+});
+
 function createDefaultMarker(overrides?: Partial<IMarker>): IMarker {
   return {
     id: "marker-1",
@@ -1363,6 +2170,8 @@ describe("setOverlays", () => {
 
     const overlay = createDefaultOverlay({ id: "existing" });
     setOverlays(mapElement, [overlay]);
+    mockMap.getSource.mockImplementation((id: string) => (id === "sgb-overlay-existing" ? {} : undefined));
+    mockMap.getLayer.mockImplementation((id: string) => (id === "sgb-overlay-existing" ? {} : undefined));
 
     // Clear call counts
     mockMap.addSource.mockClear();
@@ -1741,6 +2550,409 @@ describe("flyTo", () => {
   });
 });
 
+describe("advanced interop helpers", () => {
+  beforeEach(() => {
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+  });
+
+  it("should expose advanced map helpers in the JS namespace", () => {
+    // arrange & act
+    const { mapFunctions } = window.Spillgebees.Map;
+
+    // assert
+    expect(mapFunctions.moveMapLayer).toBeTypeOf("function");
+    expect(mapFunctions.getCenter).toBeTypeOf("function");
+    expect(mapFunctions.getBounds).toBeTypeOf("function");
+    expect(mapFunctions.queryRenderedFeatures).toBeTypeOf("function");
+    expect(mapFunctions.setTrackedEntityFeatureState).toBeTypeOf("function");
+  });
+
+  it("should return the current center using C# coordinate shape", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getCenter.mockReturnValue({ lng: 6.13, lat: 49.61 });
+
+    // act
+    const result = getCenter(mapElement);
+
+    // assert
+    expect(result).toEqual({ latitude: 49.61, longitude: 6.13 });
+  });
+
+  it("should return the current zoom level", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getZoom.mockReturnValue(13.5);
+
+    // act
+    const result = getZoom(mapElement);
+
+    // assert
+    expect(result).toBe(13.5);
+  });
+
+  it("should return bounds using southwest and northeast coordinates", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getBounds.mockReturnValue({
+      getSouthWest: () => ({ lng: 5.9, lat: 49.4 }),
+      getNorthEast: () => ({ lng: 6.3, lat: 49.8 }),
+    });
+
+    // act
+    const result = getBounds(mapElement);
+
+    // assert
+    expect(result).toEqual({
+      southwest: { latitude: 49.4, longitude: 5.9 },
+      northeast: { latitude: 49.8, longitude: 6.3 },
+    });
+  });
+
+  it("should query rendered features with optional layer filters", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.queryRenderedFeatures.mockReturnValue([
+      {
+        id: "train-1",
+        layer: { id: "tracked-primary" },
+        geometry: { type: "Point", coordinates: [6.1, 49.6] },
+        properties: { entityId: "train-1" },
+      },
+    ]);
+
+    // act
+    const result = queryRenderedFeatures(mapElement, { x: 100, y: 120 }, ["tracked-primary"]);
+
+    // assert
+    expect(mockMap.queryRenderedFeatures).toHaveBeenCalledWith([100, 120], { layers: ["tracked-primary"] });
+    expect(result).toEqual([
+      {
+        id: "train-1",
+        layerId: "tracked-primary",
+        geometry: { type: "Point", coordinates: [6.1, 49.6] },
+        properties: { entityId: "train-1" },
+      },
+    ]);
+  });
+
+  it("should resolve base style layers through required style ids", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions({
+        styles: [
+          { id: "sgb-positron", url: "https://example.com/base-style.json", rasterSource: null, wmsSource: null },
+        ],
+      }),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getLayer.mockImplementation((id: string) => (id === "roads" ? { id } : undefined));
+
+    // act
+    const result = hasStyleLayer(mapElement, "sgb-positron", "roads");
+
+    // assert
+    expect(result).toBe(true);
+  });
+
+  it("should resolve composed overlay layers through style-id mappings", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const mockMap = getLatestMockMapInstance()!;
+    window.Spillgebees.Map.composedStyleLayerIds.set(
+      mockMap as never,
+      new Map([
+        [
+          "sgb-train-tracking-overlay\u0000railway-stations-circle",
+          {
+            runtimeLayerId: "sgb-overlay-style-sgb-train-tracking-overlay-railway-stations-circle",
+            styleId: "sgb-train-tracking-overlay",
+            originalLayerId: "railway-stations-circle",
+          },
+        ],
+      ]),
+    );
+    mockMap.getLayer.mockImplementation((id: string) =>
+      id === "sgb-overlay-style-sgb-train-tracking-overlay-railway-stations-circle" ? { id } : undefined,
+    );
+
+    // act
+    const result = hasStyleLayer(mapElement, "sgb-train-tracking-overlay", "railway-stations-circle");
+
+    // assert
+    expect(result).toBe(true);
+  });
+
+  it("should eliminate ambiguity by requiring the style id for composed visibility changes", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const mockMap = getLatestMockMapInstance()!;
+    window.Spillgebees.Map.composedStyleLayerIds.set(
+      mockMap as never,
+      new Map([
+        [
+          "sgb-train-tracking-overlay\u0000railway-stations-circle",
+          {
+            runtimeLayerId: "sgb-overlay-style-sgb-train-tracking-overlay-railway-stations-circle",
+            styleId: "sgb-train-tracking-overlay",
+            originalLayerId: "railway-stations-circle",
+          },
+        ],
+      ]),
+    );
+    mockMap.getLayer.mockImplementation((id: string) =>
+      id === "sgb-overlay-style-sgb-train-tracking-overlay-railway-stations-circle" ? { id } : undefined,
+    );
+
+    // act
+    setStyleLayerVisibility(mapElement, "sgb-train-tracking-overlay", "railway-stations-circle", false);
+
+    // assert
+    expect(mockMap.setLayoutProperty).toHaveBeenCalledWith(
+      "sgb-overlay-style-sgb-train-tracking-overlay-railway-stations-circle",
+      "visibility",
+      "none",
+    );
+  });
+
+  it("should keep raw hasLayer available as a runtime-id escape hatch", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getLayer.mockImplementation((id: string) =>
+      id === "sgb-overlay-style-sgb-train-tracking-overlay-railway-stations-circle" ? { id } : undefined,
+    );
+
+    // act
+    const result = hasLayer(mapElement, "sgb-overlay-style-sgb-train-tracking-overlay-railway-stations-circle");
+
+    // assert
+    expect(result).toBe(true);
+  });
+
+  it("should keep raw setLayerVisibility available as a runtime-id escape hatch", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getLayer.mockImplementation((id: string) =>
+      id === "sgb-overlay-style-sgb-train-tracking-overlay-railway-stations-circle" ? { id } : undefined,
+    );
+    const rawSetLayerVisibility = window.Spillgebees.Map.mapFunctions.setLayerVisibility as (
+      mapElement: HTMLElement,
+      layerId: string,
+      visible: boolean,
+    ) => void;
+
+    // act
+    rawSetLayerVisibility(mapElement, "sgb-overlay-style-sgb-train-tracking-overlay-railway-stations-circle", false);
+
+    // assert
+    expect(mockMap.setLayoutProperty).toHaveBeenCalledWith(
+      "sgb-overlay-style-sgb-train-tracking-overlay-railway-stations-circle",
+      "visibility",
+      "none",
+    );
+  });
+
+  it("should set tracked entity feature state on both primary and decoration sources using entity id", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const mockMap = getLatestMockMapInstance()!;
+
+    // act
+    setTrackedEntityFeatureState(mapElement, "tracked-primary", "tracked-primary-decorations", "train-1", {
+      hover: true,
+      selected: true,
+    });
+
+    // assert — with promoteId on the decoration source, entityId is the feature identity
+    expect(mockMap.setFeatureState).toHaveBeenCalledTimes(2);
+    expect(mockMap.setFeatureState).toHaveBeenNthCalledWith(
+      1,
+      { source: "tracked-primary", id: "train-1" },
+      { hover: true, selected: true },
+    );
+    expect(mockMap.setFeatureState).toHaveBeenNthCalledWith(
+      2,
+      { source: "tracked-primary-decorations", id: "train-1" },
+      { hover: true, selected: true },
+    );
+  });
+
+  it("should skip decoration source when decorationSourceId is null", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const mockMap = getLatestMockMapInstance()!;
+
+    // act
+    setTrackedEntityFeatureState(mapElement, "tracked-primary", null, "train-1", {
+      hover: true,
+    });
+
+    // assert
+    expect(mockMap.setFeatureState).toHaveBeenCalledTimes(1);
+    expect(mockMap.setFeatureState).toHaveBeenCalledWith({ source: "tracked-primary", id: "train-1" }, { hover: true });
+  });
+});
+
 // --- Phase 8: Map events ---
 
 describe("map events", () => {
@@ -1975,5 +3187,260 @@ describe("map events", () => {
 
     // assert — dotNetHelper should be cleaned up
     expect(window.Spillgebees.Map.dotNetHelpers.size).toBe(0);
+  });
+});
+
+// --- Composed glyph validation ---
+
+describe("composed glyph validation", () => {
+  beforeEach(() => {
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+    applyOverlayStylesSpy.mockReset();
+    applyOverlayStylesSpy.mockResolvedValue(undefined);
+    validateComposedGlyphsSpy.mockReset();
+    validateComposedGlyphsSpy.mockResolvedValue({ proceed: true, effectiveGlyphsUrl: null });
+  });
+
+  it("should create a single-style map without overlay or glyph validation", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions({
+      style: { id: "sgb-base", url: "https://example.com/base.json", rasterSource: null, wmsSource: null },
+    });
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      mapOptions,
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+
+    // assert
+    expect(validateComposedGlyphsSpy).not.toHaveBeenCalled();
+    expect(applyOverlayStylesSpy).not.toHaveBeenCalled();
+    expect(dotNetHelper.invokeMethodAsync).toHaveBeenCalledWith("OnMapInitialized");
+  });
+
+  it("should apply overlays when glyph validation returns proceed with no rewrite", async () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions({
+      styles: [
+        { id: "sgb-base", url: "https://example.com/base.json", rasterSource: null, wmsSource: null },
+        { id: "sgb-overlay", url: "https://example.com/overlay.json", rasterSource: null, wmsSource: null },
+      ],
+    });
+
+    validateComposedGlyphsSpy.mockResolvedValue({ proceed: true, effectiveGlyphsUrl: null });
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      mapOptions,
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const map = getLatestMockMapInstance()!;
+    fireLoadEvent();
+    await vi.waitFor(() => {
+      expect(dotNetHelper.invokeMethodAsync).toHaveBeenCalledWith("OnMapInitialized");
+    });
+
+    // assert
+    expect(validateComposedGlyphsSpy).toHaveBeenCalledWith(map, ["https://example.com/overlay.json"], null);
+    expect(applyOverlayStylesSpy).toHaveBeenCalled();
+    expect(map.setStyle).not.toHaveBeenCalledWith(expect.anything(), { diff: true });
+  });
+
+  it("should reject overlays when glyph validation returns proceed false", async () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions({
+      styles: [
+        { id: "sgb-base", url: "https://example.com/base.json", rasterSource: null, wmsSource: null },
+        { id: "sgb-overlay", url: "https://example.com/overlay.json", rasterSource: null, wmsSource: null },
+      ],
+    });
+
+    validateComposedGlyphsSpy.mockResolvedValue({ proceed: false });
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      mapOptions,
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+    await vi.waitFor(() => {
+      expect(dotNetHelper.invokeMethodAsync).toHaveBeenCalledWith("OnMapInitialized");
+    });
+
+    // assert
+    expect(validateComposedGlyphsSpy).toHaveBeenCalled();
+    expect(applyOverlayStylesSpy).not.toHaveBeenCalled();
+    expect(dotNetHelper.invokeMethodAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it("should rewrite glyphs via setStyle when validation returns an effective glyph URL", async () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const composedGlyphsUrl = "https://fonts-shared.example.com/{fontstack}/{range}.pbf";
+    const mapOptions = createDefaultMapOptions({
+      composedGlyphsUrl,
+      styles: [
+        { id: "sgb-base", url: "https://example.com/base.json", rasterSource: null, wmsSource: null },
+        { id: "sgb-overlay", url: "https://example.com/overlay.json", rasterSource: null, wmsSource: null },
+      ],
+    });
+
+    validateComposedGlyphsSpy.mockResolvedValue({ proceed: true, effectiveGlyphsUrl: composedGlyphsUrl });
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      mapOptions,
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const map = getLatestMockMapInstance()!;
+    map.getStyle.mockReturnValue({ layers: [] });
+    fireLoadEvent();
+    await vi.waitFor(() => {
+      expect(dotNetHelper.invokeMethodAsync).toHaveBeenCalledWith("OnMapInitialized");
+    });
+
+    // assert
+    expect(applyOverlayStylesSpy).toHaveBeenCalled();
+    expect(map.setStyle).toHaveBeenCalledWith(expect.objectContaining({ glyphs: composedGlyphsUrl }), { diff: true });
+  });
+
+  it("should not rewrite glyphs when effectiveGlyphsUrl is null", async () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions({
+      composedGlyphsUrl: "https://fonts.example.com/{fontstack}/{range}.pbf",
+      styles: [
+        { id: "sgb-base", url: "https://example.com/base.json", rasterSource: null, wmsSource: null },
+        { id: "sgb-overlay", url: "https://example.com/overlay.json", rasterSource: null, wmsSource: null },
+      ],
+    });
+
+    validateComposedGlyphsSpy.mockResolvedValue({ proceed: true, effectiveGlyphsUrl: null });
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      mapOptions,
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const map = getLatestMockMapInstance()!;
+    map.setStyle.mockClear();
+    fireLoadEvent();
+    await vi.waitFor(() => {
+      expect(dotNetHelper.invokeMethodAsync).toHaveBeenCalledWith("OnMapInitialized");
+    });
+
+    // assert
+    expect(applyOverlayStylesSpy).toHaveBeenCalled();
+    expect(map.setStyle).not.toHaveBeenCalledWith(expect.anything(), { diff: true });
+  });
+
+  it("should validate glyphs and rewrite via setStyle in setMapOptions when base style is unchanged", async () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const composedGlyphsUrl = "https://fonts-shared.example.com/{fontstack}/{range}.pbf";
+
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions({
+        styles: [
+          { id: "sgb-base", url: "https://example.com/base.json", rasterSource: null, wmsSource: null },
+          { id: "sgb-overlay", url: "https://example.com/overlay.json", rasterSource: null, wmsSource: null },
+        ],
+      }),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const map = getLatestMockMapInstance()!;
+    fireLoadEvent();
+    await vi.waitFor(() => {
+      expect(dotNetHelper.invokeMethodAsync).toHaveBeenCalledWith("OnMapInitialized");
+    });
+    applyOverlayStylesSpy.mockClear();
+    map.setStyle.mockClear();
+
+    validateComposedGlyphsSpy.mockResolvedValue({ proceed: true, effectiveGlyphsUrl: composedGlyphsUrl });
+    map.getStyle.mockReturnValue({ layers: [] });
+
+    // act
+    setMapOptions(
+      mapElement,
+      createDefaultMapOptions({
+        composedGlyphsUrl,
+        styles: [
+          { id: "sgb-base", url: "https://example.com/base.json", rasterSource: null, wmsSource: null },
+          { id: "sgb-overlay", url: "https://example.com/overlay.json", rasterSource: null, wmsSource: null },
+        ],
+      }),
+    );
+    await vi.waitFor(() => {
+      expect(applyOverlayStylesSpy).toHaveBeenCalled();
+    });
+
+    // assert
+    expect(validateComposedGlyphsSpy).toHaveBeenCalledWith(
+      map,
+      ["https://example.com/overlay.json"],
+      composedGlyphsUrl,
+    );
+    expect(map.setStyle).toHaveBeenCalledWith(expect.objectContaining({ glyphs: composedGlyphsUrl }), { diff: true });
   });
 });

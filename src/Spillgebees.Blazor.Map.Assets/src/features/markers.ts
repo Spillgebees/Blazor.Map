@@ -52,7 +52,7 @@ function createPopup(options: IPopupOptions): MapLibrePopup {
   return popup;
 }
 
-function createMarkerEntry(map: MapLibreMap, data: IMarker): MarkerEntry {
+export function createMarkerEntry(map: MapLibreMap, data: IMarker): MarkerEntry {
   const options: MarkerOptions = {};
 
   if (data.icon) {
@@ -137,24 +137,28 @@ function createMarkerEntry(map: MapLibreMap, data: IMarker): MarkerEntry {
         marker.togglePopup();
         popup = popupInstance;
 
-        // Sync z-index between marker and popup on hover so both rise together
+        // Sync z-index + hover class between marker and popup
         const markerEl = marker.getElement();
         const popupEl = popupInstance.getElement();
         if (popupEl) {
           markerEl.addEventListener("mouseenter", () => {
             popupEl.style.zIndex = "10";
+            popupEl.classList.add("sgb-popup-hover");
           });
           markerEl.addEventListener("mouseleave", () => {
             popupEl.style.zIndex = "";
+            popupEl.classList.remove("sgb-popup-hover");
           });
           // Also rise when hovering the popup itself
           popupEl.addEventListener("mouseenter", () => {
             markerEl.style.zIndex = "10";
             popupEl.style.zIndex = "10";
+            popupEl.classList.add("sgb-popup-hover");
           });
           popupEl.addEventListener("mouseleave", () => {
             markerEl.style.zIndex = "";
             popupEl.style.zIndex = "";
+            popupEl.classList.remove("sgb-popup-hover");
           });
           // Prevent scroll/wheel events on the popup from scrolling the page.
           // Instead, forward them to the map canvas for proper zoom handling.
@@ -173,9 +177,17 @@ function createMarkerEntry(map: MapLibreMap, data: IMarker): MarkerEntry {
     }
   }
 
-  // Wire marker click event
+  // Wire marker events to the BaseMap's dotNetHelper
   marker.getElement().addEventListener("click", (e: Event) => {
     e.stopPropagation(); // prevent map click from firing too
+
+    // stopPropagation prevents the event from reaching the map, which is where
+    // MapLibre's Marker._onMapClick listens to toggle popups. Manually toggle
+    // when a click popup is attached so the popup still opens.
+    if (data.popup?.trigger === "click") {
+      marker.togglePopup();
+    }
+
     const lngLat = marker.getLngLat();
     const dotNetHelper = window.Spillgebees.Map.dotNetHelpers.get(map);
     dotNetHelper?.invokeMethodAsync("OnMarkerClickCallbackAsync", {
@@ -184,7 +196,6 @@ function createMarkerEntry(map: MapLibreMap, data: IMarker): MarkerEntry {
     });
   });
 
-  // Wire marker drag end event for draggable markers
   if (data.draggable) {
     marker.on("dragend", () => {
       const lngLat = marker.getLngLat();
@@ -197,10 +208,10 @@ function createMarkerEntry(map: MapLibreMap, data: IMarker): MarkerEntry {
     });
   }
 
-  return { marker, popup, hoverPopup };
+  return { data, marker, popup, hoverPopup };
 }
 
-function removeMarkerEntry(entry: MarkerEntry): void {
+export function removeMarkerEntry(entry: MarkerEntry): void {
   entry.popup?.remove();
   entry.hoverPopup?.remove();
   entry.marker.remove();

@@ -6,6 +6,28 @@ const CIRCLES_SOURCE_ID = "sgb-circles-source";
 const CIRCLES_LAYER_ID = "sgb-circles-layer";
 const POLYLINES_SOURCE_ID = "sgb-polylines-source";
 const POLYLINES_LAYER_ID = "sgb-polylines-layer";
+const shapePopupHandlerSubscriptions = new WeakMap<
+  MapLibreMap,
+  Map<
+    string,
+    {
+      click: (event: { lngLat: LngLatLike; features?: Array<{ properties?: Record<string, unknown> }> }) => void;
+      mouseEnter: (event: { lngLat: LngLatLike; features?: Array<{ properties?: Record<string, unknown> }> }) => void;
+      mouseLeave: () => void;
+    }
+  >
+>();
+
+function getShapePopupHandlerStore(map: MapLibreMap) {
+  const existing = shapePopupHandlerSubscriptions.get(map);
+  if (existing) {
+    return existing;
+  }
+
+  const created = new Map();
+  shapePopupHandlerSubscriptions.set(map, created);
+  return created;
+}
 
 // --- Circle layer ---
 
@@ -67,6 +89,7 @@ function circleToFeature(circle: ICircle): GeoJSON.Feature<GeoJSON.Point> {
 export function addCircles(map: MapLibreMap, circles: ICircle[], storage: FeatureStorage): void {
   ensureCircleLayer(map);
   for (const circle of circles) {
+    storage.circles.set(circle.id, circle);
     storage.circleData.set(circle.id, circleToFeature(circle));
   }
   syncCircleSource(map, storage);
@@ -74,6 +97,7 @@ export function addCircles(map: MapLibreMap, circles: ICircle[], storage: Featur
 
 export function updateCircles(map: MapLibreMap, circles: ICircle[], storage: FeatureStorage): void {
   for (const circle of circles) {
+    storage.circles.set(circle.id, circle);
     storage.circleData.set(circle.id, circleToFeature(circle));
   }
   syncCircleSource(map, storage);
@@ -81,6 +105,7 @@ export function updateCircles(map: MapLibreMap, circles: ICircle[], storage: Fea
 
 export function removeCircles(map: MapLibreMap, circleIds: string[], storage: FeatureStorage): void {
   for (const id of circleIds) {
+    storage.circles.delete(id);
     storage.circleData.delete(id);
   }
   syncCircleSource(map, storage);
@@ -143,6 +168,7 @@ function polylineToFeature(polyline: IPolyline): GeoJSON.Feature<GeoJSON.LineStr
 export function addPolylines(map: MapLibreMap, polylines: IPolyline[], storage: FeatureStorage): void {
   ensurePolylineLayer(map);
   for (const polyline of polylines) {
+    storage.polylines.set(polyline.id, polyline);
     storage.polylineData.set(polyline.id, polylineToFeature(polyline));
   }
   syncPolylineSource(map, storage);
@@ -150,6 +176,7 @@ export function addPolylines(map: MapLibreMap, polylines: IPolyline[], storage: 
 
 export function updatePolylines(map: MapLibreMap, polylines: IPolyline[], storage: FeatureStorage): void {
   for (const polyline of polylines) {
+    storage.polylines.set(polyline.id, polyline);
     storage.polylineData.set(polyline.id, polylineToFeature(polyline));
   }
   syncPolylineSource(map, storage);
@@ -157,6 +184,7 @@ export function updatePolylines(map: MapLibreMap, polylines: IPolyline[], storag
 
 export function removePolylines(map: MapLibreMap, polylineIds: string[], storage: FeatureStorage): void {
   for (const id of polylineIds) {
+    storage.polylines.delete(id);
     storage.polylineData.delete(id);
   }
   syncPolylineSource(map, storage);
@@ -212,7 +240,15 @@ function getPopupLngLat(feature: GeoJSON.Feature, fallback: LngLatLike): LngLatL
 }
 
 function attachLayerPopupHandlers(map: MapLibreMap, layerId: string): void {
-  map.on("click", layerId, (e) => {
+  const store = getShapePopupHandlerStore(map);
+  const existing = store.get(layerId);
+  if (existing) {
+    map.off("click", layerId, existing.click);
+    map.off("mouseenter", layerId, existing.mouseEnter);
+    map.off("mouseleave", layerId, existing.mouseLeave);
+  }
+
+  const click = (e: { lngLat: LngLatLike; features?: Array<{ properties?: Record<string, unknown> }> }) => {
     if (!e.features?.length) {
       return;
     }
@@ -229,9 +265,9 @@ function attachLayerPopupHandlers(map: MapLibreMap, layerId: string): void {
     }
 
     showShapePopup(map, getPopupLngLat(feature as GeoJSON.Feature, e.lngLat), popupData);
-  });
+  };
 
-  map.on("mouseenter", layerId, (e) => {
+  const mouseEnter = (e: { lngLat: LngLatLike; features?: Array<{ properties?: Record<string, unknown> }> }) => {
     if (!e.features?.length) {
       return;
     }
@@ -248,12 +284,18 @@ function attachLayerPopupHandlers(map: MapLibreMap, layerId: string): void {
 
     map.getCanvas().style.cursor = "pointer";
     showShapePopup(map, getPopupLngLat(feature as GeoJSON.Feature, e.lngLat), popupData);
-  });
+  };
 
-  map.on("mouseleave", layerId, () => {
+  const mouseLeave = () => {
     map.getCanvas().style.cursor = "";
     removeActiveHoverPopup(map);
-  });
+  };
+
+  map.on("click", layerId, click);
+  map.on("mouseenter", layerId, mouseEnter);
+  map.on("mouseleave", layerId, mouseLeave);
+
+  store.set(layerId, { click, mouseEnter, mouseLeave });
 }
 
 export function setupShapePopupHandlers(map: MapLibreMap): void {

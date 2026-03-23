@@ -1,184 +1,464 @@
 @use "maplibre-gl/dist/maplibre-gl.css";
 
-// Dark theme palette
-$dark-bg: rgba(0, 0, 0, 0.53);
-$dark-bg-hover: rgba(0, 0, 0, 0.7);
-$dark-text: white;
-$dark-link: #00bcd4;
-$dark-link-hover: #4dd0e1;
-
-// ── Base container ──
-
+// base container
 .sgb-map-container {
-  // Mirror maplibregl-map's critical layout properties so they survive
+  // mirror maplibregl-map's critical layout properties so they survive
   // Blazor's class attribute re-renders (which can strip maplibregl-map).
   font: 12px/20px "Helvetica Neue", Arial, Helvetica, sans-serif;
   position: relative;
   overflow: hidden;
   z-index: 1;
+
+  // control design tokens
+  --sgb-map-ctrl-bg: #ffffff;
+  --sgb-map-ctrl-bg-hover: #f1f5f9;
+  --sgb-map-ctrl-text: #1e293b;
+  --sgb-map-ctrl-text-secondary: #475569;
+  --sgb-map-ctrl-link: #2563eb;
+  --sgb-map-ctrl-link-hover: #1d4ed8;
+  --sgb-map-ctrl-border: rgba(148, 163, 184, 0.3);
+  --sgb-map-ctrl-border-radius: 8px;
+  --sgb-map-ctrl-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.06);
+  --sgb-map-ctrl-btn-size: 30px;
+  --sgb-map-ctrl-icon-size: 18px;
+
+  // attribution info icon (dark icon for light backgrounds)
+  --sgb-map-attrib-icon: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 20 20' fill-rule='evenodd'%3E%3Cpath d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E");
+
+
+  // popups: ensure readable text regardless of host page theme
+  .maplibregl-popup-content {
+    color: var(--sgb-map-ctrl-text);
+  }
 }
 
-// Rise-on-hover for markers (needs !important to override inline z-index)
+// rise-on-hover for markers (needs !important to override inline z-index)
 .maplibregl-marker:hover {
   z-index: 10 !important;
 }
 
-// ── Custom center control ──
+// shared control group styles used by both spillgebees and maplibre controls
+%sgb-ctrl-group-base {
+  background: var(--sgb-map-ctrl-bg);
+  border: none;
+  border-radius: var(--sgb-map-ctrl-border-radius);
+  box-shadow: var(--sgb-map-ctrl-shadow);
+  overflow: hidden;
 
-.sgb-map-center-control {
-  .sgb-map-center-control-button {
+  button {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 29px;
-    height: 29px;
-    cursor: pointer;
-    background: none;
-    border: none;
+    width: var(--sgb-map-ctrl-btn-size);
+    height: var(--sgb-map-ctrl-btn-size);
     padding: 0;
+    border: none;
+    box-shadow: none;
+    outline: none;
+    background: var(--sgb-map-ctrl-bg);
+    color: var(--sgb-map-ctrl-text);
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--sgb-map-ctrl-bg-hover);
+    }
+  }
+
+  button + button {
+    border-top: 1px solid var(--sgb-map-ctrl-border);
   }
 }
 
-// ── Dark theme ──
-// Uses .sgb-map-container.sgb-map-dark (compound selector = 2 classes)
-// to beat MapLibre's single-class selectors without !important.
+// native and custom control groups — scoped under .sgb-map-container
+// so specificity matches maplibre's .maplibregl-ctrl button:not(:disabled):hover
+.sgb-map-container {
+  .sgb-map-ctrl-group {
+    @extend %sgb-ctrl-group-base;
+  }
 
-.sgb-map-container.sgb-map-dark {
-  // --- Control groups (zoom, compass, etc.) ---
   .maplibregl-ctrl-group {
-    background: $dark-bg;
-    border: none;
-    box-shadow: none;
-    overflow: hidden;
+    @extend %sgb-ctrl-group-base;
 
     button {
-      background: $dark-bg;
-      color: $dark-text;
-      border: none;
-      box-shadow: none;
-      outline: none;
-
-      &:hover,
-      &:focus {
-        background: $dark-bg-hover;
-        color: $dark-text;
-      }
-
       .maplibregl-ctrl-icon {
-        // Force white icons for zoom/terrain/geolocate buttons
-        filter: brightness(0) invert(1);
+        width: var(--sgb-map-ctrl-icon-size);
+        height: var(--sgb-map-ctrl-icon-size);
       }
 
-      // Compass: exact MapLibre SVG paths with dark-mode colors.
-      // Light theme = #333 north + #ccc south. Dark = #fff north + #666 south.
+      // compass: red north needle, muted south
       &.maplibregl-ctrl-compass .maplibregl-ctrl-icon {
         filter: none;
-        background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' fill='%23fff' viewBox='0 0 29 29'%3E%3Cpath d='m10.5 14 4-8 4 8z'/%3E%3Cpath fill='%23666' d='m10.5 16 4 8 4-8z'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' viewBox='0 0 29 29'%3E%3Cpath fill='%23dc2626' d='m10.5 14 4-8 4 8z'/%3E%3Cpath fill='%2394a3b8' d='m10.5 16 4 8 4-8z'/%3E%3C/svg%3E");
       }
-    }
-
-    button + button {
-      border-top: 1px solid rgba(255, 255, 255, 0.2);
     }
   }
 
-  // --- Attribution control ---
+  // attribution control - use background shorthand to fully override maplibre defaults
   .maplibregl-ctrl-attrib {
-    background-color: $dark-bg;
-    color: $dark-text;
+    background: var(--sgb-map-ctrl-bg);
+    color: var(--sgb-map-ctrl-text-secondary);
+    border-radius: var(--sgb-map-ctrl-border-radius);
 
     a {
-      color: $dark-link;
-      text-decoration: none;
+      color: var(--sgb-map-ctrl-link);
+      text-decoration: underline;
 
       &:hover {
-        color: $dark-link-hover;
-        text-decoration: underline;
+        color: var(--sgb-map-ctrl-link-hover);
       }
     }
   }
 
-  // Compact (collapsed) attribution — the info button circle.
-  // Use consistent right padding between collapsed/expanded to prevent
-  // the button from jumping sideways on toggle (MapLibre defaults differ by 4px).
+  // compact (collapsed) attribution: transparent container so only the
+  // info button is visible, avoiding the double-background effect
   .maplibregl-ctrl-attrib.maplibregl-compact {
-    background-color: $dark-bg;
-    padding-right: 28px;
+    background: transparent;
+    border-radius: var(--sgb-map-ctrl-border-radius);
+    box-shadow: none;
   }
 
-  // The ::after pseudo-element IS the visual info icon in MapLibre v5.
-  // It needs a dark background and inverted icon for visibility.
+  // the <summary> button is the clickable info icon (maplibre uses details/summary)
+  // use background shorthand to fully reset maplibre's default bg-image + bg-color
+  .maplibregl-ctrl-attrib-button {
+    background: var(--sgb-map-ctrl-bg) var(--sgb-map-attrib-icon) center / contain no-repeat;
+    border-radius: 50%;
+    box-shadow: var(--sgb-map-ctrl-shadow);
+  }
+
+  // maplibre also uses ::after on some versions/positions - style it identically
   .maplibregl-ctrl-attrib.maplibregl-compact::after {
-    background-color: $dark-bg;
-    border-radius: 12px;
+    background: var(--sgb-map-ctrl-bg) var(--sgb-map-attrib-icon) center / contain no-repeat;
+    border-radius: 50%;
+    box-shadow: var(--sgb-map-ctrl-shadow);
+  }
+
+  // expanded attribution: restore the container background for the text panel
+  .maplibregl-ctrl-attrib.maplibregl-compact-show {
+    background: var(--sgb-map-ctrl-bg);
+    box-shadow: var(--sgb-map-ctrl-shadow);
+  }
+
+  // when expanded, the button blends into the panel (no separate shadow, subtle bg)
+  .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-button {
+    background-color: transparent;
+    box-shadow: none;
+  }
+
+  .maplibregl-ctrl-attrib.maplibregl-compact-show::after {
+    box-shadow: none;
+  }
+
+  // scale control
+  .maplibregl-ctrl-scale {
+    background: var(--sgb-map-ctrl-bg);
+    color: var(--sgb-map-ctrl-text);
+    border: 1px solid var(--sgb-map-ctrl-text);
+    border-top: none;
+    border-radius: 0 0 var(--sgb-map-ctrl-border-radius) var(--sgb-map-ctrl-border-radius);
+  }
+}
+
+// custom center control
+.sgb-map-center-control {
+  .sgb-map-center-control-button {
+    // button styling inherited from .sgb-map-ctrl-group button
+    svg {
+      width: var(--sgb-map-ctrl-icon-size);
+      height: var(--sgb-map-ctrl-icon-size);
+    }
+  }
+}
+
+// legend control
+.sgb-map-legend {
+  --sgb-map-legend-max-width: 320px;
+
+  .sgb-map-legend-toggle {
+    svg {
+      width: var(--sgb-map-ctrl-icon-size);
+      height: var(--sgb-map-ctrl-icon-size);
+    }
+  }
+
+  // expanded panel
+  .sgb-map-legend-panel {
+    position: absolute;
+    z-index: 1;
+    min-width: 220px;
+    max-width: var(--sgb-map-legend-max-width);
+    max-height: min(var(--sgb-map-legend-max-height, 420px), calc(100vh - 20px));
+    background: var(--sgb-map-ctrl-bg);
+    border-radius: var(--sgb-map-ctrl-border-radius);
+    box-shadow: var(--sgb-map-ctrl-shadow);
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 10px;
+    overflow: hidden;
+    padding: 12px;
+  }
+
+  .sgb-map-legend-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .sgb-map-legend-title {
+    font-weight: 600;
+    color: var(--sgb-map-ctrl-text);
+  }
+
+  .sgb-map-legend-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--sgb-map-ctrl-text-secondary);
+    cursor: pointer;
+    border-radius: 4px;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--sgb-map-ctrl-bg-hover);
+      color: var(--sgb-map-ctrl-text);
+    }
+  }
+
+  .sgb-map-legend-body {
+    display: grid;
+    gap: 12px;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 4px;
+    scrollbar-color: var(--sgb-map-ctrl-border) transparent;
+  }
+
+  &.sgb-map-legend-closed {
+    .sgb-map-legend-panel {
+      display: none;
+    }
+  }
+}
+
+// panel positioning for collapsible legends
+.sgb-map-legend.sgb-map-legend-collapsible {
+  position: relative;
+
+  .sgb-map-legend-panel {
+    // by default, panel below and aligned to the right edge of the button
+    top: calc(var(--sgb-map-ctrl-btn-size) + 4px);
+    right: 0;
+  }
+}
+
+// when placed on left side, panel aligns to left edge
+.maplibregl-ctrl-top-left .sgb-map-legend.sgb-map-legend-collapsible .sgb-map-legend-panel,
+.maplibregl-ctrl-bottom-left .sgb-map-legend.sgb-map-legend-collapsible .sgb-map-legend-panel {
+  right: auto;
+  left: 0;
+}
+
+// when placed on bottom, panel opens above
+.maplibregl-ctrl-bottom-left .sgb-map-legend.sgb-map-legend-collapsible .sgb-map-legend-panel,
+.maplibregl-ctrl-bottom-right .sgb-map-legend.sgb-map-legend-collapsible .sgb-map-legend-panel {
+  top: auto;
+  bottom: calc(var(--sgb-map-ctrl-btn-size) + 4px);
+}
+
+// non-collapsible legend (a panel without a toggle button)
+.sgb-map-legend:not(.sgb-map-legend-collapsible) {
+  min-width: 220px;
+  max-width: var(--sgb-map-legend-max-width, 320px);
+  max-height: min(var(--sgb-map-legend-max-height, 420px), calc(100vh - 20px));
+  background: var(--sgb-map-ctrl-bg);
+  border-radius: var(--sgb-map-ctrl-border-radius);
+  box-shadow: var(--sgb-map-ctrl-shadow);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+  overflow: hidden;
+  padding: 12px;
+}
+
+// legend item styles
+.sgb-map-legend-content,
+.sgb-map-legend-items,
+.sgb-map-legend-section {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sgb-map-legend-section-title,
+.sgb-map-legend-item-label {
+  color: var(--sgb-map-ctrl-text);
+  font-weight: 600;
+}
+
+.sgb-map-legend-section-description,
+.sgb-map-legend-item-description {
+  margin: 0;
+  color: var(--sgb-map-ctrl-text-secondary);
+  font-size: 13px;
+}
+
+.sgb-map-legend-item-toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+  user-select: none;
+
+  &:hover {
+    background: var(--sgb-map-ctrl-bg-hover);
+  }
+}
+
+.sgb-map-legend-item-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 24px;
+
+  input {
+    // visually hidden but accessible
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+}
+
+.sgb-map-legend-item-switch-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--sgb-map-ctrl-border);
+  transition: background 0.2s;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: var(--sgb-map-ctrl-bg);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.16);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+// checked state
+.sgb-map-legend-item-switch input:checked + .sgb-map-legend-item-switch-track {
+  background: var(--sgb-map-ctrl-link);
+}
+
+.sgb-map-legend-item-switch input:checked + .sgb-map-legend-item-switch-track::after {
+  transform: translateX(16px);
+}
+
+// focus-visible ring
+.sgb-map-legend-item-switch input:focus-visible + .sgb-map-legend-item-switch-track {
+  outline: 2px solid var(--sgb-map-ctrl-link);
+  outline-offset: 2px;
+}
+
+.sgb-map-legend-item-off {
+  .sgb-map-legend-item-label {
+    color: var(--sgb-map-ctrl-text-secondary);
+  }
+
+  .sgb-map-legend-item-description {
+    opacity: 0.5;
+  }
+}
+
+.sgb-map-legend-item-copy {
+  display: grid;
+  gap: 6px;
+}
+
+// dark mode: override design tokens
+.sgb-map-container.sgb-map-dark {
+  --sgb-map-ctrl-bg: #0f172a;
+  --sgb-map-ctrl-bg-hover: rgba(30, 41, 59, 0.96);
+  --sgb-map-ctrl-text: #f1f5f9;
+  --sgb-map-ctrl-text-secondary: #cbd5e1;
+  --sgb-map-ctrl-link: #38bdf8;
+  --sgb-map-ctrl-link-hover: #7dd3fc;
+  --sgb-map-ctrl-border: rgba(255, 255, 255, 0.12);
+  --sgb-map-ctrl-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.14);
+
+  // light icon for dark backgrounds (no filter needed, avoids inverting the bg)
+  --sgb-map-attrib-icon: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 20 20' fill-rule='evenodd'%3E%3Cpath fill='%23f1f5f9' d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E");
+
+  // non-compass button icons: invert for visibility on dark backgrounds
+  .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
     filter: brightness(0) invert(1);
   }
 
-  // Expanded attribution banner — same background as controls
-  .maplibregl-ctrl-attrib.maplibregl-compact-show {
-    background-color: $dark-bg;
+  // compass: lighter red north for dark backgrounds, darker south
+  // (higher specificity via .maplibregl-ctrl-compass naturally overrides the generic invert above)
+  .maplibregl-ctrl-group button.maplibregl-ctrl-compass .maplibregl-ctrl-icon {
+    filter: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='29' height='29' viewBox='0 0 29 29'%3E%3Cpath fill='%23ef4444' d='m10.5 14 4-8 4 8z'/%3E%3Cpath fill='%2364748b' d='m10.5 16 4 8 4-8z'/%3E%3C/svg%3E");
   }
 
-  // --- Scale control ---
+  // scale control dark override (border uses text color token which is already light)
   .maplibregl-ctrl-scale {
-    background: $dark-bg;
-    color: $dark-text;
-    border: 1px solid $dark-text;
-    border-top: none;
+    border-color: var(--sgb-map-ctrl-text);
   }
 
-  // --- Popups ---
+  // popups
   .maplibregl-popup-content {
-    background: $dark-bg;
-    color: $dark-text;
+    background: var(--sgb-map-ctrl-bg);
+    color: var(--sgb-map-ctrl-text);
     border: none;
     box-shadow: none;
   }
 
   .maplibregl-popup-close-button {
-    color: $dark-text;
+    color: var(--sgb-map-ctrl-text);
   }
 
-  // Popup tips (arrows) are CSS triangles — only the border opposite the
-  // anchor direction is visible. Set per-direction colors to match content.
+  // popup tips (arrows) are CSS triangles - only the border opposite the
+  // anchor direction is visible. set per-direction colors to match content.
   .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
-    border-top-color: $dark-bg;
+    border-top-color: var(--sgb-map-ctrl-bg);
   }
 
   .maplibregl-popup-anchor-top .maplibregl-popup-tip {
-    border-bottom-color: $dark-bg;
+    border-bottom-color: var(--sgb-map-ctrl-bg);
   }
 
   .maplibregl-popup-anchor-left .maplibregl-popup-tip {
-    border-right-color: $dark-bg;
+    border-right-color: var(--sgb-map-ctrl-bg);
   }
 
   .maplibregl-popup-anchor-right .maplibregl-popup-tip {
-    border-left-color: $dark-bg;
+    border-left-color: var(--sgb-map-ctrl-bg);
   }
 
   .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
   .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
-    border-top-color: $dark-bg;
+    border-top-color: var(--sgb-map-ctrl-bg);
   }
 
   .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
   .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
-    border-bottom-color: $dark-bg;
-  }
-
-  // --- Custom center control ---
-  .sgb-map-center-control .sgb-map-center-control-button {
-    background: $dark-bg;
-    color: $dark-text;
-    border: none;
-    box-shadow: none;
-    outline: none;
-
-    &:hover,
-    &:focus {
-      background: $dark-bg-hover;
-      color: $dark-text;
-    }
+    border-bottom-color: var(--sgb-map-ctrl-bg);
   }
 }

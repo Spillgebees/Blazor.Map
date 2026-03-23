@@ -1,0 +1,44 @@
+<SgbMap MapOptions="@_mapOptions"
+        ControlOptions="@MapControlOptions.Default"
+        Markers="@_markers"
+        Height="400px"
+        Width="100%" />
+
+@code {
+    private readonly MapOptions _mapOptions = new(
+        Center: new Coordinate(49.6117, 6.1319),
+        Zoom: 12
+    );
+
+    private readonly List<Marker> _markers =
+    [
+        new(
+            "marker-click",
+            new Coordinate(49.6000, 6.1100),
+            Title: "Click popup",
+            Popup: new PopupOptions(
+                "<strong>Click popup</strong><br>Click the marker to open this popup.",
+                Trigger: PopupTrigger.Click
+            )
+        ),
+        new(
+            "marker-hover",
+            new Coordinate(49.6117, 6.1319),
+            Title: "Hover popup",
+            Popup: new PopupOptions(
+                "<strong>Hover popup</strong><br>Hover over the marker to open this popup.",
+                Trigger: PopupTrigger.Hover
+            )
+        ),
+        new(
+            "marker-permanent",
+            new Coordinate(49.6230, 6.1500),
+            Title: "Permanent popup",
+            Popup: new PopupOptions(
+                "<strong>Permanent popup</strong><br>This popup is always visible.",
+                Trigger: PopupTrigger.Permanent,
+                CloseButton: false
+            )
+        )
+    ];
+}

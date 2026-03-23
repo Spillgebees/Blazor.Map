@@ -7,6 +7,7 @@ using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Layers;
+using Spillgebees.Blazor.Map.Runtime.Scene;
 using Spillgebees.Blazor.Map.Utilities;
 
 namespace Spillgebees.Blazor.Map.Components;
@@ -16,6 +17,11 @@ namespace Spillgebees.Blazor.Map.Components;
 /// </summary>
 public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 {
+    protected BaseMap()
+    {
+        SceneRegistry = new MapSceneRegistry(this);
+    }
+
     [Inject]
     protected IJSRuntime JsRuntime { get; set; } = null!;
 
@@ -23,6 +29,9 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     private ILoggerFactory _loggerFactory { get; set; } = null!;
 
     protected Lazy<ILogger> Logger => new(() => _loggerFactory.CreateLogger(GetType()));
+    internal MapSceneRegistry SceneRegistry { get; }
+    internal IJSRuntime Runtime => JsRuntime;
+    internal ILogger RuntimeLogger => Logger.Value;
 
     /// <summary>
     /// Options for the map (center, zoom, style, pitch, bearing, etc.).
@@ -92,6 +101,13 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     public string ContainerClass { get; set; } = string.Empty;
 
     /// <summary>
+    /// Child content rendered inside the map's cascading value scope.
+    /// Use this to place <see cref="Layers.GeoJsonSource"/> and layer components.
+    /// </summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>
     /// Callback invoked when the user clicks on the map.
     /// </summary>
     [Parameter]
@@ -142,10 +158,29 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             .AddStyle("height", Height, Height is not null)
             .Build();
 
-    protected ElementReference MapReference;
+    internal ElementReference MapReference;
     protected DotNetObjectReference<BaseMap>? DotNetObjectReference;
     protected bool IsInitialized;
     protected bool IsDisposing;
+    internal bool RuntimeIsInitialized => IsInitialized;
+
+    internal event Func<Task>? StyleReloaded;
+
+    private readonly TaskCompletionSource<bool> _readyTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    /// <summary>
+    /// Returns a task that completes when the map has been initialized and is ready
+    /// for interop calls (sources, layers, etc.).
+    /// </summary>
+    internal Task<bool> WhenReadyAsync()
+    {
+        if (IsDisposing)
+        {
+            return Task.FromResult(false);
+        }
+
+        return _readyTcs.Task;
+    }
 
     /// <summary>
     /// Performs an animated camera flight to the specified position.
@@ -170,6 +205,184 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// </summary>
     public ValueTask ResizeAsync() => MapJs.ResizeAsync(JsRuntime, Logger.Value, MapReference);
 
+    /// <summary>
+    /// Gets the current map center.
+    /// </summary>
+    public ValueTask<Coordinate?> GetCenterAsync() => MapJs.GetCenterAsync(JsRuntime, Logger.Value, MapReference);
+
+    /// <summary>
+    /// Gets the current map zoom level.
+    /// </summary>
+    public ValueTask<double?> GetZoomAsync() => MapJs.GetZoomAsync(JsRuntime, Logger.Value, MapReference);
+
+    /// <summary>
+    /// Returns whether a layer currently exists in the map style.
+    /// </summary>
+    public ValueTask<bool> HasLayerAsync(string layerId) =>
+        MapJs.HasLayerAsync(JsRuntime, Logger.Value, MapReference, layerId);
+
+    /// <summary>
+    /// Returns whether a layer exists within a composed style using the style's stable ID and original layer ID.
+    /// </summary>
+    public ValueTask<bool> HasStyleLayerAsync(string styleId, string layerId) =>
+        MapJs.HasStyleLayerAsync(JsRuntime, Logger.Value, MapReference, styleId, layerId);
+
+    /// <summary>
+    /// Gets the current map bounds.
+    /// </summary>
+    public ValueTask<MapBounds?> GetBoundsAsync() => MapJs.GetBoundsAsync(JsRuntime, Logger.Value, MapReference);
+
+    /// <summary>
+    /// Queries rendered features at a screen point.
+    /// </summary>
+    public ValueTask<List<object>> QueryRenderedFeaturesAsync(Point point, IReadOnlyList<string>? layerIds = null) =>
+        MapJs.QueryRenderedFeaturesAsync(JsRuntime, Logger.Value, MapReference, point, layerIds);
+
+    /// <summary>
+    /// Moves an existing layer relative to another layer.
+    /// </summary>
+    public ValueTask MoveLayerAsync(string layerId, string? beforeId = null) =>
+        MapJs.MoveLayerAsync(JsRuntime, Logger.Value, MapReference, layerId, beforeId);
+
+    /// <summary>
+    /// Sets feature-state for a tracked entity across its primary and decoration sources.
+    /// </summary>
+    public ValueTask SetTrackedEntityFeatureStateAsync(
+        string primarySourceId,
+        string? decorationSourceId,
+        string entityId,
+        IReadOnlyDictionary<string, object> state
+    ) =>
+        MapJs.SetTrackedEntityFeatureStateAsync(
+            JsRuntime,
+            Logger.Value,
+            MapReference,
+            primarySourceId,
+            decorationSourceId,
+            entityId,
+            state
+        );
+
+    /// <summary>
+    /// Sets the visibility of an existing layer in the map style.
+    /// Use this to show/hide built-in style layers (e.g., hide tram layers).
+    /// </summary>
+    /// <param name="layerId">The ID of the layer in the map style.</param>
+    /// <param name="visible">Whether the layer should be visible.</param>
+    public async ValueTask SetLayerVisibilityAsync(string layerId, bool visible)
+    {
+        await JsRuntime.InvokeVoidAsync(
+            "Spillgebees.Map.mapFunctions.setLayerVisibility",
+            MapReference,
+            layerId,
+            visible
+        );
+    }
+
+    /// <summary>
+    /// Sets the visibility of a composed style layer using the style's stable ID and the original layer ID.
+    /// </summary>
+    public ValueTask SetStyleLayerVisibilityAsync(string styleId, string layerId, bool visible) =>
+        MapJs.SetStyleLayerVisibilityAsync(JsRuntime, Logger.Value, MapReference, styleId, layerId, visible);
+
+    /// <summary>
+    /// Registers a custom image (icon) for use in SymbolLayer's <c>IconImage</c>.
+    /// Supports any image URL, data URI (inline SVG), or base64-encoded image.
+    /// </summary>
+    /// <param name="name">The image name to reference in <c>IconImage</c> expressions.</param>
+    /// <param name="url">The image URL or data URI.</param>
+    /// <param name="width">The image width in pixels.</param>
+    /// <param name="height">The image height in pixels.</param>
+    /// <param name="pixelRatio">The pixel ratio for retina displays. Default is 1.</param>
+    /// <param name="sdf">Whether the image should be treated as an SDF (Signed Distance Field) for runtime tinting via <c>icon-color</c>. Default is false.</param>
+    public async ValueTask AddImageAsync(string name, string url, int width, int height, double pixelRatio = 1, bool sdf = false)
+    {
+        await JsRuntime.InvokeVoidAsync(
+            "Spillgebees.Map.mapFunctions.addImage",
+            MapReference,
+            name,
+            url,
+            width,
+            height,
+            pixelRatio,
+            sdf
+        );
+    }
+
+    /// <summary>
+    /// Shows a popup at the specified coordinate with HTML content.
+    /// Only one programmatic popup is shown at a time — calling this again replaces the previous one.
+    /// </summary>
+    /// <param name="position">The geographic position for the popup.</param>
+    /// <param name="html">The HTML content to display.</param>
+    /// <param name="options">Optional popup configuration.</param>
+    public async ValueTask ShowPopupAsync(Coordinate position, string html, Models.Popups.PopupOptions? options = null)
+    {
+        await JsRuntime.InvokeVoidAsync(
+            "Spillgebees.Map.mapFunctions.showPopup",
+            MapReference,
+            position,
+            html,
+            options
+        );
+    }
+
+    /// <summary>
+    /// Closes any programmatic popup currently shown via <see cref="ShowPopupAsync"/>.
+    /// </summary>
+    public async ValueTask ClosePopupAsync()
+    {
+        await JsRuntime.InvokeVoidAsync("Spillgebees.Map.mapFunctions.closePopup", MapReference);
+    }
+
+    /// <summary>
+    /// Sets the feature state for a specific feature in a source.
+    /// Feature state can be read in paint/layout expressions via <c>["feature-state", "propertyName"]</c>
+    /// for hover highlighting, selection, and other interactive styling without re-rendering the source data.
+    /// </summary>
+    /// <param name="sourceId">The source containing the feature.</param>
+    /// <param name="featureId">The feature's ID (from the GeoJSON <c>id</c> field or <c>promoteId</c>).</param>
+    /// <param name="state">A dictionary of state properties to set.</param>
+    /// <param name="sourceLayer">The source layer (required for vector tile sources).</param>
+    public async ValueTask SetFeatureStateAsync(
+        string sourceId,
+        object featureId,
+        IDictionary<string, object> state,
+        string? sourceLayer = null
+    )
+    {
+        await JsRuntime.InvokeVoidAsync(
+            "Spillgebees.Map.mapFunctions.setFeatureState",
+            MapReference,
+            sourceId,
+            featureId,
+            state,
+            sourceLayer
+        );
+    }
+
+    /// <summary>
+    /// Sets a single feature state value using a typed key.
+    /// </summary>
+    /// <param name="sourceId">The source containing the feature.</param>
+    /// <param name="featureId">The feature's ID (from the GeoJSON <c>id</c> field or <c>promoteId</c>).</param>
+    /// <param name="state">A single state entry created via <see cref="Models.Expressions.FeatureStateKey{T}.Set"/>.</param>
+    /// <param name="sourceLayer">The source layer (required for vector tile sources).</param>
+    public async ValueTask SetFeatureStateAsync(
+        string sourceId,
+        object featureId,
+        KeyValuePair<string, object> state,
+        string? sourceLayer = null
+    )
+    {
+        await SetFeatureStateAsync(
+            sourceId,
+            featureId,
+            new Dictionary<string, object> { [state.Key] = state.Value },
+            sourceLayer
+        );
+    }
+
     /// <inheritdoc/>
     public virtual async ValueTask DisposeAsync()
     {
@@ -178,6 +391,9 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             return;
         }
         IsDisposing = true;
+
+        // Unblock any child components awaiting WhenReadyAsync()
+        _readyTcs.TrySetResult(false);
 
         try
         {
@@ -217,6 +433,15 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         await Task.Delay(50);
         // since content may have shifted after rendering, we must tell the map to recalculate its size
         await ResizeAsync();
+
+        // apply fitBounds after resize so the container has its final dimensions
+        if (MapOptions?.FitBoundsOptions is { } fitBoundsOptions)
+        {
+            await FitBoundsAsync(fitBoundsOptions);
+        }
+
+        // Signal that the map is ready for child components (sources, layers)
+        _readyTcs.TrySetResult(true);
     }
 
     /// <summary>
@@ -279,9 +504,28 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// This method is called from JavaScript when the map style is reloaded. Don't call it manually.
+    /// </summary>
+    [JSInvokable]
+    public async Task OnMapStyleReloadedAsync()
+    {
+        if (StyleReloaded is null)
+        {
+            return;
+        }
+
+        foreach (var handler in StyleReloaded.GetInvocationList().Cast<Func<Task>>())
+        {
+            await handler();
+        }
+    }
+
     /// <inheritdoc/>
     protected override async Task OnParametersSetAsync()
     {
+        MapOptionsCompositionValidator.Validate(MapOptions);
+
         if (IsInitialized is false)
         {
             return;
@@ -323,6 +567,8 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// </summary>
     protected virtual async Task InitializeMapAsync()
     {
+        MapOptionsCompositionValidator.Validate(MapOptions);
+
         DotNetObjectReference = Microsoft.JSInterop.DotNetObjectReference.Create(this);
 
         // Protocol version handshake — safety net for cached JS modules

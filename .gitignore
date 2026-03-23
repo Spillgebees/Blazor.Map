@@ -238,6 +238,10 @@ ClientBin/
 ~$*
 *~
 *.dbmdl
+
+# Playwright artifacts
+src/Spillgebees.Blazor.Map.Assets/playwright-report/
+src/Spillgebees.Blazor.Map.Assets/test-results/
 *.dbproj.schemaview
 *.jfm
 *.pfx
@@ -527,3 +531,4 @@ fabric.properties
 
 # Generated JS/CSS build output in the Razor Class Library wwwroot
 src/Spillgebees.Blazor.Map/wwwroot/
+.claude/

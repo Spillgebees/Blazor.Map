@@ -82,6 +82,16 @@ jobs:
         run: pnpm run test
         working-directory: src/Spillgebees.Blazor.Map.Assets
 
+      - name: 🎭 install Playwright browser
+        if: inputs.dotnet-changed || inputs.ts-changed
+        run: pnpm exec playwright install --with-deps chromium
+        working-directory: src/Spillgebees.Blazor.Map.Assets
+
+      - name: 🎭 browser regression tests
+        if: inputs.dotnet-changed || inputs.ts-changed
+        run: pnpm run test:browser
+        working-directory: src/Spillgebees.Blazor.Map.Assets
+
       - name: 📦 package the application
         if: inputs.should-package
         run: dotnet pack src/Spillgebees.Blazor.Map/Spillgebees.Blazor.Map.csproj --configuration Release --no-build --output package
@@ -97,7 +107,7 @@ jobs:
 
       - name: 📦 publish WASM application as with .NET 10.0
         if: inputs.should-publish-gh-page
-        run: dotnet publish src/Spillgebees.Blazor.Map.Samples/Spillgebees.Blazor.Map.Samples.Wasm/Spillgebees.Blazor.Map.Samples.Wasm.csproj --configuration Release --no-build --output wasm-application/net10.0 --framework net10.0
+        run: dotnet publish src/Spillgebees.Blazor.Map.Docs/Spillgebees.Blazor.Map.Docs.csproj --configuration Release --no-build --output wasm-application/net10.0 --framework net10.0
 
       - name: 🔧 fix base path for .NET 10.0
         if: inputs.should-publish-gh-page

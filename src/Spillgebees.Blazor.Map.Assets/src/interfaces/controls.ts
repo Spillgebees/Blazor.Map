@@ -46,4 +46,13 @@ export interface ICenterControlOptions {
   fitBoundsOptions: IFitBoundsOptions | null;
 }
 
+export interface ILegendControlOptions {
+  enable: boolean;
+  position: ControlPosition;
+  title: string | null;
+  collapsible: boolean;
+  initiallyOpen: boolean;
+  className: string | null;
+}
+
 export type ControlPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";

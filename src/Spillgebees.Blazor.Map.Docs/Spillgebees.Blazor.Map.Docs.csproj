@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+  <Import Project="../General.targets" />
+
+  <ItemGroup>
+    <PackageReference Include="Spillgebees.Blazor.Docs.Sdk" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Spillgebees.Blazor.Map\Spillgebees.Blazor.Map.csproj" />
+  </ItemGroup>
+
+  <!-- Workaround: SDK 0.3.0 generates manifests but EmbeddedResource items are added
+       too late for the compiler. Manually reference the generated files. -->
+  <ItemGroup>
+    <EmbeddedResource Include="obj/DocsSdk/manifests/Spillgebees.Blazor.Map.json"
+      LogicalName="ApiManifest:Spillgebees.Blazor.Map" />
+  </ItemGroup>
+</Project>

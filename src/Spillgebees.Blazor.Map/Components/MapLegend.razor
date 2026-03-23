@@ -1,0 +1,65 @@
+@using BlazorComponentUtilities
+@using Spillgebees.Blazor.Map.Models.Legends
+
+<div @ref="_placeholderReference" class="sgb-map-legend-placeholder" hidden>
+    <div id="@_contentId" @ref="_contentReference" class="@ContentClassName" hidden>
+        @foreach (var legendSection in Definition.Sections)
+        {
+            <div class="@GetSectionClassName(legendSection)">
+                <header class="sgb-map-legend-section-header">
+                    <div class="sgb-map-legend-section-title">@legendSection.Title</div>
+                    @if (!string.IsNullOrWhiteSpace(legendSection.Description))
+                    {
+                        <p class="sgb-map-legend-section-description">@legendSection.Description</p>
+                    }
+                </header>
+
+                <div class="sgb-map-legend-items">
+                    @foreach (var item in legendSection.Items)
+                    {
+                        @if (ItemTemplate is not null)
+                        {
+                            @ItemTemplate(new MapLegendItemTemplateContext(item, GetItemVisibility(item.Id), visible => SetItemVisibilityAsync(item, visible)))
+                        }
+                        else
+                        {
+                            <div class="@GetItemClassName(item)">
+                                @if (item.IsToggleable)
+                                {
+                                    <label class="sgb-map-legend-item-toggle">
+                                        <span class="sgb-map-legend-item-copy">
+                                            <span class="sgb-map-legend-item-label">@item.Label</span>
+                                            @if (!string.IsNullOrWhiteSpace(item.Description))
+                                            {
+                                                <span class="sgb-map-legend-item-description">@item.Description</span>
+                                            }
+                                        </span>
+                                        <span class="sgb-map-legend-item-switch">
+                                            <input type="checkbox"
+                                                   role="switch"
+                                                   aria-checked="@(GetItemVisibility(item.Id).ToString().ToLowerInvariant())"
+                                                   data-testid="@($"map-legend-toggle-{item.Id}")"
+                                                   checked="@GetItemVisibility(item.Id)"
+                                                   @onchange="@((ChangeEventArgs args) => ToggleItemAsync(item, args))" />
+                                            <span class="sgb-map-legend-item-switch-track"></span>
+                                        </span>
+                                    </label>
+                                }
+                                else
+                                {
+                                    <div class="sgb-map-legend-item-copy">
+                                        <span class="sgb-map-legend-item-label">@item.Label</span>
+                                        @if (!string.IsNullOrWhiteSpace(item.Description))
+                                        {
+                                            <span class="sgb-map-legend-item-description">@item.Description</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

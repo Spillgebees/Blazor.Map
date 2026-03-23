@@ -19,6 +19,7 @@ function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions 
     center: { latitude: 51.505, longitude: -0.09 },
     zoom: 13,
     style: null,
+    composedGlyphsUrl: null,
     pitch: 0,
     bearing: 0,
     projection: "mercator",
@@ -54,6 +55,8 @@ function createDefaultMarker(overrides?: Partial<IMarker>): IMarker {
     color: null,
     scale: null,
     rotation: null,
+    rotationAlignment: null,
+    pitchAlignment: null,
     draggable: false,
     opacity: null,
     className: null,
@@ -315,6 +318,23 @@ describe("addMarkers", () => {
     const constructorArgs = getMockMarkerConstructor().mock.calls[0]?.[0];
     expect(constructorArgs.draggable).toBe(true);
     expect(constructorArgs.opacity).toBe(0.5);
+  });
+
+  it("should preserve marker opacity as a numeric runtime value", () => {
+    // arrange
+    const { map } = setupMapAndGetInstance();
+    const storage = createEmptyFeatureStorage();
+    const marker = createDefaultMarker({
+      opacity: 0.25,
+    });
+
+    // act
+    addMarkers(map as unknown as Parameters<typeof addMarkers>[0], [marker], storage);
+
+    // assert
+    const constructorArgs = getMockMarkerConstructor().mock.calls[0]?.[0];
+    expect(typeof constructorArgs.opacity).toBe("number");
+    expect(constructorArgs.opacity).toBe(0.25);
   });
 
   it("should handle marker with className", () => {

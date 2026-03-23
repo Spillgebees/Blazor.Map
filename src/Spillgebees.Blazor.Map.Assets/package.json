@@ -24,16 +24,18 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "test": "vitest run",
+    "test:browser": "playwright test",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "maplibre-gl": "5.20.1"
+    "maplibre-gl": "5.20.2"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.4",
     "@microsoft/dotnet-js-interop": "8.0.17",
     "@types/node": "24.11.0",
+    "@playwright/test": "1.56.1",
     "@vitest/coverage-v8": "4.0.18",
     "jsdom": "28.1.0",
     "rimraf": "6.1.3",

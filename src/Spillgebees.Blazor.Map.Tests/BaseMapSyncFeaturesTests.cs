@@ -22,7 +22,7 @@ public class BaseMapSyncFeaturesTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(1);
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(8);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);

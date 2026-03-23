@@ -2,6 +2,7 @@ import { vi } from "vitest";
 
 export interface MockMapInstance {
   on: ReturnType<typeof vi.fn>;
+  off: ReturnType<typeof vi.fn>;
   remove: ReturnType<typeof vi.fn>;
   resize: ReturnType<typeof vi.fn>;
   setPitch: ReturnType<typeof vi.fn>;
@@ -9,6 +10,7 @@ export interface MockMapInstance {
   setStyle: ReturnType<typeof vi.fn>;
   jumpTo: ReturnType<typeof vi.fn>;
   setProjection: ReturnType<typeof vi.fn>;
+  setMaxBounds: ReturnType<typeof vi.fn>;
   addControl: ReturnType<typeof vi.fn>;
   removeControl: ReturnType<typeof vi.fn>;
   getContainer: ReturnType<typeof vi.fn>;
@@ -19,12 +21,23 @@ export interface MockMapInstance {
   addLayer: ReturnType<typeof vi.fn>;
   getLayer: ReturnType<typeof vi.fn>;
   getCanvas: ReturnType<typeof vi.fn>;
+  setLayoutProperty: ReturnType<typeof vi.fn>;
   removeLayer: ReturnType<typeof vi.fn>;
   removeSource: ReturnType<typeof vi.fn>;
   getCenter: ReturnType<typeof vi.fn>;
+  getBounds: ReturnType<typeof vi.fn>;
   getZoom: ReturnType<typeof vi.fn>;
   getBearing: ReturnType<typeof vi.fn>;
   getPitch: ReturnType<typeof vi.fn>;
+  getStyle: ReturnType<typeof vi.fn>;
+  hasImage: ReturnType<typeof vi.fn>;
+  addImage: ReturnType<typeof vi.fn>;
+  removeImage: ReturnType<typeof vi.fn>;
+  once: ReturnType<typeof vi.fn>;
+  querySourceFeatures: ReturnType<typeof vi.fn>;
+  queryRenderedFeatures: ReturnType<typeof vi.fn>;
+  moveLayer: ReturnType<typeof vi.fn>;
+  setFeatureState: ReturnType<typeof vi.fn>;
 }
 
 export interface MockMarkerInstance {
@@ -121,13 +134,26 @@ const MockMapConstructor = vi.fn().mockImplementation(function (this: MockMapIns
     }
     return this;
   });
+  this.off = vi.fn().mockReturnThis();
   this.remove = vi.fn();
   this.resize = vi.fn();
   this.setPitch = vi.fn();
   this.setBearing = vi.fn();
   this.setStyle = vi.fn();
+  this.once = vi.fn().mockImplementation((...args: unknown[]) => {
+    const event = args[0] as string;
+    const callback = args[1] as (() => void) | undefined;
+    if (callback) {
+      if (!eventCallbacks.has(event)) {
+        eventCallbacks.set(event, []);
+      }
+      eventCallbacks.get(event)!.push(callback);
+    }
+    return this;
+  });
   this.jumpTo = vi.fn();
   this.setProjection = vi.fn();
+  this.setMaxBounds = vi.fn();
   this.addControl = vi.fn();
   this.removeControl = vi.fn();
   this.getContainer = vi.fn().mockReturnValue(document.createElement("div"));
@@ -137,15 +163,28 @@ const MockMapConstructor = vi.fn().mockImplementation(function (this: MockMapIns
   this.addSource = vi.fn().mockImplementation((id: string, source: Record<string, unknown>) => {
     mockSources.set(id, { setData: vi.fn(), ...source });
   });
+  this.querySourceFeatures = vi.fn().mockReturnValue([]);
   this.addLayer = vi.fn();
+  this.hasImage = vi.fn().mockReturnValue(false);
+  this.addImage = vi.fn();
+  this.removeImage = vi.fn();
   this.getLayer = vi.fn();
   this.getCanvas = vi.fn().mockReturnValue({ style: {} });
+  this.setLayoutProperty = vi.fn();
   this.removeLayer = vi.fn();
   this.removeSource = vi.fn();
   this.getCenter = vi.fn().mockReturnValue({ lng: 0, lat: 0 });
+  this.getBounds = vi.fn().mockReturnValue({
+    getSouthWest: () => ({ lng: 0, lat: 0 }),
+    getNorthEast: () => ({ lng: 0, lat: 0 }),
+  });
   this.getZoom = vi.fn().mockReturnValue(0);
   this.getBearing = vi.fn().mockReturnValue(0);
   this.getPitch = vi.fn().mockReturnValue(0);
+  this.getStyle = vi.fn().mockReturnValue({ layers: [] });
+  this.queryRenderedFeatures = vi.fn().mockReturnValue([]);
+  this.moveLayer = vi.fn();
+  this.setFeatureState = vi.fn();
   latestMockMapInstance = this;
 });
 
@@ -208,5 +247,6 @@ vi.mock("maplibre-gl", () => {
     FullscreenControl: vi.fn(),
     GeolocateControl: vi.fn(),
     TerrainControl: vi.fn(),
+    IControl: vi.fn(),
   };
 });

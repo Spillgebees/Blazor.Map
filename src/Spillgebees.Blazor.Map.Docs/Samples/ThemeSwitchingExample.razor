@@ -1,0 +1,56 @@
+<style>
+    .theme-btn {
+        padding: 0.4rem 1.1rem;
+        border-radius: 9999px;
+        border: none;
+        font-weight: 600;
+        color: #fff;
+        cursor: pointer;
+        transition: opacity 0.15s;
+    }
+    .theme-btn:hover { opacity: 0.85; }
+    .theme-btn-light { background: #6366f1; }
+    .theme-btn-dark  { background: #1e293b; }
+    .theme-btn-row {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+</style>
+
+<div class="theme-btn-row">
+    <button class="theme-btn theme-btn-light" @onclick="@(() => _theme = MapTheme.Light)">Light</button>
+    <button class="theme-btn theme-btn-dark"  @onclick="@(() => _theme = MapTheme.Dark)">Dark</button>
+</div>
+
+<SgbMap MapOptions="@_mapOptions"
+        ControlOptions="@MapControlOptions.Default"
+        Theme="@_theme"
+        Markers="@_markers"
+        Height="400px"
+        Width="100%" />
+
+@code {
+    private MapTheme _theme = MapTheme.Light;
+
+    private readonly MapOptions _mapOptions = new(
+        Center: new Coordinate(49.6117, 6.1319),
+        Zoom: 12,
+        Style: MapStyle.OpenFreeMap.Liberty
+    );
+
+    private readonly List<Marker> _markers =
+    [
+        new(
+            "marker-lux-city",
+            new Coordinate(49.6117, 6.1319),
+            Title: "Luxembourg City",
+            Popup: new PopupOptions(
+                "<strong>Luxembourg City</strong><br>Hover to see themed popup styling.",
+                Trigger: PopupTrigger.Hover
+            )
+        )
+    ];
+}

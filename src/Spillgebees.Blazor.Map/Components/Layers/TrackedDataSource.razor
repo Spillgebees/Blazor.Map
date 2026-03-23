@@ -1,0 +1,140 @@
+@using Spillgebees.Blazor.Map.Models.Expressions
+@using Spillgebees.Blazor.Map.Models.TrackedData
+@using Spillgebees.Blazor.Map.Models.TrackedEntities
+@typeparam TItem
+
+<GeoJsonSource Id="@Id"
+               @ref="_primarySource"
+               Data="@_primaryData"
+               Stack="@Stack"
+               BeforeStack="@BeforeStack"
+               AfterStack="@AfterStack"
+               Cluster="@Cluster.Enabled"
+               ClusterRadius="@Cluster.Radius"
+               ClusterMaxZoom="@Cluster.MaxZoom"
+               ClusterMinPoints="@Cluster.MinPoints"
+               ClusterProperties="@GetClusterProperties()"
+               MaxZoom="@MaxZoom"
+               Attribution="@Attribution"
+               Animation="@Animation">
+    @if (Cluster.Enabled)
+    {
+        <CircleLayer Id="@ClusterHitAreaLayerId"
+                     SourceId="@Id"
+                     Filter="@ClusterFilter"
+                     Radius="@ClusterHitAreaRadiusValue"
+                     Color="@("#000000")"
+                     Opacity="0"
+                     PitchAlignment="viewport"
+                     Stack="@ClusterHitAreaLayerId"
+                     Visible="@Visible"
+                     OnClick="@HandleGeneratedClusterClickAsync" />
+        <CircleLayer Id="@ClusterLayerId"
+                     SourceId="@Id"
+                     Filter="@ClusterFilter"
+                     Radius="@ClusterRadiusValue"
+                     Color="@("#2563eb")"
+                     Opacity="0.9"
+                     StrokeColor="@("#dbeafe")"
+                     StrokeWidth="2"
+                     PitchAlignment="viewport"
+                     AfterStack="@ClusterHitAreaLayerId"
+                     Visible="@Visible"
+                     OnClick="@HandleGeneratedClusterClickAsync" />
+        <SymbolLayer Id="@ClusterCountLayerId"
+                     SourceId="@Id"
+                     Filter="@ClusterFilter"
+                     TextField="@ClusterCountTextField"
+                     TextSize="14"
+                     TextColor="@("#ffffff")"
+                     TextPitchAlignment="viewport"
+                     TextRotationAlignment="viewport"
+                     TextAllowOverlap="true"
+                     AfterStack="@ClusterLayerId"
+                     Visible="@Visible"
+                     OnClick="@HandleGeneratedClusterClickAsync" />
+    }
+
+    <SymbolLayer Id="@PrimaryLayerId"
+                 SourceId="@Id"
+                 Filter="@PrimaryFilter"
+                 IconImage="@Expr.Get(TrackedEntityFeatureProperties.IconImage)"
+                 IconSize="@PrimaryIconSizeValue"
+                 IconOpacity="@(PrimaryIconOpacity ?? 1.0)"
+                 IconRotate="@PrimaryIconRotateValue"
+                 IconOffset="@PrimaryIconOffsetValue"
+                 IconAnchor="@PrimaryIconAnchorValue"
+                 IconAllowOverlap="true"
+                 RotationAlignment="map"
+                 SymbolSortKey="@RenderOrderSortKeyValue"
+                 AfterStack="@PrimaryAfterStack"
+                 Visible="@Visible"
+                 OnClick="@HandleGeneratedItemClickAsync"
+                 OnMouseEnter="@HandleGeneratedItemMouseEnterAsync"
+                 OnMouseLeave="@HandleGeneratedItemMouseLeaveAsync" />
+
+    <CircleLayer Id="@PrimaryHitAreaLayerId"
+                 SourceId="@Id"
+                 Filter="@PrimaryFilter"
+                 Radius="24"
+                 Color="@("#000000")"
+                 Opacity="0"
+                 PitchAlignment="viewport"
+                 AfterStack="@PrimaryLayerId"
+                 Visible="@Visible"
+                 OnClick="@HandleGeneratedItemClickAsync"
+                 OnMouseEnter="@HandleGeneratedItemMouseEnterAsync"
+                 OnMouseLeave="@HandleGeneratedItemMouseLeaveAsync" />
+</GeoJsonSource>
+
+@if (HasDecorations)
+{
+    <GeoJsonSource Id="@DecorationSourceId"
+                   Data="@_decorationData"
+                   Stack="@Stack"
+                   BeforeStack="@BeforeStack"
+                   AfterStack="@AfterStack"
+                   Cluster="@Cluster.Enabled"
+                   ClusterRadius="@Cluster.Radius"
+                   ClusterMaxZoom="@Cluster.MaxZoom"
+                   ClusterMinPoints="@DecorationClusterMinPoints"
+                   PromoteId="entityId"
+                   MaxZoom="@MaxZoom">
+        @foreach (var decorationLayer in DecorationLayers)
+        {
+            <SymbolLayer Id="@decorationLayer.LayerId"
+                         SourceId="@DecorationSourceId"
+                         Filter="@GetDecorationFilter(decorationLayer)"
+                         TextField="@Expr.Get(TrackedEntityFeatureProperties.Text)"
+                         TextSize="@DecorationTextSizeValue"
+                         TextFont="@decorationLayer.TextFont"
+                         TextColor="@DecorationColorValue"
+                         TextAnchor="@GetResolvedAnchor(decorationLayer.Anchor)"
+                         TextOffset="@GetDecorationTextOffsetValue(decorationLayer.Decoration)"
+                         TextMaxWidth="999"
+                         TextPitchAlignment="viewport"
+                         TextRotationAlignment="viewport"
+                         TextAllowOverlap="true"
+                         TextHaloColor="@DecorationHaloColorValue"
+                         TextHaloWidth="@DecorationHaloWidthValue"
+                         TextOpacity="@DecorationVisibilityOpacityValue"
+                         IconImage="@(decorationLayer.HasIcon ? (StyleValue<string>?)Expr.Get(TrackedEntityFeatureProperties.IconImage) : null)"
+                         IconSize="@(decorationLayer.HasIcon ? (StyleValue<double>?)DecorationIconSizeValue : null)"
+                         IconRotate="@(decorationLayer.HasIcon ? (StyleValue<double>?)DecorationIconRotateValue : null)"
+                         IconOffset="@(decorationLayer.HasIcon && decorationLayer.IconTextFit is null ? (StyleValue<double[]>?)DecorationIconOffsetValue : null)"
+                         IconAnchor="@(decorationLayer.HasIcon ? (StyleValue<string>?)GetResolvedAnchor(decorationLayer.Anchor) : null)"
+                         IconAllowOverlap="@(decorationLayer.HasIcon)"
+                         IconOpacity="@(decorationLayer.HasIcon ? (StyleValue<double>?)DecorationVisibilityOpacityValue : null)"
+                         IconColor="@(decorationLayer.HasIcon ? (StyleValue<string>?)DecorationIconColorValue : null)"
+                         IconTextFit="@decorationLayer.IconTextFit"
+                         IconTextFitPadding="@decorationLayer.IconTextFitPadding"
+                         RotationAlignment="map"
+                         SymbolSortKey="@RenderOrderSortKeyValue"
+                         AfterStack="@PrimaryHitAreaLayerId"
+                         Visible="@Visible"
+                         OnClick="@HandleGeneratedItemClickAsync"
+                         OnMouseEnter="@HandleGeneratedItemMouseEnterAsync"
+                         OnMouseLeave="@HandleGeneratedItemMouseLeaveAsync" />
+        }
+    </GeoJsonSource>
+}

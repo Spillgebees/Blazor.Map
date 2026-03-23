@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
       },
       outDir: resolve(import.meta.dirname!, "../Spillgebees.Blazor.Map/wwwroot"),
       emptyOutDir: true,
-      sourcemap: !isProduction,
+      sourcemap: true,
       minify: isProduction,
       target: "es2022",
       rollupOptions: {

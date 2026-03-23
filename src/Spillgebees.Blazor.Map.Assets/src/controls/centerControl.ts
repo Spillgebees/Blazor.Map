@@ -13,7 +13,7 @@ export class CenterControl implements IControl {
   onAdd(map: MapLibreMap): HTMLElement {
     this._map = map;
     this._container = document.createElement("div");
-    this._container.className = "maplibregl-ctrl maplibregl-ctrl-group sgb-map-center-control";
+    this._container.className = "maplibregl-ctrl sgb-map-ctrl-group sgb-map-center-control";
 
     const button = document.createElement("button");
     button.type = "button";

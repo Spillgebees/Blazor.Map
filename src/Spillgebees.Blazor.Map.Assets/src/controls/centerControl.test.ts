@@ -61,7 +61,7 @@ describe("CenterControl", () => {
 
       // assert
       expect(container.classList.contains("maplibregl-ctrl")).toBe(true);
-      expect(container.classList.contains("maplibregl-ctrl-group")).toBe(true);
+      expect(container.classList.contains("sgb-map-ctrl-group")).toBe(true);
       expect(container.classList.contains("sgb-map-center-control")).toBe(true);
     });
 

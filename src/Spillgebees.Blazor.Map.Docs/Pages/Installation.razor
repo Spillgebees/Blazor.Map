@@ -1,0 +1,80 @@
+@page "/installation"
+
+<PageTitle>Installation | Spillgebees.Blazor.Map</PageTitle>
+
+<h1>Installation</h1>
+
+<h2>NuGet Package</h2>
+
+<p>Add the package to your project:</p>
+
+<CodeBlock Language="bash" Files="@(new Dictionary<string, string>
+{
+    ["Terminal"] = "dotnet add package Spillgebees.Blazor.Map",
+})" />
+
+<h2>JavaScript Module</h2>
+
+<p>
+    No script tags are required. The library ships with a <code>lib.module.js</code> file that Blazor
+    loads automatically via the standard <a href="https://learn.microsoft.com/aspnet/core/blazor/javascript-interoperability/javascript-isolation" target="_blank" rel="noopener">JS module isolation</a> convention.
+    The MapLibre GL JS bundle is included, so no CDN reference is needed.
+</p>
+
+<h2>Minimal Usage</h2>
+
+<p>
+    Add the component to any Razor page or component. A fixed height is required for the map to render.
+</p>
+
+<CodeBlock Language="razor" Files="@_minimalUsage" />
+
+<h2>Changing the Map Style</h2>
+
+<p>
+    When no style is specified, the map defaults to <strong>OpenFreeMap Liberty</strong>, a clean vector style
+    with no API key required. To use a different style, pass it via <code>MapOptions.Style</code>:
+</p>
+
+<CodeBlock Language="razor" Files="@_styleUsage" />
+
+@code {
+    private static readonly Dictionary<string, string> _minimalUsage = new()
+    {
+        ["MyPage.razor"] = """
+            @using Spillgebees.Blazor.Map.Components
+            @using Spillgebees.Blazor.Map.Models
+
+            <SgbMap MapOptions="@_mapOptions" Height="500px" />
+
+            @code {
+                private readonly MapOptions _mapOptions = new(
+                    Center: new Coordinate(51.505, -0.09),
+                    Zoom: 13
+                );
+            }
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _styleUsage = new()
+    {
+        ["MyPage.razor"] = """
+            <SgbMap MapOptions="@_mapOptions" Height="500px" />
+
+            @code {
+                private readonly MapOptions _mapOptions = new(
+                    Center: new Coordinate(51.505, -0.09),
+                    Zoom: 13,
+                    Style: MapStyle.OpenFreeMap.Bright
+                );
+            }
+            """,
+    };
+}
+
+<p>
+    Other built-in presets are <code>MapStyle.OpenFreeMap.Positron</code> and <code>MapStyle.OpenStreetMap.Standard</code>.
+    For any other source use <code>MapStyle.FromUrl</code>, <code>MapStyle.FromWmsUrl</code>,
+    <code>MapStyle.FromWmtsUrl</code>, or <code>MapStyle.FromArcGisMapServer</code>.
+    See the <a href="components/sgb-map#styles">Styles</a> example for more detail.
+</p>
