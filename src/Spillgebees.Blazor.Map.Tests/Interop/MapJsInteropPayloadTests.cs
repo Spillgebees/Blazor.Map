@@ -80,6 +80,38 @@ public class MapJsInteropPayloadTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
+    public void Should_send_map_option_lists_as_arrays_when_initializing_map(CancellationToken cancellationToken)
+    {
+        // arrange
+        IReadOnlyList<MapStyle> styles =
+        [
+            MapStyle.OpenFreeMap.Positron,
+            MapStyle.FromUrl("https://example.com/overlay-style.json").WithId("overlay-style"),
+        ];
+        IReadOnlyList<string> webFonts = ["24px 'DM Sans'", "16px 'Inter'"];
+
+        // act
+        Render<SgbMap>(parameters =>
+            parameters.Add(
+                p => p.MapOptions,
+                new MapOptions(new Coordinate(49.61, 6.13), Styles: styles, WebFonts: webFonts)
+            )
+        );
+
+        // assert
+        var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
+        var mapOptionsPayload = invocation.Arguments[3];
+        var stylesPayload = GetRequiredPropertyValue(mapOptionsPayload!, "Styles");
+        var webFontsPayload = GetRequiredPropertyValue(mapOptionsPayload!, "WebFonts");
+
+        stylesPayload.Should().BeOfType<MapStyle[]>();
+        ((MapStyle[])stylesPayload).Should().Equal(styles);
+
+        webFontsPayload.Should().BeOfType<string[]>();
+        ((string[])webFontsPayload).Should().Equal(webFonts);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
     public void Should_send_polyline_coordinates_as_arrays_when_initializing_map(CancellationToken cancellationToken)
     {
         // arrange & act

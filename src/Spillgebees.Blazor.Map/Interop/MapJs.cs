@@ -326,7 +326,7 @@ internal static class MapJs
             mapOptions.Center,
             mapOptions.Zoom,
             mapOptions.Style,
-            mapOptions.Styles,
+            Styles = mapOptions.Styles?.ToArray(),
             mapOptions.ComposedGlyphsUrl,
             mapOptions.Pitch,
             mapOptions.Bearing,
@@ -339,7 +339,7 @@ internal static class MapJs
             mapOptions.MaxBounds,
             mapOptions.Interactive,
             mapOptions.CooperativeGestures,
-            mapOptions.WebFonts,
+            WebFonts = mapOptions.WebFonts?.ToArray(),
         };
 
     private static object ToJsModel(MapControlOptions mapControlOptions) =>
