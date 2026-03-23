@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="../General.targets" />
 
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);BL0005</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="bunit" />
@@ -10,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Spillgebees.Blazor.Map\Spillgebees.Blazor.Map.csproj" />
+    <ProjectReference Include="..\Spillgebees.Blazor.Map.Docs\Spillgebees.Blazor.Map.Docs.csproj" />
   </ItemGroup>
 
   <ItemGroup>

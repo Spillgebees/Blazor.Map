@@ -1,10 +1,13 @@
-﻿@inherits ComponentBase
+@inherits ComponentBase
 
 @code {
     protected virtual RenderFragment Render
-        => @<div id="@MapContainerHtmlId"
-                 class="@InternalMapContainerClass"
-                 style="@InternalMapContainerStyle"
-                 @ref="@MapReference">
-            </div>;
+        => @<CascadingValue Value="this">
+                <div id="@ContainerId"
+                     class="@InternalContainerClass"
+                     style="@InternalContainerStyle"
+                     @ref="@MapReference">
+                </div>
+                @ChildContent
+            </CascadingValue>;
 }

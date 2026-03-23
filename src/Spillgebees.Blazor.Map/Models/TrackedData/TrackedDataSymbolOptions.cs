@@ -1,0 +1,41 @@
+using Spillgebees.Blazor.Map.Models.TrackedEntities;
+
+namespace Spillgebees.Blazor.Map.Models.TrackedData;
+
+/// <summary>
+/// Primary symbol selectors for high-level tracked data items.
+/// </summary>
+/// <typeparam name="TItem">The raw app model type.</typeparam>
+public sealed record TrackedDataSymbolOptions<TItem>(
+    Func<TItem, Coordinate> PositionSelector,
+    Func<TItem, string> IconImageSelector,
+    Func<TItem, double?>? SizeSelector = null,
+    Func<TItem, double?>? RotationSelector = null,
+    Func<TItem, string?>? AnchorSelector = null,
+    Func<TItem, Point?>? OffsetSelector = null,
+    Func<TItem, string?>? ColorSelector = null,
+    Func<TItem, TrackedEntityHoverIntent?>? HoverSelector = null,
+    Func<TItem, double?>? RenderOrderSelector = null,
+    Func<TItem, IReadOnlyDictionary<string, object?>?>? PropertiesSelector = null
+)
+{
+    public Coordinate GetPosition(TItem item) => PositionSelector(item);
+
+    public string GetIconImage(TItem item) => IconImageSelector(item);
+
+    public double? GetSize(TItem item) => SizeSelector?.Invoke(item);
+
+    public double? GetRotation(TItem item) => RotationSelector?.Invoke(item);
+
+    public string? GetAnchor(TItem item) => AnchorSelector?.Invoke(item);
+
+    public Point? GetOffset(TItem item) => OffsetSelector?.Invoke(item);
+
+    public string? GetColor(TItem item) => ColorSelector?.Invoke(item);
+
+    public TrackedEntityHoverIntent? GetHover(TItem item) => HoverSelector?.Invoke(item);
+
+    public double? GetRenderOrder(TItem item) => RenderOrderSelector?.Invoke(item);
+
+    public IReadOnlyDictionary<string, object?>? GetProperties(TItem item) => PropertiesSelector?.Invoke(item);
+}

@@ -18,6 +18,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Spillgebees.Blazor.Map.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <SupportedPlatform Include="browser" />
   </ItemGroup>
 

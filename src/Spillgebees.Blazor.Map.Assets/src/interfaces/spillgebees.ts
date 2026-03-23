@@ -1,64 +1,79 @@
 import type { DotNet } from "@microsoft/dotnet-js-interop";
-import type { Control, Map as LeafletMap, TileLayer } from "leaflet";
-import type { LayerStorage } from "../types/layers";
-import type {
-  ISpillgebeesCircleMarker,
-  ISpillgebeesFitBoundsOptions,
-  ISpillgebeesMapControlOptions,
-  ISpillgebeesMapOptions,
-  ISpillgebeesMarker,
-  ISpillgebeesPolyline,
-  ISpillgebeesTileLayer,
-} from "./map";
+import type { IControl, Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
+import type { FeatureStorage } from "../types/feature-storage";
+import type { ILegendControlOptions, IMapControlOptions } from "./controls";
+import type { IMapOptions } from "./map";
 
-interface Spillgebees {
-  Map: SpillgebeesMap;
+export interface RegisteredMapSource {
+  sourceId: string;
+  sourceSpec: Record<string, unknown>;
 }
 
-interface SpillgebeesMap {
-  mapFunctions: MapFunctions;
-  maps: Map<HTMLElement, LeafletMap>;
-  layers: Map<LeafletMap, LayerStorage>;
-  tileLayers: Map<LeafletMap, Set<TileLayer>>;
-  controls: Map<LeafletMap, Set<Control>>;
+export interface RegisteredMapLayer {
+  layerId: string;
+  layerSpec: Record<string, unknown>;
+  beforeId: string | null;
+  imperativeBeforeId?: string | null;
+  ordering: {
+    declarationOrder: number;
+    stack: string | null;
+    beforeStack: string | null;
+    afterStack: string | null;
+  };
 }
 
-interface MapFunctions {
-  createMap: (
-    dotNetHelper: DotNet.DotNetObject,
-    invokableDotNetMethodName: string,
-    mapContainer: HTMLElement,
-    mapOptions: ISpillgebeesMapOptions,
-    mapControlOptions: ISpillgebeesMapControlOptions,
-    tileLayers: ISpillgebeesTileLayer[],
-    markers: ISpillgebeesMarker[],
-    circleMarkers: ISpillgebeesCircleMarker[],
-    polylines: ISpillgebeesPolyline[],
-  ) => Promise<void>;
-  addLayers: (
-    mapContainer: HTMLElement,
-    markers: ISpillgebeesMarker[],
-    circleMarkers: ISpillgebeesCircleMarker[],
-    polylines: ISpillgebeesPolyline[],
-  ) => void;
-  updateLayers: (
-    mapContainer: HTMLElement,
-    markers: ISpillgebeesMarker[],
-    circleMarkers: ISpillgebeesCircleMarker[],
-    polylines: ISpillgebeesPolyline[],
-  ) => void;
-  removeLayers: (
-    mapContainer: HTMLElement,
-    markerIds: string[],
-    circleMarkerIds: string[],
-    polylineIds: string[],
-  ) => void;
-  setTileLayers: (mapContainer: HTMLElement, tileLayers: ISpillgebeesTileLayer[]) => void;
-  setMapControls: (mapContainer: HTMLElement, mapControlOptions: ISpillgebeesMapControlOptions) => void;
-  setMapOptions: (mapContainer: HTMLElement, mapOptions: ISpillgebeesMapOptions) => void;
-  invalidateSize: (mapContainer: HTMLElement) => void;
-  fitBounds: (mapContainer: HTMLElement, fitBoundsOptions: ISpillgebeesFitBoundsOptions) => void;
-  disposeMap: (mapContainer: HTMLElement) => void;
+export interface RegisteredMapImage {
+  name: string;
+  url: string;
+  width: number;
+  height: number;
+  pixelRatio: number;
 }
 
-export type { Spillgebees, SpillgebeesMap, MapFunctions };
+export interface VisibilityGroupTargetRegistration {
+  styleId: string;
+  layerIds: string[];
+}
+
+export interface VisibilityGroupRegistration {
+  groupId: string;
+  visible: boolean;
+  targets: VisibilityGroupTargetRegistration[];
+}
+
+export interface LayerEventSubscription {
+  dotNetRef?: DotNet.DotNetObject;
+  click?: (event: { lngLat: { lat: number; lng: number }; features?: Array<{ properties?: unknown }> }) => void;
+  mouseEnter?: (event: { lngLat: { lat: number; lng: number }; features?: Array<{ properties?: unknown }> }) => void;
+  mouseLeave?: () => void;
+  onStyleData?: () => void;
+}
+
+export interface ComposedStyleLayerRegistration {
+  runtimeLayerId: string;
+  styleId: string;
+  originalLayerId: string;
+}
+
+export interface SpillgebeesMapNamespace {
+  getProtocolVersion: () => number;
+  mapFunctions: Record<string, (...args: unknown[]) => unknown>;
+  maps: Map<HTMLElement, MapLibreMap>;
+  features: Map<MapLibreMap, FeatureStorage>;
+  overlays: Map<MapLibreMap, Map<string, unknown>>;
+  controls: Map<MapLibreMap, Set<IControl>>;
+  legendControls: Map<MapLibreMap, IControl>;
+  legendControlOptions: Map<MapLibreMap, ILegendControlOptions | null>;
+  styles: Map<MapLibreMap, string | StyleSpecification>;
+  mapOptions: Map<MapLibreMap, IMapOptions>;
+  dotNetHelpers: Map<MapLibreMap, DotNet.DotNetObject>;
+  controlOptions: Map<MapLibreMap, IMapControlOptions>;
+  sourceSpecs: Map<MapLibreMap, Map<string, RegisteredMapSource>>;
+  layerSpecs: Map<MapLibreMap, Map<string, RegisteredMapLayer>>;
+  imageRegistrations: Map<MapLibreMap, Map<string, RegisteredMapImage>>;
+  layerEventSubscriptions: Map<MapLibreMap, Map<string, LayerEventSubscription>>;
+  visibilityGroups: Map<MapLibreMap, Map<string, VisibilityGroupRegistration>>;
+  overlayStyleUrls: Map<MapLibreMap, string[]>;
+  composedStyleLayerIds: Map<MapLibreMap, Map<string, ComposedStyleLayerRegistration>>;
+  pendingStyleReloads: WeakSet<MapLibreMap>;
+}

@@ -30,7 +30,7 @@ jobs:
             dotnet:
               - 'src/Spillgebees.Blazor.Map/**'
               - 'src/Spillgebees.Blazor.Map.Tests/**'
-              - 'src/Spillgebees.Blazor.Map.Samples/**'
+              - 'src/Spillgebees.Blazor.Map.Docs/**'
               - 'src/Directory.Packages.props'
               - 'src/General.targets'
               - 'global.json'

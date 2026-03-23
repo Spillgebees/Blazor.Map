@@ -1,98 +1,98 @@
+using Spillgebees.Blazor.Map.Models;
+
 namespace Spillgebees.Blazor.Map.Models.Controls;
 
 /// <summary>
 /// Options for the map controls.
 /// </summary>
-/// <param name="ZoomControlOptions">Options for the zoom control.</param>
-/// <param name="ScaleControlOptions">Options for the scale control.</param>
-/// <param name="CenterControlOptions">Options for the center control.</param>
+/// <param name="Navigation">Options for the navigation control (zoom + compass). Default is <see langword="null"/>.</param>
+/// <param name="Scale">Options for the scale control. Default is <see langword="null"/>.</param>
+/// <param name="Fullscreen">Options for the fullscreen control. Default is <see langword="null"/>.</param>
+/// <param name="Geolocate">Options for the geolocate control. Default is <see langword="null"/>.</param>
+/// <param name="Terrain">Options for the terrain control. Default is <see langword="null"/>.</param>
+/// <param name="Center">Options for the center control (re-center to a predefined location). Default is <see langword="null"/>.</param>
 public record MapControlOptions(
-    ZoomControlOptions ZoomControlOptions,
-    ScaleControlOptions ScaleControlOptions,
-    CenterControlOptions CenterControlOptions
+    NavigationControlOptions? Navigation = null,
+    ScaleControlOptions? Scale = null,
+    FullscreenControlOptions? Fullscreen = null,
+    GeolocateControlOptions? Geolocate = null,
+    TerrainControlOptions? Terrain = null,
+    CenterControlOptions? Center = null
 )
 {
     /// <summary>
-    /// Default options for the map controls.
-    /// <list type="bullet">
-    /// <item><description><see cref="ZoomControlOptions"/>: <see cref="ZoomControlOptions.Default"/></description></item>
-    /// <item><description><see cref="ScaleControlOptions"/>: <see cref="ScaleControlOptions.Default"/></description></item>
-    /// <item><description><see cref="CenterControlOptions"/>: <see cref="CenterControlOptions.Default"/></description></item>
-    /// </list>
+    /// Default control options with navigation enabled.
     /// </summary>
-    public static MapControlOptions Default =>
-        new(ZoomControlOptions.Default, ScaleControlOptions.Default, CenterControlOptions.Default);
+    public static MapControlOptions Default => new(Navigation: new NavigationControlOptions());
 }
 
 /// <summary>
-/// Options for the zoom control. The zoom control allows to zoom in and out of the map.
+/// Options for the navigation control (zoom buttons and compass).
 /// </summary>
-/// <param name="Enable">Whether to show or hide the zoom control.</param>
-/// <param name="Position">Position of the zoom control on the map.</param>
-public record ZoomControlOptions(bool Enable, ControlPosition Position)
-{
-    /// <summary>
-    /// Default options for the zoom control.
-    /// <list type="bullet">
-    /// <item><description><see cref="Enable"/>: <see langword="true"/></description></item>
-    /// <item><description><see cref="Position"/>: <see cref="ControlPosition.TopRight"/></description></item>
-    /// </list>
-    /// </summary>
-    public static ZoomControlOptions Default => new(true, ControlPosition.TopRight);
-}
+/// <param name="Enable">Whether to show the navigation control. Default is <see langword="true"/>.</param>
+/// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.TopRight"/>.</param>
+/// <param name="ShowCompass">Whether to show the compass button. Default is <see langword="true"/>.</param>
+/// <param name="ShowZoom">Whether to show the zoom buttons. Default is <see langword="true"/>.</param>
+public record NavigationControlOptions(
+    bool Enable = true,
+    ControlPosition Position = ControlPosition.TopRight,
+    bool ShowCompass = true,
+    bool ShowZoom = true
+);
 
 /// <summary>
-/// Options for the scale control. The scale control shows the current scale of the map in metric and/or imperial units.
+/// Options for the scale control.
 /// </summary>
-/// <param name="Enable">Whether to show or hide the sccale control.</param>
-/// <param name="Position">Position of the scale control on the map.</param>
-/// <param name="ShowMetric">Whether to show the metric scale.</param>
-/// <param name="ShowImperial">Whether to show the imperial scale.</param>
-public record ScaleControlOptions(bool Enable, ControlPosition Position, bool? ShowMetric, bool? ShowImperial)
-{
-    /// <summary>
-    /// Default options for the scale control.
-    /// <list type="bullet">
-    /// <item><description><see cref="Enable"/>: <see langword="false"/></description></item>
-    /// <item><description><see cref="Position"/>: <see cref="ControlPosition.BottomLeft"/></description></item>
-    /// <item><description><see cref="ShowMetric"/>: <see langword="true"/></description></item>
-    /// <item><description><see cref="ShowImperial"/>: <see langword="false"/></description></item>
-    /// </list>
-    /// </summary>
-    public static ScaleControlOptions Default => new(false, ControlPosition.BottomLeft, true, false);
-}
+/// <param name="Enable">Whether to show the scale control. Default is <see langword="true"/>.</param>
+/// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.BottomLeft"/>.</param>
+/// <param name="Unit">The unit system to display. Default is <see cref="ScaleUnit.Metric"/>.</param>
+public record ScaleControlOptions(
+    bool Enable = true,
+    ControlPosition Position = ControlPosition.BottomLeft,
+    ScaleUnit Unit = ScaleUnit.Metric
+);
 
 /// <summary>
-/// Options for the center control.
-/// The center control allows to re-center the map to a predefined location and zoom level or to fit a specific layer.
+/// Options for the fullscreen control.
 /// </summary>
-/// <param name="Enable">Whether to show or hide the center control.</param>
-/// <param name="Position">Position of the center control on the map.</param>
-/// <param name="Center">The coordinate to center the map to when the control is clicked.</param>
-/// <param name="Zoom">The zoom level to set when the control is clicked.</param>
-/// <param name="FitBoundsOptions">Options for centering and fitting the map to bounds based on provided layer ids.</param>
+/// <param name="Enable">Whether to show the fullscreen control. Default is <see langword="true"/>.</param>
+/// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.TopRight"/>.</param>
+public record FullscreenControlOptions(bool Enable = true, ControlPosition Position = ControlPosition.TopRight);
+
+/// <summary>
+/// Options for the geolocate control.
+/// </summary>
+/// <param name="Enable">Whether to show the geolocate control. Default is <see langword="true"/>.</param>
+/// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.TopRight"/>.</param>
+/// <param name="TrackUser">Whether to continuously track the user's location. Default is <see langword="false"/>.</param>
+public record GeolocateControlOptions(
+    bool Enable = true,
+    ControlPosition Position = ControlPosition.TopRight,
+    bool TrackUser = false
+);
+
+/// <summary>
+/// Options for the terrain control.
+/// </summary>
+/// <param name="Enable">Whether to show the terrain control. Default is <see langword="true"/>.</param>
+/// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.TopRight"/>.</param>
+public record TerrainControlOptions(bool Enable = true, ControlPosition Position = ControlPosition.TopRight);
+
+/// <summary>
+/// Options for the center control (re-center the map to a predefined location).
+/// </summary>
+/// <param name="Enable">Whether to show the center control. Default is <see langword="true"/>.</param>
+/// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.TopLeft"/>.</param>
+/// <param name="Center">The coordinate to center the map to when the control is clicked. Default is <see langword="null"/>.</param>
+/// <param name="Zoom">The zoom level to set when the control is clicked. Default is <see langword="null"/>.</param>
+/// <param name="FitBoundsOptions">Options for centering and fitting the map to bounds based on provided feature IDs.</param>
 /// <remarks>
 /// If <see cref="FitBoundsOptions"/> is set, <see cref="Center"/> and <see cref="Zoom"/> are ignored.
-/// The zoom level is calculated by leaflet to fit the layer bounds.
 /// </remarks>
 public record CenterControlOptions(
-    bool Enable,
-    ControlPosition Position,
-    Coordinate Center,
-    int Zoom,
-    FitBoundsOptions? FitBoundsOptions
-)
-{
-    /// <summary>
-    /// Default options for the center control.
-    /// <list type="bullet">
-    /// <item><description><see cref="Enable"/>: <see langword="true"/></description></item>
-    /// <item><description><see cref="Position"/>: <see cref="ControlPosition.TopRight"/></description></item>
-    /// <item><description><see cref="Center"/>: <c>new Coordinate(49.751667, 6.101667)</c> (center of Luxembourg)</description></item>
-    /// <item><description><see cref="Zoom"/>: <c>9</c></description></item>
-    /// <item><description><see cref="FitBoundsOptions"/>: <see langword="null"/></description></item>
-    /// </list>
-    /// </summary>
-    public static CenterControlOptions Default =>
-        new(true, ControlPosition.TopRight, new Coordinate(49.751667, 6.101667), 9, null);
-}
+    bool Enable = true,
+    ControlPosition Position = ControlPosition.TopLeft,
+    Coordinate? Center = null,
+    int? Zoom = null,
+    FitBoundsOptions? FitBoundsOptions = null
+);

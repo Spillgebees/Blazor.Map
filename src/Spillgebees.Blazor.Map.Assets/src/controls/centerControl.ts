@@ -1,74 +1,62 @@
-import { Control, type ControlOptions, DomEvent, DomUtil, LatLng, type Map as LeafletMap } from "leaflet";
-import type { ISpillgebeesCoordinate, ISpillgebeesFitBoundsOptions } from "../interfaces/map";
-import { fitBoundsForMap } from "../utils/fitBoundsForMap";
+import type { IControl, Map as MapLibreMap } from "maplibre-gl";
+import type { ICenterControlOptions } from "../interfaces/controls";
 
-export interface CenterControlOptions extends ControlOptions {
-  center: ISpillgebeesCoordinate;
-  zoom: number;
-  fitBoundsOptions: ISpillgebeesFitBoundsOptions | null;
-}
+export class CenterControl implements IControl {
+  private _map: MapLibreMap | null = null;
+  private _container: HTMLDivElement | null = null;
+  private _options: ICenterControlOptions;
 
-export class CenterControl extends Control {
-  private map: LeafletMap;
-  private centerControlOptions: CenterControlOptions;
-  private button: HTMLElement | undefined;
-
-  constructor(map: LeafletMap, options: CenterControlOptions) {
-    super(options);
-    this.map = map;
-    this.centerControlOptions = options;
+  constructor(options: ICenterControlOptions) {
+    this._options = options;
   }
 
-  override onAdd(map: LeafletMap): HTMLElement {
-    this.map = map;
-    const container = DomUtil.create("div", "leaflet-bar leaflet-control sgb-map-center-control");
+  onAdd(map: MapLibreMap): HTMLElement {
+    this._map = map;
+    this._container = document.createElement("div");
+    this._container.className = "maplibregl-ctrl sgb-map-ctrl-group sgb-map-center-control";
 
-    const button = DomUtil.create("a", "leaflet-control-button sgb-map-center-control-button", container);
-    button.title = "Center map";
-    button.href = "#";
-    button.setAttribute("role", "button");
-    button.setAttribute("aria-label", "Center map");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "sgb-map-center-control-button";
+    button.title = "Re-center map";
+    button.setAttribute("aria-label", "Re-center map");
 
-    button.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-            <path d="M8 2C4.69 2 2 4.69 2 8s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z" fill="currentColor"/>
-            <circle cx="8" cy="8" r="2" fill="currentColor"/>
-            <path d="M8 0v2M8 14v2M0 8h2M14 8h2" stroke="currentColor" stroke-width="1.5" fill="none"/>
-        </svg>`;
+    button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="22" y1="12" x2="18" y2="12"/>
+      <line x1="6" y1="12" x2="2" y2="12"/>
+      <line x1="12" y1="6" x2="12" y2="2"/>
+      <line x1="12" y1="22" x2="12" y2="18"/>
+    </svg>`;
 
-    this.button = button;
+    button.addEventListener("click", () => this._handleClick());
+    this._container.appendChild(button);
 
-    DomEvent.on(button, "click", DomEvent.stop).on(button, "click", this.centerView, this);
-
-    return container;
+    return this._container;
   }
 
-  override onRemove(_: LeafletMap) {
-    if (this.button) {
-      DomEvent.off(this.button, "click", this.centerView, this);
-    }
+  onRemove(): void {
+    this._container?.remove();
+    this._map = null;
+    this._container = null;
   }
 
-  private centerView() {
-    if (!this.map) {
+  private _handleClick(): void {
+    if (!this._map) {
       return;
     }
 
-    if (this.centerControlOptions.fitBoundsOptions) {
-      const layerStorage = window.Spillgebees.Map.layers.get(this.map);
-      if (layerStorage) {
-        fitBoundsForMap(this.map, layerStorage, this.centerControlOptions.fitBoundsOptions);
+    if (this._options.fitBoundsOptions) {
+      const mapElement = this._map.getContainer();
+      const fitBoundsFn = window.Spillgebees?.Map?.mapFunctions?.fitBounds;
+      if (fitBoundsFn) {
+        fitBoundsFn(mapElement, this._options.fitBoundsOptions);
       }
-      return;
+    } else if (this._options.center) {
+      this._map.flyTo({
+        center: [this._options.center.longitude, this._options.center.latitude],
+        zoom: this._options.zoom ?? undefined,
+      });
     }
-
-    if (this.centerControlOptions.center === undefined || this.centerControlOptions.zoom === undefined) {
-      return;
-    }
-
-    const coordinate = new LatLng(
-      this.centerControlOptions.center.latitude,
-      this.centerControlOptions.center.longitude,
-    );
-    this.map.setView(coordinate, this.centerControlOptions.zoom);
   }
 }

@@ -1,7 +1,5 @@
 // noinspection JSUnusedGlobalSymbols
 
-import "./extensions/riseTooltip";
-import "./extensions/rotatedMarker";
 import { bootstrap } from "./map";
 import "./styles.scss";
 

@@ -1,0 +1,53 @@
+@page "/components/sgb-map"
+
+<PageTitle>SgbMap | Spillgebees.Blazor.Map</PageTitle>
+
+<Breadcrumb Section="components" PageName="SgbMap"
+            ApiReferenceUrl="api/Spillgebees.Blazor.Map.Components.SgbMap"
+            SourceUrl="https://github.com/Spillgebees/Blazor.Map/blob/main/src/Spillgebees.Blazor.Map/Components/SgbMap.razor" />
+<OnThisPage />
+
+<h1>SgbMap</h1>
+<p>The main map component. Renders an interactive MapLibre GL JS map with configurable styles, controls, markers, shapes, and popups.</p>
+
+<h2 id="basic_usage">// basic_usage</h2>
+<p>Provide a center coordinate and zoom level. The default style is OpenFreeMap Liberty, a clean vector style that requires no API key. Pass <code>MapControlOptions.Default</code> to add navigation controls. <code>FitBoundsOptions</code> auto-fits the viewport to a set of feature IDs.</p>
+<ExampleView TComponent="BasicMapExample">
+    <BasicMapExample />
+</ExampleView>
+
+<h2 id="styles">// styles</h2>
+<p>Swap between built-in style presets using the <code>MapOptions.Style</code> property. The library ships with <code>MapStyle.OpenFreeMap.Liberty</code>, <code>Positron</code>, and <code>Bright</code>. Use <code>MapStyle.FromUrl</code> or <code>MapStyle.FromRasterUrl</code> for custom sources. Because <code>MapOptions</code> is a record, change styles reactively with a <code>with</code> expression.</p>
+<ExampleView TComponent="StyleSwitchingExample">
+    <StyleSwitchingExample />
+</ExampleView>
+
+<h2 id="themes">// themes</h2>
+<p>The <code>Theme</code> parameter controls UI chrome appearance (controls, popups, attribution). It has no effect on tile rendering. Pass <code>MapTheme.Dark</code> to switch to dark chrome. Hover the marker below and toggle themes to see the popup styling change.</p>
+<ExampleView TComponent="ThemeSwitchingExample">
+    <ThemeSwitchingExample />
+</ExampleView>
+
+<h2 id="markers">// markers</h2>
+<p>DOM-based markers with optional drag, custom colors, and icons. Pass a list of <code>Marker</code> records to the <code>Markers</code> parameter. Key options include <code>Title</code>, <code>Color</code>, <code>Draggable</code>, <code>Scale</code>, and <code>Icon</code>.</p>
+<ExampleView TComponent="MarkersExample">
+    <MarkersExample />
+</ExampleView>
+
+<h2 id="circles_and_polylines">// circles_and_polylines</h2>
+<p>GPU-rendered shapes for higher performance. <code>Circle</code> and <code>Polyline</code> records are rendered via MapLibre GL's WebGL pipeline. They render efficiently at large counts and support data-driven styling.</p>
+<ExampleView TComponent="CirclesAndPolylinesExample">
+    <CirclesAndPolylinesExample />
+</ExampleView>
+
+<h2 id="popups">// popups</h2>
+<p>Three trigger modes: click, hover, and permanent. Attach a <code>PopupOptions</code> record to any <code>Marker</code> or <code>Circle</code> via its <code>Popup</code> property. Set <code>CloseButton: false</code> on permanent popups for a cleaner look.</p>
+<ExampleView TComponent="PopupsExample">
+    <PopupsExample />
+</ExampleView>
+
+<h2 id="wms_tile_layers">// wms_tile_layers</h2>
+<p>Use <code>MapStyle.FromWmsUrl</code> to render WMS raster tiles as the base map style. Other factory methods include <code>FromWmtsUrl</code>, <code>FromArcGisMapServer</code>, and <code>FromRasterUrl</code>. To layer raster sources on top of a vector base, use <code>TileOverlay</code> instead.</p>
+<ExampleView TComponent="WmsTileLayerExample">
+    <WmsTileLayerExample />
+</ExampleView>

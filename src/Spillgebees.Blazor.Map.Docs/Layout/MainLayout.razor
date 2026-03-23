@@ -1,0 +1,40 @@
+@inherits LayoutComponentBase
+@using System.Text.Json
+
+<DocSite ProjectName="Spillgebees.Blazor.Map"
+         LogoEmoji="🗺️"
+         GitHubUrl="https://github.com/Spillgebees/Blazor.Map"
+         Navigation="@Navigation">
+    @Body
+</DocSite>
+
+@code {
+    private static readonly NavSection[] Navigation =
+    [
+        new("Getting Started", [
+            new NavPage("Home", ""),
+            new NavPage("Installation", "installation"),
+        ]),
+        new("Components", [
+            new NavPage("SgbMap", "components/sgb-map"),
+            new NavPage("TrackedDataSource", "components/tracked-data-source"),
+            new NavPage("MapLegend", "components/map-legend"),
+        ]),
+        new("API Reference", LoadApiReferenceNav()),
+    ];
+
+    /// The SDK's ApiReferenceNav.Generate looks for the manifest in typeof(T).Assembly,
+    /// but the manifest is embedded in the Docs assembly, not the library assembly.
+    /// Load it manually from the Docs assembly as a workaround.
+    private static IReadOnlyList<NavPage> LoadApiReferenceNav()
+    {
+        var docsAssembly = typeof(MainLayout).Assembly;
+        var resourceName = $"ApiManifest:Spillgebees.Blazor.Map";
+
+        using var stream = docsAssembly.GetManifestResourceStream(resourceName);
+        if (stream is null) return [];
+
+        var manifest = JsonSerializer.Deserialize<ApiManifest>(stream);
+        return manifest is null ? [] : ApiReferenceNav.FromManifest(manifest);
+    }
+}
