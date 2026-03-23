@@ -53,12 +53,12 @@ internal static class MapJs
             dotNetObjectReference,
             onAfterCreateMapCallback,
             mapReference,
-            mapOptions,
-            mapControlOptions,
+            ToJsModel(mapOptions),
+            ToJsModel(mapControlOptions),
             theme,
             markers,
             circles,
-            polylines,
+            polylines.Select(ToJsModel).ToArray(),
             overlays
         );
 
@@ -81,21 +81,21 @@ internal static class MapJs
             {
                 markers = new
                 {
-                    added = markerDiff.Added,
-                    updated = markerDiff.Updated,
-                    removedIds = markerDiff.Removed,
+                    added = markerDiff.Added.ToArray(),
+                    updated = markerDiff.Updated.ToArray(),
+                    removedIds = markerDiff.Removed.ToArray(),
                 },
                 circles = new
                 {
-                    added = circleDiff.Added,
-                    updated = circleDiff.Updated,
-                    removedIds = circleDiff.Removed,
+                    added = circleDiff.Added.ToArray(),
+                    updated = circleDiff.Updated.ToArray(),
+                    removedIds = circleDiff.Removed.ToArray(),
                 },
                 polylines = new
                 {
-                    added = polylineDiff.Added,
-                    updated = polylineDiff.Updated,
-                    removedIds = polylineDiff.Removed,
+                    added = polylineDiff.Added.Select(ToJsModel).ToArray(),
+                    updated = polylineDiff.Updated.Select(ToJsModel).ToArray(),
+                    removedIds = polylineDiff.Removed.ToArray(),
                 },
             }
         );
@@ -125,7 +125,7 @@ internal static class MapJs
         ILogger logger,
         ElementReference mapReference,
         MapControlOptions mapControlOptions
-    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.setControls", mapReference, mapControlOptions);
+    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.setControls", mapReference, ToJsModel(mapControlOptions));
 
     internal static ValueTask SetLegendControlAsync(
         IJSRuntime jsRuntime,
@@ -158,7 +158,7 @@ internal static class MapJs
         ILogger logger,
         ElementReference mapReference,
         MapOptions mapOptions
-    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.setMapOptions", mapReference, mapOptions);
+    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.setMapOptions", mapReference, ToJsModel(mapOptions));
 
     /// <summary>
     /// Applies the UI theme (light/dark) to the map.
@@ -178,7 +178,7 @@ internal static class MapJs
         ILogger logger,
         ElementReference mapReference,
         FitBoundsOptions fitBoundsOptions
-    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.fitBounds", mapReference, fitBoundsOptions);
+    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.fitBounds", mapReference, ToJsModel(fitBoundsOptions));
 
     /// <summary>
     /// Performs an animated camera flight to the specified position.
@@ -319,6 +319,70 @@ internal static class MapJs
 
         return ValueTask.CompletedTask;
     }
+
+    private static object ToJsModel(MapOptions mapOptions) =>
+        new
+        {
+            mapOptions.Center,
+            mapOptions.Zoom,
+            mapOptions.Style,
+            Styles = mapOptions.Styles?.ToArray(),
+            mapOptions.ComposedGlyphsUrl,
+            mapOptions.Pitch,
+            mapOptions.Bearing,
+            mapOptions.Projection,
+            mapOptions.Terrain,
+            mapOptions.TerrainExaggeration,
+            FitBoundsOptions = ToJsModel(mapOptions.FitBoundsOptions),
+            mapOptions.MinZoom,
+            mapOptions.MaxZoom,
+            mapOptions.MaxBounds,
+            mapOptions.Interactive,
+            mapOptions.CooperativeGestures,
+            WebFonts = mapOptions.WebFonts?.ToArray(),
+        };
+
+    private static object ToJsModel(MapControlOptions mapControlOptions) =>
+        new
+        {
+            mapControlOptions.Navigation,
+            mapControlOptions.Scale,
+            mapControlOptions.Fullscreen,
+            mapControlOptions.Geolocate,
+            mapControlOptions.Terrain,
+            Center = mapControlOptions.Center is null
+                ? null
+                : new
+                {
+                    mapControlOptions.Center.Enable,
+                    mapControlOptions.Center.Position,
+                    mapControlOptions.Center.Center,
+                    mapControlOptions.Center.Zoom,
+                    FitBoundsOptions = ToJsModel(mapControlOptions.Center.FitBoundsOptions),
+                },
+        };
+
+    private static object ToJsModel(Polyline polyline) =>
+        new
+        {
+            polyline.Id,
+            Coordinates = polyline.Coordinates.ToArray(),
+            polyline.Color,
+            polyline.Width,
+            polyline.Opacity,
+            polyline.Popup,
+        };
+
+    private static object? ToJsModel(FitBoundsOptions? fitBoundsOptions) =>
+        fitBoundsOptions is null
+            ? null
+            : new
+            {
+                FeatureIds = fitBoundsOptions.FeatureIds.ToArray(),
+                fitBoundsOptions.Padding,
+                fitBoundsOptions.TopLeftPadding,
+                fitBoundsOptions.BottomRightPadding,
+            };
 
     internal static ValueTask<T> SafeInvokeAsync<T>(
         this IJSRuntime jsRuntime,
