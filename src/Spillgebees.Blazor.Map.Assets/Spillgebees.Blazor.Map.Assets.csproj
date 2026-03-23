@@ -16,7 +16,7 @@
     Inputs="$(MSBuildProjectDirectory)/package.json;$(MSBuildProjectDirectory)/pnpm-lock.yaml"
     Outputs="$(MSBuildProjectDirectory)/node_modules/.pnpm/lock.yaml"
   >
-    <Exec Command="pnpm install --frozen-lockfile" WorkingDirectory="$(MSBuildProjectDirectory)" />
+    <Exec Command="corepack pnpm install --frozen-lockfile" WorkingDirectory="$(MSBuildProjectDirectory)" />
   </Target>
 
   <Target
@@ -27,7 +27,7 @@
     Outputs="$(ViteOutputDir)/Spillgebees.Blazor.Map.lib.module.js;$(ViteOutputDir)/Spillgebees.Blazor.Map.lib.module.css;$(PnpmBuildMarker)"
   >
     <Delete Files="$(MSBuildProjectDirectory)/obj/pnpm-build.Debug.marker;$(MSBuildProjectDirectory)/obj/pnpm-build.Release.marker" />
-    <Exec Command="pnpm run $(PnpmBuildScript)" WorkingDirectory="$(MSBuildProjectDirectory)" />
+    <Exec Command="corepack pnpm run $(PnpmBuildScript)" WorkingDirectory="$(MSBuildProjectDirectory)" />
     <Touch Files="$(PnpmBuildMarker)" AlwaysCreate="true" />
   </Target>
 
