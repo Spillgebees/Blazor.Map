@@ -321,7 +321,6 @@ export class LegendControl implements IControl {
   private _buildContainerClassName(): string {
     return [
       "maplibregl-ctrl",
-      this._options.collapsible ? "sgb-map-ctrl-group" : null,
       "sgb-map-legend",
       this._options.collapsible ? "sgb-map-legend-collapsible" : null,
       this._isOpen ? "sgb-map-legend-open" : "sgb-map-legend-closed",
