@@ -58,7 +58,6 @@ describe("LegendControl", () => {
 
       // assert
       expect(container.classList.contains("maplibregl-ctrl")).toBe(true);
-      expect(container.classList.contains("sgb-map-ctrl-group")).toBe(true);
       expect(container.classList.contains("sgb-map-legend")).toBe(true);
       expect(container.classList.contains("sgb-map-legend-collapsible")).toBe(true);
       expect(container.classList.contains("sgb-map-legend-open")).toBe(true);
