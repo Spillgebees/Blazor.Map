@@ -7,7 +7,7 @@ import {
     ISpillgebeesTileLayer,
     ISpillgebeesMapOptions,
     ISpillgebeesMapControlOptions,
-    MapTheme
+    MapTheme, SpillgebeesReferrerPolicy
 } from "./interfaces/map";
 import {
     Map as LeafletMap,
@@ -18,7 +18,8 @@ import {
     Polyline as LeafletPolyline,
     TileLayer,
     TileLayerOptions as LeafletTileLayerOptions,
-    Control
+    Control,
+    ReferrerPolicy
 } from "leaflet";
 import {CenterControl} from "./controls";
 import { LayerTuple, LayerStorage } from "./types/layers";
@@ -59,6 +60,9 @@ const createMap = async (
         const options: LeafletTileLayerOptions = {
             attribution: tileLayer.attribution,
             detectRetina: tileLayer.detectRetina,
+            referrerPolicy: tileLayer.referrerPolicyOptions?.activateReferrerPolicy
+                ? mapReferrerPolicy(tileLayer.referrerPolicyOptions.referrerPolicy)
+                : undefined
         };
         return new TileLayer(tileLayer.urlTemplate, options);
     });
@@ -313,3 +317,24 @@ const disposeMap = (mapContainer: HTMLElement): void => {
 
     window.Spillgebees.Map.maps.delete(mapContainer);
 }
+
+const mapReferrerPolicy = (referrerPolicy: SpillgebeesReferrerPolicy): ReferrerPolicy => {
+    switch (referrerPolicy) {
+        case SpillgebeesReferrerPolicy.NoReferrer:
+            return "no-referrer";
+        case SpillgebeesReferrerPolicy.NoReferrerWhenDowngrade:
+            return "no-referrer-when-downgrade";
+        case SpillgebeesReferrerPolicy.Origin:
+            return "origin";
+        case SpillgebeesReferrerPolicy.OriginWhenCrossOrigin:
+            return "origin-when-cross-origin";
+        case SpillgebeesReferrerPolicy.SameOrigin:
+            return "same-origin";
+        case SpillgebeesReferrerPolicy.StrictOrigin:
+            return "strict-origin";
+        case SpillgebeesReferrerPolicy.StrictOriginWhenCrossOrigin:
+            return "strict-origin-when-cross-origin";
+        case SpillgebeesReferrerPolicy.UnsafeUrl:
+            return "unsafe-url";
+    }
+};

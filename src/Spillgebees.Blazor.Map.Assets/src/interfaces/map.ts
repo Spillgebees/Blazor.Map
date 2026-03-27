@@ -50,9 +50,16 @@ export interface ISpillgebeesPolyline extends ISpillgebeesPath {
     noClip: boolean | false;
 }
 
+export interface ISpillgebeesReferrerPolicyOptions
+{
+    activateReferrerPolicy: boolean;
+    referrerPolicy: SpillgebeesReferrerPolicy;
+}
+
 export interface ISpillgebeesTileLayer {
     urlTemplate: string;
     attribution: string;
+    referrerPolicyOptions: ISpillgebeesReferrerPolicyOptions | undefined;
     detectRetina?: boolean | undefined;
     tileSize: number | undefined;
 }
@@ -103,4 +110,15 @@ export interface ISpillgebeesFitBoundsOptions {
 export enum MapTheme {
     Default,
     Dark
+}
+
+export enum SpillgebeesReferrerPolicy {
+    NoReferrer,
+    NoReferrerWhenDowngrade,
+    Origin,
+    OriginWhenCrossOrigin,
+    SameOrigin,
+    StrictOrigin,
+    StrictOriginWhenCrossOrigin,
+    UnsafeUrl
 }
