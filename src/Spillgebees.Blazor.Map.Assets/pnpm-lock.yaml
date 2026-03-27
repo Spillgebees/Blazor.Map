@@ -16,8 +16,8 @@ importers:
         specifier: 2.4.4
         version: 2.4.4
       '@microsoft/dotnet-js-interop':
-        specifier: 8.0.17
-        version: 8.0.17
+        specifier: 10.0.0
+        version: 10.0.0
       '@playwright/test':
         specifier: 1.56.1
         version: 1.56.1
@@ -384,8 +384,8 @@ packages:
   '@maplibre/vt-pbf@4.3.0':
     resolution: {integrity: sha512-jIvp8F5hQCcreqOOpEt42TJMUlsrEcpf/kI1T2v85YrQRV6PPXUcEXUg5karKtH6oh47XJZ4kHu56pUkOuqA7w==}
 
-  '@microsoft/dotnet-js-interop@8.0.17':
-    resolution: {integrity: sha512-gdLCSgUWqF99igzXgQYcwd5gsgep6sAuQTIRmk1LGRLa+a6r7iBfIClOc4ULEi8gr3gQcXeQtbcJiVgSTJvOhA==}
+  '@microsoft/dotnet-js-interop@10.0.0':
+    resolution: {integrity: sha512-cYmqSePCKSs6srwGWz6lOq/UIogKgFw0ZOq0MtQzxRI1G/YiBOhlvM4Nj8DuGBp/1guSlFApIVv85SkXJTMOIQ==}
 
   '@parcel/watcher-android-arm64@2.5.6':
     resolution: {integrity: sha512-YQxSS34tPF/6ZG7r/Ih9xy+kP/WwediEUsqmtf0cuCV5TPPKw/PQHRhueUo6JdeFJaqV3pyjm0GdYjZotbRt/A==}
@@ -1387,7 +1387,7 @@ snapshots:
       pbf: 4.0.1
       supercluster: 8.0.1
 
-  '@microsoft/dotnet-js-interop@8.0.17': {}
+  '@microsoft/dotnet-js-interop@10.0.0': {}
 
   '@parcel/watcher-android-arm64@2.5.6':
     optional: true
