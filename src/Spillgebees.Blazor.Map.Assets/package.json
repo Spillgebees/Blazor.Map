@@ -32,7 +32,7 @@
     "maplibre-gl": "5.20.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.4",
+    "@biomejs/biome": "2.4.9",
     "@microsoft/dotnet-js-interop": "8.0.17",
     "@types/node": "24.11.0",
     "@playwright/test": "1.56.1",
