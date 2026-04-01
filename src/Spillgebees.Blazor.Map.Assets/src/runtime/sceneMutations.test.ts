@@ -57,7 +57,13 @@ describe.sequential("applySceneMutations", () => {
       "OnMapInitialized",
       mapElement,
       createDefaultMapOptions({
-        style: { id: "base-style", url: "https://example.com/style.json", rasterSource: null, wmsSource: null },
+        style: {
+          id: "base-style",
+          url: "https://example.com/style.json",
+          referrerPolicy: null,
+          rasterSource: null,
+          wmsSource: null,
+        },
       }),
       createDefaultControlOptions(),
       "light",
@@ -152,7 +158,13 @@ describe.sequential("applySceneMutations", () => {
       "OnMapInitialized",
       mapElement,
       createDefaultMapOptions({
-        style: { id: "base-style", url: "https://example.com/style.json", rasterSource: null, wmsSource: null },
+        style: {
+          id: "base-style",
+          url: "https://example.com/style.json",
+          referrerPolicy: null,
+          rasterSource: null,
+          wmsSource: null,
+        },
       }),
       createDefaultControlOptions(),
       "light",
@@ -226,7 +238,13 @@ describe.sequential("applySceneMutations", () => {
       "OnMapInitialized",
       mapElement,
       createDefaultMapOptions({
-        style: { id: "base-style", url: "https://example.com/style.json", rasterSource: null, wmsSource: null },
+        style: {
+          id: "base-style",
+          url: "https://example.com/style.json",
+          referrerPolicy: null,
+          rasterSource: null,
+          wmsSource: null,
+        },
       }),
       createDefaultControlOptions(),
       "light",
@@ -342,7 +360,13 @@ describe.sequential("applySceneMutations", () => {
       "OnMapInitialized",
       mapElement,
       createDefaultMapOptions({
-        style: { id: "base-style", url: "https://example.com/style.json", rasterSource: null, wmsSource: null },
+        style: {
+          id: "base-style",
+          url: "https://example.com/style.json",
+          referrerPolicy: null,
+          rasterSource: null,
+          wmsSource: null,
+        },
       }),
       createDefaultControlOptions(),
       "light",
@@ -445,7 +469,13 @@ describe.sequential("applySceneMutations", () => {
       "OnMapInitialized",
       mapElement,
       createDefaultMapOptions({
-        style: { id: "base-style", url: "https://example.com/style.json", rasterSource: null, wmsSource: null },
+        style: {
+          id: "base-style",
+          url: "https://example.com/style.json",
+          referrerPolicy: null,
+          rasterSource: null,
+          wmsSource: null,
+        },
       }),
       createDefaultControlOptions(),
       "light",
@@ -550,8 +580,20 @@ describe.sequential("applySceneMutations", () => {
       mapElement,
       createDefaultMapOptions({
         styles: [
-          { id: "base-style", url: "https://example.com/base-style.json", rasterSource: null, wmsSource: null },
-          { id: "overlay-style", url: "https://example.com/overlay-style.json", rasterSource: null, wmsSource: null },
+          {
+            id: "base-style",
+            url: "https://example.com/base-style.json",
+            referrerPolicy: null,
+            rasterSource: null,
+            wmsSource: null,
+          },
+          {
+            id: "overlay-style",
+            url: "https://example.com/overlay-style.json",
+            referrerPolicy: null,
+            rasterSource: null,
+            wmsSource: null,
+          },
         ],
       }),
       createDefaultControlOptions(),

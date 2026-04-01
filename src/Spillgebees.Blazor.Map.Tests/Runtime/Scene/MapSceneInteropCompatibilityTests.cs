@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 using Spillgebees.Blazor.Map.Components;
 using Spillgebees.Blazor.Map.Components.Layers;
+using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Runtime.Scene;
 
@@ -141,6 +142,37 @@ public class MapSceneInteropCompatibilityTests : BunitContext
             .AllSatisfy(ordering => ordering!.Stack.Should().Be("updated-stack"));
 
         JSInterop.VerifyNotInvoke(MoveMapLayerIdentifier);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_include_referrer_policy_in_vector_tile_source_registration(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        var cut = Render<ReferrerPolicyVectorTileHarness>();
+
+        // act
+        await cut.Instance.Map.OnMapInitializedAsync();
+
+        // assert
+        cut.WaitForAssertion(() =>
+            JSInterop.Invocations[ApplySceneMutationsIdentifier].Count.Should().BeGreaterThan(0)
+        );
+
+        var batches = JSInterop
+            .Invocations[ApplySceneMutationsIdentifier]
+            .Select(invocation => invocation.Arguments[1])
+            .OfType<MapSceneMutationBatch>()
+            .ToArray();
+
+        var addSourceMutation = batches
+            .SelectMany(batch => batch.Mutations)
+            .Single(mutation => mutation.Kind == "addSource" && mutation.SourceId == "vector-source");
+
+        addSourceMutation.SourceSpec.Should().NotBeNull();
+        addSourceMutation.SourceSpec!.Should().ContainKey("referrerPolicy");
+        addSourceMutation.SourceSpec["referrerPolicy"].Should().Be(ReferrerPolicy.StrictOriginWhenCrossOrigin);
     }
 
     public sealed class SceneRegistrationHarness : ComponentBase
@@ -376,6 +408,32 @@ public class MapSceneInteropCompatibilityTests : BunitContext
                                 }
                             )
                         );
+                        mapBuilder.CloseComponent();
+                    }
+                )
+            );
+            builder.AddComponentReferenceCapture(2, value => Map = (SgbMap)value);
+            builder.CloseComponent();
+        }
+    }
+
+    public sealed class ReferrerPolicyVectorTileHarness : ComponentBase
+    {
+        public SgbMap Map { get; private set; } = null!;
+
+        protected override void BuildRenderTree(RenderTreeBuilder builder)
+        {
+            builder.OpenComponent<SgbMap>(0);
+            builder.AddAttribute(
+                1,
+                "ChildContent",
+                (RenderFragment)(
+                    mapBuilder =>
+                    {
+                        mapBuilder.OpenComponent<VectorTileSource>(0);
+                        mapBuilder.AddAttribute(1, "Id", "vector-source");
+                        mapBuilder.AddAttribute(2, "Url", "https://example.com/tiles.json");
+                        mapBuilder.AddAttribute(3, "ReferrerPolicy", ReferrerPolicy.StrictOriginWhenCrossOrigin);
                         mapBuilder.CloseComponent();
                     }
                 )

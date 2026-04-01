@@ -44,7 +44,7 @@ public class TrainTrackingExampleTests : BunitContext
         JSInterop.SetupVoid(ResizeIdentifier);
         JSInterop.Setup<double>(GetClusterExpansionZoomIdentifier).SetResult(11.2);
         JSInterop.Setup<bool>(HasStyleLayerIdentifier).SetResult(true);
-        JSInterop.Setup<double?>(GetZoomIdentifier).SetResult(8);
+        JSInterop.Setup<double?>(GetZoomIdentifier).SetResult(9);
         JSInterop.SetupVoid(FlyToIdentifier);
         JSInterop.SetupVoid(ClosePopupIdentifier);
         JSInterop.SetupVoid(SetLegendControlIdentifier);

@@ -262,6 +262,108 @@ public class SgbMapTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
+    public void Should_assign_origin_referrer_policy_to_openstreetmap_standard(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        var standard = MapStyle.OpenStreetMap.Standard;
+
+        // assert
+        standard.RasterSource.Should().NotBeNull();
+        standard.RasterSource!.ReferrerPolicy.Should().Be(ReferrerPolicy.Origin);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_apply_with_referrer_policy_to_raster_tile_styles(CancellationToken cancellationToken)
+    {
+        // arrange
+        var style = MapStyle.FromRasterUrl("https://tiles.example.com/{z}/{x}/{y}.png", "© Example");
+
+        // act
+        var updatedStyle = style.WithReferrerPolicy(ReferrerPolicy.StrictOriginWhenCrossOrigin);
+
+        // assert
+        updatedStyle.RasterSource.Should().NotBeNull();
+        updatedStyle.RasterSource!.ReferrerPolicy.Should().Be(ReferrerPolicy.StrictOriginWhenCrossOrigin);
+        updatedStyle.ReferrerPolicy.Should().BeNull();
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_apply_with_referrer_policy_to_wms_styles(CancellationToken cancellationToken)
+    {
+        // arrange
+        var style = MapStyle.FromWmsUrl("https://example.com/wms", "roads", "© Example");
+
+        // act
+        var updatedStyle = style.WithReferrerPolicy(ReferrerPolicy.NoReferrer);
+
+        // assert
+        updatedStyle.WmsSource.Should().NotBeNull();
+        updatedStyle.WmsSource!.ReferrerPolicy.Should().Be(ReferrerPolicy.NoReferrer);
+        updatedStyle.ReferrerPolicy.Should().BeNull();
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_propagate_referrer_policy_from_wmts_url_to_raster_source(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        var style = MapStyle.FromWmtsUrl(
+            "https://server/arcgis/rest/services/Name/MapServer/WMTS",
+            "myLayer",
+            "© Example",
+            referrerPolicy: ReferrerPolicy.StrictOriginWhenCrossOrigin
+        );
+
+        // assert
+        style.RasterSource.Should().NotBeNull();
+        style.RasterSource!.ReferrerPolicy.Should().Be(ReferrerPolicy.StrictOriginWhenCrossOrigin);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_leave_referrer_policy_null_on_wmts_url_when_not_specified(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        var style = MapStyle.FromWmtsUrl(
+            "https://server/arcgis/rest/services/Name/MapServer/WMTS",
+            "myLayer",
+            "© Example"
+        );
+
+        // assert
+        style.RasterSource.Should().NotBeNull();
+        style.RasterSource!.ReferrerPolicy.Should().BeNull();
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_propagate_referrer_policy_from_arcgis_map_server_to_raster_source(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange & act
+        var style = MapStyle.FromArcGisMapServer(
+            "https://server/arcgis/rest/services/Name/MapServer",
+            "© Example",
+            referrerPolicy: ReferrerPolicy.Origin
+        );
+
+        // assert
+        style.RasterSource.Should().NotBeNull();
+        style.RasterSource!.ReferrerPolicy.Should().Be(ReferrerPolicy.Origin);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_leave_referrer_policy_null_on_arcgis_map_server_when_not_specified(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange & act
+        var style = MapStyle.FromArcGisMapServer("https://server/arcgis/rest/services/Name/MapServer", "© Example");
+
+        // assert
+        style.RasterSource.Should().NotBeNull();
+        style.RasterSource!.ReferrerPolicy.Should().BeNull();
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
     public void Should_assign_stable_declaration_order_to_custom_layers(CancellationToken cancellationToken)
     {
         // arrange & act

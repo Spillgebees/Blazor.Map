@@ -41,6 +41,7 @@ export interface MockMapInstance {
   queryRenderedFeatures: ReturnType<typeof vi.fn>;
   moveLayer: ReturnType<typeof vi.fn>;
   setFeatureState: ReturnType<typeof vi.fn>;
+  transformRequest?: (url: string, resourceType?: string) => unknown;
 }
 
 export interface MockMarkerInstance {
@@ -120,7 +121,10 @@ export function fireLoadEvent(): void {
 }
 
 // Must use function declaration (not arrow) so it can be called with `new`
-const MockMapConstructor = vi.fn().mockImplementation(function (this: MockMapInstance) {
+const MockMapConstructor = vi.fn().mockImplementation(function (
+  this: MockMapInstance,
+  options?: { transformRequest?: (url: string, resourceType?: string) => unknown },
+) {
   this.on = vi.fn().mockImplementation((...args: unknown[]) => {
     const event = args[0] as string;
     // MapLibre supports both map.on(event, callback) and map.on(event, layerId, callback)
@@ -191,6 +195,7 @@ const MockMapConstructor = vi.fn().mockImplementation(function (this: MockMapIns
   this.queryRenderedFeatures = vi.fn().mockReturnValue([]);
   this.moveLayer = vi.fn();
   this.setFeatureState = vi.fn();
+  this.transformRequest = options?.transformRequest;
   latestMockMapInstance = this;
 });
 
