@@ -1,6 +1,6 @@
 <div class="sample-btn-row">
-    <button class="sample-btn @(_theme == MapTheme.Light ? "active" : "")" @onclick="@(() => _theme = MapTheme.Light)">Light</button>
-    <button class="sample-btn @(_theme == MapTheme.Dark ? "active" : "")" @onclick="@(() => _theme = MapTheme.Dark)">Dark</button>
+    <button type="button" class="sample-btn @(_theme == MapTheme.Light ? "active" : "")" aria-pressed="@(_theme == MapTheme.Light)" @onclick="@(() => _theme = MapTheme.Light)">Light</button>
+    <button type="button" class="sample-btn @(_theme == MapTheme.Dark ? "active" : "")" aria-pressed="@(_theme == MapTheme.Dark)" @onclick="@(() => _theme = MapTheme.Dark)">Dark</button>
 </div>
 
 <SgbMap MapOptions="@_mapOptions"

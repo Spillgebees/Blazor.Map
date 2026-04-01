@@ -27,7 +27,7 @@ public class TrackedDataSourceTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(8);
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(9);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);

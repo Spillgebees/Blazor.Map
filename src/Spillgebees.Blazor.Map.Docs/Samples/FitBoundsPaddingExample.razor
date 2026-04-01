@@ -1,6 +1,6 @@
 <div class="sample-btn-row">
-    <button class="sample-btn @(_isUniform ? "active" : "")" @onclick="SetUniformPadding">Uniform</button>
-    <button class="sample-btn @(!_isUniform ? "active" : "")" @onclick="SetAsymmetricPadding">Asymmetric</button>
+    <button type="button" class="sample-btn @(_isUniform ? "active" : "")" aria-pressed="@_isUniform" @onclick="SetUniformPadding">Uniform</button>
+    <button type="button" class="sample-btn @(!_isUniform ? "active" : "")" aria-pressed="@(!_isUniform)" @onclick="SetAsymmetricPadding">Asymmetric</button>
 </div>
 
 <SgbMap MapOptions="@_mapOptions"
