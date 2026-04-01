@@ -10,7 +10,10 @@ export interface MockMapInstance {
   setStyle: ReturnType<typeof vi.fn>;
   jumpTo: ReturnType<typeof vi.fn>;
   setProjection: ReturnType<typeof vi.fn>;
+  getProjection: ReturnType<typeof vi.fn>;
   setMaxBounds: ReturnType<typeof vi.fn>;
+  setMinZoom: ReturnType<typeof vi.fn>;
+  setMaxZoom: ReturnType<typeof vi.fn>;
   addControl: ReturnType<typeof vi.fn>;
   removeControl: ReturnType<typeof vi.fn>;
   getContainer: ReturnType<typeof vi.fn>;
@@ -153,7 +156,10 @@ const MockMapConstructor = vi.fn().mockImplementation(function (this: MockMapIns
   });
   this.jumpTo = vi.fn();
   this.setProjection = vi.fn();
+  this.getProjection = vi.fn().mockReturnValue(undefined);
   this.setMaxBounds = vi.fn();
+  this.setMinZoom = vi.fn();
+  this.setMaxZoom = vi.fn();
   this.addControl = vi.fn();
   this.removeControl = vi.fn();
   this.getContainer = vi.fn().mockReturnValue(document.createElement("div"));

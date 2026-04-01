@@ -51,32 +51,22 @@ public class MapJsInteropPayloadTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public void Should_send_center_control_fit_bounds_feature_ids_as_arrays_when_initializing_map(
-        CancellationToken cancellationToken
-    )
+    public void Should_send_simplified_center_control_payload_when_initializing_map(CancellationToken cancellationToken)
     {
         // arrange & act
         Render<SgbMap>(parameters =>
-            parameters.Add(
-                p => p.ControlOptions,
-                new MapControlOptions(
-                    Center: new CenterControlOptions(
-                        Center: new Coordinate(49.61, 6.13),
-                        FitBoundsOptions: new FitBoundsOptions(["station-1"])
-                    )
-                )
-            )
+            parameters.Add(p => p.ControlOptions, new MapControlOptions(Center: new CenterControlOptions()))
         );
 
         // assert
         var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
         var controlOptionsPayload = invocation.Arguments[4];
         var centerPayload = GetRequiredPropertyValue(controlOptionsPayload!, "Center");
-        var fitBoundsPayload = GetRequiredPropertyValue(centerPayload, "FitBoundsOptions");
-        var featureIds = GetRequiredPropertyValue(fitBoundsPayload, "FeatureIds");
+        var enableValue = GetRequiredPropertyValue(centerPayload, "Enable");
+        var positionValue = GetRequiredPropertyValue(centerPayload, "Position");
 
-        featureIds.Should().BeOfType<string[]>();
-        ((string[])featureIds).Should().Equal("station-1");
+        enableValue.Should().Be(true);
+        positionValue.Should().Be(ControlPosition.TopLeft);
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -120,11 +110,7 @@ public class MapJsInteropPayloadTests : BunitContext
                 p => p.Polylines,
                 new List<Polyline>
                 {
-                    new(
-                        "route-1",
-                        [new Coordinate(49.60, 6.10), new Coordinate(49.61, 6.13)],
-                        Color: "#3B82F6"
-                    ),
+                    new("route-1", [new Coordinate(49.60, 6.10), new Coordinate(49.61, 6.13)], Color: "#3B82F6"),
                 }
             )
         );
@@ -141,7 +127,9 @@ public class MapJsInteropPayloadTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public async Task Should_send_sync_feature_payload_using_arrays_for_updated_polylines(CancellationToken cancellationToken)
+    public async Task Should_send_sync_feature_payload_using_arrays_for_updated_polylines(
+        CancellationToken cancellationToken
+    )
     {
         // arrange
         var initialPolylines = new List<Polyline>

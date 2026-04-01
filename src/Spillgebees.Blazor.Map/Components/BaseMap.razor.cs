@@ -295,7 +295,14 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// <param name="height">The image height in pixels.</param>
     /// <param name="pixelRatio">The pixel ratio for retina displays. Default is 1.</param>
     /// <param name="sdf">Whether the image should be treated as an SDF (Signed Distance Field) for runtime tinting via <c>icon-color</c>. Default is false.</param>
-    public async ValueTask AddImageAsync(string name, string url, int width, int height, double pixelRatio = 1, bool sdf = false)
+    public async ValueTask AddImageAsync(
+        string name,
+        string url,
+        int width,
+        int height,
+        double pixelRatio = 1,
+        bool sdf = false
+    )
     {
         await JsRuntime.InvokeVoidAsync(
             "Spillgebees.Map.mapFunctions.addImage",

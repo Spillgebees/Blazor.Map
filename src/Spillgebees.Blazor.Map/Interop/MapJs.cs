@@ -125,7 +125,8 @@ internal static class MapJs
         ILogger logger,
         ElementReference mapReference,
         MapControlOptions mapControlOptions
-    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.setControls", mapReference, ToJsModel(mapControlOptions));
+    ) =>
+        jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.setControls", mapReference, ToJsModel(mapControlOptions));
 
     internal static ValueTask SetLegendControlAsync(
         IJSRuntime jsRuntime,
@@ -352,14 +353,7 @@ internal static class MapJs
             mapControlOptions.Terrain,
             Center = mapControlOptions.Center is null
                 ? null
-                : new
-                {
-                    mapControlOptions.Center.Enable,
-                    mapControlOptions.Center.Position,
-                    mapControlOptions.Center.Center,
-                    mapControlOptions.Center.Zoom,
-                    FitBoundsOptions = ToJsModel(mapControlOptions.Center.FitBoundsOptions),
-                },
+                : new { mapControlOptions.Center.Enable, mapControlOptions.Center.Position },
         };
 
     private static object ToJsModel(Polyline polyline) =>

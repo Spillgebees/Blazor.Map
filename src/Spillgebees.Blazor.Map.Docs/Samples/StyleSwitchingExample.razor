@@ -1,30 +1,7 @@
-<style>
-    .style-btn {
-        padding: 0.4rem 1.1rem;
-        border-radius: 9999px;
-        border: none;
-        font-weight: 600;
-        color: #fff;
-        cursor: pointer;
-        transition: opacity 0.15s;
-    }
-    .style-btn:hover { opacity: 0.85; }
-    .style-btn-liberty  { background: #3b82f6; }
-    .style-btn-positron { background: #10b981; }
-    .style-btn-bright   { background: #f97316; }
-    .style-btn-row {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        align-items: center;
-        margin-bottom: 0.75rem;
-    }
-</style>
-
-<div class="style-btn-row">
-    <button class="style-btn style-btn-liberty"  @onclick="@(() => SetStyle(MapStyle.OpenFreeMap.Liberty))">Liberty</button>
-    <button class="style-btn style-btn-positron" @onclick="@(() => SetStyle(MapStyle.OpenFreeMap.Positron))">Positron</button>
-    <button class="style-btn style-btn-bright"   @onclick="@(() => SetStyle(MapStyle.OpenFreeMap.Bright))">Bright</button>
+<div class="sample-btn-row">
+    <button class="sample-btn @(_activeStyle == "liberty" ? "active" : "")" @onclick="@(() => SetStyle("liberty", MapStyle.OpenFreeMap.Liberty))">Liberty</button>
+    <button class="sample-btn @(_activeStyle == "positron" ? "active" : "")" @onclick="@(() => SetStyle("positron", MapStyle.OpenFreeMap.Positron))">Positron</button>
+    <button class="sample-btn @(_activeStyle == "bright" ? "active" : "")" @onclick="@(() => SetStyle("bright", MapStyle.OpenFreeMap.Bright))">Bright</button>
 </div>
 
 <SgbMap MapOptions="@_mapOptions"
@@ -33,12 +10,17 @@
         Width="100%" />
 
 @code {
+    private string _activeStyle = "liberty";
+
     private MapOptions _mapOptions = new(
         Center: new Coordinate(49.75, 6.10),
         Zoom: 9,
         Style: MapStyle.OpenFreeMap.Liberty
     );
 
-    private void SetStyle(MapStyle style)
-        => _mapOptions = _mapOptions with { Style = style };
+    private void SetStyle(string key, MapStyle style)
+    {
+        _activeStyle = key;
+        _mapOptions = _mapOptions with { Style = style };
+    }
 }

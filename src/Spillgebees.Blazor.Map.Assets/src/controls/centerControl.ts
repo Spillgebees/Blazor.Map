@@ -1,14 +1,8 @@
 import type { IControl, Map as MapLibreMap } from "maplibre-gl";
-import type { ICenterControlOptions } from "../interfaces/controls";
 
 export class CenterControl implements IControl {
   private _map: MapLibreMap | null = null;
   private _container: HTMLDivElement | null = null;
-  private _options: ICenterControlOptions;
-
-  constructor(options: ICenterControlOptions) {
-    this._options = options;
-  }
 
   onAdd(map: MapLibreMap): HTMLElement {
     this._map = map;
@@ -46,16 +40,21 @@ export class CenterControl implements IControl {
       return;
     }
 
-    if (this._options.fitBoundsOptions) {
+    const mapOptions = window.Spillgebees?.Map?.mapOptions?.get(this._map);
+    if (!mapOptions) {
+      return;
+    }
+
+    if (mapOptions.fitBoundsOptions) {
       const mapElement = this._map.getContainer();
       const fitBoundsFn = window.Spillgebees?.Map?.mapFunctions?.fitBounds;
       if (fitBoundsFn) {
-        fitBoundsFn(mapElement, this._options.fitBoundsOptions);
+        fitBoundsFn(mapElement, mapOptions.fitBoundsOptions);
       }
-    } else if (this._options.center) {
+    } else {
       this._map.flyTo({
-        center: [this._options.center.longitude, this._options.center.latitude],
-        zoom: this._options.zoom ?? undefined,
+        center: [mapOptions.center.longitude, mapOptions.center.latitude],
+        zoom: mapOptions.zoom,
       });
     }
   }

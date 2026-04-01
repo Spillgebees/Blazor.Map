@@ -1,5 +1,3 @@
-import type { ICoordinate, IFitBoundsOptions } from "./map";
-
 export interface IMapControlOptions {
   navigation: INavigationControlOptions | null;
   scale: IScaleControlOptions | null;
@@ -41,9 +39,6 @@ export interface ITerrainControlOptions {
 export interface ICenterControlOptions {
   enable: boolean;
   position: ControlPosition;
-  center: ICoordinate | null;
-  zoom: number | null;
-  fitBoundsOptions: IFitBoundsOptions | null;
 }
 
 export interface ILegendControlOptions {

@@ -1,5 +1,3 @@
-using Spillgebees.Blazor.Map.Models;
-
 namespace Spillgebees.Blazor.Map.Models.Controls;
 
 /// <summary>
@@ -10,7 +8,7 @@ namespace Spillgebees.Blazor.Map.Models.Controls;
 /// <param name="Fullscreen">Options for the fullscreen control. Default is <see langword="null"/>.</param>
 /// <param name="Geolocate">Options for the geolocate control. Default is <see langword="null"/>.</param>
 /// <param name="Terrain">Options for the terrain control. Default is <see langword="null"/>.</param>
-/// <param name="Center">Options for the center control (re-center to a predefined location). Default is <see langword="null"/>.</param>
+/// <param name="Center">Options for the center control (re-center to the configured map position). Default is <see langword="null"/>.</param>
 public record MapControlOptions(
     NavigationControlOptions? Navigation = null,
     ScaleControlOptions? Scale = null,
@@ -79,20 +77,10 @@ public record GeolocateControlOptions(
 public record TerrainControlOptions(bool Enable = true, ControlPosition Position = ControlPosition.TopRight);
 
 /// <summary>
-/// Options for the center control (re-center the map to a predefined location).
+/// Options for the center control (re-center the map to its configured position).
+/// When clicked, the control reads the current <see cref="MapOptions"/> to determine the target.
+/// If <see cref="MapOptions.FitBoundsOptions"/> is set, it fits to those bounds; otherwise it flies to <see cref="MapOptions.Center"/> and <see cref="MapOptions.Zoom"/>.
 /// </summary>
 /// <param name="Enable">Whether to show the center control. Default is <see langword="true"/>.</param>
 /// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.TopLeft"/>.</param>
-/// <param name="Center">The coordinate to center the map to when the control is clicked. Default is <see langword="null"/>.</param>
-/// <param name="Zoom">The zoom level to set when the control is clicked. Default is <see langword="null"/>.</param>
-/// <param name="FitBoundsOptions">Options for centering and fitting the map to bounds based on provided feature IDs.</param>
-/// <remarks>
-/// If <see cref="FitBoundsOptions"/> is set, <see cref="Center"/> and <see cref="Zoom"/> are ignored.
-/// </remarks>
-public record CenterControlOptions(
-    bool Enable = true,
-    ControlPosition Position = ControlPosition.TopLeft,
-    Coordinate? Center = null,
-    int? Zoom = null,
-    FitBoundsOptions? FitBoundsOptions = null
-);
+public record CenterControlOptions(bool Enable = true, ControlPosition Position = ControlPosition.TopLeft);

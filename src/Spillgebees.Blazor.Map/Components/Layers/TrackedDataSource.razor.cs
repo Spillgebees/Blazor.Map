@@ -85,9 +85,17 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
         "#0f172a",
     ];
     private static readonly object[] _hoverState =
-        ["boolean", new object[] { "feature-state", TrackedEntityFeatureStates.Hover.Name }, false];
+    [
+        "boolean",
+        new object[] { "feature-state", TrackedEntityFeatureStates.Hover.Name },
+        false,
+    ];
     private static readonly object[] _selectedState =
-        ["boolean", new object[] { "feature-state", TrackedEntityFeatureStates.Selected.Name }, false];
+    [
+        "boolean",
+        new object[] { "feature-state", TrackedEntityFeatureStates.Selected.Name },
+        false,
+    ];
     private static readonly object[] _decorationDisplayModeOpacity =
     [
         "case",
@@ -131,7 +139,10 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
         TrackedEntityGeoJsonBuilder.BuildPrimaryFeatureCollection<object>([]);
     private IReadOnlyDictionary<string, object?> _decorationData =
         TrackedEntityGeoJsonBuilder.BuildDecorationFeatureCollection<object>([]);
-    private IReadOnlyDictionary<string, TrackedEntity<TItem>> _entitiesById = new Dictionary<string, TrackedEntity<TItem>>(StringComparer.Ordinal);
+    private IReadOnlyDictionary<string, TrackedEntity<TItem>> _entitiesById = new Dictionary<
+        string,
+        TrackedEntity<TItem>
+    >(StringComparer.Ordinal);
     private IReadOnlyList<TrackedPrimaryProjection> _primaryProjection = [];
     private IReadOnlyList<TrackedDecorationProjection> _decorationProjection = [];
     private IReadOnlyList<TrackedEntity<TItem>> _entities = [];

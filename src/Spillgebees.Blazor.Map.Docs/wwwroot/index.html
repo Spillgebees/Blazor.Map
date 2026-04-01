@@ -12,6 +12,37 @@
         .doc-content li {
             color: var(--color-text-secondary);
         }
+
+        .sample-btn-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .sample-btn {
+            padding: 6px 14px;
+            background: transparent;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-muted);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.1s, border-color 0.1s, background 0.1s;
+        }
+
+        .sample-btn:hover {
+            color: var(--color-text);
+            background: var(--color-surface-overlay);
+        }
+
+        .sample-btn.active {
+            color: var(--color-primary);
+            border-color: var(--color-primary);
+            background: rgba(200, 160, 80, 0.08);
+        }
     </style>
 </head>
 <body>

@@ -1,0 +1,58 @@
+<div class="sample-btn-row">
+    <button class="sample-btn @(_isUniform ? "active" : "")" @onclick="SetUniformPadding">Uniform</button>
+    <button class="sample-btn @(!_isUniform ? "active" : "")" @onclick="SetAsymmetricPadding">Asymmetric</button>
+</div>
+
+<SgbMap MapOptions="@_mapOptions"
+        ControlOptions="@_controlOptions"
+        Markers="@_markers"
+        Height="400px"
+        Width="100%" />
+
+@code {
+    private bool _isUniform = true;
+
+    private readonly MapControlOptions _controlOptions = new(
+        Navigation: new NavigationControlOptions(),
+        Center: new CenterControlOptions()
+    );
+
+    private MapOptions _mapOptions = new(
+        Center: new Coordinate(49.75, 6.10),
+        Zoom: 9,
+        FitBoundsOptions: new FitBoundsOptions(
+            FeatureIds: ["marker-lux-city", "marker-esch", "marker-diekirch", "marker-echternach"],
+            Padding: new Point(60, 60))
+    );
+
+    private readonly List<Marker> _markers =
+    [
+        new("marker-lux-city", new Coordinate(49.6117, 6.1319), Title: "Luxembourg City"),
+        new("marker-esch", new Coordinate(49.4957, 5.9806), Title: "Esch-sur-Alzette"),
+        new("marker-diekirch", new Coordinate(49.8672, 6.1597), Title: "Diekirch"),
+        new("marker-echternach", new Coordinate(49.8120, 6.4218), Title: "Echternach")
+    ];
+
+    private void SetUniformPadding()
+    {
+        _isUniform = true;
+        _mapOptions = _mapOptions with
+        {
+            FitBoundsOptions = new FitBoundsOptions(
+                FeatureIds: ["marker-lux-city", "marker-esch", "marker-diekirch", "marker-echternach"],
+                Padding: new Point(60, 60))
+        };
+    }
+
+    private void SetAsymmetricPadding()
+    {
+        _isUniform = false;
+        _mapOptions = _mapOptions with
+        {
+            FitBoundsOptions = new FitBoundsOptions(
+                FeatureIds: ["marker-lux-city", "marker-esch", "marker-diekirch", "marker-echternach"],
+                TopLeftPadding: new Point(200, 40),
+                BottomRightPadding: new Point(40, 40))
+        };
+    }
+}
