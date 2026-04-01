@@ -139,7 +139,7 @@ export async function applyOverlayStyles(
         styleJson,
         `${OVERLAY_PREFIX}-${styleId}`,
         styleId,
-        url,
+        response.url,
         overlayStyles[i].referrerPolicy,
       );
       overlays.set(styleId, state);
@@ -365,7 +365,7 @@ export async function validateComposedGlyphs(
 
       const styleJson = (await response.json()) as { glyphs?: string };
       if (styleJson.glyphs) {
-        const resolved = resolveTemplateUrl(styleJson.glyphs, overlayStyle.url);
+        const resolved = resolveTemplateUrl(styleJson.glyphs, response.url);
         glyphUrls.add(resolved);
       }
     } catch {

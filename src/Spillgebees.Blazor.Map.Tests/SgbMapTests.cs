@@ -303,6 +303,67 @@ public class SgbMapTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
+    public void Should_propagate_referrer_policy_from_wmts_url_to_raster_source(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        var style = MapStyle.FromWmtsUrl(
+            "https://server/arcgis/rest/services/Name/MapServer/WMTS",
+            "myLayer",
+            "© Example",
+            referrerPolicy: ReferrerPolicy.StrictOriginWhenCrossOrigin
+        );
+
+        // assert
+        style.RasterSource.Should().NotBeNull();
+        style.RasterSource!.ReferrerPolicy.Should().Be(ReferrerPolicy.StrictOriginWhenCrossOrigin);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_leave_referrer_policy_null_on_wmts_url_when_not_specified(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        var style = MapStyle.FromWmtsUrl(
+            "https://server/arcgis/rest/services/Name/MapServer/WMTS",
+            "myLayer",
+            "© Example"
+        );
+
+        // assert
+        style.RasterSource.Should().NotBeNull();
+        style.RasterSource!.ReferrerPolicy.Should().BeNull();
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_propagate_referrer_policy_from_arcgis_map_server_to_raster_source(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange & act
+        var style = MapStyle.FromArcGisMapServer(
+            "https://server/arcgis/rest/services/Name/MapServer",
+            "© Example",
+            referrerPolicy: ReferrerPolicy.Origin
+        );
+
+        // assert
+        style.RasterSource.Should().NotBeNull();
+        style.RasterSource!.ReferrerPolicy.Should().Be(ReferrerPolicy.Origin);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_leave_referrer_policy_null_on_arcgis_map_server_when_not_specified(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange & act
+        var style = MapStyle.FromArcGisMapServer("https://server/arcgis/rest/services/Name/MapServer", "© Example");
+
+        // assert
+        style.RasterSource.Should().NotBeNull();
+        style.RasterSource!.ReferrerPolicy.Should().BeNull();
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
     public void Should_assign_stable_declaration_order_to_custom_layers(CancellationToken cancellationToken)
     {
         // arrange & act

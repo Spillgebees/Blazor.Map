@@ -65,6 +65,7 @@ describe("validateComposedGlyphs", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
+        url: "https://example.com/overlay.json",
         json: vi.fn().mockResolvedValue({
           version: 8,
           sources: {},
@@ -94,6 +95,7 @@ describe("validateComposedGlyphs", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
+        url: "https://example.com/overlay.json",
         json: vi.fn().mockResolvedValue({
           version: 8,
           sources: {},
@@ -128,6 +130,7 @@ describe("validateComposedGlyphs", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
+        url: "https://example.com/styles/overlay.json",
         json: vi.fn().mockResolvedValue({
           version: 8,
           sources: {},
@@ -145,6 +148,38 @@ describe("validateComposedGlyphs", () => {
     );
 
     // assert — ../fonts/ relative to /styles/overlay.json resolves to /fonts/
+    expect(result).toEqual({ proceed: true, effectiveGlyphsUrl: null });
+  });
+
+  it("should resolve relative glyph URLs against the final redirect URL, not the original request URL", async () => {
+    // arrange
+    const baseGlyphs = "https://cdn.example.com/v2/fonts/{fontstack}/{range}.pbf";
+    const map = createMockMap(baseGlyphs);
+    const originalUrl = "https://example.com/style.json";
+    const redirectedUrl = "https://cdn.example.com/v2/style.json";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        url: redirectedUrl,
+        json: vi.fn().mockResolvedValue({
+          version: 8,
+          sources: {},
+          layers: [],
+          glyphs: "./fonts/{fontstack}/{range}.pbf",
+        }),
+      }),
+    );
+
+    // act
+    const result = await validateComposedGlyphs(
+      map,
+      [{ styleId: "overlay", url: originalUrl, referrerPolicy: null }],
+      null,
+    );
+
+    // assert — ./fonts/ relative to redirectedUrl resolves to https://cdn.example.com/v2/fonts/...
+    // if resolved against originalUrl it would be https://example.com/fonts/... which differs from baseGlyphs
     expect(result).toEqual({ proceed: true, effectiveGlyphsUrl: null });
   });
 
@@ -189,6 +224,7 @@ describe("validateComposedGlyphs", () => {
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
+        url: "https://example.com/overlay.json",
         json: vi.fn().mockResolvedValue({
           version: 8,
           sources: {},
@@ -217,12 +253,14 @@ describe("validateComposedGlyphs", () => {
         if (url === "https://example.com/overlay-a.json") {
           return Promise.resolve({
             ok: true,
+            url: "https://example.com/overlay-a.json",
             json: () => Promise.resolve({ glyphs: "https://fonts-a.example.com/glyphs" }),
           });
         }
         if (url === "https://example.com/overlay-b.json") {
           return Promise.resolve({
             ok: true,
+            url: "https://example.com/overlay-b.json",
             json: () => Promise.resolve({ glyphs: "https://fonts-b.example.com/glyphs" }),
           });
         }
@@ -251,6 +289,7 @@ describe("validateComposedGlyphs", () => {
     const map = createMockMap("https://fonts.example.com/{fontstack}/{range}.pbf");
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
+      url: "https://example.com/overlay.json",
       json: vi.fn().mockResolvedValue({
         version: 8,
         sources: {},
@@ -276,6 +315,7 @@ describe("validateComposedGlyphs", () => {
     const map = createMockMap("https://fonts.example.com/{fontstack}/{range}.pbf");
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
+      url: "https://example.com/a.json",
       json: vi.fn().mockResolvedValue({
         version: 8,
         sources: {},
@@ -312,6 +352,49 @@ describe("applyOverlayStyles", () => {
     } as never;
   });
 
+  it("should resolve relative source URLs against the final redirect URL, not the original request URL", async () => {
+    // arrange
+    const originalUrl = "https://example.com/style.json";
+    const redirectedUrl = "https://cdn.example.com/v2/style.json";
+    const map = {
+      getSource: vi.fn().mockReturnValue(undefined),
+      addSource: vi.fn(),
+      hasImage: vi.fn().mockReturnValue(true),
+      getLayer: vi.fn().mockReturnValue(undefined),
+      addLayer: vi.fn(),
+    } as unknown as Parameters<typeof applyOverlayStyles>[0];
+    window.Spillgebees.Map.composedStyleLayerIds.set(map, new Map());
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        url: redirectedUrl,
+        json: vi.fn().mockResolvedValue({
+          version: 8,
+          sources: {
+            "my-source": {
+              type: "vector",
+              url: "./tiles.json",
+            },
+          },
+          layers: [],
+        }),
+      }),
+    );
+
+    // act
+    await applyOverlayStyles(map, [{ styleId: "overlay", url: originalUrl, referrerPolicy: null }]);
+
+    // assert — ./tiles.json relative to redirectedUrl should resolve to https://cdn.example.com/v2/tiles.json
+    // if resolved against originalUrl, it would be https://example.com/tiles.json (wrong)
+    expect(map.addSource).toHaveBeenCalledWith(
+      "sgb-overlay-style-overlay-my-source",
+      expect.objectContaining({
+        url: "https://cdn.example.com/v2/tiles.json",
+      }),
+    );
+  });
+
   it("should fetch each overlay style using its own referrer policy", async () => {
     // arrange
     const map = {
@@ -324,8 +407,16 @@ describe("applyOverlayStyles", () => {
     window.Spillgebees.Map.composedStyleLayerIds.set(map, new Map());
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({ version: 8, sources: {}, layers: [] }) })
-      .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({ version: 8, sources: {}, layers: [] }) });
+      .mockResolvedValueOnce({
+        ok: true,
+        url: "https://example.com/a.json",
+        json: vi.fn().mockResolvedValue({ version: 8, sources: {}, layers: [] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        url: "https://example.com/b.json",
+        json: vi.fn().mockResolvedValue({ version: 8, sources: {}, layers: [] }),
+      });
     vi.stubGlobal("fetch", fetchMock);
 
     // act

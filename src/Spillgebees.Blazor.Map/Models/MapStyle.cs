@@ -143,6 +143,7 @@ public record MapStyle
     /// <param name="style">The WMTS style. Default is <c>"default"</c>.</param>
     /// <param name="format">The image format extension. Default is <c>"png"</c>.</param>
     /// <param name="tileSize">The tile size in pixels. Default is 256.</param>
+    /// <param name="referrerPolicy">The referrer policy to apply to tile requests.</param>
     public static MapStyle FromWmtsUrl(
         string baseUrl,
         string layer,
@@ -150,12 +151,13 @@ public record MapStyle
         string tileMatrixSet = "default028mm",
         string style = "default",
         string format = "png",
-        int tileSize = 256
+        int tileSize = 256,
+        ReferrerPolicy? referrerPolicy = null
     )
     {
         var urlTemplate =
             $"{baseUrl.TrimEnd('/')}/tile/1.0.0/{layer}/{style}/{tileMatrixSet}/{{z}}/{{y}}/{{x}}.{format}";
-        return FromRasterUrl(urlTemplate, attribution, tileSize);
+        return FromRasterUrl(urlTemplate, attribution, tileSize, referrerPolicy);
     }
 
     /// <summary>
@@ -164,10 +166,16 @@ public record MapStyle
     /// <param name="mapServerUrl">The MapServer URL (e.g., <c>https://server/arcgis/rest/services/Name/MapServer</c>).</param>
     /// <param name="attribution">The attribution text to display on the map.</param>
     /// <param name="tileSize">The tile size in pixels. Default is 256.</param>
-    public static MapStyle FromArcGisMapServer(string mapServerUrl, string attribution, int tileSize = 256)
+    /// <param name="referrerPolicy">The referrer policy to apply to tile requests.</param>
+    public static MapStyle FromArcGisMapServer(
+        string mapServerUrl,
+        string attribution,
+        int tileSize = 256,
+        ReferrerPolicy? referrerPolicy = null
+    )
     {
         var urlTemplate = $"{mapServerUrl.TrimEnd('/')}/tile/{{z}}/{{y}}/{{x}}";
-        return FromRasterUrl(urlTemplate, attribution, tileSize);
+        return FromRasterUrl(urlTemplate, attribution, tileSize, referrerPolicy);
     }
 
     /// <summary>
