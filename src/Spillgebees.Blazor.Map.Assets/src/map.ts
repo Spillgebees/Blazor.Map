@@ -66,52 +66,88 @@ function toRequestReferrerPolicy(value: unknown): RequestParameters["referrerPol
   return typeof value === "string" ? (value as RequestParameters["referrerPolicy"]) : undefined;
 }
 
-function getStyleRequestReferrerPolicy(
-  style: IMapStyle | null,
-  requestUrl: string,
-): RequestParameters["referrerPolicy"] | undefined {
+function resolveStyleTileReferrerPolicy(style: IMapStyle | null): RequestParameters["referrerPolicy"] | undefined {
   if (!style) {
     return undefined;
   }
 
-  if (style.url === requestUrl) {
-    return toRequestReferrerPolicy(style.referrerPolicy);
-  }
-
-  if (style.rasterSource?.urlTemplate === requestUrl) {
+  if (style.rasterSource) {
     return toRequestReferrerPolicy(style.rasterSource.referrerPolicy ?? style.referrerPolicy);
   }
 
   if (style.wmsSource) {
-    const wmsStyle = buildStyleFromOptions(style);
-    if (typeof wmsStyle !== "string") {
-      const rasterSource = wmsStyle.sources["raster-tiles"] as { tiles?: string[] } | undefined;
-      if (rasterSource?.tiles?.includes(requestUrl)) {
-        return toRequestReferrerPolicy(style.wmsSource.referrerPolicy ?? style.referrerPolicy);
+    return toRequestReferrerPolicy(style.wmsSource.referrerPolicy ?? style.referrerPolicy);
+  }
+
+  return toRequestReferrerPolicy(style.referrerPolicy);
+}
+
+function resolveStyleReferrerPolicy(style: IMapStyle | null): RequestParameters["referrerPolicy"] | undefined {
+  if (!style) {
+    return undefined;
+  }
+
+  return toRequestReferrerPolicy(style.referrerPolicy);
+}
+
+function buildOverlayOriginMap(overlays: ITileOverlay[]): Map<string, RequestParameters["referrerPolicy"]> {
+  const originMap = new Map<string, RequestParameters["referrerPolicy"]>();
+
+  for (const overlay of overlays) {
+    const policy = toRequestReferrerPolicy(overlay.referrerPolicy);
+    if (policy) {
+      try {
+        const origin = new URL(overlay.urlTemplate).origin;
+        originMap.set(origin, policy);
+      } catch {
+        // invalid URL template, skip
       }
     }
   }
 
-  return undefined;
+  return originMap;
 }
 
 function createTransformRequest(
   mapOptions: IMapOptions,
   overlays: ITileOverlay[],
 ): (url: string, resourceType?: string) => RequestParameters | undefined {
-  return (url: string) => {
+  const overlayOrigins = buildOverlayOriginMap(overlays);
+
+  return (url: string, resourceType?: string) => {
     const stylesList = mapOptions.styles ?? (mapOptions.style ? [mapOptions.style] : [null]);
-    for (const style of stylesList) {
-      const referrerPolicy = getStyleRequestReferrerPolicy(style, url);
-      if (referrerPolicy) {
-        return { referrerPolicy };
+
+    if (resourceType === "Style") {
+      for (const style of stylesList) {
+        const referrerPolicy = resolveStyleReferrerPolicy(style);
+        if (referrerPolicy) {
+          return { url, referrerPolicy };
+        }
       }
+      return undefined;
     }
 
-    const overlay = overlays.find((candidate) => candidate.urlTemplate === url);
-    const overlayReferrerPolicy = toRequestReferrerPolicy(overlay?.referrerPolicy);
-    if (overlayReferrerPolicy) {
-      return { referrerPolicy: overlayReferrerPolicy };
+    if (resourceType === "Tile" || resourceType === "Source") {
+      // check style-level tile referrer policies first
+      for (const style of stylesList) {
+        const referrerPolicy = resolveStyleTileReferrerPolicy(style);
+        if (referrerPolicy) {
+          return { url, referrerPolicy };
+        }
+      }
+
+      // fall back to overlay origin matching
+      try {
+        const requestOrigin = new URL(url).origin;
+        const overlayPolicy = overlayOrigins.get(requestOrigin);
+        if (overlayPolicy) {
+          return { url, referrerPolicy: overlayPolicy };
+        }
+      } catch {
+        // invalid URL, skip
+      }
+
+      return undefined;
     }
 
     return undefined;
@@ -121,7 +157,7 @@ function createTransformRequest(
 function createMapTransformRequest(
   getMap: () => MapLibreMap | null,
 ): (url: string, resourceType?: string) => RequestParameters | undefined {
-  return (url: string) => {
+  return (url: string, resourceType?: string) => {
     const map = getMap();
     if (!map) {
       return undefined;
@@ -132,7 +168,7 @@ function createMapTransformRequest(
       return undefined;
     }
 
-    return createTransformRequest(requestContext.mapOptions, requestContext.overlays)(url);
+    return createTransformRequest(requestContext.mapOptions, requestContext.overlays)(url, resourceType);
   };
 }
 
@@ -418,7 +454,6 @@ export function buildStyleFromOptions(style: IMapStyle | null): string | StyleSp
           tiles: [style.rasterSource.urlTemplate],
           tileSize: style.rasterSource.tileSize,
           attribution: style.rasterSource.attribution,
-          referrerPolicy: style.rasterSource.referrerPolicy ?? style.referrerPolicy ?? undefined,
         },
       },
       layers: [{ id: "raster-layer", type: "raster", source: "raster-tiles" }],
@@ -452,7 +487,6 @@ export function buildStyleFromOptions(style: IMapStyle | null): string | StyleSp
           tiles: [wmsUrl],
           tileSize: style.wmsSource.tileSize,
           attribution: style.wmsSource.attribution,
-          referrerPolicy: style.wmsSource.referrerPolicy ?? style.referrerPolicy ?? undefined,
         },
       },
       layers: [{ id: "raster-layer", type: "raster", source: "raster-tiles" }],
@@ -882,7 +916,6 @@ export function setOverlays(mapElement: HTMLElement, overlays: ITileOverlay[]): 
       tiles: [overlay.urlTemplate],
       tileSize: overlay.tileSize,
       attribution: overlay.attribution,
-      referrerPolicy: overlay.referrerPolicy ?? undefined,
     });
 
     map.addLayer({

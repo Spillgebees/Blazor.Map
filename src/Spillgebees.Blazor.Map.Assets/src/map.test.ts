@@ -336,41 +336,6 @@ describe("buildStyleFromOptions", () => {
           tiles: ["https://tiles.example.com/{z}/{x}/{y}.png"],
           tileSize: 256,
           attribution: "© Example",
-          referrerPolicy: "origin",
-        },
-      },
-      layers: [{ id: "raster-layer", type: "raster", source: "raster-tiles" }],
-    });
-  });
-
-  it("should apply style-level referrer policy to raster sources", () => {
-    // arrange
-    const style: IMapStyle = {
-      id: null,
-      url: null,
-      referrerPolicy: "strict-origin-when-cross-origin",
-      rasterSource: {
-        urlTemplate: "https://tiles.example.com/{z}/{x}/{y}.png",
-        attribution: "© Example",
-        tileSize: 256,
-        referrerPolicy: null,
-      },
-      wmsSource: null,
-    };
-
-    // act
-    const result = buildStyleFromOptions(style);
-
-    // assert
-    expect(result).toEqual({
-      version: 8,
-      sources: {
-        "raster-tiles": {
-          type: "raster",
-          tiles: ["https://tiles.example.com/{z}/{x}/{y}.png"],
-          tileSize: 256,
-          attribution: "© Example",
-          referrerPolicy: "strict-origin-when-cross-origin",
         },
       },
       layers: [{ id: "raster-layer", type: "raster", source: "raster-tiles" }],
@@ -411,48 +376,6 @@ describe("buildStyleFromOptions", () => {
           ],
           tileSize: 256,
           attribution: "© WMS Provider",
-          referrerPolicy: "same-origin",
-        },
-      },
-      layers: [{ id: "raster-layer", type: "raster", source: "raster-tiles" }],
-    });
-  });
-
-  it("should apply style-level referrer policy to wms sources", () => {
-    // arrange
-    const style: IMapStyle = {
-      id: null,
-      url: null,
-      referrerPolicy: "no-referrer",
-      rasterSource: null,
-      wmsSource: {
-        baseUrl: "https://wms.example.com/wms",
-        layers: "streets",
-        attribution: "© WMS Provider",
-        format: "image/png",
-        transparent: true,
-        version: "1.1.1",
-        tileSize: 256,
-        referrerPolicy: null,
-      },
-    };
-
-    // act
-    const result = buildStyleFromOptions(style);
-
-    // assert
-    expect(result).toEqual({
-      version: 8,
-      sources: {
-        "raster-tiles": {
-          type: "raster",
-          tiles: [
-            // biome-ignore lint/security/noSecrets: WMS URL for testing, not a secret
-            "https://wms.example.com/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=streets&FORMAT=image/png&TRANSPARENT=true&SRS=EPSG:3857&STYLES=&WIDTH=256&HEIGHT=256&BBOX={bbox-epsg-3857}",
-          ],
-          tileSize: 256,
-          attribution: "© WMS Provider",
-          referrerPolicy: "no-referrer",
         },
       },
       layers: [{ id: "raster-layer", type: "raster", source: "raster-tiles" }],
@@ -542,7 +465,7 @@ describe("createMap", () => {
     );
   });
 
-  it("should configure transformRequest when the base style declares a referrer policy", () => {
+  it("should configure transformRequest for Style resource type when the base style declares a referrer policy", () => {
     // arrange
     const mapElement = document.createElement("div");
     const dotNetHelper = createMockDotNetHelper();
@@ -561,11 +484,11 @@ describe("createMap", () => {
     createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
 
     // assert
-    const requestParameters = getLatestMockMapInstance()?.transformRequest?.("https://example.com/style.json");
-    expect(requestParameters).toEqual({ referrerPolicy: "no-referrer" });
+    const requestParameters = getLatestMockMapInstance()?.transformRequest?.("https://example.com/style.json", "Style");
+    expect(requestParameters).toEqual({ url: "https://example.com/style.json", referrerPolicy: "no-referrer" });
   });
 
-  it("should use origin referrer policy for the openstreetmap preset", () => {
+  it("should apply raster source referrer policy for Tile resource type", () => {
     // arrange
     const mapElement = document.createElement("div");
     const dotNetHelper = createMockDotNetHelper();
@@ -598,69 +521,15 @@ describe("createMap", () => {
       [],
     );
 
-    // assert
+    // assert — uses a resolved tile URL, not the template
     const requestParameters = getLatestMockMapInstance()?.transformRequest?.(
-      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "https://tile.openstreetmap.org/5/16/11.png",
+      "Tile",
     );
-    expect(requestParameters).toEqual({ referrerPolicy: "origin" });
+    expect(requestParameters).toEqual({ url: "https://tile.openstreetmap.org/5/16/11.png", referrerPolicy: "origin" });
   });
 
-  it("should leave custom sources unset when no referrer policy is configured", () => {
-    // arrange
-    const mapElement = document.createElement("div");
-    const dotNetHelper = createMockDotNetHelper();
-    const mapOptions = createDefaultMapOptions({
-      style: {
-        id: "base-style",
-        url: "https://example.com/style.json",
-        referrerPolicy: null,
-        rasterSource: null,
-        wmsSource: null,
-      },
-    });
-    const controlOptions = createDefaultControlOptions();
-
-    // act
-    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
-
-    // assert
-    const requestParameters = getLatestMockMapInstance()?.transformRequest?.("https://example.com/style.json");
-    expect(requestParameters).toBeUndefined();
-  });
-
-  it("should configure transformRequest for overlays when a referrer policy is configured", () => {
-    // arrange
-    const mapElement = document.createElement("div");
-    const dotNetHelper = createMockDotNetHelper();
-    const overlay: ITileOverlay = {
-      id: "overlay-1",
-      urlTemplate: "https://tiles.example.com/{z}/{x}/{y}.png",
-      attribution: "© Example",
-      tileSize: 256,
-      opacity: 1,
-      referrerPolicy: "same-origin",
-    };
-
-    // act
-    createMap(
-      dotNetHelper,
-      "OnMapInitialized",
-      mapElement,
-      createDefaultMapOptions(),
-      createDefaultControlOptions(),
-      "light",
-      [],
-      [],
-      [],
-      [overlay],
-    );
-
-    // assert
-    const requestParameters = getLatestMockMapInstance()?.transformRequest?.(overlay.urlTemplate);
-    expect(requestParameters).toEqual({ referrerPolicy: "same-origin" });
-  });
-
-  it("should prefer style-level referrer policy for raster sources", () => {
+  it("should fall back to style-level referrer policy for Tile resource type when source has none", () => {
     // arrange
     const mapElement = document.createElement("div");
     const dotNetHelper = createMockDotNetHelper();
@@ -695,12 +564,16 @@ describe("createMap", () => {
 
     // assert
     const requestParameters = getLatestMockMapInstance()?.transformRequest?.(
-      "https://tiles.example.com/{z}/{x}/{y}.png",
+      "https://tiles.example.com/5/16/11.png",
+      "Tile",
     );
-    expect(requestParameters).toEqual({ referrerPolicy: "strict-origin" });
+    expect(requestParameters).toEqual({
+      url: "https://tiles.example.com/5/16/11.png",
+      referrerPolicy: "strict-origin",
+    });
   });
 
-  it("should prefer style-level referrer policy for wms sources", () => {
+  it("should apply WMS source referrer policy for Tile resource type", () => {
     // arrange
     const mapElement = document.createElement("div");
     const dotNetHelper = createMockDotNetHelper();
@@ -722,9 +595,6 @@ describe("createMap", () => {
         },
       },
     });
-    const expectedWmsStyle = buildStyleFromOptions(mapOptions.style as IMapStyle) as {
-      sources: { "raster-tiles": { tiles: string[] } };
-    };
 
     // act
     createMap(
@@ -740,11 +610,158 @@ describe("createMap", () => {
       [],
     );
 
-    // assert
+    // assert — uses a resolved WMS tile URL, not the template
     const requestParameters = getLatestMockMapInstance()?.transformRequest?.(
-      expectedWmsStyle.sources["raster-tiles"].tiles[0],
+      // biome-ignore lint/security/noSecrets: WMS URL for testing, not a secret
+      "https://wms.example.com/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=roads&FORMAT=image/png",
+      "Tile",
     );
-    expect(requestParameters).toEqual({ referrerPolicy: "origin-when-cross-origin" });
+    expect(requestParameters).toEqual({
+      // biome-ignore lint/security/noSecrets: WMS URL for testing, not a secret
+      url: "https://wms.example.com/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=roads&FORMAT=image/png",
+      referrerPolicy: "origin-when-cross-origin",
+    });
+  });
+
+  it("should leave requests unset when no referrer policy is configured", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions({
+      style: {
+        id: "base-style",
+        url: "https://example.com/style.json",
+        referrerPolicy: null,
+        rasterSource: null,
+        wmsSource: null,
+      },
+    });
+    const controlOptions = createDefaultControlOptions();
+
+    // act
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
+
+    // assert
+    const requestParameters = getLatestMockMapInstance()?.transformRequest?.("https://example.com/style.json", "Style");
+    expect(requestParameters).toBeUndefined();
+  });
+
+  it("should configure transformRequest for overlay tiles matched by URL origin", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const overlay: ITileOverlay = {
+      id: "overlay-1",
+      urlTemplate: "https://tiles.example.com/{z}/{x}/{y}.png",
+      attribution: "© Example",
+      tileSize: 256,
+      opacity: 1,
+      referrerPolicy: "same-origin",
+    };
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [overlay],
+    );
+
+    // assert — uses a resolved tile URL, matched by URL origin
+    const requestParameters = getLatestMockMapInstance()?.transformRequest?.(
+      "https://tiles.example.com/5/16/11.png",
+      "Tile",
+    );
+    expect(requestParameters).toEqual({ url: "https://tiles.example.com/5/16/11.png", referrerPolicy: "same-origin" });
+  });
+
+  it("should match multiple overlays with different referrer policies by URL origin", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const overlay1: ITileOverlay = {
+      id: "overlay-1",
+      urlTemplate: "https://tiles-a.example.com/{z}/{x}/{y}.png",
+      attribution: "© A",
+      tileSize: 256,
+      opacity: 1,
+      referrerPolicy: "origin",
+    };
+    const overlay2: ITileOverlay = {
+      id: "overlay-2",
+      urlTemplate: "https://tiles-b.example.com/{z}/{x}/{y}.png",
+      attribution: "© B",
+      tileSize: 256,
+      opacity: 1,
+      referrerPolicy: "no-referrer",
+    };
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [overlay1, overlay2],
+    );
+
+    // assert
+    const mockMap = getLatestMockMapInstance()!;
+    expect(mockMap.transformRequest?.("https://tiles-a.example.com/5/16/11.png", "Tile")).toEqual({
+      url: "https://tiles-a.example.com/5/16/11.png",
+      referrerPolicy: "origin",
+    });
+    expect(mockMap.transformRequest?.("https://tiles-b.example.com/5/16/11.png", "Tile")).toEqual({
+      url: "https://tiles-b.example.com/5/16/11.png",
+      referrerPolicy: "no-referrer",
+    });
+  });
+
+  it("should return undefined for unknown URLs", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions({
+      style: {
+        id: "base-style",
+        url: "https://example.com/style.json",
+        referrerPolicy: "no-referrer",
+        rasterSource: null,
+        wmsSource: null,
+      },
+    });
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      mapOptions,
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    // assert — unknown resource type should not match
+    const requestParameters = getLatestMockMapInstance()?.transformRequest?.(
+      "https://unknown.example.com/resource",
+      "Unknown",
+    );
+    expect(requestParameters).toBeUndefined();
   });
 
   it("should build raster style from rasterSource", () => {
@@ -2738,7 +2755,7 @@ describe("setOverlays", () => {
     // act
     setOverlays(mapElement, [overlay]);
 
-    // assert
+    // assert — referrerPolicy should NOT be on the source spec (MapLibre ignores it)
     expect(mockMap.addSource).toHaveBeenCalledWith("sgb-overlay-overlay-1", {
       type: "raster",
       tiles: ["https://tiles.example.com/{z}/{x}/{y}.png"],
