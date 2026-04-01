@@ -57,7 +57,7 @@ import {
 import { applyOverlayStyles, validateComposedGlyphs } from "./styles/composition";
 import type { FeatureStorage } from "./types/feature-storage";
 
-export const PROTOCOL_VERSION = 8;
+export const PROTOCOL_VERSION = 9;
 
 const DEFAULT_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 
@@ -597,12 +597,6 @@ export function setMapOptions(mapElement: HTMLElement, mapOptions: IMapOptions):
 
   window.Spillgebees.Map.mapOptions.set(map, mapOptions);
 
-  // Update center and zoom
-  map.jumpTo({
-    center: [mapOptions.center.longitude, mapOptions.center.latitude],
-    zoom: mapOptions.zoom,
-  });
-
   // Update pitch and bearing
   map.setPitch(mapOptions.pitch);
   map.setBearing(mapOptions.bearing);
@@ -616,6 +610,10 @@ export function setMapOptions(mapElement: HTMLElement, mapOptions: IMapOptions):
   } else {
     map.setMaxBounds(undefined as unknown as Parameters<typeof map.setMaxBounds>[0]);
   }
+
+  // Update minZoom and maxZoom
+  map.setMinZoom(mapOptions.minZoom ?? undefined);
+  map.setMaxZoom(mapOptions.maxZoom ?? undefined);
 
   // Resolve styles list
   const stylesList = mapOptions.styles ?? (mapOptions.style ? [mapOptions.style] : [null]);
@@ -658,9 +656,23 @@ export function setMapOptions(mapElement: HTMLElement, mapOptions: IMapOptions):
     })();
   }
 
-  // Handle projection
-  const projection = mapOptions.projection === "globe" ? "globe" : "mercator";
-  map.setProjection(projection);
+  // Handle projection (only when changed)
+  // getProjection() returns undefined when the style has no explicit projection field
+  const newProjection = mapOptions.projection === "globe" ? "globe" : "mercator";
+  const currentProjection = map.getProjection()?.type ?? "mercator";
+  if (currentProjection !== newProjection) {
+    map.setProjection(newProjection);
+  }
+
+  // Update viewport last so nothing can override it
+  if (mapOptions.fitBoundsOptions) {
+    fitBounds(mapElement, mapOptions.fitBoundsOptions);
+  } else {
+    map.jumpTo({
+      center: [mapOptions.center.longitude, mapOptions.center.latitude],
+      zoom: mapOptions.zoom,
+    });
+  }
 }
 
 export function setTheme(mapElement: HTMLElement, theme: string): void {
@@ -847,7 +859,7 @@ export function setControls(mapElement: HTMLElement, controlOptions: IMapControl
 
   // Custom center control
   if (controlOptions.center?.enable) {
-    const center = new CenterControl(controlOptions.center);
+    const center = new CenterControl();
     map.addControl(center, controlOptions.center.position);
     controls.add(center);
   }

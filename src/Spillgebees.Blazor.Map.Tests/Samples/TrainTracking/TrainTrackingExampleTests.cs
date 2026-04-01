@@ -6,13 +6,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Spillgebees.Blazor.Map.Components;
 using Spillgebees.Blazor.Map.Components.Layers;
+using Spillgebees.Blazor.Map.Docs.Samples.TrainTracking;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Expressions;
 using Spillgebees.Blazor.Map.Models.Legends;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
-using Spillgebees.Blazor.Map.Docs.Samples.TrainTracking;
 
 namespace Spillgebees.Blazor.Map.Tests.Samples.TrainTracking;
 
@@ -38,7 +38,7 @@ public class TrainTrackingExampleTests : BunitContext
 
         Services.AddSingleton<IConfiguration>(CreateConfiguration());
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(8);
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(9);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
@@ -173,19 +173,28 @@ public class TrainTrackingExampleTests : BunitContext
             .Should()
             .BeEquivalentTo(
                 new[] { 1.33, -0.33 },
-                options => options.Using<double>(ctx => ctx.Subject.Should().BeApproximately(ctx.Expectation, 1e-10)).WhenTypeIs<double>()
+                options =>
+                    options
+                        .Using<double>(ctx => ctx.Subject.Should().BeApproximately(ctx.Expectation, 1e-10))
+                        .WhenTypeIs<double>()
             );
         GetLayoutValue(routeLayerSpec, "text-offset")
             .Should()
             .BeEquivalentTo(
                 new[] { 2.0, 0.75 },
-                options => options.Using<double>(ctx => ctx.Subject.Should().BeApproximately(ctx.Expectation, 1e-10)).WhenTypeIs<double>()
+                options =>
+                    options
+                        .Using<double>(ctx => ctx.Subject.Should().BeApproximately(ctx.Expectation, 1e-10))
+                        .WhenTypeIs<double>()
             );
         GetLayoutValue(operatorLayerSpec, "text-offset")
             .Should()
             .BeEquivalentTo(
                 new[] { -1.6, -0.4 },
-                options => options.Using<double>(ctx => ctx.Subject.Should().BeApproximately(ctx.Expectation, 1e-10)).WhenTypeIs<double>()
+                options =>
+                    options
+                        .Using<double>(ctx => ctx.Subject.Should().BeApproximately(ctx.Expectation, 1e-10))
+                        .WhenTypeIs<double>()
             );
         GetPaintValue(serviceLayerSpec, "text-opacity")
             .Should()
@@ -211,7 +220,12 @@ public class TrainTrackingExampleTests : BunitContext
                         1.0,
                         0.0,
                     },
-                    new object[] { "==", new object[] { "get", TrackedEntityFeatureProperties.DisplayMode }, "hover-or-selected" },
+                    new object[]
+                    {
+                        "==",
+                        new object[] { "get", TrackedEntityFeatureProperties.DisplayMode },
+                        "hover-or-selected",
+                    },
                     new object[]
                     {
                         "case",
@@ -532,12 +546,7 @@ public class TrainTrackingExampleTests : BunitContext
                         Label = "Routes",
                         IsVisibleByDefault = true,
                         StyleId = TrainTrackingPresentation.OverlayStyleId,
-                        LayerIds = new[]
-                        {
-                            "railway-routes-casing",
-                            "railway-routes",
-                            "railway-routes-label",
-                        },
+                        LayerIds = new[] { "railway-routes-casing", "railway-routes", "railway-routes-label" },
                     },
                     new
                     {
@@ -825,13 +834,12 @@ public class TrainTrackingExampleTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public async Task Should_keep_selected_train_identity_stable_after_rebuild(
-        CancellationToken cancellationToken
-    )
+    public async Task Should_keep_selected_train_identity_stable_after_rebuild(CancellationToken cancellationToken)
     {
         // arrange
         var cut = Render<TrainTrackingExample>();
-        cut.FindComponent<TrackedDataSource<TrainSampleState>>().Instance.TryGetEntity("cfl-re11", out var selectedTrainEntity);
+        cut.FindComponent<TrackedDataSource<TrainSampleState>>()
+            .Instance.TryGetEntity("cfl-re11", out var selectedTrainEntity);
         var selectedTrainBefore = selectedTrainEntity!;
         var interaction = CreateTrainInteraction(selectedTrainBefore);
 

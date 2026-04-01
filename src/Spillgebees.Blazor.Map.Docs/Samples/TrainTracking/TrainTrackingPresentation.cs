@@ -150,11 +150,7 @@ public static class TrainTrackingPresentation
                             [
                                 new MapLegendTargetDefinition(
                                     OverlayStyleId,
-                                    [
-                                        "railway-routes-casing",
-                                        "railway-routes",
-                                        "railway-routes-label",
-                                    ]
+                                    ["railway-routes-casing", "railway-routes", "railway-routes-label"]
                                 ),
                             ],
                             true,

@@ -19,7 +19,7 @@ internal static class MapJs
     /// The protocol version this C# library expects from the JS module.
     /// Bumped whenever the JS interop contract changes (function names, parameter shapes, return types).
     /// </summary>
-    internal const int ProtocolVersion = 8;
+    internal const int ProtocolVersion = 9;
 
     private const string JsNamespace = "Spillgebees.Map.mapFunctions";
     private const string JsProtocolVersionFunction = "Spillgebees.Map.getProtocolVersion";
@@ -125,7 +125,8 @@ internal static class MapJs
         ILogger logger,
         ElementReference mapReference,
         MapControlOptions mapControlOptions
-    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.setControls", mapReference, ToJsModel(mapControlOptions));
+    ) =>
+        jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.setControls", mapReference, ToJsModel(mapControlOptions));
 
     internal static ValueTask SetLegendControlAsync(
         IJSRuntime jsRuntime,
@@ -352,14 +353,7 @@ internal static class MapJs
             mapControlOptions.Terrain,
             Center = mapControlOptions.Center is null
                 ? null
-                : new
-                {
-                    mapControlOptions.Center.Enable,
-                    mapControlOptions.Center.Position,
-                    mapControlOptions.Center.Center,
-                    mapControlOptions.Center.Zoom,
-                    FitBoundsOptions = ToJsModel(mapControlOptions.Center.FitBoundsOptions),
-                },
+                : new { mapControlOptions.Center.Enable, mapControlOptions.Center.Position },
         };
 
     private static object ToJsModel(Polyline polyline) =>

@@ -10,5 +10,6 @@ public sealed record TrackedDataInteractionOptions<TItem>(
 )
 {
     public bool GetIsHovered(TItem item) => IsHovered?.Invoke(item) ?? false;
+
     public bool GetIsSelected(TItem item) => IsSelected?.Invoke(item) ?? false;
 }

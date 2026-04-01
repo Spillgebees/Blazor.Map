@@ -16,6 +16,12 @@
     <BasicMapExample />
 </ExampleView>
 
+<h2 id="fit_bounds_padding">// fit_bounds_padding</h2>
+<p><code>FitBoundsOptions</code> fits the map viewport to a set of features. Use <code>Padding</code> for uniform spacing on all sides, or <code>TopLeftPadding</code> and <code>BottomRightPadding</code> for asymmetric padding when UI elements like sidebars overlap the map. The <code>CenterControlOptions</code> button automatically reads the current <code>MapOptions</code> to re-center.</p>
+<ExampleView TComponent="FitBoundsPaddingExample">
+    <FitBoundsPaddingExample />
+</ExampleView>
+
 <h2 id="styles">// styles</h2>
 <p>Swap between built-in style presets using the <code>MapOptions.Style</code> property. The library ships with <code>MapStyle.OpenFreeMap.Liberty</code>, <code>Positron</code>, and <code>Bright</code>. Use <code>MapStyle.FromUrl</code> or <code>MapStyle.FromRasterUrl</code> for custom sources. Because <code>MapOptions</code> is a record, change styles reactively with a <code>with</code> expression.</p>
 <ExampleView TComponent="StyleSwitchingExample">

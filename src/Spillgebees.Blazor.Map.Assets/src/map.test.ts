@@ -1432,6 +1432,313 @@ describe("setMapOptions", () => {
     // biome-ignore lint/security/noSecrets: C# callback method name under test, not a secret
     expect(invokeMethodAsync).toHaveBeenCalledWith("OnMapStyleReloadedAsync");
   });
+
+  it("should call fitBounds instead of jumpTo when fitBoundsOptions is provided", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+    const mockMap = getLatestMockMapInstance()!;
+
+    // add markers so fitBounds has coordinates to work with
+    const marker1 = createDefaultMarker({ id: "m1", position: { latitude: 48.0, longitude: 2.0 } });
+    const marker2 = createDefaultMarker({ id: "m2", position: { latitude: 52.0, longitude: 4.0 } });
+    syncFeatures(mapElement, {
+      markers: { added: [marker1, marker2], updated: [], removedIds: [] },
+      circles: { added: [], updated: [], removedIds: [] },
+      polylines: { added: [], updated: [], removedIds: [] },
+    });
+
+    // mock getLngLat for each marker
+    const map = window.Spillgebees.Map.maps.get(mapElement)!;
+    const storage = window.Spillgebees.Map.features.get(map)!;
+    const markerEntry1 = storage.markers.get("m1")!;
+    const markerEntry2 = storage.markers.get("m2")!;
+    (markerEntry1.marker.getLngLat as ReturnType<typeof vi.fn>).mockReturnValue({ lng: 2.0, lat: 48.0 });
+    (markerEntry2.marker.getLngLat as ReturnType<typeof vi.fn>).mockReturnValue({ lng: 4.0, lat: 52.0 });
+
+    mockMap.jumpTo.mockClear();
+    mockMap.fitBounds.mockClear();
+
+    const newOptions = createDefaultMapOptions({
+      fitBoundsOptions: {
+        featureIds: ["m1", "m2"],
+        padding: null,
+        topLeftPadding: null,
+        bottomRightPadding: null,
+      },
+    });
+
+    // act
+    setMapOptions(mapElement, newOptions);
+
+    // assert
+    expect(mockMap.fitBounds).toHaveBeenCalled();
+    expect(mockMap.jumpTo).not.toHaveBeenCalled();
+  });
+
+  it("should call jumpTo when fitBoundsOptions is null", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.jumpTo.mockClear();
+    mockMap.fitBounds.mockClear();
+
+    const newOptions = createDefaultMapOptions({
+      center: { latitude: 48.8566, longitude: 2.3522 },
+      zoom: 10,
+      fitBoundsOptions: null,
+    });
+
+    // act
+    setMapOptions(mapElement, newOptions);
+
+    // assert
+    expect(mockMap.jumpTo).toHaveBeenCalledWith(
+      expect.objectContaining({
+        center: [2.3522, 48.8566],
+        zoom: 10,
+      }),
+    );
+    expect(mockMap.fitBounds).not.toHaveBeenCalled();
+  });
+
+  it("should update minZoom and maxZoom", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions({ minZoom: null, maxZoom: null }),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const mockMap = getLatestMockMapInstance()!;
+
+    const newOptions = createDefaultMapOptions({
+      minZoom: 5,
+      maxZoom: 15,
+    });
+
+    // act
+    setMapOptions(mapElement, newOptions);
+
+    // assert
+    expect(mockMap.setMinZoom).toHaveBeenCalledWith(5);
+    expect(mockMap.setMaxZoom).toHaveBeenCalledWith(15);
+  });
+
+  it("should clear minZoom and maxZoom when set to null", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const mockMap = getLatestMockMapInstance()!;
+
+    const newOptions = createDefaultMapOptions({
+      minZoom: null,
+      maxZoom: null,
+    });
+
+    // act
+    setMapOptions(mapElement, newOptions);
+
+    // assert
+    expect(mockMap.setMinZoom).toHaveBeenCalledWith(undefined);
+    expect(mockMap.setMaxZoom).toHaveBeenCalledWith(undefined);
+  });
+
+  it("should only call setProjection when projection changes", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions({ projection: "mercator" }),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getProjection.mockReturnValue({ type: "mercator" });
+    mockMap.setProjection.mockClear();
+
+    // act — same projection as current
+    setMapOptions(mapElement, createDefaultMapOptions({ projection: "mercator" }));
+
+    // assert — should NOT call setProjection when projection hasn't changed
+    expect(mockMap.setProjection).not.toHaveBeenCalled();
+
+    // act — different projection
+    setMapOptions(mapElement, createDefaultMapOptions({ projection: "globe" }));
+
+    // assert — should call setProjection when projection changes
+    expect(mockMap.setProjection).toHaveBeenCalledWith("globe");
+  });
+
+  it("should call jumpTo after all other state updates", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const mockMap = getLatestMockMapInstance()!;
+
+    const callOrder: string[] = [];
+    (mockMap.setPitch as ReturnType<typeof vi.fn>).mockImplementation(() => callOrder.push("setPitch"));
+    (mockMap.setBearing as ReturnType<typeof vi.fn>).mockImplementation(() => callOrder.push("setBearing"));
+    (mockMap.setMaxBounds as ReturnType<typeof vi.fn>).mockImplementation(() => callOrder.push("setMaxBounds"));
+    (mockMap.setMinZoom as ReturnType<typeof vi.fn>).mockImplementation(() => callOrder.push("setMinZoom"));
+    (mockMap.setMaxZoom as ReturnType<typeof vi.fn>).mockImplementation(() => callOrder.push("setMaxZoom"));
+    (mockMap.setProjection as ReturnType<typeof vi.fn>).mockImplementation(() => callOrder.push("setProjection"));
+    (mockMap.jumpTo as ReturnType<typeof vi.fn>).mockImplementation(() => callOrder.push("jumpTo"));
+    // make getProjection return a different value so setProjection is called
+    mockMap.getProjection.mockReturnValue({ type: "mercator" });
+
+    // act
+    setMapOptions(
+      mapElement,
+      createDefaultMapOptions({
+        center: { latitude: 48.8566, longitude: 2.3522 },
+        zoom: 15,
+        projection: "globe",
+      }),
+    );
+
+    // assert — jumpTo should be the last call
+    expect(callOrder).toContain("jumpTo");
+    expect(callOrder.indexOf("jumpTo")).toBeGreaterThan(callOrder.indexOf("setPitch"));
+    expect(callOrder.indexOf("jumpTo")).toBeGreaterThan(callOrder.indexOf("setBearing"));
+    expect(callOrder.indexOf("jumpTo")).toBeGreaterThan(callOrder.indexOf("setMaxBounds"));
+    expect(callOrder.indexOf("jumpTo")).toBeGreaterThan(callOrder.indexOf("setMinZoom"));
+    expect(callOrder.indexOf("jumpTo")).toBeGreaterThan(callOrder.indexOf("setMaxZoom"));
+    expect(callOrder.indexOf("jumpTo")).toBeGreaterThan(callOrder.indexOf("setProjection"));
+  });
+
+  it("should call fitBounds after all other state updates when fitBoundsOptions is provided", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+    const mockMap = getLatestMockMapInstance()!;
+
+    // add markers so fitBounds has coordinates to work with
+    const marker1 = createDefaultMarker({ id: "m1", position: { latitude: 48.0, longitude: 2.0 } });
+    const marker2 = createDefaultMarker({ id: "m2", position: { latitude: 52.0, longitude: 4.0 } });
+    syncFeatures(mapElement, {
+      markers: { added: [marker1, marker2], updated: [], removedIds: [] },
+      circles: { added: [], updated: [], removedIds: [] },
+      polylines: { added: [], updated: [], removedIds: [] },
+    });
+
+    const map = window.Spillgebees.Map.maps.get(mapElement)!;
+    const storage = window.Spillgebees.Map.features.get(map)!;
+    const markerEntry1 = storage.markers.get("m1")!;
+    const markerEntry2 = storage.markers.get("m2")!;
+    (markerEntry1.marker.getLngLat as ReturnType<typeof vi.fn>).mockReturnValue({ lng: 2.0, lat: 48.0 });
+    (markerEntry2.marker.getLngLat as ReturnType<typeof vi.fn>).mockReturnValue({ lng: 4.0, lat: 52.0 });
+
+    const callOrder: string[] = [];
+    (mockMap.setPitch as ReturnType<typeof vi.fn>).mockImplementation(() => callOrder.push("setPitch"));
+    (mockMap.setBearing as ReturnType<typeof vi.fn>).mockImplementation(() => callOrder.push("setBearing"));
+    (mockMap.setMaxBounds as ReturnType<typeof vi.fn>).mockImplementation(() => callOrder.push("setMaxBounds"));
+    (mockMap.setMinZoom as ReturnType<typeof vi.fn>).mockImplementation(() => callOrder.push("setMinZoom"));
+    (mockMap.setMaxZoom as ReturnType<typeof vi.fn>).mockImplementation(() => callOrder.push("setMaxZoom"));
+    (mockMap.setProjection as ReturnType<typeof vi.fn>).mockImplementation(() => callOrder.push("setProjection"));
+    (mockMap.fitBounds as ReturnType<typeof vi.fn>).mockImplementation(() => callOrder.push("fitBounds"));
+    mockMap.getProjection.mockReturnValue({ type: "mercator" });
+
+    const newOptions = createDefaultMapOptions({
+      fitBoundsOptions: {
+        featureIds: ["m1", "m2"],
+        padding: null,
+        topLeftPadding: null,
+        bottomRightPadding: null,
+      },
+      projection: "globe",
+    });
+
+    // act
+    setMapOptions(mapElement, newOptions);
+
+    // assert — fitBounds should be the last call
+    expect(callOrder).toContain("fitBounds");
+    expect(callOrder.indexOf("fitBounds")).toBeGreaterThan(callOrder.indexOf("setPitch"));
+    expect(callOrder.indexOf("fitBounds")).toBeGreaterThan(callOrder.indexOf("setBearing"));
+    expect(callOrder.indexOf("fitBounds")).toBeGreaterThan(callOrder.indexOf("setMaxBounds"));
+    expect(callOrder.indexOf("fitBounds")).toBeGreaterThan(callOrder.indexOf("setMinZoom"));
+    expect(callOrder.indexOf("fitBounds")).toBeGreaterThan(callOrder.indexOf("setMaxZoom"));
+    expect(callOrder.indexOf("fitBounds")).toBeGreaterThan(callOrder.indexOf("setProjection"));
+  });
 });
 
 describe("setControls", () => {

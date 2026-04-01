@@ -14,7 +14,9 @@
   <!-- Workaround: SDK 0.3.0 generates manifests but EmbeddedResource items are added
        too late for the compiler. Manually reference the generated files. -->
   <ItemGroup>
-    <EmbeddedResource Include="obj/DocsSdk/manifests/Spillgebees.Blazor.Map.json"
-      LogicalName="ApiManifest:Spillgebees.Blazor.Map" />
+    <EmbeddedResource
+      Include="obj/DocsSdk/manifests/Spillgebees.Blazor.Map.json"
+      LogicalName="ApiManifest:Spillgebees.Blazor.Map"
+    />
   </ItemGroup>
 </Project>

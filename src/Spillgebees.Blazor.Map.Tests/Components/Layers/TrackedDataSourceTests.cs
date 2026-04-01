@@ -27,7 +27,7 @@ public class TrackedDataSourceTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(8);
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(9);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
@@ -254,7 +254,12 @@ public class TrackedDataSourceTests : BunitContext
                         1.0,
                         0.0,
                     },
-                    new object[] { "==", new object[] { "get", TrackedEntityFeatureProperties.DisplayMode }, "hover-or-selected" },
+                    new object[]
+                    {
+                        "==",
+                        new object[] { "get", TrackedEntityFeatureProperties.DisplayMode },
+                        "hover-or-selected",
+                    },
                     new object[]
                     {
                         "case",
@@ -333,7 +338,12 @@ public class TrackedDataSourceTests : BunitContext
                         1.0,
                         0.0,
                     },
-                    new object[] { "==", new object[] { "get", TrackedEntityFeatureProperties.DisplayMode }, "hover-or-selected" },
+                    new object[]
+                    {
+                        "==",
+                        new object[] { "get", TrackedEntityFeatureProperties.DisplayMode },
+                        "hover-or-selected",
+                    },
                     new object[]
                     {
                         "case",
@@ -505,7 +515,12 @@ public class TrackedDataSourceTests : BunitContext
                         1.0,
                         0.0,
                     },
-                    new object[] { "==", new object[] { "get", TrackedEntityFeatureProperties.DisplayMode }, "hover-or-selected" },
+                    new object[]
+                    {
+                        "==",
+                        new object[] { "get", TrackedEntityFeatureProperties.DisplayMode },
+                        "hover-or-selected",
+                    },
                     new object[]
                     {
                         "case",
@@ -571,7 +586,9 @@ public class TrackedDataSourceTests : BunitContext
         // primary layer now uses data-driven anchor expression
         GetLayoutValue(primaryLayerSpec, "icon-anchor")
             .Should()
-            .BeEquivalentTo(new object[] { "coalesce", new object[] { "get", TrackedEntityFeatureProperties.Anchor }, "center" });
+            .BeEquivalentTo(
+                new object[] { "coalesce", new object[] { "get", TrackedEntityFeatureProperties.Anchor }, "center" }
+            );
         TryGetLayoutValue(decorationLayerSpec, "icon-anchor", out _).Should().BeFalse();
         GetLayoutValue(decorationLayerSpec, "text-anchor").Should().Be("top");
         GetLayoutValue(decorationLayerSpec, "text-offset").Should().BeEquivalentTo(new[] { 1.0, -2.0 });
