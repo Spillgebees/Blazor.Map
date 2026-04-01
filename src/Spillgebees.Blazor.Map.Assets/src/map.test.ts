@@ -297,6 +297,7 @@ describe("buildStyleFromOptions", () => {
     const style: IMapStyle = {
       id: null,
       url: "https://example.com/style.json",
+      referrerPolicy: null,
       rasterSource: null,
       wmsSource: null,
     };
@@ -313,10 +314,12 @@ describe("buildStyleFromOptions", () => {
     const style: IMapStyle = {
       id: null,
       url: null,
+      referrerPolicy: null,
       rasterSource: {
         urlTemplate: "https://tiles.example.com/{z}/{x}/{y}.png",
         attribution: "© Example",
         tileSize: 256,
+        referrerPolicy: "origin",
       },
       wmsSource: null,
     };
@@ -333,6 +336,41 @@ describe("buildStyleFromOptions", () => {
           tiles: ["https://tiles.example.com/{z}/{x}/{y}.png"],
           tileSize: 256,
           attribution: "© Example",
+          referrerPolicy: "origin",
+        },
+      },
+      layers: [{ id: "raster-layer", type: "raster", source: "raster-tiles" }],
+    });
+  });
+
+  it("should apply style-level referrer policy to raster sources", () => {
+    // arrange
+    const style: IMapStyle = {
+      id: null,
+      url: null,
+      referrerPolicy: "strict-origin-when-cross-origin",
+      rasterSource: {
+        urlTemplate: "https://tiles.example.com/{z}/{x}/{y}.png",
+        attribution: "© Example",
+        tileSize: 256,
+        referrerPolicy: null,
+      },
+      wmsSource: null,
+    };
+
+    // act
+    const result = buildStyleFromOptions(style);
+
+    // assert
+    expect(result).toEqual({
+      version: 8,
+      sources: {
+        "raster-tiles": {
+          type: "raster",
+          tiles: ["https://tiles.example.com/{z}/{x}/{y}.png"],
+          tileSize: 256,
+          attribution: "© Example",
+          referrerPolicy: "strict-origin-when-cross-origin",
         },
       },
       layers: [{ id: "raster-layer", type: "raster", source: "raster-tiles" }],
@@ -344,6 +382,7 @@ describe("buildStyleFromOptions", () => {
     const style: IMapStyle = {
       id: null,
       url: null,
+      referrerPolicy: null,
       rasterSource: null,
       wmsSource: {
         baseUrl: "https://wms.example.com/wms",
@@ -353,6 +392,7 @@ describe("buildStyleFromOptions", () => {
         transparent: true,
         version: "1.1.1",
         tileSize: 256,
+        referrerPolicy: "same-origin",
       },
     };
 
@@ -371,6 +411,48 @@ describe("buildStyleFromOptions", () => {
           ],
           tileSize: 256,
           attribution: "© WMS Provider",
+          referrerPolicy: "same-origin",
+        },
+      },
+      layers: [{ id: "raster-layer", type: "raster", source: "raster-tiles" }],
+    });
+  });
+
+  it("should apply style-level referrer policy to wms sources", () => {
+    // arrange
+    const style: IMapStyle = {
+      id: null,
+      url: null,
+      referrerPolicy: "no-referrer",
+      rasterSource: null,
+      wmsSource: {
+        baseUrl: "https://wms.example.com/wms",
+        layers: "streets",
+        attribution: "© WMS Provider",
+        format: "image/png",
+        transparent: true,
+        version: "1.1.1",
+        tileSize: 256,
+        referrerPolicy: null,
+      },
+    };
+
+    // act
+    const result = buildStyleFromOptions(style);
+
+    // assert
+    expect(result).toEqual({
+      version: 8,
+      sources: {
+        "raster-tiles": {
+          type: "raster",
+          tiles: [
+            // biome-ignore lint/security/noSecrets: WMS URL for testing, not a secret
+            "https://wms.example.com/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=streets&FORMAT=image/png&TRANSPARENT=true&SRS=EPSG:3857&STYLES=&WIDTH=256&HEIGHT=256&BBOX={bbox-epsg-3857}",
+          ],
+          tileSize: 256,
+          attribution: "© WMS Provider",
+          referrerPolicy: "no-referrer",
         },
       },
       layers: [{ id: "raster-layer", type: "raster", source: "raster-tiles" }],
@@ -382,10 +464,12 @@ describe("buildStyleFromOptions", () => {
     const style: IMapStyle = {
       id: null,
       url: "https://example.com/style.json",
+      referrerPolicy: null,
       rasterSource: {
         urlTemplate: "https://tiles.example.com/{z}/{x}/{y}.png",
         attribution: "© Example",
         tileSize: 256,
+        referrerPolicy: null,
       },
       wmsSource: null,
     };
@@ -458,6 +542,211 @@ describe("createMap", () => {
     );
   });
 
+  it("should configure transformRequest when the base style declares a referrer policy", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions({
+      style: {
+        id: "base-style",
+        url: "https://example.com/style.json",
+        referrerPolicy: "no-referrer",
+        rasterSource: null,
+        wmsSource: null,
+      },
+    });
+    const controlOptions = createDefaultControlOptions();
+
+    // act
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
+
+    // assert
+    const requestParameters = getLatestMockMapInstance()?.transformRequest?.("https://example.com/style.json");
+    expect(requestParameters).toEqual({ referrerPolicy: "no-referrer" });
+  });
+
+  it("should use origin referrer policy for the openstreetmap preset", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions({
+      style: {
+        id: "sgb-openstreetmap-standard",
+        url: null,
+        referrerPolicy: null,
+        rasterSource: {
+          urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          attribution: "© OpenStreetMap contributors",
+          tileSize: 256,
+          referrerPolicy: "origin",
+        },
+        wmsSource: null,
+      },
+    });
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      mapOptions,
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    // assert
+    const requestParameters = getLatestMockMapInstance()?.transformRequest?.(
+      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    );
+    expect(requestParameters).toEqual({ referrerPolicy: "origin" });
+  });
+
+  it("should leave custom sources unset when no referrer policy is configured", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions({
+      style: {
+        id: "base-style",
+        url: "https://example.com/style.json",
+        referrerPolicy: null,
+        rasterSource: null,
+        wmsSource: null,
+      },
+    });
+    const controlOptions = createDefaultControlOptions();
+
+    // act
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
+
+    // assert
+    const requestParameters = getLatestMockMapInstance()?.transformRequest?.("https://example.com/style.json");
+    expect(requestParameters).toBeUndefined();
+  });
+
+  it("should configure transformRequest for overlays when a referrer policy is configured", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const overlay: ITileOverlay = {
+      id: "overlay-1",
+      urlTemplate: "https://tiles.example.com/{z}/{x}/{y}.png",
+      attribution: "© Example",
+      tileSize: 256,
+      opacity: 1,
+      referrerPolicy: "same-origin",
+    };
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [overlay],
+    );
+
+    // assert
+    const requestParameters = getLatestMockMapInstance()?.transformRequest?.(overlay.urlTemplate);
+    expect(requestParameters).toEqual({ referrerPolicy: "same-origin" });
+  });
+
+  it("should prefer style-level referrer policy for raster sources", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions({
+      style: {
+        id: "raster-style",
+        url: null,
+        referrerPolicy: "strict-origin",
+        rasterSource: {
+          urlTemplate: "https://tiles.example.com/{z}/{x}/{y}.png",
+          attribution: "© Example",
+          tileSize: 256,
+          referrerPolicy: null,
+        },
+        wmsSource: null,
+      },
+    });
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      mapOptions,
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    // assert
+    const requestParameters = getLatestMockMapInstance()?.transformRequest?.(
+      "https://tiles.example.com/{z}/{x}/{y}.png",
+    );
+    expect(requestParameters).toEqual({ referrerPolicy: "strict-origin" });
+  });
+
+  it("should prefer style-level referrer policy for wms sources", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions({
+      style: {
+        id: "wms-style",
+        url: null,
+        referrerPolicy: "origin-when-cross-origin",
+        rasterSource: null,
+        wmsSource: {
+          baseUrl: "https://wms.example.com/wms",
+          layers: "roads",
+          attribution: "© Example",
+          format: "image/png",
+          transparent: true,
+          version: "1.1.1",
+          tileSize: 256,
+          referrerPolicy: null,
+        },
+      },
+    });
+    const expectedWmsStyle = buildStyleFromOptions(mapOptions.style as IMapStyle) as {
+      sources: { "raster-tiles": { tiles: string[] } };
+    };
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      mapOptions,
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    // assert
+    const requestParameters = getLatestMockMapInstance()?.transformRequest?.(
+      expectedWmsStyle.sources["raster-tiles"].tiles[0],
+    );
+    expect(requestParameters).toEqual({ referrerPolicy: "origin-when-cross-origin" });
+  });
+
   it("should build raster style from rasterSource", () => {
     // arrange
     const mapElement = document.createElement("div");
@@ -466,6 +755,7 @@ describe("createMap", () => {
       style: {
         id: null,
         url: null,
+        referrerPolicy: null,
         rasterSource: {
           urlTemplate: "https://tiles.example.com/{z}/{x}/{y}.png",
           attribution: "© Example",
@@ -904,7 +1194,13 @@ describe("setMapOptions", () => {
     mockMap.addLayer.mockClear();
 
     const newOptions = createDefaultMapOptions({
-      style: { id: "sgb-new-style", url: "https://example.com/new-style.json", rasterSource: null, wmsSource: null },
+      style: {
+        id: "sgb-new-style",
+        url: "https://example.com/new-style.json",
+        referrerPolicy: null,
+        rasterSource: null,
+        wmsSource: null,
+      },
     });
 
     // act
@@ -979,7 +1275,13 @@ describe("setMapOptions", () => {
     setMapOptions(
       mapElement,
       createDefaultMapOptions({
-        style: { id: "sgb-new-style", url: "https://example.com/new-style.json", rasterSource: null, wmsSource: null },
+        style: {
+          id: "sgb-new-style",
+          url: "https://example.com/new-style.json",
+          referrerPolicy: null,
+          rasterSource: null,
+          wmsSource: null,
+        },
       }),
     );
     fireMapEvent("styledata");
@@ -1188,7 +1490,13 @@ describe("setMapOptions", () => {
     setMapOptions(
       mapElement,
       createDefaultMapOptions({
-        style: { id: "sgb-alt-style", url: "https://example.com/alt-style.json", rasterSource: null, wmsSource: null },
+        style: {
+          id: "sgb-alt-style",
+          url: "https://example.com/alt-style.json",
+          referrerPolicy: null,
+          rasterSource: null,
+          wmsSource: null,
+        },
       }),
     );
     fireMapEvent("styledata");
@@ -1214,10 +1522,17 @@ describe("setMapOptions", () => {
       mapElement,
       createDefaultMapOptions({
         styles: [
-          { id: "sgb-base-style", url: "https://example.com/base-style.json", rasterSource: null, wmsSource: null },
+          {
+            id: "sgb-base-style",
+            url: "https://example.com/base-style.json",
+            referrerPolicy: null,
+            rasterSource: null,
+            wmsSource: null,
+          },
           {
             id: "sgb-overlay-style",
             url: "https://example.com/overlay-style.json",
+            referrerPolicy: null,
             rasterSource: null,
             wmsSource: null,
           },
@@ -1241,12 +1556,14 @@ describe("setMapOptions", () => {
           {
             id: "sgb-alt-base-style",
             url: "https://example.com/alt-base-style.json",
+            referrerPolicy: null,
             rasterSource: null,
             wmsSource: null,
           },
           {
             id: "sgb-overlay-style",
             url: "https://example.com/overlay-style.json",
+            referrerPolicy: null,
             rasterSource: null,
             wmsSource: null,
           },
@@ -1258,7 +1575,7 @@ describe("setMapOptions", () => {
     // assert
     expect(applyOverlayStylesSpy).toHaveBeenCalledWith(
       expect.anything(),
-      [{ styleId: "sgb-overlay-style", url: "https://example.com/overlay-style.json" }],
+      [{ styleId: "sgb-overlay-style", url: "https://example.com/overlay-style.json", referrerPolicy: null }],
       {
         forceReapply: true,
       },
@@ -1287,10 +1604,17 @@ describe("setMapOptions", () => {
       mapElement,
       createDefaultMapOptions({
         styles: [
-          { id: "sgb-base-style", url: "https://example.com/base-style.json", rasterSource: null, wmsSource: null },
+          {
+            id: "sgb-base-style",
+            url: "https://example.com/base-style.json",
+            referrerPolicy: null,
+            rasterSource: null,
+            wmsSource: null,
+          },
           {
             id: "sgb-overlay-style",
             url: "https://example.com/overlay-style.json",
+            referrerPolicy: null,
             rasterSource: null,
             wmsSource: null,
           },
@@ -1316,12 +1640,14 @@ describe("setMapOptions", () => {
           {
             id: "sgb-alt-base-style",
             url: "https://example.com/alt-base-style.json",
+            referrerPolicy: null,
             rasterSource: null,
             wmsSource: null,
           },
           {
             id: "sgb-overlay-style",
             url: "https://example.com/overlay-style.json",
+            referrerPolicy: null,
             rasterSource: null,
             wmsSource: null,
           },
@@ -1334,7 +1660,7 @@ describe("setMapOptions", () => {
     // assert
     expect(applyOverlayStylesSpy).toHaveBeenCalledWith(
       expect.anything(),
-      [{ styleId: "sgb-overlay-style", url: "https://example.com/overlay-style.json" }],
+      [{ styleId: "sgb-overlay-style", url: "https://example.com/overlay-style.json", referrerPolicy: null }],
       { forceReapply: true },
     );
     // biome-ignore lint/security/noSecrets: C# callback method name under test, not a secret
@@ -1421,7 +1747,13 @@ describe("setMapOptions", () => {
     setMapOptions(
       mapElement,
       createDefaultMapOptions({
-        style: { id: "sgb-base-style", url: "https://example.com/new-style.json", rasterSource: null, wmsSource: null },
+        style: {
+          id: "sgb-base-style",
+          url: "https://example.com/new-style.json",
+          referrerPolicy: null,
+          rasterSource: null,
+          wmsSource: null,
+        },
       }),
     );
     fireMapEvent("styledata");
@@ -3015,7 +3347,13 @@ describe("advanced interop helpers", () => {
       mapElement,
       createDefaultMapOptions({
         styles: [
-          { id: "sgb-positron", url: "https://example.com/base-style.json", rasterSource: null, wmsSource: null },
+          {
+            id: "sgb-positron",
+            url: "https://example.com/base-style.json",
+            referrerPolicy: null,
+            rasterSource: null,
+            wmsSource: null,
+          },
         ],
       }),
       createDefaultControlOptions(),
@@ -3515,7 +3853,13 @@ describe("composed glyph validation", () => {
     const mapElement = document.createElement("div");
     const dotNetHelper = createMockDotNetHelper();
     const mapOptions = createDefaultMapOptions({
-      style: { id: "sgb-base", url: "https://example.com/base.json", rasterSource: null, wmsSource: null },
+      style: {
+        id: "sgb-base",
+        url: "https://example.com/base.json",
+        referrerPolicy: null,
+        rasterSource: null,
+        wmsSource: null,
+      },
     });
 
     // act
@@ -3545,8 +3889,20 @@ describe("composed glyph validation", () => {
     const dotNetHelper = createMockDotNetHelper();
     const mapOptions = createDefaultMapOptions({
       styles: [
-        { id: "sgb-base", url: "https://example.com/base.json", rasterSource: null, wmsSource: null },
-        { id: "sgb-overlay", url: "https://example.com/overlay.json", rasterSource: null, wmsSource: null },
+        {
+          id: "sgb-base",
+          url: "https://example.com/base.json",
+          referrerPolicy: null,
+          rasterSource: null,
+          wmsSource: null,
+        },
+        {
+          id: "sgb-overlay",
+          url: "https://example.com/overlay.json",
+          referrerPolicy: null,
+          rasterSource: null,
+          wmsSource: null,
+        },
       ],
     });
 
@@ -3572,9 +3928,70 @@ describe("composed glyph validation", () => {
     });
 
     // assert
-    expect(validateComposedGlyphsSpy).toHaveBeenCalledWith(map, ["https://example.com/overlay.json"], null);
-    expect(applyOverlayStylesSpy).toHaveBeenCalled();
+    expect(validateComposedGlyphsSpy).toHaveBeenCalledWith(
+      map,
+      [{ styleId: "sgb-overlay", url: "https://example.com/overlay.json", referrerPolicy: null }],
+      null,
+    );
+    expect(applyOverlayStylesSpy).toHaveBeenCalledWith(map, [
+      { styleId: "sgb-overlay", url: "https://example.com/overlay.json", referrerPolicy: null },
+    ]);
     expect(map.setStyle).not.toHaveBeenCalledWith(expect.anything(), { diff: true });
+  });
+
+  it("should preserve per-style referrer policy for composed overlays during map creation", async () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const mapOptions = createDefaultMapOptions({
+      styles: [
+        {
+          id: "sgb-base",
+          url: "https://example.com/base.json",
+          referrerPolicy: "origin",
+          rasterSource: null,
+          wmsSource: null,
+        },
+        {
+          id: "sgb-overlay",
+          url: "https://example.com/overlay.json",
+          referrerPolicy: "no-referrer",
+          rasterSource: null,
+          wmsSource: null,
+        },
+      ],
+    });
+
+    validateComposedGlyphsSpy.mockResolvedValue({ proceed: true, effectiveGlyphsUrl: null });
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      mapOptions,
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const map = getLatestMockMapInstance()!;
+    fireLoadEvent();
+    await vi.waitFor(() => {
+      expect(dotNetHelper.invokeMethodAsync).toHaveBeenCalledWith("OnMapInitialized");
+    });
+
+    // assert
+    expect(validateComposedGlyphsSpy).toHaveBeenCalledWith(
+      map,
+      [{ styleId: "sgb-overlay", url: "https://example.com/overlay.json", referrerPolicy: "no-referrer" }],
+      null,
+    );
+    expect(applyOverlayStylesSpy).toHaveBeenCalledWith(map, [
+      { styleId: "sgb-overlay", url: "https://example.com/overlay.json", referrerPolicy: "no-referrer" },
+    ]);
   });
 
   it("should reject overlays when glyph validation returns proceed false", async () => {
@@ -3583,8 +4000,20 @@ describe("composed glyph validation", () => {
     const dotNetHelper = createMockDotNetHelper();
     const mapOptions = createDefaultMapOptions({
       styles: [
-        { id: "sgb-base", url: "https://example.com/base.json", rasterSource: null, wmsSource: null },
-        { id: "sgb-overlay", url: "https://example.com/overlay.json", rasterSource: null, wmsSource: null },
+        {
+          id: "sgb-base",
+          url: "https://example.com/base.json",
+          referrerPolicy: null,
+          rasterSource: null,
+          wmsSource: null,
+        },
+        {
+          id: "sgb-overlay",
+          url: "https://example.com/overlay.json",
+          referrerPolicy: null,
+          rasterSource: null,
+          wmsSource: null,
+        },
       ],
     });
 
@@ -3622,8 +4051,20 @@ describe("composed glyph validation", () => {
     const mapOptions = createDefaultMapOptions({
       composedGlyphsUrl,
       styles: [
-        { id: "sgb-base", url: "https://example.com/base.json", rasterSource: null, wmsSource: null },
-        { id: "sgb-overlay", url: "https://example.com/overlay.json", rasterSource: null, wmsSource: null },
+        {
+          id: "sgb-base",
+          url: "https://example.com/base.json",
+          referrerPolicy: null,
+          rasterSource: null,
+          wmsSource: null,
+        },
+        {
+          id: "sgb-overlay",
+          url: "https://example.com/overlay.json",
+          referrerPolicy: null,
+          rasterSource: null,
+          wmsSource: null,
+        },
       ],
     });
 
@@ -3661,8 +4102,20 @@ describe("composed glyph validation", () => {
     const mapOptions = createDefaultMapOptions({
       composedGlyphsUrl: "https://fonts.example.com/{fontstack}/{range}.pbf",
       styles: [
-        { id: "sgb-base", url: "https://example.com/base.json", rasterSource: null, wmsSource: null },
-        { id: "sgb-overlay", url: "https://example.com/overlay.json", rasterSource: null, wmsSource: null },
+        {
+          id: "sgb-base",
+          url: "https://example.com/base.json",
+          referrerPolicy: null,
+          rasterSource: null,
+          wmsSource: null,
+        },
+        {
+          id: "sgb-overlay",
+          url: "https://example.com/overlay.json",
+          referrerPolicy: null,
+          rasterSource: null,
+          wmsSource: null,
+        },
       ],
     });
 
@@ -3705,8 +4158,20 @@ describe("composed glyph validation", () => {
       mapElement,
       createDefaultMapOptions({
         styles: [
-          { id: "sgb-base", url: "https://example.com/base.json", rasterSource: null, wmsSource: null },
-          { id: "sgb-overlay", url: "https://example.com/overlay.json", rasterSource: null, wmsSource: null },
+          {
+            id: "sgb-base",
+            url: "https://example.com/base.json",
+            referrerPolicy: null,
+            rasterSource: null,
+            wmsSource: null,
+          },
+          {
+            id: "sgb-overlay",
+            url: "https://example.com/overlay.json",
+            referrerPolicy: null,
+            rasterSource: null,
+            wmsSource: null,
+          },
         ],
       }),
       createDefaultControlOptions(),
@@ -3733,8 +4198,20 @@ describe("composed glyph validation", () => {
       createDefaultMapOptions({
         composedGlyphsUrl,
         styles: [
-          { id: "sgb-base", url: "https://example.com/base.json", rasterSource: null, wmsSource: null },
-          { id: "sgb-overlay", url: "https://example.com/overlay.json", rasterSource: null, wmsSource: null },
+          {
+            id: "sgb-base",
+            url: "https://example.com/base.json",
+            referrerPolicy: null,
+            rasterSource: null,
+            wmsSource: null,
+          },
+          {
+            id: "sgb-overlay",
+            url: "https://example.com/overlay.json",
+            referrerPolicy: null,
+            rasterSource: null,
+            wmsSource: null,
+          },
         ],
       }),
     );
@@ -3745,9 +4222,89 @@ describe("composed glyph validation", () => {
     // assert
     expect(validateComposedGlyphsSpy).toHaveBeenCalledWith(
       map,
-      ["https://example.com/overlay.json"],
+      [{ styleId: "sgb-overlay", url: "https://example.com/overlay.json", referrerPolicy: null }],
       composedGlyphsUrl,
     );
     expect(map.setStyle).toHaveBeenCalledWith(expect.objectContaining({ glyphs: composedGlyphsUrl }), { diff: true });
+  });
+
+  it("should preserve per-style referrer policy for composed overlays during map option updates", async () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions({
+        styles: [
+          {
+            id: "sgb-base",
+            url: "https://example.com/base.json",
+            referrerPolicy: "origin",
+            rasterSource: null,
+            wmsSource: null,
+          },
+          {
+            id: "sgb-overlay",
+            url: "https://example.com/overlay.json",
+            referrerPolicy: "same-origin",
+            rasterSource: null,
+            wmsSource: null,
+          },
+        ],
+      }),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const map = getLatestMockMapInstance()!;
+    fireLoadEvent();
+    await vi.waitFor(() => {
+      expect(dotNetHelper.invokeMethodAsync).toHaveBeenCalledWith("OnMapInitialized");
+    });
+
+    applyOverlayStylesSpy.mockClear();
+    validateComposedGlyphsSpy.mockResolvedValue({ proceed: true, effectiveGlyphsUrl: null });
+
+    // act
+    setMapOptions(
+      mapElement,
+      createDefaultMapOptions({
+        styles: [
+          {
+            id: "sgb-base",
+            url: "https://example.com/base.json",
+            referrerPolicy: "origin",
+            rasterSource: null,
+            wmsSource: null,
+          },
+          {
+            id: "sgb-overlay",
+            url: "https://example.com/overlay.json",
+            referrerPolicy: "same-origin",
+            rasterSource: null,
+            wmsSource: null,
+          },
+        ],
+      }),
+    );
+    await vi.waitFor(() => {
+      expect(applyOverlayStylesSpy).toHaveBeenCalled();
+    });
+
+    // assert
+    expect(validateComposedGlyphsSpy).toHaveBeenCalledWith(
+      map,
+      [{ styleId: "sgb-overlay", url: "https://example.com/overlay.json", referrerPolicy: "same-origin" }],
+      null,
+    );
+    expect(applyOverlayStylesSpy).toHaveBeenCalledWith(map, [
+      { styleId: "sgb-overlay", url: "https://example.com/overlay.json", referrerPolicy: "same-origin" },
+    ]);
   });
 });

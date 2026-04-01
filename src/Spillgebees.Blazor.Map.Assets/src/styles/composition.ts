@@ -1,4 +1,6 @@
 import type { Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
+import type { ReferrerPolicy } from "../interfaces/map";
+import type { OverlayStyleRequestOptions } from "../interfaces/spillgebees";
 
 /**
  * Prefix used for all overlay-managed sources and layers to avoid ID collisions
@@ -60,6 +62,14 @@ export interface ApplyOverlayStyleOptions {
   forceReapply?: boolean;
 }
 
+function createFetchOptions(referrerPolicy: ReferrerPolicy | null | undefined): RequestInit | undefined {
+  return referrerPolicy ? { referrerPolicy } : undefined;
+}
+
+export function fetchStyleJson(url: string, referrerPolicy: ReferrerPolicy | null): Promise<Response> {
+  return fetch(url, createFetchOptions(referrerPolicy));
+}
+
 // WeakMap so entries are GC'd when the map instance is collected
 const appliedOverlays = new WeakMap<MapLibreMap, Map<string, OverlayStyleState>>();
 
@@ -78,7 +88,7 @@ function getOverlayMap(map: MapLibreMap): Map<string, OverlayStyleState> {
  */
 export async function applyOverlayStyles(
   map: MapLibreMap,
-  overlayStyles: Array<{ styleId: string; url: string }>,
+  overlayStyles: OverlayStyleRequestOptions[],
   options?: ApplyOverlayStyleOptions,
 ): Promise<void> {
   const overlays = getOverlayMap(map);
@@ -116,7 +126,7 @@ export async function applyOverlayStyles(
     }
 
     try {
-      const response = await fetch(url);
+      const response = await fetchStyleJson(url, overlayStyles[i].referrerPolicy);
       if (!response.ok) {
         // biome-ignore lint/suspicious/noConsole: library warning for developers
         console.warn(`[Spillgebees.Map] Failed to fetch overlay style: ${url} (${String(response.status)})`);
@@ -124,7 +134,14 @@ export async function applyOverlayStyles(
       }
 
       const styleJson = (await response.json()) as StyleSpecification;
-      const state = await mergeStyleIntoMap(map, styleJson, `${OVERLAY_PREFIX}-${styleId}`, styleId, url);
+      const state = await mergeStyleIntoMap(
+        map,
+        styleJson,
+        `${OVERLAY_PREFIX}-${styleId}`,
+        styleId,
+        url,
+        overlayStyles[i].referrerPolicy,
+      );
       overlays.set(styleId, state);
       registerComposedLayerIds(composedStyleLayerIds, state);
     } catch (error) {
@@ -152,14 +169,18 @@ function registerComposedLayerIds(
  * Sprite format: {spriteUrl}.json contains image metadata, {spriteUrl}.png is the spritesheet.
  * For retina: {spriteUrl}@2x.json and {spriteUrl}@2x.png.
  */
-async function loadSpriteImages(map: MapLibreMap, spriteUrl: string): Promise<string[]> {
+async function loadSpriteImages(
+  map: MapLibreMap,
+  spriteUrl: string,
+  referrerPolicy: ReferrerPolicy | null,
+): Promise<string[]> {
   const imageIds: string[] = [];
   const pixelRatio = window.devicePixelRatio >= 2 ? 2 : 1;
   const suffix = pixelRatio === 2 ? "@2x" : "";
 
   try {
     // Fetch sprite metadata
-    const metaResponse = await fetch(`${spriteUrl}${suffix}.json`);
+    const metaResponse = await fetch(`${spriteUrl}${suffix}.json`, createFetchOptions(referrerPolicy));
     if (!metaResponse.ok) {
       return imageIds;
     }
@@ -169,7 +190,7 @@ async function loadSpriteImages(map: MapLibreMap, spriteUrl: string): Promise<st
     >;
 
     // Fetch spritesheet image
-    const imageResponse = await fetch(`${spriteUrl}${suffix}.png`);
+    const imageResponse = await fetch(`${spriteUrl}${suffix}.png`, createFetchOptions(referrerPolicy));
     if (!imageResponse.ok) {
       return imageIds;
     }
@@ -219,6 +240,7 @@ async function mergeStyleIntoMap(
   prefix: string,
   styleId: string,
   styleUrl: string,
+  referrerPolicy: ReferrerPolicy | null,
 ): Promise<OverlayStyleState> {
   const sourceIds: string[] = [];
   const layerIds: string[] = [];
@@ -257,7 +279,7 @@ async function mergeStyleIntoMap(
     const rawSpriteUrl = typeof style.sprite === "string" ? style.sprite : undefined;
     if (rawSpriteUrl) {
       const resolvedSpriteUrl = resolveUrl(rawSpriteUrl, styleUrl);
-      imageIds = await loadSpriteImages(map, resolvedSpriteUrl);
+      imageIds = await loadSpriteImages(map, resolvedSpriteUrl, referrerPolicy);
     }
   }
 
@@ -312,10 +334,10 @@ async function mergeStyleIntoMap(
  */
 export async function validateComposedGlyphs(
   map: MapLibreMap,
-  overlayStyleUrls: string[],
+  overlayStyles: OverlayStyleRequestOptions[],
   composedGlyphsUrl: string | null,
 ): Promise<{ proceed: true; effectiveGlyphsUrl: string | null } | { proceed: false }> {
-  if (overlayStyleUrls.length === 0) {
+  if (overlayStyles.length === 0) {
     return { proceed: true, effectiveGlyphsUrl: null };
   }
 
@@ -334,16 +356,16 @@ export async function validateComposedGlyphs(
     glyphUrls.add(baseGlyphs);
   }
 
-  for (const styleUrl of overlayStyleUrls) {
+  for (const overlayStyle of overlayStyles) {
     try {
-      const response = await fetch(styleUrl);
+      const response = await fetchStyleJson(overlayStyle.url, overlayStyle.referrerPolicy);
       if (!response.ok) {
         continue;
       }
 
       const styleJson = (await response.json()) as { glyphs?: string };
       if (styleJson.glyphs) {
-        const resolved = resolveTemplateUrl(styleJson.glyphs, styleUrl);
+        const resolved = resolveTemplateUrl(styleJson.glyphs, overlayStyle.url);
         glyphUrls.add(resolved);
       }
     } catch {

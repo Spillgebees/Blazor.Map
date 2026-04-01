@@ -6,10 +6,17 @@ namespace Spillgebees.Blazor.Map.Models;
 /// </summary>
 public record MapStyle
 {
-    private MapStyle(string? id, string? url, RasterTileSource? rasterSource, WmsTileSource? wmsSource)
+    private MapStyle(
+        string? id,
+        string? url,
+        ReferrerPolicy? referrerPolicy,
+        RasterTileSource? rasterSource,
+        WmsTileSource? wmsSource
+    )
     {
         Id = id;
         Url = url;
+        ReferrerPolicy = referrerPolicy;
         RasterSource = rasterSource;
         WmsSource = wmsSource;
     }
@@ -25,14 +32,19 @@ public record MapStyle
     public string? Url { get; }
 
     /// <summary>
+    /// The referrer policy to apply to MapLibre-managed requests for this style.
+    /// </summary>
+    public ReferrerPolicy? ReferrerPolicy { get; init; }
+
+    /// <summary>
     /// The raster tile source configuration, when using raster tiles directly.
     /// </summary>
-    public RasterTileSource? RasterSource { get; }
+    public RasterTileSource? RasterSource { get; init; }
 
     /// <summary>
     /// The WMS tile source configuration, when using a WMS endpoint.
     /// </summary>
-    public WmsTileSource? WmsSource { get; }
+    public WmsTileSource? WmsSource { get; init; }
 
     /// <summary>
     /// Returns a copy of this style with the given stable identifier.
@@ -51,10 +63,31 @@ public record MapStyle
     }
 
     /// <summary>
+    /// Returns a copy of this style with the given referrer policy.
+    /// </summary>
+    public MapStyle WithReferrerPolicy(ReferrerPolicy? referrerPolicy)
+    {
+        if (RasterSource is not null)
+        {
+            return this with { RasterSource = RasterSource with { ReferrerPolicy = referrerPolicy } };
+        }
+
+        if (WmsSource is not null)
+        {
+            return this with { WmsSource = WmsSource with { ReferrerPolicy = referrerPolicy } };
+        }
+
+        return this with
+        {
+            ReferrerPolicy = referrerPolicy,
+        };
+    }
+
+    /// <summary>
     /// Creates a <see cref="MapStyle"/> from a MapLibre style specification URL.
     /// </summary>
     /// <param name="url">The URL to a MapLibre-compatible style JSON.</param>
-    public static MapStyle FromUrl(string url) => new(null, url, null, null);
+    public static MapStyle FromUrl(string url) => new(null, url, null, null, null);
 
     /// <summary>
     /// Creates a <see cref="MapStyle"/> from a raster tile URL template.
@@ -62,8 +95,13 @@ public record MapStyle
     /// <param name="urlTemplate">The tile URL template with <c>{z}</c>, <c>{x}</c>, <c>{y}</c> placeholders.</param>
     /// <param name="attribution">The attribution text to display on the map.</param>
     /// <param name="tileSize">The tile size in pixels. Default is 256.</param>
-    public static MapStyle FromRasterUrl(string urlTemplate, string attribution, int tileSize = 256) =>
-        new(null, null, new RasterTileSource(urlTemplate, attribution, tileSize), null);
+    /// <param name="referrerPolicy">The referrer policy to apply to tile requests.</param>
+    public static MapStyle FromRasterUrl(
+        string urlTemplate,
+        string attribution,
+        int tileSize = 256,
+        ReferrerPolicy? referrerPolicy = null
+    ) => new(null, null, null, new RasterTileSource(urlTemplate, attribution, tileSize, referrerPolicy), null);
 
     /// <summary>
     /// Creates a <see cref="MapStyle"/> from a WMS endpoint.
@@ -75,6 +113,7 @@ public record MapStyle
     /// <param name="transparent">Whether to request transparent tiles. Default is <see langword="false"/>.</param>
     /// <param name="version">The WMS service version. Default is <c>"1.1.1"</c>.</param>
     /// <param name="tileSize">The tile size in pixels. Default is 256.</param>
+    /// <param name="referrerPolicy">The referrer policy to apply to tile requests.</param>
     public static MapStyle FromWmsUrl(
         string baseUrl,
         string layers,
@@ -82,8 +121,16 @@ public record MapStyle
         string format = "image/png",
         bool transparent = false,
         string version = "1.1.1",
-        int tileSize = 256
-    ) => new(null, null, null, new WmsTileSource(baseUrl, layers, attribution, format, transparent, version, tileSize));
+        int tileSize = 256,
+        ReferrerPolicy? referrerPolicy = null
+    ) =>
+        new(
+            null,
+            null,
+            null,
+            null,
+            new WmsTileSource(baseUrl, layers, attribution, format, transparent, version, tileSize, referrerPolicy)
+        );
 
     /// <summary>
     /// Creates a <see cref="MapStyle"/> from a WMTS (Web Map Tile Service) endpoint.
@@ -156,7 +203,8 @@ public record MapStyle
         public static MapStyle Standard =>
             FromRasterUrl(
                     "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                    "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors"
+                    "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors",
+                    referrerPolicy: Models.ReferrerPolicy.Origin
                 )
                 .WithId("sgb-openstreetmap-standard");
     }
@@ -168,7 +216,13 @@ public record MapStyle
 /// <param name="UrlTemplate">The tile URL template with <c>{z}</c>, <c>{x}</c>, <c>{y}</c> placeholders.</param>
 /// <param name="Attribution">The attribution text to display on the map.</param>
 /// <param name="TileSize">The tile size in pixels.</param>
-public sealed record RasterTileSource(string UrlTemplate, string Attribution, int TileSize);
+/// <param name="ReferrerPolicy">The referrer policy to apply to tile requests.</param>
+public sealed record RasterTileSource(
+    string UrlTemplate,
+    string Attribution,
+    int TileSize,
+    ReferrerPolicy? ReferrerPolicy = null
+);
 
 /// <summary>
 /// Configuration for a WMS tile source.
@@ -180,6 +234,7 @@ public sealed record RasterTileSource(string UrlTemplate, string Attribution, in
 /// <param name="Transparent">Whether to request transparent tiles.</param>
 /// <param name="Version">The WMS service version.</param>
 /// <param name="TileSize">The tile size in pixels.</param>
+/// <param name="ReferrerPolicy">The referrer policy to apply to tile requests.</param>
 public sealed record WmsTileSource(
     string BaseUrl,
     string Layers,
@@ -187,5 +242,6 @@ public sealed record WmsTileSource(
     string Format,
     bool Transparent,
     string Version,
-    int TileSize
+    int TileSize,
+    ReferrerPolicy? ReferrerPolicy = null
 );

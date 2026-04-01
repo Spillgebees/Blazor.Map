@@ -94,11 +94,49 @@ public class MapJsInteropPayloadTests : BunitContext
         var stylesPayload = GetRequiredPropertyValue(mapOptionsPayload!, "Styles");
         var webFontsPayload = GetRequiredPropertyValue(mapOptionsPayload!, "WebFonts");
 
-        stylesPayload.Should().BeOfType<MapStyle[]>();
-        ((MapStyle[])stylesPayload).Should().Equal(styles);
+        stylesPayload.Should().BeOfType<object[]>();
+        ((object[])stylesPayload).Should().HaveCount(styles.Count);
 
         webFontsPayload.Should().BeOfType<string[]>();
         ((string[])webFontsPayload).Should().Equal(webFonts);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_send_referrer_policies_when_initializing_map(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        Render<SgbMap>(parameters =>
+            parameters
+                .Add(
+                    p => p.MapOptions,
+                    new MapOptions(
+                        new Coordinate(49.61, 6.13),
+                        Style: MapStyle
+                            .FromUrl("https://example.com/style.json")
+                            .WithReferrerPolicy(ReferrerPolicy.NoReferrer)
+                    )
+                )
+                .Add(
+                    p => p.Overlays,
+                    [
+                        new TileOverlay(
+                            "overlay-1",
+                            "https://tiles.example.com/{z}/{x}/{y}.png",
+                            ReferrerPolicy: ReferrerPolicy.SameOrigin
+                        ),
+                    ]
+                )
+        );
+
+        // assert
+        var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
+        var mapOptionsPayload = invocation.Arguments[3];
+        var stylePayload = GetRequiredPropertyValue(mapOptionsPayload!, "Style");
+        var overlaysPayload = invocation.Arguments[9].Should().BeAssignableTo<Array>().Subject;
+        var overlayPayload = overlaysPayload.GetValue(0);
+
+        GetRequiredPropertyValue(stylePayload, "ReferrerPolicy").Should().Be(ReferrerPolicy.NoReferrer);
+        GetRequiredPropertyValue(overlayPayload!, "ReferrerPolicy").Should().Be(ReferrerPolicy.SameOrigin);
     }
 
     [Test, Timeout(TestTimeoutMs)]

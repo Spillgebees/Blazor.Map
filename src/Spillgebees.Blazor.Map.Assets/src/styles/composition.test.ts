@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { validateComposedGlyphs } from "./composition";
+import { applyOverlayStyles, validateComposedGlyphs } from "./composition";
 
 function createMockMap(glyphs?: string) {
   return {
@@ -31,7 +31,11 @@ describe("validateComposedGlyphs", () => {
     const map = createMockMap(baseGlyphs);
 
     // act
-    const result = await validateComposedGlyphs(map, ["https://example.com/overlay.json"], composedGlyphsUrl);
+    const result = await validateComposedGlyphs(
+      map,
+      [{ styleId: "overlay", url: "https://example.com/overlay.json", referrerPolicy: null }],
+      composedGlyphsUrl,
+    );
 
     // assert
     expect(result).toEqual({ proceed: true, effectiveGlyphsUrl: composedGlyphsUrl });
@@ -43,7 +47,11 @@ describe("validateComposedGlyphs", () => {
     const map = createMockMap(sharedGlyphs);
 
     // act
-    const result = await validateComposedGlyphs(map, ["https://example.com/overlay.json"], sharedGlyphs);
+    const result = await validateComposedGlyphs(
+      map,
+      [{ styleId: "overlay", url: "https://example.com/overlay.json", referrerPolicy: null }],
+      sharedGlyphs,
+    );
 
     // assert
     expect(result).toEqual({ proceed: true, effectiveGlyphsUrl: null });
@@ -67,7 +75,11 @@ describe("validateComposedGlyphs", () => {
     );
 
     // act
-    const result = await validateComposedGlyphs(map, ["https://example.com/overlay.json"], null);
+    const result = await validateComposedGlyphs(
+      map,
+      [{ styleId: "overlay", url: "https://example.com/overlay.json", referrerPolicy: null }],
+      null,
+    );
 
     // assert
     expect(result).toEqual({ proceed: true, effectiveGlyphsUrl: null });
@@ -93,7 +105,11 @@ describe("validateComposedGlyphs", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     // act
-    const result = await validateComposedGlyphs(map, ["https://example.com/overlay.json"], null);
+    const result = await validateComposedGlyphs(
+      map,
+      [{ styleId: "overlay", url: "https://example.com/overlay.json", referrerPolicy: null }],
+      null,
+    );
 
     // assert
     expect(result).toEqual({ proceed: false });
@@ -122,7 +138,11 @@ describe("validateComposedGlyphs", () => {
     );
 
     // act
-    const result = await validateComposedGlyphs(map, ["https://example.com/styles/overlay.json"], null);
+    const result = await validateComposedGlyphs(
+      map,
+      [{ styleId: "overlay", url: "https://example.com/styles/overlay.json", referrerPolicy: null }],
+      null,
+    );
 
     // assert — ../fonts/ relative to /styles/overlay.json resolves to /fonts/
     expect(result).toEqual({ proceed: true, effectiveGlyphsUrl: null });
@@ -135,7 +155,11 @@ describe("validateComposedGlyphs", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 404 }));
 
     // act
-    const result = await validateComposedGlyphs(map, ["https://example.com/overlay.json"], null);
+    const result = await validateComposedGlyphs(
+      map,
+      [{ styleId: "overlay", url: "https://example.com/overlay.json", referrerPolicy: null }],
+      null,
+    );
 
     // assert — only base glyph URL in set (1 unique), so proceed
     expect(result).toEqual({ proceed: true, effectiveGlyphsUrl: null });
@@ -148,7 +172,11 @@ describe("validateComposedGlyphs", () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network failure")));
 
     // act
-    const result = await validateComposedGlyphs(map, ["https://example.com/overlay.json"], null);
+    const result = await validateComposedGlyphs(
+      map,
+      [{ styleId: "overlay", url: "https://example.com/overlay.json", referrerPolicy: null }],
+      null,
+    );
 
     // assert — only base glyph URL in set (1 unique), so proceed
     expect(result).toEqual({ proceed: true, effectiveGlyphsUrl: null });
@@ -170,7 +198,11 @@ describe("validateComposedGlyphs", () => {
     );
 
     // act
-    const result = await validateComposedGlyphs(map, ["https://example.com/overlay.json"], null);
+    const result = await validateComposedGlyphs(
+      map,
+      [{ styleId: "overlay", url: "https://example.com/overlay.json", referrerPolicy: null }],
+      null,
+    );
 
     // assert — no glyph URLs at all, so proceed
     expect(result).toEqual({ proceed: true, effectiveGlyphsUrl: null });
@@ -202,12 +234,108 @@ describe("validateComposedGlyphs", () => {
     // act
     const result = await validateComposedGlyphs(
       map,
-      ["https://example.com/overlay-a.json", "https://example.com/overlay-b.json"],
+      [
+        { styleId: "overlay-a", url: "https://example.com/overlay-a.json", referrerPolicy: null },
+        { styleId: "overlay-b", url: "https://example.com/overlay-b.json", referrerPolicy: null },
+      ],
       null,
     );
 
     // assert — two different overlay glyph URLs, no base
     expect(result).toEqual({ proceed: false });
     expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it("should pass referrerPolicy to overlay style fetches when configured", async () => {
+    // arrange
+    const map = createMockMap("https://fonts.example.com/{fontstack}/{range}.pbf");
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        version: 8,
+        sources: {},
+        layers: [],
+        glyphs: "https://fonts.example.com/{fontstack}/{range}.pbf",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    // act
+    await validateComposedGlyphs(
+      map,
+      [{ styleId: "overlay", url: "https://example.com/overlay.json", referrerPolicy: "origin" }],
+      null,
+    );
+
+    // assert
+    expect(fetchMock).toHaveBeenCalledWith("https://example.com/overlay.json", { referrerPolicy: "origin" });
+  });
+
+  it("should preserve per-style referrer policies across multiple overlay fetches", async () => {
+    // arrange
+    const map = createMockMap("https://fonts.example.com/{fontstack}/{range}.pbf");
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        version: 8,
+        sources: {},
+        layers: [],
+        glyphs: "https://fonts.example.com/{fontstack}/{range}.pbf",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    // act
+    await validateComposedGlyphs(
+      map,
+      [
+        { styleId: "overlay-a", url: "https://example.com/a.json", referrerPolicy: "origin" },
+        { styleId: "overlay-b", url: "https://example.com/b.json", referrerPolicy: "no-referrer" },
+      ],
+      null,
+    );
+
+    // assert
+    expect(fetchMock).toHaveBeenNthCalledWith(1, "https://example.com/a.json", { referrerPolicy: "origin" });
+    expect(fetchMock).toHaveBeenNthCalledWith(2, "https://example.com/b.json", { referrerPolicy: "no-referrer" });
+  });
+});
+
+describe("applyOverlayStyles", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    window.Spillgebees = {
+      Map: {
+        composedStyleLayerIds: new Map(),
+      },
+    } as never;
+  });
+
+  it("should fetch each overlay style using its own referrer policy", async () => {
+    // arrange
+    const map = {
+      getSource: vi.fn().mockReturnValue(undefined),
+      addSource: vi.fn(),
+      hasImage: vi.fn().mockReturnValue(true),
+      getLayer: vi.fn().mockReturnValue(undefined),
+      addLayer: vi.fn(),
+    } as unknown as Parameters<typeof applyOverlayStyles>[0];
+    window.Spillgebees.Map.composedStyleLayerIds.set(map, new Map());
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({ version: 8, sources: {}, layers: [] }) })
+      .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({ version: 8, sources: {}, layers: [] }) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    // act
+    await applyOverlayStyles(map, [
+      { styleId: "a", url: "https://example.com/a.json", referrerPolicy: "origin" },
+      { styleId: "b", url: "https://example.com/b.json", referrerPolicy: "no-referrer" },
+    ]);
+
+    // assert
+    expect(fetchMock).toHaveBeenNthCalledWith(1, "https://example.com/a.json", { referrerPolicy: "origin" });
+    expect(fetchMock).toHaveBeenNthCalledWith(2, "https://example.com/b.json", { referrerPolicy: "no-referrer" });
   });
 });

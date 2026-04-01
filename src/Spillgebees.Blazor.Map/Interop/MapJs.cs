@@ -59,7 +59,7 @@ internal static class MapJs
             markers,
             circles,
             polylines.Select(ToJsModel).ToArray(),
-            overlays
+            overlays.Select(ToJsModel).ToArray()
         );
 
     /// <summary>
@@ -115,7 +115,13 @@ internal static class MapJs
         ILogger logger,
         ElementReference mapReference,
         List<TileOverlay> overlays
-    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.setOverlays", mapReference, overlays);
+    ) =>
+        jsRuntime.SafeInvokeVoidAsync(
+            logger,
+            $"{JsNamespace}.setOverlays",
+            mapReference,
+            overlays.Select(ToJsModel).ToArray()
+        );
 
     /// <summary>
     /// Sets the map controls.
@@ -326,8 +332,8 @@ internal static class MapJs
         {
             mapOptions.Center,
             mapOptions.Zoom,
-            mapOptions.Style,
-            Styles = mapOptions.Styles?.ToArray(),
+            Style = ToJsModel(mapOptions.Style),
+            Styles = mapOptions.Styles?.Select(ToJsModel).ToArray(),
             mapOptions.ComposedGlyphsUrl,
             mapOptions.Pitch,
             mapOptions.Bearing,
@@ -356,6 +362,44 @@ internal static class MapJs
                 : new { mapControlOptions.Center.Enable, mapControlOptions.Center.Position },
         };
 
+    private static object? ToJsModel(MapStyle? mapStyle) =>
+        mapStyle is null
+            ? null
+            : new
+            {
+                mapStyle.Id,
+                mapStyle.Url,
+                mapStyle.ReferrerPolicy,
+                RasterSource = ToJsModel(mapStyle.RasterSource),
+                WmsSource = ToJsModel(mapStyle.WmsSource),
+            };
+
+    private static object? ToJsModel(RasterTileSource? rasterTileSource) =>
+        rasterTileSource is null
+            ? null
+            : new
+            {
+                rasterTileSource.UrlTemplate,
+                rasterTileSource.Attribution,
+                rasterTileSource.TileSize,
+                rasterTileSource.ReferrerPolicy,
+            };
+
+    private static object? ToJsModel(WmsTileSource? wmsTileSource) =>
+        wmsTileSource is null
+            ? null
+            : new
+            {
+                wmsTileSource.BaseUrl,
+                wmsTileSource.Layers,
+                wmsTileSource.Attribution,
+                wmsTileSource.Format,
+                wmsTileSource.Transparent,
+                wmsTileSource.Version,
+                wmsTileSource.TileSize,
+                wmsTileSource.ReferrerPolicy,
+            };
+
     private static object ToJsModel(Polyline polyline) =>
         new
         {
@@ -365,6 +409,17 @@ internal static class MapJs
             polyline.Width,
             polyline.Opacity,
             polyline.Popup,
+        };
+
+    private static object ToJsModel(TileOverlay tileOverlay) =>
+        new
+        {
+            tileOverlay.Id,
+            tileOverlay.UrlTemplate,
+            tileOverlay.Attribution,
+            tileOverlay.TileSize,
+            tileOverlay.Opacity,
+            tileOverlay.ReferrerPolicy,
         };
 
     private static object? ToJsModel(FitBoundsOptions? fitBoundsOptions) =>

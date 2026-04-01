@@ -2,7 +2,7 @@ import type { DotNet } from "@microsoft/dotnet-js-interop";
 import type { IControl, Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
 import type { FeatureStorage } from "../types/feature-storage";
 import type { ILegendControlOptions, IMapControlOptions } from "./controls";
-import type { IMapOptions } from "./map";
+import type { IMapOptions, ITileOverlay, ReferrerPolicy } from "./map";
 
 export interface RegisteredMapSource {
   sourceId: string;
@@ -55,12 +55,18 @@ export interface ComposedStyleLayerRegistration {
   originalLayerId: string;
 }
 
+export interface OverlayStyleRequestOptions {
+  styleId: string;
+  url: string;
+  referrerPolicy: ReferrerPolicy | null;
+}
+
 export interface SpillgebeesMapNamespace {
   getProtocolVersion: () => number;
   mapFunctions: Record<string, (...args: unknown[]) => unknown>;
   maps: Map<HTMLElement, MapLibreMap>;
   features: Map<MapLibreMap, FeatureStorage>;
-  overlays: Map<MapLibreMap, Map<string, unknown>>;
+  overlays: Map<MapLibreMap, Map<string, ITileOverlay>>;
   controls: Map<MapLibreMap, Set<IControl>>;
   legendControls: Map<MapLibreMap, IControl>;
   legendControlOptions: Map<MapLibreMap, ILegendControlOptions | null>;
@@ -74,6 +80,8 @@ export interface SpillgebeesMapNamespace {
   layerEventSubscriptions: Map<MapLibreMap, Map<string, LayerEventSubscription>>;
   visibilityGroups: Map<MapLibreMap, Map<string, VisibilityGroupRegistration>>;
   overlayStyleUrls: Map<MapLibreMap, string[]>;
+  overlayStyleRequests: Map<MapLibreMap, OverlayStyleRequestOptions[]>;
   composedStyleLayerIds: Map<MapLibreMap, Map<string, ComposedStyleLayerRegistration>>;
   pendingStyleReloads: WeakSet<MapLibreMap>;
+  requestContexts: Map<MapLibreMap, { mapOptions: IMapOptions; overlays: ITileOverlay[] }>;
 }

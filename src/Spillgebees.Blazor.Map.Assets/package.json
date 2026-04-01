@@ -29,7 +29,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "maplibre-gl": "5.20.2"
+    "maplibre-gl": "5.21.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.4",

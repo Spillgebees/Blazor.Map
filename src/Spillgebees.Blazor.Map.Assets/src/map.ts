@@ -1,5 +1,5 @@
 import type { DotNet } from "@microsoft/dotnet-js-interop";
-import type { IControl, StyleSpecification } from "maplibre-gl";
+import type { IControl, RequestParameters, StyleSpecification } from "maplibre-gl";
 import {
   FullscreenControl,
   GeolocateControl,
@@ -27,6 +27,7 @@ import type { ICoordinate, IFitBoundsOptions, IMapOptions, IMapStyle, ITileOverl
 import type {
   ComposedStyleLayerRegistration,
   LayerEventSubscription,
+  OverlayStyleRequestOptions,
   RegisteredMapImage,
   RegisteredMapLayer,
   RegisteredMapSource,
@@ -60,6 +61,87 @@ import type { FeatureStorage } from "./types/feature-storage";
 export const PROTOCOL_VERSION = 9;
 
 const DEFAULT_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
+
+function toRequestReferrerPolicy(value: unknown): RequestParameters["referrerPolicy"] | undefined {
+  return typeof value === "string" ? (value as RequestParameters["referrerPolicy"]) : undefined;
+}
+
+function getStyleRequestReferrerPolicy(
+  style: IMapStyle | null,
+  requestUrl: string,
+): RequestParameters["referrerPolicy"] | undefined {
+  if (!style) {
+    return undefined;
+  }
+
+  if (style.url === requestUrl) {
+    return toRequestReferrerPolicy(style.referrerPolicy);
+  }
+
+  if (style.rasterSource?.urlTemplate === requestUrl) {
+    return toRequestReferrerPolicy(style.rasterSource.referrerPolicy ?? style.referrerPolicy);
+  }
+
+  if (style.wmsSource) {
+    const wmsStyle = buildStyleFromOptions(style);
+    if (typeof wmsStyle !== "string") {
+      const rasterSource = wmsStyle.sources["raster-tiles"] as { tiles?: string[] } | undefined;
+      if (rasterSource?.tiles?.includes(requestUrl)) {
+        return toRequestReferrerPolicy(style.wmsSource.referrerPolicy ?? style.referrerPolicy);
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function createTransformRequest(
+  mapOptions: IMapOptions,
+  overlays: ITileOverlay[],
+): (url: string, resourceType?: string) => RequestParameters | undefined {
+  return (url: string) => {
+    const stylesList = mapOptions.styles ?? (mapOptions.style ? [mapOptions.style] : [null]);
+    for (const style of stylesList) {
+      const referrerPolicy = getStyleRequestReferrerPolicy(style, url);
+      if (referrerPolicy) {
+        return { referrerPolicy };
+      }
+    }
+
+    const overlay = overlays.find((candidate) => candidate.urlTemplate === url);
+    const overlayReferrerPolicy = toRequestReferrerPolicy(overlay?.referrerPolicy);
+    if (overlayReferrerPolicy) {
+      return { referrerPolicy: overlayReferrerPolicy };
+    }
+
+    return undefined;
+  };
+}
+
+function createMapTransformRequest(
+  getMap: () => MapLibreMap | null,
+): (url: string, resourceType?: string) => RequestParameters | undefined {
+  return (url: string) => {
+    const map = getMap();
+    if (!map) {
+      return undefined;
+    }
+
+    const requestContext = window.Spillgebees.Map.requestContexts.get(map);
+    if (!requestContext) {
+      return undefined;
+    }
+
+    return createTransformRequest(requestContext.mapOptions, requestContext.overlays)(url);
+  };
+}
+
+function updateMapRequestContext(map: MapLibreMap, mapOptions: IMapOptions, overlays: ITileOverlay[]): void {
+  window.Spillgebees.Map.requestContexts.set(map, {
+    mapOptions: structuredClone(mapOptions),
+    overlays: structuredClone(overlays),
+  });
+}
 
 function isNamespaceCompatible(): boolean {
   try {
@@ -130,8 +212,10 @@ function initializeNamespace(): void {
     layerEventSubscriptions: new Map<MapLibreMap, Map<string, LayerEventSubscription>>(),
     visibilityGroups: new Map<MapLibreMap, Map<string, VisibilityGroupRegistration>>(),
     overlayStyleUrls: new Map<MapLibreMap, string[]>(),
+    overlayStyleRequests: new Map<MapLibreMap, OverlayStyleRequestOptions[]>(),
     composedStyleLayerIds: new Map<MapLibreMap, Map<string, ComposedStyleLayerRegistration>>(),
     pendingStyleReloads: new WeakSet<MapLibreMap>(),
+    requestContexts: new Map<MapLibreMap, { mapOptions: IMapOptions; overlays: ITileOverlay[] }>(),
   };
 }
 
@@ -188,13 +272,13 @@ function getResolvedStyleLayerId(map: MapLibreMap, styleId: string, layerId: str
   return registration?.runtimeLayerId ?? null;
 }
 
-function getComposedOverlayStyles(mapOptions: IMapOptions): Array<{ styleId: string; url: string }> {
+function getComposedOverlayStyles(mapOptions: IMapOptions): OverlayStyleRequestOptions[] {
   const stylesList = mapOptions.styles ?? (mapOptions.style ? [mapOptions.style] : [null]);
 
   return stylesList
     .slice(1)
     .filter((style): style is IMapStyle & { id: string; url: string } => style?.id != null && style.url != null)
-    .map((style) => ({ styleId: style.id, url: style.url }));
+    .map((style) => ({ styleId: style.id, url: style.url, referrerPolicy: style.referrerPolicy ?? null }));
 }
 
 function getBaseStyleId(mapOptions: IMapOptions): string | null {
@@ -264,7 +348,7 @@ function registerStyleReloadHandlers(mapElement: HTMLElement, map: MapLibreMap):
       replayImages: () => replayRegisteredImages(mapElement),
       replayComposedOverlays: async () => {
         const mapOptions = window.Spillgebees.Map.mapOptions.get(map);
-        const overlayStyles = mapOptions ? getComposedOverlayStyles(mapOptions) : [];
+        const overlayStyles = window.Spillgebees.Map.overlayStyleRequests.get(map) ?? [];
         if (overlayStyles.length === 0) {
           return;
         }
@@ -279,7 +363,9 @@ function registerStyleReloadHandlers(mapElement: HTMLElement, map: MapLibreMap):
           }
         }
 
-        await applyOverlayStyles(map, overlayStyles, { forceReapply: true });
+        await applyOverlayStyles(map, overlayStyles, {
+          forceReapply: true,
+        });
       },
       onAfterReplay: async () => {
         const dotNetHelper = window.Spillgebees.Map.dotNetHelpers.get(map);
@@ -332,6 +418,7 @@ export function buildStyleFromOptions(style: IMapStyle | null): string | StyleSp
           tiles: [style.rasterSource.urlTemplate],
           tileSize: style.rasterSource.tileSize,
           attribution: style.rasterSource.attribution,
+          referrerPolicy: style.rasterSource.referrerPolicy ?? style.referrerPolicy ?? undefined,
         },
       },
       layers: [{ id: "raster-layer", type: "raster", source: "raster-tiles" }],
@@ -365,6 +452,7 @@ export function buildStyleFromOptions(style: IMapStyle | null): string | StyleSp
           tiles: [wmsUrl],
           tileSize: style.wmsSource.tileSize,
           attribution: style.wmsSource.attribution,
+          referrerPolicy: style.wmsSource.referrerPolicy ?? style.referrerPolicy ?? undefined,
         },
       },
       layers: [{ id: "raster-layer", type: "raster", source: "raster-tiles" }],
@@ -402,7 +490,9 @@ export function createMap(
   const overlayStyles = getComposedOverlayStyles(mapOptions);
   const overlayStyleUrls = overlayStyles.map((style) => style.url);
 
-  const map = new MapLibreMap({
+  let map: MapLibreMap | null = null;
+  const transformRequest = createMapTransformRequest(() => map);
+  map = new MapLibreMap({
     container: mapElement,
     style: baseStyle,
     center: [mapOptions.center.longitude, mapOptions.center.latitude],
@@ -420,6 +510,7 @@ export function createMap(
     interactive: mapOptions.interactive,
     cooperativeGestures: mapOptions.cooperativeGestures,
     attributionControl: true,
+    transformRequest,
   });
 
   // Store the map instance
@@ -446,6 +537,10 @@ export function createMap(
   window.Spillgebees.Map.controlOptions.set(map, controlOptions);
   window.Spillgebees.Map.legendControlOptions.set(map, null);
   window.Spillgebees.Map.mapOptions.set(map, mapOptions);
+  window.Spillgebees.Map.requestContexts.set(map, {
+    mapOptions: structuredClone(mapOptions),
+    overlays: structuredClone(overlays),
+  });
 
   // Initialize custom style state stores
   window.Spillgebees.Map.sourceSpecs.set(map, new Map());
@@ -454,6 +549,7 @@ export function createMap(
   window.Spillgebees.Map.layerEventSubscriptions.set(map, new Map());
   window.Spillgebees.Map.visibilityGroups.set(map, new Map());
   window.Spillgebees.Map.overlayStyleUrls.set(map, [...overlayStyleUrls]);
+  window.Spillgebees.Map.overlayStyleRequests.set(map, structuredClone(overlayStyles));
   window.Spillgebees.Map.composedStyleLayerIds.set(map, new Map());
 
   // Track the current style for diffing in setMapOptions
@@ -526,7 +622,7 @@ export function createMap(
     // Apply overlay styles (async — fetches style JSONs and merges sources/layers)
     if (overlayStyles.length > 0) {
       (async () => {
-        const glyphResult = await validateComposedGlyphs(map, overlayStyleUrls, mapOptions.composedGlyphsUrl);
+        const glyphResult = await validateComposedGlyphs(map, overlayStyles, mapOptions.composedGlyphsUrl);
 
         if (glyphResult.proceed) {
           if (glyphResult.effectiveGlyphsUrl) {
@@ -568,6 +664,7 @@ export function disposeMap(mapElement: HTMLElement): void {
   // Clean up style storage
   window.Spillgebees.Map.styles.delete(map);
   window.Spillgebees.Map.mapOptions.delete(map);
+  window.Spillgebees.Map.requestContexts.delete(map);
 
   // Clean up custom style state stores
   window.Spillgebees.Map.sourceSpecs.delete(map);
@@ -576,6 +673,7 @@ export function disposeMap(mapElement: HTMLElement): void {
   window.Spillgebees.Map.layerEventSubscriptions.delete(map);
   window.Spillgebees.Map.visibilityGroups.delete(map);
   window.Spillgebees.Map.overlayStyleUrls.delete(map);
+  window.Spillgebees.Map.overlayStyleRequests.delete(map);
   window.Spillgebees.Map.composedStyleLayerIds.delete(map);
 
   // Clean up dotNetHelper storage
@@ -596,6 +694,10 @@ export function setMapOptions(mapElement: HTMLElement, mapOptions: IMapOptions):
   }
 
   window.Spillgebees.Map.mapOptions.set(map, mapOptions);
+  const existingOverlays = Array.from(
+    (window.Spillgebees.Map.overlays.get(map) ?? new Map()).values(),
+  ) as ITileOverlay[];
+  updateMapRequestContext(map, mapOptions, existingOverlays);
 
   // Update pitch and bearing
   map.setPitch(mapOptions.pitch);
@@ -621,6 +723,7 @@ export function setMapOptions(mapElement: HTMLElement, mapOptions: IMapOptions):
   const overlayStyles = getComposedOverlayStyles(mapOptions);
   const overlayStyleUrls = overlayStyles.map((style) => style.url);
   window.Spillgebees.Map.overlayStyleUrls.set(map, [...overlayStyleUrls]);
+  window.Spillgebees.Map.overlayStyleRequests.set(map, structuredClone(overlayStyles));
 
   // Update base style only if it actually changed (setStyle triggers a full tile reload)
   const currentStyle = window.Spillgebees.Map.styles.get(map);
@@ -636,11 +739,7 @@ export function setMapOptions(mapElement: HTMLElement, mapOptions: IMapOptions):
   } else {
     // Base style unchanged — validate glyphs and update overlays
     void (async () => {
-      const glyphResult = await validateComposedGlyphs(
-        map,
-        overlayStyles.map((s) => s.url),
-        mapOptions.composedGlyphsUrl,
-      );
+      const glyphResult = await validateComposedGlyphs(map, overlayStyles, mapOptions.composedGlyphsUrl);
 
       if (!glyphResult.proceed) {
         return;
@@ -751,6 +850,10 @@ export function setOverlays(mapElement: HTMLElement, overlays: ITileOverlay[]): 
   if (!map) return;
 
   const existingOverlays = window.Spillgebees.Map.overlays.get(map) ?? new Map<string, unknown>();
+  const currentMapOptions = window.Spillgebees.Map.mapOptions.get(map);
+  if (currentMapOptions) {
+    updateMapRequestContext(map, currentMapOptions, overlays);
+  }
   const newOverlayIds = new Set(overlays.map((o) => o.id));
 
   // Remove overlays that are no longer in the list
@@ -779,6 +882,7 @@ export function setOverlays(mapElement: HTMLElement, overlays: ITileOverlay[]): 
       tiles: [overlay.urlTemplate],
       tileSize: overlay.tileSize,
       attribution: overlay.attribution,
+      referrerPolicy: overlay.referrerPolicy ?? undefined,
     });
 
     map.addLayer({

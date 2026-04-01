@@ -12,12 +12,14 @@ namespace Spillgebees.Blazor.Map.Models;
 /// <param name="Attribution">The attribution text to display on the map. Default is empty.</param>
 /// <param name="TileSize">The tile size in pixels. Default is 256.</param>
 /// <param name="Opacity">The opacity of the overlay (0.0–1.0). Default is 1.0.</param>
+/// <param name="ReferrerPolicy">The referrer policy to apply to tile requests.</param>
 public record TileOverlay(
     string Id,
     string UrlTemplate,
     string Attribution = "",
     int TileSize = 256,
-    double Opacity = 1.0
+    double Opacity = 1.0,
+    ReferrerPolicy? ReferrerPolicy = null
 )
 {
     /// <summary>
@@ -33,6 +35,7 @@ public record TileOverlay(
     /// <param name="version">The WMS service version. Default is <c>"1.1.1"</c>.</param>
     /// <param name="tileSize">The tile size in pixels. Default is 256.</param>
     /// <param name="opacity">The overlay opacity. Default is 1.0.</param>
+    /// <param name="referrerPolicy">The referrer policy to apply to tile requests.</param>
     public static TileOverlay FromWms(
         string id,
         string baseUrl,
@@ -42,7 +45,8 @@ public record TileOverlay(
         bool transparent = true,
         string version = "1.1.1",
         int tileSize = 256,
-        double opacity = 1.0
+        double opacity = 1.0,
+        ReferrerPolicy? referrerPolicy = null
     )
     {
         // WMS 1.3.0 uses CRS; earlier versions use SRS
@@ -53,7 +57,7 @@ public record TileOverlay(
             + $"&{crsParam}=EPSG:3857&STYLES=&WIDTH={tileSize}&HEIGHT={tileSize}"
             + "&BBOX={bbox-epsg-3857}";
 
-        return new TileOverlay(id, url, attribution, tileSize, opacity);
+        return new TileOverlay(id, url, attribution, tileSize, opacity, referrerPolicy);
     }
 
     /// <summary>
@@ -72,6 +76,7 @@ public record TileOverlay(
     /// <param name="format">The image format extension. Default is <c>"png"</c>.</param>
     /// <param name="tileSize">The tile size in pixels. Default is 256.</param>
     /// <param name="opacity">The overlay opacity. Default is 1.0.</param>
+    /// <param name="referrerPolicy">The referrer policy to apply to tile requests.</param>
     public static TileOverlay FromWmts(
         string id,
         string baseUrl,
@@ -81,14 +86,15 @@ public record TileOverlay(
         string style = "default",
         string format = "png",
         int tileSize = 256,
-        double opacity = 1.0
+        double opacity = 1.0,
+        ReferrerPolicy? referrerPolicy = null
     )
     {
         // WMTS RESTful tile URL pattern:
         // {baseUrl}/tile/1.0.0/{layer}/{style}/{tileMatrixSet}/{z}/{y}/{x}.{format}
         var url = $"{baseUrl.TrimEnd('/')}/tile/1.0.0/{layer}/{style}/{tileMatrixSet}/{{z}}/{{y}}/{{x}}.{format}";
 
-        return new TileOverlay(id, url, attribution, tileSize, opacity);
+        return new TileOverlay(id, url, attribution, tileSize, opacity, referrerPolicy);
     }
 
     /// <summary>
@@ -103,18 +109,20 @@ public record TileOverlay(
     /// <param name="attribution">The attribution text. Default is empty.</param>
     /// <param name="tileSize">The tile size in pixels. Default is 256.</param>
     /// <param name="opacity">The overlay opacity. Default is 1.0.</param>
+    /// <param name="referrerPolicy">The referrer policy to apply to tile requests.</param>
     public static TileOverlay FromArcGisMapServer(
         string id,
         string mapServerUrl,
         string attribution = "",
         int tileSize = 256,
-        double opacity = 1.0
+        double opacity = 1.0,
+        ReferrerPolicy? referrerPolicy = null
     )
     {
         // ArcGIS MapServer tile URL pattern:
         // {mapServerUrl}/tile/{z}/{y}/{x}
         var url = $"{mapServerUrl.TrimEnd('/')}/tile/{{z}}/{{y}}/{{x}}";
 
-        return new TileOverlay(id, url, attribution, tileSize, opacity);
+        return new TileOverlay(id, url, attribution, tileSize, opacity, referrerPolicy);
     }
 }

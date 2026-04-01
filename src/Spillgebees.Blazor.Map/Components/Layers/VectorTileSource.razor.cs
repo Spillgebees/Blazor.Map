@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Runtime.Scene;
 
 namespace Spillgebees.Blazor.Map.Components.Layers;
@@ -71,6 +72,12 @@ public partial class VectorTileSource : ComponentBase, IMapSource, IAsyncDisposa
     /// </summary>
     [Parameter]
     public int? MaxZoom { get; set; }
+
+    /// <summary>
+    /// The referrer policy to apply to MapLibre-managed requests for this source.
+    /// </summary>
+    [Parameter]
+    public ReferrerPolicy? ReferrerPolicy { get; set; }
 
     private bool _isInitialized;
     private readonly List<LayerBase> _pendingLayers = [];
@@ -194,6 +201,11 @@ public partial class VectorTileSource : ComponentBase, IMapSource, IAsyncDisposa
         if (MaxZoom.HasValue)
         {
             sourceSpec["maxzoom"] = MaxZoom.Value;
+        }
+
+        if (ReferrerPolicy.HasValue)
+        {
+            sourceSpec["referrerPolicy"] = ReferrerPolicy.Value;
         }
 
         await Map!.SceneRegistry.RegisterSourceAsync(new MapSourceDescriptor(Id, sourceSpec));
