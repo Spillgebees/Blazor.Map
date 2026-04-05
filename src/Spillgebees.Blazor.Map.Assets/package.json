@@ -34,7 +34,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.4",
     "@microsoft/dotnet-js-interop": "8.0.17",
-    "@types/node": "24.11.0",
+    "@types/node": "24.12.0",
     "@playwright/test": "1.56.1",
     "@vitest/coverage-v8": "4.0.18",
     "jsdom": "28.1.0",
