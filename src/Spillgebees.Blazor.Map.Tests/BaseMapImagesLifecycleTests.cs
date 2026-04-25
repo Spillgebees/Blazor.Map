@@ -18,7 +18,7 @@ public class BaseMapImagesLifecycleTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(10);
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(11);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);

@@ -9,13 +9,15 @@ namespace Spillgebees.Blazor.Map.Models.Controls;
 /// <param name="Collapsible">Whether the control can be opened and closed.</param>
 /// <param name="InitiallyOpen">Whether the control starts opened.</param>
 /// <param name="ClassName">Optional additional CSS class applied to the shell.</param>
+/// <param name="Order">Deterministic order at the position. Lower values render first.</param>
 public sealed record LegendControlOptions(
     bool Enable = true,
     ControlPosition Position = ControlPosition.TopRight,
     string? Title = "Legend",
     bool Collapsible = true,
     bool InitiallyOpen = true,
-    string? ClassName = null
+    string? ClassName = null,
+    int Order = 500
 )
 {
     /// <summary>

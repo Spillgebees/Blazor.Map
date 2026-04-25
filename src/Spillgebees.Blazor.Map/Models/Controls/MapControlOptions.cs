@@ -31,11 +31,13 @@ public record MapControlOptions(
 /// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.TopRight"/>.</param>
 /// <param name="ShowCompass">Whether to show the compass button. Default is <see langword="true"/>.</param>
 /// <param name="ShowZoom">Whether to show the zoom buttons. Default is <see langword="true"/>.</param>
+/// <param name="Order">Deterministic order at the position. Lower values render first.</param>
 public record NavigationControlOptions(
     bool Enable = true,
     ControlPosition Position = ControlPosition.TopRight,
     bool ShowCompass = true,
-    bool ShowZoom = true
+    bool ShowZoom = true,
+    int Order = 100
 );
 
 /// <summary>
@@ -44,10 +46,12 @@ public record NavigationControlOptions(
 /// <param name="Enable">Whether to show the scale control. Default is <see langword="true"/>.</param>
 /// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.BottomLeft"/>.</param>
 /// <param name="Unit">The unit system to display. Default is <see cref="ScaleUnit.Metric"/>.</param>
+/// <param name="Order">Deterministic order at the position. Lower values render first.</param>
 public record ScaleControlOptions(
     bool Enable = true,
     ControlPosition Position = ControlPosition.BottomLeft,
-    ScaleUnit Unit = ScaleUnit.Metric
+    ScaleUnit Unit = ScaleUnit.Metric,
+    int Order = 100
 );
 
 /// <summary>
@@ -55,7 +59,12 @@ public record ScaleControlOptions(
 /// </summary>
 /// <param name="Enable">Whether to show the fullscreen control. Default is <see langword="true"/>.</param>
 /// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.TopRight"/>.</param>
-public record FullscreenControlOptions(bool Enable = true, ControlPosition Position = ControlPosition.TopRight);
+/// <param name="Order">Deterministic order at the position. Lower values render first.</param>
+public record FullscreenControlOptions(
+    bool Enable = true,
+    ControlPosition Position = ControlPosition.TopRight,
+    int Order = 200
+);
 
 /// <summary>
 /// Options for the geolocate control.
@@ -63,10 +72,12 @@ public record FullscreenControlOptions(bool Enable = true, ControlPosition Posit
 /// <param name="Enable">Whether to show the geolocate control. Default is <see langword="true"/>.</param>
 /// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.TopRight"/>.</param>
 /// <param name="TrackUser">Whether to continuously track the user's location. Default is <see langword="false"/>.</param>
+/// <param name="Order">Deterministic order at the position. Lower values render first.</param>
 public record GeolocateControlOptions(
     bool Enable = true,
     ControlPosition Position = ControlPosition.TopRight,
-    bool TrackUser = false
+    bool TrackUser = false,
+    int Order = 300
 );
 
 /// <summary>
@@ -74,7 +85,12 @@ public record GeolocateControlOptions(
 /// </summary>
 /// <param name="Enable">Whether to show the terrain control. Default is <see langword="true"/>.</param>
 /// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.TopRight"/>.</param>
-public record TerrainControlOptions(bool Enable = true, ControlPosition Position = ControlPosition.TopRight);
+/// <param name="Order">Deterministic order at the position. Lower values render first.</param>
+public record TerrainControlOptions(
+    bool Enable = true,
+    ControlPosition Position = ControlPosition.TopRight,
+    int Order = 400
+);
 
 /// <summary>
 /// Options for the center control (re-center the map to its configured position).
@@ -83,4 +99,9 @@ public record TerrainControlOptions(bool Enable = true, ControlPosition Position
 /// </summary>
 /// <param name="Enable">Whether to show the center control. Default is <see langword="true"/>.</param>
 /// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.TopLeft"/>.</param>
-public record CenterControlOptions(bool Enable = true, ControlPosition Position = ControlPosition.TopLeft);
+/// <param name="Order">Deterministic order at the position. Lower values render first.</param>
+public record CenterControlOptions(
+    bool Enable = true,
+    ControlPosition Position = ControlPosition.TopLeft,
+    int Order = 100
+);

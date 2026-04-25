@@ -17,8 +17,8 @@ public class MapLegendTests : BunitContext
     private const string ResizeIdentifier = "Spillgebees.Map.mapFunctions.resize";
     private const string GetProtocolVersionIdentifier = "Spillgebees.Map.getProtocolVersion";
     private const string ApplySceneMutationsIdentifier = "Spillgebees.Map.mapFunctions.applySceneMutations";
-    private const string SetLegendControlIdentifier = "Spillgebees.Map.mapFunctions.setLegendControl";
-    private const string RemoveLegendControlIdentifier = "Spillgebees.Map.mapFunctions.removeLegendControl";
+    private const string SetCustomControlIdentifier = "Spillgebees.Map.mapFunctions.setCustomControl";
+    private const string RemoveCustomControlIdentifier = "Spillgebees.Map.mapFunctions.removeCustomControl";
     private const string HasStyleLayerIdentifier = "Spillgebees.Map.mapFunctions.hasStyleLayer";
     private const string SetStyleLayerVisibilityIdentifier = "Spillgebees.Map.mapFunctions.setStyleLayerVisibility";
 
@@ -26,13 +26,13 @@ public class MapLegendTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(10);
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(11);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
         JSInterop.SetupVoid(ApplySceneMutationsIdentifier);
-        JSInterop.SetupVoid(SetLegendControlIdentifier);
-        JSInterop.SetupVoid(RemoveLegendControlIdentifier);
+        JSInterop.SetupVoid(SetCustomControlIdentifier);
+        JSInterop.SetupVoid(RemoveCustomControlIdentifier);
         JSInterop.Setup<bool>(HasStyleLayerIdentifier).SetResult(true);
         JSInterop.SetupVoid(SetStyleLayerVisibilityIdentifier);
     }
@@ -48,7 +48,7 @@ public class MapLegendTests : BunitContext
         await map.OnMapInitializedAsync();
 
         // assert
-        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetLegendControlIdentifier));
+        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetCustomControlIdentifier));
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -65,7 +65,7 @@ public class MapLegendTests : BunitContext
         await map.OnMapInitializedAsync();
 
         // assert
-        cut.WaitForAssertion(() => JSInterop.Invocations[SetLegendControlIdentifier].Count.Should().Be(1));
+        cut.WaitForAssertion(() => JSInterop.Invocations[SetCustomControlIdentifier].Count.Should().Be(1));
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -84,7 +84,7 @@ public class MapLegendTests : BunitContext
         );
 
         // assert
-        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(RemoveLegendControlIdentifier));
+        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(RemoveCustomControlIdentifier));
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -152,15 +152,15 @@ public class MapLegendTests : BunitContext
         var cut = Render<ComponentHost>(parameters => parameters.Add(p => p.Definition, CreateDefinition()));
         var map = cut.FindComponent<SgbMap>().Instance;
         await map.OnMapInitializedAsync();
-        cut.WaitForAssertion(() => JSInterop.Invocations[SetLegendControlIdentifier].Count.Should().BeGreaterThan(0));
+        cut.WaitForAssertion(() => JSInterop.Invocations[SetCustomControlIdentifier].Count.Should().BeGreaterThan(0));
         var toggle = cut.Find("input[data-testid='map-legend-toggle-stations']");
-        var initialShellInvocationCount = JSInterop.Invocations[SetLegendControlIdentifier].Count;
+        var initialShellInvocationCount = JSInterop.Invocations[SetCustomControlIdentifier].Count;
 
         // act
         await toggle.ChangeAsync(new ChangeEventArgs { Value = false });
 
         // assert
-        JSInterop.Invocations[SetLegendControlIdentifier].Count.Should().Be(initialShellInvocationCount);
+        JSInterop.Invocations[SetCustomControlIdentifier].Count.Should().Be(initialShellInvocationCount);
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -201,8 +201,8 @@ public class MapLegendTests : BunitContext
         var cut = Render<ComponentHost>(parameters => parameters.Add(p => p.Definition, CreateDefinition()));
         var map = cut.FindComponent<SgbMap>().Instance;
         await map.OnMapInitializedAsync();
-        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetLegendControlIdentifier));
-        var initialRegisterInvocationCount = JSInterop.Invocations[SetLegendControlIdentifier].Count;
+        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetCustomControlIdentifier));
+        var initialRegisterInvocationCount = JSInterop.Invocations[SetCustomControlIdentifier].Count;
 
         // act
         cut.Render(parameters =>
@@ -212,7 +212,7 @@ public class MapLegendTests : BunitContext
         );
 
         // assert
-        JSInterop.Invocations[SetLegendControlIdentifier].Count.Should().Be(initialRegisterInvocationCount + 1);
+        JSInterop.Invocations[SetCustomControlIdentifier].Count.Should().Be(initialRegisterInvocationCount + 1);
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -234,9 +234,13 @@ public class MapLegendTests : BunitContext
         await map.OnMapInitializedAsync();
 
         // assert
-        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetLegendControlIdentifier));
-        var invocation = JSInterop.Invocations[SetLegendControlIdentifier].Single();
-        invocation.Arguments[1].Should().BeEquivalentTo(controlOptions);
+        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetCustomControlIdentifier));
+        var invocation = JSInterop.Invocations[SetCustomControlIdentifier].Single();
+        invocation.Arguments[1].Should().BeOfType<string>().Which.Should().NotBeNullOrWhiteSpace();
+        invocation.Arguments[2].Should().Be("legend");
+        invocation.Arguments[3].Should().Be(controlOptions.Position);
+        invocation.Arguments[4].Should().Be(500);
+        invocation.Arguments[5].Should().BeEquivalentTo(controlOptions);
     }
 
     [Test, Timeout(TestTimeoutMs)]

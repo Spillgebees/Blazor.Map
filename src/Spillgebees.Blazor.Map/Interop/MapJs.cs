@@ -19,7 +19,7 @@ internal static class MapJs
     /// The protocol version this C# library expects from the JS module.
     /// Bumped whenever the JS interop contract changes (function names, parameter shapes, return types).
     /// </summary>
-    internal const int ProtocolVersion = 10;
+    internal const int ProtocolVersion = 11;
 
     private const string JsNamespace = "Spillgebees.Map.mapFunctions";
     private const string JsProtocolVersionFunction = "Spillgebees.Map.getProtocolVersion";
@@ -150,28 +150,37 @@ internal static class MapJs
     ) =>
         jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.setControls", mapReference, ToJsModel(mapControlOptions));
 
-    internal static ValueTask SetLegendControlAsync(
+    internal static ValueTask SetCustomControlAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
         ElementReference mapReference,
+        string controlId,
+        string kind,
+        ControlPosition position,
+        int order,
         LegendControlOptions legendControlOptions,
         ElementReference placeholderReference,
         ElementReference contentReference
     ) =>
         jsRuntime.SafeInvokeVoidAsync(
             logger,
-            $"{JsNamespace}.setLegendControl",
+            $"{JsNamespace}.setCustomControl",
             mapReference,
+            controlId,
+            kind,
+            position,
+            order,
             legendControlOptions,
             placeholderReference,
             contentReference
         );
 
-    internal static ValueTask RemoveLegendControlAsync(
+    internal static ValueTask RemoveCustomControlAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
-        ElementReference mapReference
-    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.removeLegendControl", mapReference);
+        ElementReference mapReference,
+        string controlId
+    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.removeCustomControl", mapReference, controlId);
 
     /// <summary>
     /// Updates map options (style, pitch, bearing, terrain, projection).
@@ -375,7 +384,12 @@ internal static class MapJs
             mapControlOptions.Terrain,
             Center = mapControlOptions.Center is null
                 ? null
-                : new { mapControlOptions.Center.Enable, mapControlOptions.Center.Position },
+                : new
+                {
+                    mapControlOptions.Center.Enable,
+                    mapControlOptions.Center.Position,
+                    mapControlOptions.Center.Order,
+                },
         };
 
     private static object? ToJsModel(MapStyle? mapStyle) =>

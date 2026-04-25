@@ -30,7 +30,7 @@ public class TrainTrackingExampleTests : BunitContext
     private const string ShowPopupIdentifier = "Spillgebees.Map.mapFunctions.showPopup";
     private const string ClosePopupIdentifier = "Spillgebees.Map.mapFunctions.closePopup";
     private const string SetStyleLayerVisibilityIdentifier = "Spillgebees.Map.mapFunctions.setStyleLayerVisibility";
-    private const string SetLegendControlIdentifier = "Spillgebees.Map.mapFunctions.setLegendControl";
+    private const string SetCustomControlIdentifier = "Spillgebees.Map.mapFunctions.setCustomControl";
 
     public TrainTrackingExampleTests()
     {
@@ -38,7 +38,7 @@ public class TrainTrackingExampleTests : BunitContext
 
         Services.AddSingleton<IConfiguration>(CreateConfiguration());
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(10);
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(11);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
@@ -47,7 +47,7 @@ public class TrainTrackingExampleTests : BunitContext
         JSInterop.Setup<double?>(GetZoomIdentifier).SetResult(9);
         JSInterop.SetupVoid(FlyToIdentifier);
         JSInterop.SetupVoid(ClosePopupIdentifier);
-        JSInterop.SetupVoid(SetLegendControlIdentifier);
+        JSInterop.SetupVoid(SetCustomControlIdentifier);
         JSInterop.SetupVoid(SetStyleLayerVisibilityIdentifier);
     }
 
@@ -377,7 +377,7 @@ public class TrainTrackingExampleTests : BunitContext
         var trainsToggle = cut.Find("input[data-testid='map-legend-toggle-trains']");
 
         // assert
-        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetLegendControlIdentifier));
+        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetCustomControlIdentifier));
         cut.Markup.Should().Contain("Tracks &amp; tunnels");
         cut.Markup.Should().Contain("Tram &amp; metro");
         cut.Markup.Should().Contain("Stations &amp; borders");

@@ -19,7 +19,7 @@ public class MapJsInteropPayloadTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(10);
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(11);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
@@ -67,6 +67,30 @@ public class MapJsInteropPayloadTests : BunitContext
 
         enableValue.Should().Be(true);
         positionValue.Should().Be(ControlPosition.TopLeft);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_send_control_order_payload_when_initializing_map(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        Render<SgbMap>(parameters =>
+            parameters.Add(
+                p => p.ControlOptions,
+                new MapControlOptions(
+                    Navigation: new NavigationControlOptions(Order: 250),
+                    Scale: new ScaleControlOptions(Order: 25)
+                )
+            )
+        );
+
+        // assert
+        var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
+        var controlOptionsPayload = invocation.Arguments[4];
+        var navigationPayload = GetRequiredPropertyValue(controlOptionsPayload!, "Navigation");
+        var scalePayload = GetRequiredPropertyValue(controlOptionsPayload!, "Scale");
+
+        GetRequiredPropertyValue(navigationPayload, "Order").Should().Be(250);
+        GetRequiredPropertyValue(scalePayload, "Order").Should().Be(25);
     }
 
     [Test, Timeout(TestTimeoutMs)]

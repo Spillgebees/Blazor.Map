@@ -14,6 +14,8 @@ namespace Spillgebees.Blazor.Map.Components;
 /// </summary>
 public partial class MapLegend : ComponentBase, IAsyncDisposable
 {
+    private const string CustomControlKind = "legend";
+
     [CascadingParameter]
     private BaseMap? Map { get; set; }
 
@@ -37,6 +39,7 @@ public partial class MapLegend : ComponentBase, IAsyncDisposable
 
     private readonly Dictionary<string, bool> _itemVisibility = new(StringComparer.Ordinal);
     private readonly string _contentId = $"sgb-map-legend-content-{Guid.NewGuid():N}";
+    private readonly string _controlId = $"sgb-map-custom-control-{Guid.NewGuid():N}";
     private ElementReference _placeholderReference;
     private ElementReference _contentReference;
     private bool _controlSyncPending = true;
@@ -85,7 +88,7 @@ public partial class MapLegend : ComponentBase, IAsyncDisposable
             {
                 if (_registered)
                 {
-                    await MapJs.RemoveLegendControlAsync(JsRuntime, Logger, Map.MapReference);
+                    await MapJs.RemoveCustomControlAsync(JsRuntime, Logger, Map.MapReference, _controlId);
                     _registered = false;
                 }
 
@@ -93,10 +96,14 @@ public partial class MapLegend : ComponentBase, IAsyncDisposable
                 return;
             }
 
-            await MapJs.SetLegendControlAsync(
+            await MapJs.SetCustomControlAsync(
                 JsRuntime,
                 Logger,
                 Map.MapReference,
+                _controlId,
+                CustomControlKind,
+                ControlOptions.Position,
+                ControlOptions.Order,
                 ControlOptions,
                 _placeholderReference,
                 _contentReference
@@ -125,7 +132,7 @@ public partial class MapLegend : ComponentBase, IAsyncDisposable
 
         try
         {
-            await MapJs.RemoveLegendControlAsync(JsRuntime, Logger, Map.MapReference);
+            await MapJs.RemoveCustomControlAsync(JsRuntime, Logger, Map.MapReference, _controlId);
         }
         catch (Exception exception)
         {

@@ -62,6 +62,15 @@ export interface OverlayStyleRequestOptions {
   referrerPolicy: ReferrerPolicy | null;
 }
 
+export interface CustomControlRegistration {
+  controlId: string;
+  kind: string;
+  position: import("./controls").ControlPosition;
+  order: number;
+  options: Record<string, unknown>;
+  control: IControl;
+}
+
 export interface SpillgebeesMapNamespace {
   getProtocolVersion: () => number;
   mapFunctions: Record<string, (...args: unknown[]) => unknown>;
@@ -71,6 +80,7 @@ export interface SpillgebeesMapNamespace {
   controls: Map<MapLibreMap, Set<IControl>>;
   legendControls: Map<MapLibreMap, IControl>;
   legendControlOptions: Map<MapLibreMap, ILegendControlOptions | null>;
+  customControlRegistrations: Map<MapLibreMap, Map<string, CustomControlRegistration>>;
   styles: Map<MapLibreMap, string | StyleSpecification>;
   mapOptions: Map<MapLibreMap, IMapOptions>;
   dotNetHelpers: Map<MapLibreMap, DotNet.DotNetObject>;

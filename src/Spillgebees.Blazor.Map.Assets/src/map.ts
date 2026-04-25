@@ -21,7 +21,7 @@ import {
   updateCircles,
   updatePolylines,
 } from "./features/shapes";
-import type { ILegendControlOptions, IMapControlOptions } from "./interfaces/controls";
+import type { ControlPosition, ILegendControlOptions, IMapControlOptions } from "./interfaces/controls";
 import type { ICircle, IMarker, IPolyline } from "./interfaces/features";
 import type {
   ICoordinate,
@@ -33,6 +33,7 @@ import type {
 } from "./interfaces/map";
 import type {
   ComposedStyleLayerRegistration,
+  CustomControlRegistration,
   LayerEventSubscription,
   OverlayStyleRequestOptions,
   RegisteredMapImage,
@@ -65,7 +66,48 @@ import {
 import { applyOverlayStyles, validateComposedGlyphs } from "./styles/composition";
 import type { FeatureStorage } from "./types/feature-storage";
 
-export const PROTOCOL_VERSION = 10;
+export const PROTOCOL_VERSION = 11;
+
+const LEGEND_CONTROL_KIND = "legend";
+const LEGACY_LEGEND_CONTROL_ID = "__sgb_legacy_legend";
+
+const BUILT_IN_CONTROL_DEFAULT_ORDER = {
+  navigation: 100,
+  scale: 100,
+  fullscreen: 200,
+  geolocate: 300,
+  terrain: 400,
+  center: 100,
+} as const;
+
+interface OrderedBuiltInControlRegistration {
+  control: IControl;
+  position: ControlPosition;
+  order: number;
+  sourceOrder: number;
+  controlId?: undefined;
+}
+
+interface OrderedCustomControlRegistration {
+  control: IControl;
+  position: ControlPosition;
+  order: number;
+  sourceOrder: number;
+  controlId: string;
+}
+
+type OrderedControlRegistration = OrderedBuiltInControlRegistration | OrderedCustomControlRegistration;
+
+function createDefaultControlOptions(): IMapControlOptions {
+  return {
+    navigation: null,
+    scale: null,
+    fullscreen: null,
+    geolocate: null,
+    terrain: null,
+    center: null,
+  };
+}
 
 const DEFAULT_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 
@@ -202,6 +244,8 @@ function initializeNamespace(): void {
       syncFeatures,
       setOverlays,
       setControls,
+      setCustomControl,
+      removeCustomControl,
       setLegendControl,
       removeLegendControl,
       setMapOptions,
@@ -246,6 +290,7 @@ function initializeNamespace(): void {
     controls: new Map<MapLibreMap, Set<IControl>>(),
     legendControls: new Map<MapLibreMap, IControl>(),
     legendControlOptions: new Map<MapLibreMap, ILegendControlOptions | null>(),
+    customControlRegistrations: new Map<MapLibreMap, Map<string, CustomControlRegistration>>(),
     styles: new Map<MapLibreMap, string | StyleSpecification>(),
     mapOptions: new Map<MapLibreMap, IMapOptions>(),
     dotNetHelpers: new Map<MapLibreMap, DotNet.DotNetObject>(),
@@ -343,6 +388,154 @@ function replayRegisteredImages(mapElement: HTMLElement): void | Promise<void> {
   }
 
   return setImages(mapElement, images);
+}
+
+function getCustomControlStore(map: MapLibreMap): Map<string, CustomControlRegistration> {
+  const existing = window.Spillgebees.Map.customControlRegistrations.get(map);
+  if (existing) {
+    return existing;
+  }
+
+  const created = new Map<string, CustomControlRegistration>();
+  window.Spillgebees.Map.customControlRegistrations.set(map, created);
+  return created;
+}
+
+function getOrderedRegistrations(map: MapLibreMap, controlOptions: IMapControlOptions): OrderedControlRegistration[] {
+  const registrations: OrderedControlRegistration[] = [];
+  let sourceOrder = 0;
+
+  if (controlOptions.navigation?.enable) {
+    const nav = new NavigationControl({
+      showCompass: controlOptions.navigation.showCompass,
+      showZoom: controlOptions.navigation.showZoom,
+    });
+    registrations.push({
+      control: nav,
+      position: controlOptions.navigation.position,
+      order: controlOptions.navigation.order ?? BUILT_IN_CONTROL_DEFAULT_ORDER.navigation,
+      sourceOrder: sourceOrder++,
+    });
+  }
+
+  if (controlOptions.scale?.enable) {
+    const scale = new ScaleControl({
+      unit: controlOptions.scale.unit,
+    });
+    registrations.push({
+      control: scale,
+      position: controlOptions.scale.position,
+      order: controlOptions.scale.order ?? BUILT_IN_CONTROL_DEFAULT_ORDER.scale,
+      sourceOrder: sourceOrder++,
+    });
+  }
+
+  if (controlOptions.fullscreen?.enable) {
+    const fs = new FullscreenControl();
+    registrations.push({
+      control: fs,
+      position: controlOptions.fullscreen.position,
+      order: controlOptions.fullscreen.order ?? BUILT_IN_CONTROL_DEFAULT_ORDER.fullscreen,
+      sourceOrder: sourceOrder++,
+    });
+  }
+
+  if (controlOptions.geolocate?.enable) {
+    const geo = new GeolocateControl({
+      trackUserLocation: controlOptions.geolocate.trackUser,
+    });
+    registrations.push({
+      control: geo,
+      position: controlOptions.geolocate.position,
+      order: controlOptions.geolocate.order ?? BUILT_IN_CONTROL_DEFAULT_ORDER.geolocate,
+      sourceOrder: sourceOrder++,
+    });
+  }
+
+  if (controlOptions.terrain?.enable) {
+    const terrain = new TerrainControl();
+    registrations.push({
+      control: terrain,
+      position: controlOptions.terrain.position,
+      order: controlOptions.terrain.order ?? BUILT_IN_CONTROL_DEFAULT_ORDER.terrain,
+      sourceOrder: sourceOrder++,
+    });
+  }
+
+  if (controlOptions.center?.enable) {
+    const center = new CenterControl();
+    registrations.push({
+      control: center,
+      position: controlOptions.center.position,
+      order: controlOptions.center.order ?? BUILT_IN_CONTROL_DEFAULT_ORDER.center,
+      sourceOrder: sourceOrder++,
+    });
+  }
+
+  const customControls = Array.from(getCustomControlStore(map).values());
+  for (const custom of customControls) {
+    registrations.push({
+      controlId: custom.controlId,
+      control: custom.control,
+      position: custom.position,
+      order: custom.order,
+      sourceOrder: sourceOrder++,
+    });
+  }
+
+  registrations.sort((left, right) => {
+    if (left.position !== right.position) {
+      return 0;
+    }
+
+    if (left.order !== right.order) {
+      return left.order - right.order;
+    }
+
+    if (left.controlId && right.controlId) {
+      const controlIdComparison = left.controlId.localeCompare(right.controlId);
+      if (controlIdComparison !== 0) {
+        return controlIdComparison;
+      }
+    }
+
+    if (left.controlId && !right.controlId) {
+      return 1;
+    }
+
+    if (!left.controlId && right.controlId) {
+      return -1;
+    }
+
+    return left.sourceOrder - right.sourceOrder;
+  });
+
+  return registrations;
+}
+
+function recomposeControls(mapElement: HTMLElement, controlOptions: IMapControlOptions): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return;
+  }
+
+  window.Spillgebees.Map.controlOptions.set(map, structuredClone(controlOptions));
+
+  const existingControls = window.Spillgebees.Map.controls.get(map);
+  if (existingControls) {
+    for (const control of existingControls) {
+      map.removeControl(control);
+    }
+    existingControls.clear();
+  }
+
+  const controls = window.Spillgebees.Map.controls.get(map) ?? new Set<IControl>();
+  for (const registration of getOrderedRegistrations(map, controlOptions)) {
+    map.addControl(registration.control, registration.position);
+    controls.add(registration.control);
+  }
+
+  window.Spillgebees.Map.controls.set(map, controls);
 }
 
 function hasImageChanged(previous: RegisteredMapImage | undefined, next: IMapImageDefinition): boolean {
@@ -662,6 +855,7 @@ export function createMap(
   window.Spillgebees.Map.controls.set(map, new Set());
   window.Spillgebees.Map.controlOptions.set(map, controlOptions);
   window.Spillgebees.Map.legendControlOptions.set(map, null);
+  window.Spillgebees.Map.customControlRegistrations.set(map, new Map());
   window.Spillgebees.Map.mapOptions.set(map, mapOptions);
   window.Spillgebees.Map.requestContexts.set(map, {
     mapOptions: structuredClone(mapOptions),
@@ -786,6 +980,7 @@ export function disposeMap(mapElement: HTMLElement): void {
   window.Spillgebees.Map.controls.delete(map);
   window.Spillgebees.Map.legendControls.delete(map);
   window.Spillgebees.Map.legendControlOptions.delete(map);
+  window.Spillgebees.Map.customControlRegistrations.delete(map);
   window.Spillgebees.Map.controlOptions.delete(map);
 
   // Clean up style storage
@@ -1033,69 +1228,95 @@ export function setControls(mapElement: HTMLElement, controlOptions: IMapControl
     return;
   }
 
-  window.Spillgebees.Map.controlOptions.set(map, structuredClone(controlOptions));
+  recomposeControls(mapElement, controlOptions);
+}
 
-  // Remove all existing controls
-  const existingControls = window.Spillgebees.Map.controls.get(map);
-  if (existingControls) {
-    for (const control of existingControls) {
-      map.removeControl(control);
+export function setCustomControl(
+  mapElement: HTMLElement,
+  controlId: string,
+  kind: string,
+  position: ControlPosition,
+  order: number,
+  options: Record<string, unknown>,
+  placeholderHost?: HTMLElement,
+  contentRoot?: HTMLElement,
+): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return;
+  }
+
+  const customControlStore = getCustomControlStore(map);
+  const existingRegistration = customControlStore.get(controlId);
+
+  if (
+    existingRegistration &&
+    existingRegistration.kind === kind &&
+    existingRegistration.position === position &&
+    existingRegistration.order === order &&
+    existingRegistration.control instanceof LegendControl &&
+    kind === LEGEND_CONTROL_KIND
+  ) {
+    existingRegistration.control.update(options as ILegendControlOptions);
+    existingRegistration.options = options;
+    customControlStore.set(controlId, existingRegistration);
+    window.Spillgebees.Map.legendControls.set(map, existingRegistration.control);
+    window.Spillgebees.Map.legendControlOptions.set(map, structuredClone(options as ILegendControlOptions));
+    return;
+  }
+
+  let control: IControl;
+  if (kind === LEGEND_CONTROL_KIND) {
+    if (!(placeholderHost instanceof HTMLElement) || !(contentRoot instanceof HTMLElement)) {
+      return;
     }
-    existingControls.clear();
+
+    control = new LegendControl(options as ILegendControlOptions, placeholderHost, contentRoot);
+    window.Spillgebees.Map.legendControls.set(map, control);
+    window.Spillgebees.Map.legendControlOptions.set(map, structuredClone(options as ILegendControlOptions));
+  } else {
+    return;
   }
 
-  const controls = window.Spillgebees.Map.controls.get(map) ?? new Set<IControl>();
-
-  // Navigation control (zoom + compass)
-  if (controlOptions.navigation?.enable) {
-    const nav = new NavigationControl({
-      showCompass: controlOptions.navigation.showCompass,
-      showZoom: controlOptions.navigation.showZoom,
-    });
-    map.addControl(nav, controlOptions.navigation.position);
-    controls.add(nav);
+  if (existingRegistration) {
+    const controls = window.Spillgebees.Map.controls.get(map);
+    if (controls?.has(existingRegistration.control)) {
+      map.removeControl(existingRegistration.control);
+      controls.delete(existingRegistration.control);
+    }
   }
 
-  // Scale control
-  if (controlOptions.scale?.enable) {
-    const scale = new ScaleControl({
-      unit: controlOptions.scale.unit,
-    });
-    map.addControl(scale, controlOptions.scale.position);
-    controls.add(scale);
+  customControlStore.set(controlId, {
+    controlId,
+    kind,
+    position,
+    order,
+    options,
+    control,
+  });
+
+  recomposeControls(mapElement, window.Spillgebees.Map.controlOptions.get(map) ?? createDefaultControlOptions());
+}
+
+export function removeCustomControl(mapElement: HTMLElement, controlId: string): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return;
   }
 
-  // Fullscreen control
-  if (controlOptions.fullscreen?.enable) {
-    const fs = new FullscreenControl();
-    map.addControl(fs, controlOptions.fullscreen.position);
-    controls.add(fs);
+  const customControlStore = getCustomControlStore(map);
+  const existingRegistration = customControlStore.get(controlId);
+  if (!existingRegistration) {
+    return;
   }
 
-  // Geolocate control
-  if (controlOptions.geolocate?.enable) {
-    const geo = new GeolocateControl({
-      trackUserLocation: controlOptions.geolocate.trackUser,
-    });
-    map.addControl(geo, controlOptions.geolocate.position);
-    controls.add(geo);
+  customControlStore.delete(controlId);
+  if (existingRegistration.kind === LEGEND_CONTROL_KIND) {
+    window.Spillgebees.Map.legendControls.delete(map);
+    window.Spillgebees.Map.legendControlOptions.delete(map);
   }
 
-  // Terrain control
-  if (controlOptions.terrain?.enable) {
-    const terrain = new TerrainControl();
-    map.addControl(terrain, controlOptions.terrain.position);
-    controls.add(terrain);
-  }
-
-  // Custom center control
-  if (controlOptions.center?.enable) {
-    const center = new CenterControl();
-    map.addControl(center, controlOptions.center.position);
-    controls.add(center);
-  }
-
-  window.Spillgebees.Map.controls.set(map, controls);
+  recomposeControls(mapElement, window.Spillgebees.Map.controlOptions.get(map) ?? createDefaultControlOptions());
 }
 
 export function setLegendControl(
@@ -1109,16 +1330,11 @@ export function setLegendControl(
     return;
   }
 
-  const previousOptions = window.Spillgebees.Map.legendControlOptions.get(map);
   window.Spillgebees.Map.legendControlOptions.set(map, structuredClone(options));
 
   if (!options.enable) {
-    const existingControl = window.Spillgebees.Map.legendControls.get(map);
-    if (existingControl) {
-      map.removeControl(existingControl);
-      window.Spillgebees.Map.legendControls.delete(map);
-    }
-
+    removeCustomControl(mapElement, LEGACY_LEGEND_CONTROL_ID);
+    window.Spillgebees.Map.legendControls.delete(map);
     contentRoot.hidden = true;
     if (!placeholderHost.contains(contentRoot)) {
       placeholderHost.appendChild(contentRoot);
@@ -1126,24 +1342,16 @@ export function setLegendControl(
     return;
   }
 
-  const existingControl = window.Spillgebees.Map.legendControls.get(map);
-  if (existingControl instanceof LegendControl) {
-    if (previousOptions && previousOptions.position !== options.position) {
-      map.removeControl(existingControl);
-      window.Spillgebees.Map.legendControls.delete(map);
-      const legendControl = new LegendControl(options, placeholderHost, contentRoot);
-      window.Spillgebees.Map.legendControls.set(map, legendControl);
-      map.addControl(legendControl, options.position);
-      return;
-    }
-
-    existingControl.update(options);
-    return;
-  }
-
-  const legendControl = new LegendControl(options, placeholderHost, contentRoot);
-  window.Spillgebees.Map.legendControls.set(map, legendControl);
-  map.addControl(legendControl, options.position);
+  setCustomControl(
+    mapElement,
+    LEGACY_LEGEND_CONTROL_ID,
+    LEGEND_CONTROL_KIND,
+    options.position,
+    options.order ?? 500,
+    options as unknown as Record<string, unknown>,
+    placeholderHost,
+    contentRoot,
+  );
 }
 
 export function removeLegendControl(mapElement: HTMLElement): void {
@@ -1152,12 +1360,7 @@ export function removeLegendControl(mapElement: HTMLElement): void {
     return;
   }
 
-  const legendControl = window.Spillgebees.Map.legendControls.get(map);
-  if (!legendControl) {
-    return;
-  }
-
-  map.removeControl(legendControl);
+  removeCustomControl(mapElement, LEGACY_LEGEND_CONTROL_ID);
   window.Spillgebees.Map.legendControls.delete(map);
   window.Spillgebees.Map.legendControlOptions.delete(map);
 }
