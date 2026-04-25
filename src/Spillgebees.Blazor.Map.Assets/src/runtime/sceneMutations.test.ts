@@ -33,7 +33,7 @@ describe.sequential("applySceneMutations", () => {
     };
   }
 
-  function createDefaultControlOptions(): IMapControl[] {
+  function createDefaultControls(): IMapControl[] {
     return [];
   }
 
@@ -58,7 +58,7 @@ describe.sequential("applySceneMutations", () => {
           wmsSource: null,
         },
       }),
-      createDefaultControlOptions(),
+      createDefaultControls(),
       "light",
       [],
       [],
@@ -159,7 +159,7 @@ describe.sequential("applySceneMutations", () => {
           wmsSource: null,
         },
       }),
-      createDefaultControlOptions(),
+      createDefaultControls(),
       "light",
       [],
       [],
@@ -239,7 +239,7 @@ describe.sequential("applySceneMutations", () => {
           wmsSource: null,
         },
       }),
-      createDefaultControlOptions(),
+      createDefaultControls(),
       "light",
       [],
       [],
@@ -361,7 +361,7 @@ describe.sequential("applySceneMutations", () => {
           wmsSource: null,
         },
       }),
-      createDefaultControlOptions(),
+      createDefaultControls(),
       "light",
       [],
       [],
@@ -470,7 +470,7 @@ describe.sequential("applySceneMutations", () => {
           wmsSource: null,
         },
       }),
-      createDefaultControlOptions(),
+      createDefaultControls(),
       "light",
       [],
       [],
@@ -589,7 +589,7 @@ describe.sequential("applySceneMutations", () => {
           },
         ],
       }),
-      createDefaultControlOptions(),
+      createDefaultControls(),
       "light",
       [],
       [],

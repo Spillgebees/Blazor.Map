@@ -34,7 +34,7 @@ function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions 
   };
 }
 
-function createDefaultControlOptions(): IMapControl[] {
+function createDefaultControls(): IMapControl[] {
   return [];
 }
 
@@ -73,7 +73,7 @@ function setupMapAndGetInstance(): { map: MockMapInstance; mapElement: HTMLEleme
     "OnMapInitialized",
     mapElement,
     createDefaultMapOptions(),
-    createDefaultControlOptions(),
+    createDefaultControls(),
     "light",
     [],
     [],

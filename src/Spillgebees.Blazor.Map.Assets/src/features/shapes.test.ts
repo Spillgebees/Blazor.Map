@@ -36,7 +36,7 @@ function createDefaultMapOptions(): IMapOptions {
   };
 }
 
-function createDefaultControlOptions(): IMapControl[] {
+function createDefaultControls(): IMapControl[] {
   return [];
 }
 
@@ -89,7 +89,7 @@ function setupMapAndGetMockMap() {
     "OnMapInitialized",
     mapElement,
     createDefaultMapOptions(),
-    createDefaultControlOptions(),
+    createDefaultControls(),
     "light",
     [],
     [],

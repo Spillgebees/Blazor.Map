@@ -88,15 +88,17 @@ public sealed record LegendMapControl(
 ) : MapControl(ControlId, Position, Order, Enable);
 
 /// <summary>
-/// A custom content control entry. The visual content is provided by child components.
+/// A content control shell entry. The visual content is provided by child components.
 /// </summary>
 public sealed record ContentMapControl(
     string ControlId,
-    string Kind,
     bool Enable = true,
     ControlPosition Position = ControlPosition.TopRight,
     int Order = 500
-) : MapControl(ControlId, Position, Order, Enable);
+) : MapControl(ControlId, Position, Order, Enable)
+{
+    public string Kind => "content";
+}
 
 /// <summary>
 /// Shared control presets.

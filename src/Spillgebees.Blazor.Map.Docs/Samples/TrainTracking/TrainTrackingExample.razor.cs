@@ -23,7 +23,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private string? _hoveredTrainId;
     private string? _selectedTrainId;
     private readonly List<TrainSampleState> _trains = [];
-    private List<MapImageDefinition> _images = [];
+    private readonly List<MapImageDefinition> _images;
 
     [CascadingParameter]
     public MapTheme GlobalTheme { get; set; }
@@ -107,6 +107,11 @@ public partial class TrainTrackingExample : IAsyncDisposable
 
     private static MapLegendDefinition OverlayLegendDefinition => TrainTrackingPresentation.OverlayLegendDefinition;
 
+    public TrainTrackingExample()
+    {
+        _images = BuildTrainImages(TrainSampleSimulation.CreateStates());
+    }
+
     protected override void OnInitialized()
     {
         _mapOptions = TrainTrackingPresentation.BuildMapOptions(
@@ -114,7 +119,6 @@ public partial class TrainTrackingExample : IAsyncDisposable
             Configuration[TrainTrackingPresentation.ComposedGlyphsUrlConfigurationKey]
         );
         _trains.AddRange(TrainSampleSimulation.CreateStates());
-        _images = BuildTrainImages(_trains);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

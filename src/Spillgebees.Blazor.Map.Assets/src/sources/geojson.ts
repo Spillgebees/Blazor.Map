@@ -475,10 +475,6 @@ export async function addImage(
     return;
   }
 
-  const imageStore = window.Spillgebees.Map.imageRegistrations.get(map) ?? new Map();
-  imageStore.set(name, { name, url, width, height, pixelRatio, sdf });
-  window.Spillgebees.Map.imageRegistrations.set(map, imageStore);
-
   if (map.hasImage(name)) {
     map.removeImage(name);
   }
@@ -498,6 +494,10 @@ export async function addImage(
     img.onerror = () => reject(new Error(`Failed to load image: ${name}`));
     img.src = url;
   });
+
+  if (shouldAbort?.()) {
+    return;
+  }
 
   const canvas = new OffscreenCanvas(renderWidth, renderHeight);
   const ctx = canvas.getContext("2d");

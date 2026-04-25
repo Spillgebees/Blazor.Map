@@ -442,7 +442,7 @@ internal static class MapJs
             },
             ContentMapControl content => new
             {
-                Kind = content.Kind,
+                Kind = "content",
                 content.ControlId,
                 content.Enable,
                 content.Position,

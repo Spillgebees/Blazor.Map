@@ -22,7 +22,7 @@ public sealed record MapImageDefinition
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
 
-        if (pixelRatio <= 0)
+        if (!double.IsFinite(pixelRatio) || pixelRatio <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(pixelRatio), "Pixel ratio must be greater than zero.");
         }

@@ -72,6 +72,23 @@ public class MapJsInteropPayloadTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
+    public void Should_send_content_control_kind_as_content_when_initializing_map(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        Render<SgbMap>(parameters =>
+            parameters.Add<IReadOnlyList<MapControl>>(p => p.Controls, [new ContentMapControl("content-main")])
+        );
+
+        // assert
+        var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
+        var controlsPayload = invocation.Arguments[4].Should().BeOfType<object[]>().Subject;
+        var contentPayload = controlsPayload.Single();
+        var kindValue = GetRequiredPropertyValue(contentPayload, "Kind");
+
+        kindValue.Should().Be("content");
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
     public void Should_send_control_order_payload_when_initializing_map(CancellationToken cancellationToken)
     {
         // arrange & act
@@ -123,6 +140,10 @@ public class MapJsInteropPayloadTests : BunitContext
 
         stylesPayload.Should().BeOfType<object[]>();
         ((object[])stylesPayload).Should().HaveCount(styles.Count);
+        GetRequiredPropertyValue(((object[])stylesPayload)[0], "Url").Should().Be(MapStyle.OpenFreeMap.Positron.Url);
+        GetRequiredPropertyValue(((object[])stylesPayload)[1], "Url")
+            .Should()
+            .Be("https://example.com/overlay-style.json");
 
         webFontsPayload.Should().BeOfType<string[]>();
         ((string[])webFontsPayload).Should().Equal(webFonts);

@@ -1191,6 +1191,56 @@ describe("setImages", () => {
       globalThis.OffscreenCanvas = originalOffscreenCanvas;
     }
   });
+
+  it("should not keep stale registrations when a newer sync removes an in-flight image", async () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const originalImage = globalThis.Image;
+    const originalOffscreenCanvas = globalThis.OffscreenCanvas;
+    globalThis.Image = ControlledMockImage as unknown as typeof Image;
+    globalThis.OffscreenCanvas = MockOffscreenCanvas as unknown as typeof OffscreenCanvas;
+
+    try {
+      const mockMap = getLatestMockMapInstance()!;
+
+      // act
+      const firstSync = setImages(mapElement, [
+        {
+          name: "stale-icon",
+          url: "https://example.com/stale.png",
+          width: 24,
+          height: 24,
+          pixelRatio: 1,
+          sdf: false,
+        },
+      ]);
+      const secondSync = setImages(mapElement, []);
+      ControlledMockImage.flushLoads();
+      await Promise.all([firstSync, secondSync]);
+
+      // assert
+      const map = window.Spillgebees.Map.maps.get(mapElement)!;
+      expect(window.Spillgebees.Map.imageRegistrations.get(map)?.has("stale-icon")).toBe(false);
+      expect(mockMap.addImage.mock.calls.map((call) => call[0])).not.toContain("stale-icon");
+    } finally {
+      globalThis.Image = originalImage;
+      globalThis.OffscreenCanvas = originalOffscreenCanvas;
+    }
+  });
 });
 
 describe("disposeMap", () => {
@@ -2625,6 +2675,51 @@ describe("setControlContent", () => {
       registrations.get("legend-first")?.control,
       registrations.get("legend-second")?.control,
     ]);
+  });
+
+  it("should throw when content kind is unsupported", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const placeholder = document.createElement("div");
+    const content = document.createElement("div");
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      [
+        {
+          kind: "legend",
+          controlId: "legend-main",
+          enable: true,
+          position: "top-right",
+          order: 500,
+          title: "Legend",
+          collapsible: true,
+          initiallyOpen: true,
+          className: null,
+        },
+      ],
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    // act
+    const act = () =>
+      window.Spillgebees.Map.mapFunctions.setControlContent(
+        mapElement,
+        "legend-main",
+        "unsupported",
+        placeholder,
+        content,
+      );
+
+    // assert
+    expect(act).toThrow(/unsupported/i);
   });
 });
 

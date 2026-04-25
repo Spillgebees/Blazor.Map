@@ -31,8 +31,13 @@ interface StyleReloadReplayOptions {
   onAfterReplay?: () => Promise<void>;
 }
 
-function isPromiseLike(value: unknown): value is Promise<void> {
-  return typeof value === "object" && value !== null && "then" in value;
+function isPromiseLike(value: unknown): value is PromiseLike<void> {
+  return (
+    (typeof value === "object" || typeof value === "function") &&
+    value !== null &&
+    "then" in value &&
+    typeof value.then === "function"
+  );
 }
 
 export function applySceneMutations(mapElement: HTMLElement, batch: SceneMutationBatch): void {

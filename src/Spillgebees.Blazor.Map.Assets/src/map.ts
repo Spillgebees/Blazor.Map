@@ -398,6 +398,7 @@ function getOrderedRegistrations(map: MapLibreMap, controlsPayload: IMapControl[
 
   registrations.sort((left, right) => {
     if (left.position !== right.position) {
+      // cross-position ordering is irrelevant; stable sort preserves declaration order across buckets
       return 0;
     }
 
@@ -550,15 +551,6 @@ export async function setImages(mapElement: HTMLElement, images: IMapImageDefini
       map.removeImage(image.name);
     }
 
-    imageStore.set(image.name, {
-      name: image.name,
-      url: image.url,
-      width: image.width,
-      height: image.height,
-      pixelRatio: image.pixelRatio,
-      sdf: image.sdf,
-    });
-
     if (changed || missingAtRuntime) {
       await addImageRegistration(mapElement, image, () => {
         const latestVersion = window.Spillgebees.Map.imageSyncVersion.get(map);
@@ -568,7 +560,19 @@ export async function setImages(mapElement: HTMLElement, images: IMapImageDefini
 
     const latestVersion = window.Spillgebees.Map.imageSyncVersion.get(map);
     if (latestVersion !== currentVersion) {
+      imageStore.delete(image.name);
       return;
+    }
+
+    if (changed || missingAtRuntime) {
+      imageStore.set(image.name, {
+        name: image.name,
+        url: image.url,
+        width: image.width,
+        height: image.height,
+        pixelRatio: image.pixelRatio,
+        sdf: image.sdf,
+      });
     }
   }
 }
@@ -1210,6 +1214,10 @@ export function setControlContent(
     return;
   }
 
+  if (kind !== LEGEND_CONTROL_KIND) {
+    throw new Error(`Unsupported control content kind '${kind}' for control '${controlId}'.`);
+  }
+
   const customControlStore = getCustomControlStore(map);
   const existingRegistration = customControlStore.get(controlId);
   const controlDefinition = validateControlForContent(mapElement, controlId, kind);
@@ -1236,7 +1244,7 @@ export function setControlContent(
 
     control = new LegendControl(controlDefinition as ILegendMapControl, placeholderHost, contentRoot);
   } else {
-    return;
+    throw new Error(`Unsupported control content kind '${kind}' for control '${controlId}'.`);
   }
 
   if (existingRegistration) {

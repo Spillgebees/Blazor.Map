@@ -45,6 +45,8 @@ public partial class MapLegend : ComponentBase, IAsyncDisposable
     private bool _visibilitySyncPending = true;
     private bool _registered;
     private LegendMapControl? _previousControl;
+    private string? _registeredControlId;
+    private string? _pendingControlIdRemoval;
     private readonly HashSet<string> _registeredVisibilityGroupIds = new(StringComparer.Ordinal);
 
     private ILogger Logger => LoggerFactory.CreateLogger<MapLegend>();
@@ -64,6 +66,17 @@ public partial class MapLegend : ComponentBase, IAsyncDisposable
         _visibilitySyncPending = true;
 
         var currentControl = GetLegendControl();
+
+        if (
+            _registered
+            && _previousControl is not null
+            && _previousControl.ControlId != currentControl.ControlId
+            && _pendingControlIdRemoval is null
+        )
+        {
+            _pendingControlIdRemoval = _previousControl.ControlId;
+        }
+
         var shouldResyncShell = _previousControl != currentControl;
         _controlSyncPending = _controlSyncPending || !_registered || shouldResyncShell;
         _previousControl = currentControl;
@@ -85,13 +98,22 @@ public partial class MapLegend : ComponentBase, IAsyncDisposable
 
         if (_controlSyncPending)
         {
+            if (!string.IsNullOrWhiteSpace(_pendingControlIdRemoval))
+            {
+                await MapJs.RemoveControlContentAsync(JsRuntime, Logger, Map.MapReference, _pendingControlIdRemoval);
+                _registered = false;
+                _registeredControlId = null;
+                _pendingControlIdRemoval = null;
+            }
+
             var control = GetLegendControl();
             if (!control.Enable)
             {
-                if (_registered)
+                if (_registered && !string.IsNullOrWhiteSpace(_registeredControlId))
                 {
-                    await MapJs.RemoveControlContentAsync(JsRuntime, Logger, Map.MapReference, ControlId);
+                    await MapJs.RemoveControlContentAsync(JsRuntime, Logger, Map.MapReference, _registeredControlId);
                     _registered = false;
+                    _registeredControlId = null;
                 }
 
                 _controlSyncPending = false;
@@ -109,6 +131,7 @@ public partial class MapLegend : ComponentBase, IAsyncDisposable
             );
 
             _registered = control.Enable;
+            _registeredControlId = control.ControlId;
             _controlSyncPending = false;
         }
 
@@ -124,18 +147,24 @@ public partial class MapLegend : ComponentBase, IAsyncDisposable
     {
         await UnregisterVisibilityGroupsAsync();
 
-        if (Map is null || !_registered)
+        if (Map is null || !_registered || string.IsNullOrWhiteSpace(_registeredControlId))
         {
             return;
         }
 
         try
         {
-            await MapJs.RemoveControlContentAsync(JsRuntime, Logger, Map.MapReference, ControlId);
+            await MapJs.RemoveControlContentAsync(JsRuntime, Logger, Map.MapReference, _registeredControlId);
         }
         catch (Exception exception)
         {
             Logger.LogTrace(exception, "Legend control removal skipped during disposal.");
+        }
+        finally
+        {
+            _registered = false;
+            _registeredControlId = null;
+            _pendingControlIdRemoval = null;
         }
     }
 

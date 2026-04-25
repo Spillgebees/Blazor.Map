@@ -30,6 +30,7 @@ function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions 
     center: { latitude: 51.505, longitude: -0.09 },
     zoom: 13,
     style: null,
+    styles: null,
     composedGlyphsUrl: null,
     pitch: 0,
     bearing: 0,
@@ -39,13 +40,15 @@ function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions 
     fitBoundsOptions: null,
     minZoom: null,
     maxZoom: null,
+    maxBounds: null,
     interactive: true,
     cooperativeGestures: false,
+    webFonts: null,
     ...overrides,
   };
 }
 
-function createDefaultControlOptions(): IMapControl[] {
+function createDefaultControls(): IMapControl[] {
   return [];
 }
 
@@ -57,7 +60,7 @@ function setupMapElement(): HTMLElement {
     "OnMapInitialized",
     mapElement,
     createDefaultMapOptions(),
-    createDefaultControlOptions(),
+    createDefaultControls(),
     "light",
     [],
     [],
@@ -683,7 +686,7 @@ describe("setSourceDataAnimated", () => {
         "OnMapInitialized",
         secondMapElement,
         createDefaultMapOptions(),
-        createDefaultControlOptions(),
+        createDefaultControls(),
         "light",
         [],
         [],

@@ -516,10 +516,11 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
         }
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
+        Interlocked.Increment(ref _popupOperationGeneration);
         CancelPendingHoverLeave();
-        return ValueTask.CompletedTask;
+        await CloseActivePopupAsync();
     }
 
     private async Task ApplyStateDiffAsync(

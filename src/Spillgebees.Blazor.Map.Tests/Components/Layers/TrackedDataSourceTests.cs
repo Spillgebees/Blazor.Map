@@ -277,7 +277,7 @@ public class TrackedDataSourceTests : BunitContext
         DelayedLeavePopupTrackedDataSource<TestVehicle>.BeforeShowPopupAsync = () =>
         {
             // arrange
-            popupOpenStarted.SetResult();
+            popupOpenStarted.TrySetResult();
 
             // act
             var waitTask = popupOpenGate.Task;
@@ -307,6 +307,8 @@ public class TrackedDataSourceTests : BunitContext
             var primaryHitAreaLayer = cut.FindComponents<CircleLayer>()
                 .Single(layer => layer.Instance.Id == "tracked-data-hit-area")
                 .Instance;
+            var initialShowPopupCount = JSInterop.Invocations[ShowPopupIdentifier].Count;
+            var initialClosePopupCount = JSInterop.Invocations[ClosePopupIdentifier].Count;
 
             // act
             var openTask = cut.InvokeAsync(() =>
@@ -314,13 +316,13 @@ public class TrackedDataSourceTests : BunitContext
             );
             await popupOpenStarted.Task.WaitAsync(cancellationToken);
             await cut.InvokeAsync(() => primaryHitAreaLayer.OnMouseLeave.InvokeAsync());
-            await Task.Delay(350, cancellationToken);
+            cut.WaitForAssertion(() => JSInterop.Invocations[ClosePopupIdentifier].Should().HaveCount(1));
             popupOpenGate.SetResult();
             await openTask;
 
             // assert
-            cut.WaitForAssertion(() => JSInterop.Invocations[ShowPopupIdentifier].Should().BeEmpty());
-            cut.WaitForAssertion(() => JSInterop.Invocations[ClosePopupIdentifier].Should().HaveCount(1));
+            JSInterop.Invocations[ShowPopupIdentifier].Count.Should().Be(initialShowPopupCount);
+            JSInterop.Invocations[ClosePopupIdentifier].Count.Should().Be(initialClosePopupCount + 1);
         }
         finally
         {
@@ -375,6 +377,8 @@ public class TrackedDataSourceTests : BunitContext
             var primaryHitAreaLayer = cut.FindComponents<CircleLayer>()
                 .Single(layer => layer.Instance.Id == "tracked-data-hit-area")
                 .Instance;
+            var initialShowPopupCount = JSInterop.Invocations[ShowPopupIdentifier].Count;
+            var initialClosePopupCount = JSInterop.Invocations[ClosePopupIdentifier].Count;
 
             // act
             var firstOpenTask = cut.InvokeAsync(() =>
@@ -395,6 +399,73 @@ public class TrackedDataSourceTests : BunitContext
         finally
         {
             DelayedOverlappingPopupTrackedDataSource<TestVehicle>.BeforeShowPopupAsync = () => _completedTask;
+        }
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_close_and_invalidate_pending_popups_when_component_disposes(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        var popupOpenStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var popupOpenGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        DelayedDisposePopupTrackedDataSource<TestVehicle>.BeforeShowPopupAsync = () =>
+        {
+            // arrange
+            popupOpenStarted.TrySetResult();
+
+            // act
+            var waitTask = popupOpenGate.Task;
+
+            // assert
+            return waitTask;
+        };
+
+        try
+        {
+            var cut = Render<TrackedDataSourceHarness>(parameters =>
+                parameters
+                    .Add(
+                        p => p.Items,
+                        [new TestVehicle("vehicle-1", new Coordinate(49.6, 6.1), "vehicle-icon", "Vehicle 1")]
+                    )
+                    .Add(
+                        p => p.PopupSelector,
+                        (TestVehicle vehicle) =>
+                            new PopupOptions($"<strong>{vehicle.Label}</strong>", PopupTrigger.Hover)
+                    )
+                    .Add(
+                        p => p.TrackedDataSourceComponentType,
+                        typeof(DelayedDisposePopupTrackedDataSource<TestVehicle>)
+                    )
+            );
+
+            await cut.Instance.Map.OnMapInitializedAsync();
+
+            var primaryHitAreaLayer = cut.FindComponents<CircleLayer>()
+                .Single(layer => layer.Instance.Id == "tracked-data-hit-area")
+                .Instance;
+            var initialShowPopupCount = JSInterop.Invocations[ShowPopupIdentifier].Count;
+            var initialClosePopupCount = JSInterop.Invocations[ClosePopupIdentifier].Count;
+
+            // act
+            var openTask = cut.InvokeAsync(() =>
+                primaryHitAreaLayer.OnMouseEnter.InvokeAsync(CreateItemFeatureEvent("vehicle-1"))
+            );
+            await popupOpenStarted.Task.WaitAsync(cancellationToken);
+            var trackedDataSource = cut.FindComponent<TrackedDataSource<TestVehicle>>().Instance;
+            await trackedDataSource.DisposeAsync();
+            popupOpenGate.SetResult();
+            await openTask;
+
+            // assert
+            JSInterop.Invocations[ShowPopupIdentifier].Count.Should().Be(initialShowPopupCount);
+            JSInterop.Invocations[ClosePopupIdentifier].Count.Should().Be(initialClosePopupCount + 1);
+        }
+        finally
+        {
+            DelayedDisposePopupTrackedDataSource<TestVehicle>.BeforeShowPopupAsync = () => _completedTask;
         }
     }
 
@@ -1202,6 +1273,22 @@ public class TrackedDataSourceTests : BunitContext
     }
 
     private sealed class DelayedOverlappingPopupTrackedDataSource<TItem> : TrackedDataSource<TItem>
+    {
+        public static Func<Task> BeforeShowPopupAsync { get; set; } = () => _completedTask;
+
+        protected override Task OnBeforeShowPopupAsync()
+        {
+            // arrange
+
+            // act
+            var task = BeforeShowPopupAsync();
+
+            // assert
+            return task;
+        }
+    }
+
+    private sealed class DelayedDisposePopupTrackedDataSource<TItem> : TrackedDataSource<TItem>
     {
         public static Func<Task> BeforeShowPopupAsync { get; set; } = () => _completedTask;
 

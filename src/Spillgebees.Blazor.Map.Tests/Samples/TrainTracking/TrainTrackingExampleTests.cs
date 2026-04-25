@@ -438,7 +438,9 @@ public class TrainTrackingExampleTests : BunitContext
         // assert
         var legendControl = map
             .Controls.OfType<LegendMapControl>()
-            .Single(control => control.ControlId == "overlay-legend");
+            .Should()
+            .ContainSingle(control => control.ControlId == "overlay-legend")
+            .Subject;
         legendControl.Position.Should().Be(ControlPosition.TopLeft);
     }
 

@@ -43,7 +43,7 @@ export interface ILegendMapControl extends IMapControlBase {
 }
 
 export interface IContentMapControl extends IMapControlBase {
-  kind: string;
+  kind: "content";
 }
 
 export type IMapControl =

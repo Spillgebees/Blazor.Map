@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using BlazorComponentUtilities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
@@ -563,10 +564,8 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             await SetOverlaysAsync();
         }
 
-        if (ShouldSyncImages())
-        {
-            await SyncImagesAsync();
-        }
+        var desiredImages = GetDesiredImages();
+        await SyncImagesAsync(desiredImages);
 
         if (!InternalControls.SequenceEqual(Controls))
         {
@@ -664,9 +663,9 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     private ValueTask SetControlsAsync() =>
         MapJs.SetControlsAsync(JsRuntime, Logger.Value, MapReference, InternalControls);
 
-    internal bool TryGetControl(string controlId, out MapControl control)
+    internal bool TryGetControl(string controlId, [NotNullWhen(true)] out MapControl? control)
     {
-        control = InternalControls.FirstOrDefault(control => control.ControlId == controlId)!;
+        control = InternalControls.FirstOrDefault(control => control.ControlId == controlId);
         return control is not null;
     }
 
@@ -695,19 +694,30 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     private async Task SyncImagesAsync(bool force = false)
     {
-        if (!force && !ShouldSyncImages())
+        var desiredImages = GetDesiredImages();
+
+        if (!force && !ShouldSyncImages(desiredImages))
         {
             return;
         }
 
-        InternalImages = [.. GetDesiredImages()];
+        InternalImages = [.. desiredImages];
         await MapJs.SetImagesAsync(JsRuntime, Logger.Value, MapReference, InternalImages);
     }
 
-    private bool ShouldSyncImages()
+    private async Task SyncImagesAsync(IReadOnlyList<MapImageDefinition> desiredImages)
     {
-        var desiredImages = GetDesiredImages();
+        if (!ShouldSyncImages(desiredImages))
+        {
+            return;
+        }
 
+        InternalImages = [.. desiredImages];
+        await MapJs.SetImagesAsync(JsRuntime, Logger.Value, MapReference, InternalImages);
+    }
+
+    private bool ShouldSyncImages(IReadOnlyList<MapImageDefinition> desiredImages)
+    {
         if (InternalImages.Count != desiredImages.Count)
         {
             return true;

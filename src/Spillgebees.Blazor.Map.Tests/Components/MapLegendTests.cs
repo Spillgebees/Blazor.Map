@@ -88,6 +88,40 @@ public class MapLegendTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_unregister_previous_control_id_when_control_id_changes(CancellationToken cancellationToken)
+    {
+        // arrange
+        var cut = Render<ComponentHost>(parameters => parameters.Add(p => p.Definition, CreateDefinition()));
+        var map = cut.FindComponent<SgbMap>().Instance;
+        await map.OnMapInitializedAsync();
+        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetControlContentIdentifier));
+
+        // act
+        cut.Render(parameters =>
+            parameters
+                .Add(p => p.Definition, CreateDefinition())
+                .Add(p => p.LegendControlId, "legend-control-next")
+                .Add(
+                    p => p.Controls,
+                    new List<MapControl>
+                    {
+                        new LegendMapControl("legend-control"),
+                        new LegendMapControl("legend-control-next"),
+                    }
+                )
+        );
+
+        // assert
+        var removeInvocations = JSInterop.Invocations[RemoveControlContentIdentifier];
+        removeInvocations.Should().ContainSingle();
+        removeInvocations[0].Arguments[1].Should().Be("legend-control");
+
+        var setInvocations = JSInterop.Invocations[SetControlContentIdentifier];
+        var lastSetInvocation = setInvocations[setInvocations.Count - 1];
+        lastSetInvocation.Arguments[1].Should().Be("legend-control-next");
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
     public async Task Should_sync_toggleable_legend_items_as_scene_visibility_groups(
         CancellationToken cancellationToken
     )
@@ -482,6 +516,9 @@ public class MapLegendTests : BunitContext
         [Parameter]
         public List<MapControl> Controls { get; set; } = [new LegendMapControl("legend-control")];
 
+        [Parameter]
+        public string LegendControlId { get; set; } = "legend-control";
+
         protected override void BuildRenderTree(RenderTreeBuilder builder)
         {
             // arrange
@@ -500,7 +537,7 @@ public class MapLegendTests : BunitContext
                             nameof(MapLegend.OnItemVisibilityChanged),
                             OnItemVisibilityChanged
                         );
-                        childBuilder.AddAttribute(3, nameof(MapLegend.ControlId), "legend-control");
+                        childBuilder.AddAttribute(3, nameof(MapLegend.ControlId), LegendControlId);
                         childBuilder.CloseComponent();
                     }
                 )
