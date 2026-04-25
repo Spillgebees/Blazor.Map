@@ -29,6 +29,7 @@ import {
   queryRenderedFeatures,
   resize,
   setControls,
+  setImages,
   setMapOptions,
   setOverlays,
   setStyleLayerVisibility,
@@ -966,6 +967,240 @@ describe("createMap", () => {
     // assert
     const mockMap = getLatestMockMapInstance()!;
     expect(mockMap.setProjection).not.toHaveBeenCalled();
+  });
+});
+
+describe("setImages", () => {
+  beforeEach(() => {
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+  });
+
+  class ImmediateMockImage {
+    public onload: (() => void) | null = null;
+    public onerror: (() => void) | null = null;
+
+    public set src(_value: string) {
+      queueMicrotask(() => this.onload?.());
+    }
+  }
+
+  class ControlledMockImage {
+    private static readonly pendingLoads: ControlledMockImage[] = [];
+
+    public onload: (() => void) | null = null;
+    public onerror: (() => void) | null = null;
+
+    public set src(_value: string) {
+      ControlledMockImage.pendingLoads.push(this);
+    }
+
+    public static flushLoads(): void {
+      while (ControlledMockImage.pendingLoads.length > 0) {
+        const image = ControlledMockImage.pendingLoads.shift();
+        image?.onload?.();
+      }
+    }
+  }
+
+  class MockOffscreenCanvas {
+    public getContext(_kind: string) {
+      return {
+        drawImage: vi.fn(),
+        getImageData: vi.fn().mockReturnValue({ data: new Uint8ClampedArray(16), width: 2, height: 2 }),
+      };
+    }
+  }
+
+  it("should register url and data-uri images in declaration order", async () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const originalImage = globalThis.Image;
+    const originalOffscreenCanvas = globalThis.OffscreenCanvas;
+    globalThis.Image = ImmediateMockImage as unknown as typeof Image;
+    globalThis.OffscreenCanvas = MockOffscreenCanvas as unknown as typeof OffscreenCanvas;
+
+    try {
+      const mockMap = getLatestMockMapInstance()!;
+
+      // act
+      await setImages(mapElement, [
+        {
+          name: "remote-icon",
+          url: "https://example.com/icon.png",
+          width: 32,
+          height: 32,
+          pixelRatio: 1,
+          sdf: false,
+        },
+        {
+          name: "base64-icon",
+          url: "data:image/png;base64,ZmFrZS1kYXRh",
+          width: 24,
+          height: 24,
+          pixelRatio: 1,
+          sdf: false,
+        },
+        {
+          name: "svg-icon",
+          // biome-ignore lint/security/noSecrets: inline svg test fixture data URI, not a secret
+          url: "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%3E%3C/svg%3E",
+          width: 28,
+          height: 28,
+          pixelRatio: 2,
+          sdf: true,
+        },
+      ]);
+
+      // assert
+      expect(mockMap.addImage.mock.calls.map((call) => call[0])).toEqual(["remote-icon", "base64-icon", "svg-icon"]);
+
+      const map = window.Spillgebees.Map.maps.get(mapElement)!;
+      expect(window.Spillgebees.Map.imageRegistrations.get(map)?.get("svg-icon")?.sdf).toBe(true);
+    } finally {
+      globalThis.Image = originalImage;
+      globalThis.OffscreenCanvas = originalOffscreenCanvas;
+    }
+  });
+
+  it("should replay registered images after style reload when runtime image is missing", async () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const originalImage = globalThis.Image;
+    const originalOffscreenCanvas = globalThis.OffscreenCanvas;
+    globalThis.Image = ImmediateMockImage as unknown as typeof Image;
+    globalThis.OffscreenCanvas = MockOffscreenCanvas as unknown as typeof OffscreenCanvas;
+
+    try {
+      const mockMap = getLatestMockMapInstance()!;
+      mockMap.hasImage.mockReturnValue(false);
+
+      await setImages(mapElement, [
+        {
+          name: "reload-icon",
+          url: "https://example.com/reload.png",
+          width: 16,
+          height: 16,
+          pixelRatio: 1,
+          sdf: false,
+        },
+      ]);
+      mockMap.addImage.mockClear();
+
+      // act
+      setMapOptions(
+        mapElement,
+        createDefaultMapOptions({
+          style: {
+            id: "sgb-reload-style",
+            url: "https://example.com/reload-style.json",
+            referrerPolicy: null,
+            rasterSource: null,
+            wmsSource: null,
+          },
+        }),
+      );
+      fireMapEvent("styledata");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // assert
+      expect(mockMap.hasImage).toHaveBeenCalledWith("reload-icon");
+      expect(mockMap.addImage.mock.calls.map((call) => call[0])).toEqual(["reload-icon"]);
+    } finally {
+      globalThis.Image = originalImage;
+      globalThis.OffscreenCanvas = originalOffscreenCanvas;
+    }
+  });
+
+  it("should keep only the latest registration during overlapping setImages calls", async () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const originalImage = globalThis.Image;
+    const originalOffscreenCanvas = globalThis.OffscreenCanvas;
+    globalThis.Image = ControlledMockImage as unknown as typeof Image;
+    globalThis.OffscreenCanvas = MockOffscreenCanvas as unknown as typeof OffscreenCanvas;
+
+    try {
+      const mockMap = getLatestMockMapInstance()!;
+
+      // act
+      const firstSync = setImages(mapElement, [
+        {
+          name: "race-icon",
+          url: "https://example.com/race-1.png",
+          width: 24,
+          height: 24,
+          pixelRatio: 1,
+          sdf: false,
+        },
+      ]);
+      const secondSync = setImages(mapElement, [
+        {
+          name: "race-icon",
+          url: "https://example.com/race-2.png",
+          width: 24,
+          height: 24,
+          pixelRatio: 1,
+          sdf: false,
+        },
+      ]);
+
+      ControlledMockImage.flushLoads();
+      await Promise.all([firstSync, secondSync]);
+
+      // assert
+      expect(mockMap.addImage).toHaveBeenCalledTimes(1);
+      const map = window.Spillgebees.Map.maps.get(mapElement)!;
+      expect(window.Spillgebees.Map.imageRegistrations.get(map)?.get("race-icon")?.url).toBe(
+        "https://example.com/race-2.png",
+      );
+    } finally {
+      globalThis.Image = originalImage;
+      globalThis.OffscreenCanvas = originalOffscreenCanvas;
+    }
   });
 });
 

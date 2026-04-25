@@ -19,7 +19,7 @@ internal static class MapJs
     /// The protocol version this C# library expects from the JS module.
     /// Bumped whenever the JS interop contract changes (function names, parameter shapes, return types).
     /// </summary>
-    internal const int ProtocolVersion = 9;
+    internal const int ProtocolVersion = 10;
 
     private const string JsNamespace = "Spillgebees.Map.mapFunctions";
     private const string JsProtocolVersionFunction = "Spillgebees.Map.getProtocolVersion";
@@ -121,6 +121,22 @@ internal static class MapJs
             $"{JsNamespace}.setOverlays",
             mapReference,
             overlays.Select(ToJsModel).ToArray()
+        );
+
+    /// <summary>
+    /// Sets declarative map images on the map instance.
+    /// </summary>
+    internal static ValueTask SetImagesAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        List<MapImageDefinition> images
+    ) =>
+        jsRuntime.SafeInvokeVoidAsync(
+            logger,
+            $"{JsNamespace}.setImages",
+            mapReference,
+            images.Select(ToJsModel).ToArray()
         );
 
     /// <summary>
@@ -420,6 +436,17 @@ internal static class MapJs
             tileOverlay.TileSize,
             tileOverlay.Opacity,
             tileOverlay.ReferrerPolicy,
+        };
+
+    private static object ToJsModel(MapImageDefinition mapImageDefinition) =>
+        new
+        {
+            mapImageDefinition.Name,
+            mapImageDefinition.Url,
+            mapImageDefinition.Width,
+            mapImageDefinition.Height,
+            mapImageDefinition.PixelRatio,
+            mapImageDefinition.Sdf,
         };
 
     private static object? ToJsModel(FitBoundsOptions? fitBoundsOptions) =>

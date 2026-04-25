@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Expressions;
+using Spillgebees.Blazor.Map.Models.Popups;
 using Spillgebees.Blazor.Map.Models.TrackedData;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 using Spillgebees.Blazor.Map.Utilities;
@@ -155,6 +156,8 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
     );
     private CancellationTokenSource? _hoverLeaveCancellationTokenSource;
     private int _hoverGeneration;
+    private int _popupOperationGeneration;
+    private TrackedPopupState? _activePopup;
 
     [Parameter, EditorRequired]
     public string Id { get; set; } = string.Empty;
@@ -421,6 +424,8 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
         var desiredHoveredStates = BuildInteractionLookup(Interaction.IsHovered);
         var desiredSelectedStates = BuildInteractionLookup(Interaction.IsSelected);
 
+        await ClosePopupIfNoLongerValidAsync(desiredSelectedStates);
+
         await ApplyStateDiffAsync(
             _appliedHoveredStates,
             desiredHoveredStates,
@@ -457,6 +462,7 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
         }
 
         await OnItemClick.InvokeAsync(interaction);
+        await HandlePopupOnClickAsync(interaction);
     }
 
     private async Task HandleGeneratedItemMouseEnterAsync(LayerFeatureEventArgs featureEvent)
@@ -470,15 +476,11 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
         }
 
         await OnItemMouseEnter.InvokeAsync(interaction);
+        await HandlePopupOnMouseEnterAsync(interaction);
     }
 
     private async Task HandleGeneratedItemMouseLeaveAsync()
     {
-        if (!OnItemMouseLeave.HasDelegate)
-        {
-            return;
-        }
-
         CancelPendingHoverLeave();
 
         var hoverGeneration = _hoverGeneration;
@@ -494,7 +496,12 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
                 && hoverGeneration == _hoverGeneration
             )
             {
-                await OnItemMouseLeave.InvokeAsync();
+                if (OnItemMouseLeave.HasDelegate)
+                {
+                    await OnItemMouseLeave.InvokeAsync();
+                }
+
+                await HandlePopupOnMouseLeaveAsync();
             }
         }
         catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested) { }
@@ -572,6 +579,129 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
     }
 
     private IDictionary<string, object>? GetClusterProperties() => Cluster.Properties?.ToDictionary();
+
+    private async Task HandlePopupOnClickAsync(TrackedEntityInteractionEventArgs<TItem> interaction)
+    {
+        if (!TryResolvePopup(interaction, PopupTrigger.Click, out var popup) || popup is null)
+        {
+            return;
+        }
+
+        await OpenPopupAsync(interaction.Entity.Id, interaction.Entity.Position, popup, PopupTrigger.Click);
+    }
+
+    private async Task HandlePopupOnMouseEnterAsync(TrackedEntityInteractionEventArgs<TItem> interaction)
+    {
+        if (!TryResolvePopup(interaction, PopupTrigger.Hover, out var popup) || popup is null)
+        {
+            return;
+        }
+
+        await OpenPopupAsync(interaction.Entity.Id, interaction.Entity.Position, popup, PopupTrigger.Hover);
+    }
+
+    private async Task HandlePopupOnMouseLeaveAsync()
+    {
+        if (_activePopup?.Trigger != PopupTrigger.Hover)
+        {
+            return;
+        }
+
+        await CloseActivePopupAsync();
+    }
+
+    private bool TryResolvePopup(
+        TrackedEntityInteractionEventArgs<TItem> interaction,
+        PopupTrigger trigger,
+        out PopupOptions? popup
+    )
+    {
+        popup = null;
+
+        if (interaction.Entity.Metadata is null)
+        {
+            return false;
+        }
+
+        var resolvedPopup = Symbol.GetPopup(interaction.Entity.Metadata);
+        if (resolvedPopup?.Trigger == PopupTrigger.Permanent)
+        {
+            return false;
+        }
+
+        if (resolvedPopup?.Trigger != trigger)
+        {
+            return false;
+        }
+
+        popup = resolvedPopup;
+        return true;
+    }
+
+    private async Task OpenPopupAsync(string entityId, Coordinate position, PopupOptions popup, PopupTrigger trigger)
+    {
+        if (Map is null)
+        {
+            return;
+        }
+
+        var popupOperationGeneration = Interlocked.Increment(ref _popupOperationGeneration);
+        _activePopup = new TrackedPopupState(entityId, trigger, popupOperationGeneration);
+
+        await OnBeforeShowPopupAsync();
+
+        if (_activePopup?.OperationGeneration != popupOperationGeneration)
+        {
+            return;
+        }
+
+        await Map.ShowPopupAsync(position, popup.Content, popup);
+    }
+
+    protected virtual Task OnBeforeShowPopupAsync()
+    {
+        return Task.CompletedTask;
+    }
+
+    private async Task CloseActivePopupAsync()
+    {
+        if (_activePopup is null)
+        {
+            return;
+        }
+
+        _activePopup = null;
+
+        if (Map is null)
+        {
+            return;
+        }
+
+        await Map.ClosePopupAsync();
+    }
+
+    private async Task ClosePopupIfNoLongerValidAsync(IReadOnlyDictionary<string, bool> desiredSelectedStates)
+    {
+        if (_activePopup is null)
+        {
+            return;
+        }
+
+        if (!_entitiesById.ContainsKey(_activePopup.EntityId))
+        {
+            await CloseActivePopupAsync();
+            return;
+        }
+
+        if (
+            _activePopup.Trigger == PopupTrigger.Click
+            && Interaction.IsSelected is not null
+            && !desiredSelectedStates.ContainsKey(_activePopup.EntityId)
+        )
+        {
+            await CloseActivePopupAsync();
+        }
+    }
 
     private static bool TryGetEntityId(LayerFeatureEventArgs featureEvent, out string entityId)
     {
@@ -675,4 +805,6 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
         string[]? TextFont,
         bool HasIcon
     );
+
+    private sealed record TrackedPopupState(string EntityId, PopupTrigger Trigger, int OperationGeneration);
 }

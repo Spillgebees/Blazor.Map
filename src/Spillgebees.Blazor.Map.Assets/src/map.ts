@@ -23,7 +23,14 @@ import {
 } from "./features/shapes";
 import type { ILegendControlOptions, IMapControlOptions } from "./interfaces/controls";
 import type { ICircle, IMarker, IPolyline } from "./interfaces/features";
-import type { ICoordinate, IFitBoundsOptions, IMapOptions, IMapStyle, ITileOverlay } from "./interfaces/map";
+import type {
+  ICoordinate,
+  IFitBoundsOptions,
+  IMapImageDefinition,
+  IMapOptions,
+  IMapStyle,
+  ITileOverlay,
+} from "./interfaces/map";
 import type {
   ComposedStyleLayerRegistration,
   LayerEventSubscription,
@@ -58,7 +65,7 @@ import {
 import { applyOverlayStyles, validateComposedGlyphs } from "./styles/composition";
 import type { FeatureStorage } from "./types/feature-storage";
 
-export const PROTOCOL_VERSION = 9;
+export const PROTOCOL_VERSION = 10;
 
 const DEFAULT_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 
@@ -202,6 +209,7 @@ function initializeNamespace(): void {
       fitBounds,
       flyTo,
       resize,
+      setImages,
       disposeMap,
       applySceneMutations,
       addMapSource,
@@ -252,6 +260,7 @@ function initializeNamespace(): void {
     composedStyleLayerIds: new Map<MapLibreMap, Map<string, ComposedStyleLayerRegistration>>(),
     pendingStyleReloads: new WeakSet<MapLibreMap>(),
     requestContexts: new Map<MapLibreMap, { mapOptions: IMapOptions; overlays: ITileOverlay[] }>(),
+    imageSyncVersion: new Map<MapLibreMap, number>(),
   };
 }
 
@@ -322,22 +331,105 @@ function getBaseStyleId(mapOptions: IMapOptions): string | null {
   return stylesList[0]?.id ?? null;
 }
 
-function replayRegisteredImages(mapElement: HTMLElement): void {
+function replayRegisteredImages(mapElement: HTMLElement): void | Promise<void> {
   const map = window.Spillgebees.Map.maps.get(mapElement);
   if (!map) {
     return;
   }
 
-  const images = getRegisteredImageStore(map);
-  for (const registration of images.values()) {
-    void addImage(
-      mapElement,
-      registration.name,
-      registration.url,
-      registration.width,
-      registration.height,
-      registration.pixelRatio,
-    );
+  const images = Array.from(getRegisteredImageStore(map).values());
+  if (images.length === 0) {
+    return;
+  }
+
+  return setImages(mapElement, images);
+}
+
+function hasImageChanged(previous: RegisteredMapImage | undefined, next: IMapImageDefinition): boolean {
+  if (!previous) {
+    return true;
+  }
+
+  return (
+    previous.url !== next.url ||
+    previous.width !== next.width ||
+    previous.height !== next.height ||
+    previous.pixelRatio !== next.pixelRatio ||
+    previous.sdf !== next.sdf
+  );
+}
+
+async function addImageRegistration(
+  mapElement: HTMLElement,
+  definition: IMapImageDefinition,
+  shouldAbort: () => boolean,
+): Promise<void> {
+  await addImage(
+    mapElement,
+    definition.name,
+    definition.url,
+    definition.width,
+    definition.height,
+    definition.pixelRatio,
+    definition.sdf,
+    shouldAbort,
+  );
+}
+
+export async function setImages(mapElement: HTMLElement, images: IMapImageDefinition[]): Promise<void> {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return;
+  }
+
+  const currentVersion = (window.Spillgebees.Map.imageSyncVersion.get(map) ?? 0) + 1;
+  window.Spillgebees.Map.imageSyncVersion.set(map, currentVersion);
+
+  const imageStore = getRegisteredImageStore(map);
+  const nextByName = new Map<string, IMapImageDefinition>();
+  for (const image of images) {
+    nextByName.set(image.name, image);
+  }
+
+  for (const existingName of Array.from(imageStore.keys())) {
+    if (!nextByName.has(existingName)) {
+      if (map.hasImage(existingName)) {
+        map.removeImage(existingName);
+      }
+
+      imageStore.delete(existingName);
+    }
+  }
+
+  for (const image of images) {
+    const previous = imageStore.get(image.name);
+    const changed = hasImageChanged(previous, image);
+    const missingAtRuntime = !map.hasImage(image.name);
+
+    if (changed && !missingAtRuntime) {
+      map.removeImage(image.name);
+    }
+
+    imageStore.set(image.name, {
+      name: image.name,
+      url: image.url,
+      width: image.width,
+      height: image.height,
+      pixelRatio: image.pixelRatio,
+      sdf: image.sdf,
+    });
+
+    if (changed || missingAtRuntime) {
+      await addImageRegistration(mapElement, image, () => {
+        const latestVersion = window.Spillgebees.Map.imageSyncVersion.get(map);
+        return latestVersion !== currentVersion;
+      });
+    }
+
+    const latestVersion = window.Spillgebees.Map.imageSyncVersion.get(map);
+    if (latestVersion !== currentVersion) {
+      return;
+    }
   }
 }
 
@@ -585,6 +677,7 @@ export function createMap(
   window.Spillgebees.Map.overlayStyleUrls.set(map, [...overlayStyleUrls]);
   window.Spillgebees.Map.overlayStyleRequests.set(map, structuredClone(overlayStyles));
   window.Spillgebees.Map.composedStyleLayerIds.set(map, new Map());
+  window.Spillgebees.Map.imageSyncVersion.set(map, 0);
 
   // Track the current style for diffing in setMapOptions
   window.Spillgebees.Map.styles.set(map, baseStyle);
@@ -709,6 +802,7 @@ export function disposeMap(mapElement: HTMLElement): void {
   window.Spillgebees.Map.overlayStyleUrls.delete(map);
   window.Spillgebees.Map.overlayStyleRequests.delete(map);
   window.Spillgebees.Map.composedStyleLayerIds.delete(map);
+  window.Spillgebees.Map.imageSyncVersion.delete(map);
 
   // Clean up dotNetHelper storage
   window.Spillgebees.Map.dotNetHelpers.delete(map);

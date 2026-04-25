@@ -23,7 +23,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private string? _hoveredTrainId;
     private string? _selectedTrainId;
     private readonly List<TrainSampleState> _trains = [];
-    private bool _iconsRegistered;
+    private List<MapImageDefinition> _images = [];
 
     [CascadingParameter]
     public MapTheme GlobalTheme { get; set; }
@@ -116,6 +116,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
             Configuration[TrainTrackingPresentation.ComposedGlyphsUrlConfigurationKey]
         );
         _trains.AddRange(TrainSampleSimulation.CreateStates());
+        _images = BuildTrainImages(_trains);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -137,7 +138,6 @@ public partial class TrainTrackingExample : IAsyncDisposable
             return;
         }
 
-        await RegisterTrainIconsAsync();
         _simulationTask = RunSimulationLoopAsync(_cts.Token);
     }
 
@@ -159,24 +159,21 @@ public partial class TrainTrackingExample : IAsyncDisposable
         catch (OperationCanceledException) { }
     }
 
-    private async Task RegisterTrainIconsAsync()
+    private static List<MapImageDefinition> BuildTrainImages(IEnumerable<TrainSampleState> trains)
     {
-        if (_iconsRegistered)
-        {
-            return;
-        }
-
-        var colors = _trains.Select(train => train.Color).Distinct();
-
-        foreach (var color in colors)
-        {
-            var iconName = $"train-{color.TrimStart('#')}";
-            var svg = TrainSampleSimulation.BuildIconSvg(color);
-            var dataUri = $"data:image/svg+xml,{Uri.EscapeDataString(svg)}";
-            await _map.AddImageAsync(iconName, dataUri, 28, 28);
-        }
-
-        _iconsRegistered = true;
+        return
+        [
+            .. trains
+                .Select(train => train.Color)
+                .Distinct()
+                .Select(color =>
+                {
+                    var iconName = $"train-{color.TrimStart('#')}";
+                    var svg = TrainSampleSimulation.BuildIconSvg(color);
+                    var dataUri = $"data:image/svg+xml,{Uri.EscapeDataString(svg)}";
+                    return new MapImageDefinition(iconName, dataUri, 28, 28);
+                }),
+        ];
     }
 
     private async Task HandleTrainClick(TrackedEntityInteractionEventArgs<TrainSampleState> interaction)

@@ -6,6 +6,7 @@ using Spillgebees.Blazor.Map.Components;
 using Spillgebees.Blazor.Map.Components.Layers;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Events;
+using Spillgebees.Blazor.Map.Models.Popups;
 using Spillgebees.Blazor.Map.Models.TrackedData;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
@@ -22,18 +23,379 @@ public class TrackedDataSourceTests : BunitContext
         "Spillgebees.Map.mapFunctions.setTrackedEntityFeatureState";
     private const string FlyToIdentifier = "Spillgebees.Map.mapFunctions.flyTo";
     private const string GetClusterExpansionZoomIdentifier = "Spillgebees.Map.mapFunctions.getClusterExpansionZoom";
+    private const string ShowPopupIdentifier = "Spillgebees.Map.mapFunctions.showPopup";
+    private const string ClosePopupIdentifier = "Spillgebees.Map.mapFunctions.closePopup";
+    private static readonly Task _completedTask = Task.CompletedTask;
 
     public TrackedDataSourceTests()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(9);
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(10);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
         JSInterop.SetupVoid(SetTrackedEntityFeatureStateIdentifier);
         JSInterop.SetupVoid(FlyToIdentifier);
         JSInterop.Setup<double>(GetClusterExpansionZoomIdentifier).SetResult(11.2);
+        JSInterop.SetupVoid(ShowPopupIdentifier);
+        JSInterop.SetupVoid(ClosePopupIdentifier);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_open_configured_click_popup_for_clicked_item(CancellationToken cancellationToken)
+    {
+        // arrange
+        var cut = Render<TrackedDataSourceHarness>(parameters =>
+            parameters
+                .Add(
+                    p => p.Items,
+                    [
+                        new TestVehicle(
+                            "vehicle-1",
+                            new Coordinate(49.6, 6.1),
+                            "vehicle-icon",
+                            "Vehicle 1",
+                            IsSelected: true
+                        ),
+                    ]
+                )
+                .Add(
+                    p => p.PopupSelector,
+                    (TestVehicle vehicle) => new PopupOptions($"<strong>{vehicle.Label}</strong>", PopupTrigger.Click)
+                )
+        );
+
+        await cut.Instance.Map.OnMapInitializedAsync();
+
+        var primaryHitAreaLayer = cut.FindComponents<CircleLayer>()
+            .Single(layer => layer.Instance.Id == "tracked-data-hit-area")
+            .Instance;
+
+        // act
+        await cut.InvokeAsync(() => primaryHitAreaLayer.OnClick.InvokeAsync(CreateItemFeatureEvent("vehicle-1")));
+
+        // assert
+        var invocation = JSInterop.Invocations[ShowPopupIdentifier].Single();
+        invocation.Arguments[1].Should().BeEquivalentTo(new Coordinate(49.6, 6.1));
+        invocation.Arguments[2].Should().Be("<strong>Vehicle 1</strong>");
+        invocation
+            .Arguments[3]
+            .Should()
+            .BeEquivalentTo(new PopupOptions("<strong>Vehicle 1</strong>", PopupTrigger.Click));
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_open_hover_popup_on_enter_and_close_it_on_leave(CancellationToken cancellationToken)
+    {
+        // arrange
+        var cut = Render<TrackedDataSourceHarness>(parameters =>
+            parameters
+                .Add(
+                    p => p.Items,
+                    [new TestVehicle("vehicle-1", new Coordinate(49.6, 6.1), "vehicle-icon", "Vehicle 1")]
+                )
+                .Add(
+                    p => p.PopupSelector,
+                    (TestVehicle vehicle) => new PopupOptions($"<strong>{vehicle.Label}</strong>", PopupTrigger.Hover)
+                )
+        );
+
+        await cut.Instance.Map.OnMapInitializedAsync();
+
+        var primaryHitAreaLayer = cut.FindComponents<CircleLayer>()
+            .Single(layer => layer.Instance.Id == "tracked-data-hit-area")
+            .Instance;
+
+        // act
+        await cut.InvokeAsync(() => primaryHitAreaLayer.OnMouseEnter.InvokeAsync(CreateItemFeatureEvent("vehicle-1")));
+        await cut.InvokeAsync(() => primaryHitAreaLayer.OnMouseLeave.InvokeAsync());
+        await Task.Delay(350, cancellationToken);
+
+        // assert
+        JSInterop.Invocations[ShowPopupIdentifier].Should().HaveCount(1);
+        JSInterop.Invocations[ClosePopupIdentifier].Should().HaveCount(1);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_close_click_popup_when_selected_state_is_cleared(CancellationToken cancellationToken)
+    {
+        // arrange
+        var cut = Render<TrackedDataSourceHarness>(parameters =>
+            parameters
+                .Add(
+                    p => p.Items,
+                    [
+                        new TestVehicle(
+                            "vehicle-1",
+                            new Coordinate(49.6, 6.1),
+                            "vehicle-icon",
+                            "Vehicle 1",
+                            IsSelected: true
+                        ),
+                    ]
+                )
+                .Add(
+                    p => p.PopupSelector,
+                    (TestVehicle vehicle) => new PopupOptions($"<strong>{vehicle.Label}</strong>", PopupTrigger.Click)
+                )
+        );
+
+        await cut.Instance.Map.OnMapInitializedAsync();
+
+        var primaryHitAreaLayer = cut.FindComponents<CircleLayer>()
+            .Single(layer => layer.Instance.Id == "tracked-data-hit-area")
+            .Instance;
+
+        await cut.InvokeAsync(() => primaryHitAreaLayer.OnClick.InvokeAsync(CreateItemFeatureEvent("vehicle-1")));
+        var closeInvocationCountBeforeUpdate = JSInterop.Invocations[ClosePopupIdentifier].Count;
+
+        // act
+        await cut.InvokeAsync(() =>
+            cut.Instance.UpdateItems([
+                new TestVehicle("vehicle-1", new Coordinate(49.6, 6.1), "vehicle-icon", "Vehicle 1", IsSelected: false),
+            ])
+        );
+
+        // assert
+        cut.WaitForAssertion(() =>
+            JSInterop.Invocations[ClosePopupIdentifier].Count.Should().Be(closeInvocationCountBeforeUpdate + 1)
+        );
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_close_tracked_popup_when_the_popup_entity_disappears(CancellationToken cancellationToken)
+    {
+        // arrange
+        var cut = Render<TrackedDataSourceHarness>(parameters =>
+            parameters
+                .Add(
+                    p => p.Items,
+                    [
+                        new TestVehicle(
+                            "vehicle-1",
+                            new Coordinate(49.6, 6.1),
+                            "vehicle-icon",
+                            "Vehicle 1",
+                            IsSelected: true
+                        ),
+                    ]
+                )
+                .Add(
+                    p => p.PopupSelector,
+                    (TestVehicle vehicle) => new PopupOptions($"<strong>{vehicle.Label}</strong>", PopupTrigger.Click)
+                )
+        );
+
+        await cut.Instance.Map.OnMapInitializedAsync();
+
+        var primaryHitAreaLayer = cut.FindComponents<CircleLayer>()
+            .Single(layer => layer.Instance.Id == "tracked-data-hit-area")
+            .Instance;
+
+        await cut.InvokeAsync(() => primaryHitAreaLayer.OnClick.InvokeAsync(CreateItemFeatureEvent("vehicle-1")));
+        var closeInvocationCountBeforeUpdate = JSInterop.Invocations[ClosePopupIdentifier].Count;
+
+        // act
+        await cut.InvokeAsync(() => cut.Instance.UpdateItems([]));
+
+        // assert
+        cut.WaitForAssertion(() =>
+            JSInterop.Invocations[ClosePopupIdentifier].Count.Should().Be(closeInvocationCountBeforeUpdate + 1)
+        );
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_not_open_popup_when_selector_returns_null(CancellationToken cancellationToken)
+    {
+        // arrange
+        var cut = Render<TrackedDataSourceHarness>(parameters =>
+            parameters
+                .Add(
+                    p => p.Items,
+                    [new TestVehicle("vehicle-1", new Coordinate(49.6, 6.1), "vehicle-icon", "Vehicle 1")]
+                )
+                .Add(p => p.PopupSelector, (TestVehicle _) => null)
+        );
+
+        await cut.Instance.Map.OnMapInitializedAsync();
+
+        var primaryHitAreaLayer = cut.FindComponents<CircleLayer>()
+            .Single(layer => layer.Instance.Id == "tracked-data-hit-area")
+            .Instance;
+
+        // act
+        await cut.InvokeAsync(() => primaryHitAreaLayer.OnClick.InvokeAsync(CreateItemFeatureEvent("vehicle-1")));
+        await cut.InvokeAsync(() => primaryHitAreaLayer.OnMouseEnter.InvokeAsync(CreateItemFeatureEvent("vehicle-1")));
+
+        // assert
+        JSInterop.VerifyNotInvoke(ShowPopupIdentifier);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_ignore_permanent_popup_trigger_for_interaction_events(CancellationToken cancellationToken)
+    {
+        // arrange
+        var cut = Render<TrackedDataSourceHarness>(parameters =>
+            parameters
+                .Add(
+                    p => p.Items,
+                    [new TestVehicle("vehicle-1", new Coordinate(49.6, 6.1), "vehicle-icon", "Vehicle 1")]
+                )
+                .Add(
+                    p => p.PopupSelector,
+                    (TestVehicle vehicle) =>
+                        new PopupOptions($"<strong>{vehicle.Label}</strong>", PopupTrigger.Permanent)
+                )
+        );
+
+        await cut.Instance.Map.OnMapInitializedAsync();
+
+        var primaryHitAreaLayer = cut.FindComponents<CircleLayer>()
+            .Single(layer => layer.Instance.Id == "tracked-data-hit-area")
+            .Instance;
+
+        // act
+        await cut.InvokeAsync(() => primaryHitAreaLayer.OnClick.InvokeAsync(CreateItemFeatureEvent("vehicle-1")));
+        await cut.InvokeAsync(() => primaryHitAreaLayer.OnMouseEnter.InvokeAsync(CreateItemFeatureEvent("vehicle-1")));
+        await cut.InvokeAsync(() => primaryHitAreaLayer.OnMouseLeave.InvokeAsync());
+        await Task.Delay(350, cancellationToken);
+
+        // assert
+        JSInterop.VerifyNotInvoke(ShowPopupIdentifier);
+        JSInterop.VerifyNotInvoke(ClosePopupIdentifier);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_close_hover_popup_when_pointer_leaves_while_open_is_in_flight(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        var popupOpenStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var popupOpenGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        DelayedLeavePopupTrackedDataSource<TestVehicle>.BeforeShowPopupAsync = () =>
+        {
+            // arrange
+            popupOpenStarted.SetResult();
+
+            // act
+            var waitTask = popupOpenGate.Task;
+
+            // assert
+            return waitTask;
+        };
+
+        try
+        {
+            var cut = Render<TrackedDataSourceHarness>(parameters =>
+                parameters
+                    .Add(
+                        p => p.Items,
+                        [new TestVehicle("vehicle-1", new Coordinate(49.6, 6.1), "vehicle-icon", "Vehicle 1")]
+                    )
+                    .Add(
+                        p => p.PopupSelector,
+                        (TestVehicle vehicle) =>
+                            new PopupOptions($"<strong>{vehicle.Label}</strong>", PopupTrigger.Hover)
+                    )
+                    .Add(p => p.TrackedDataSourceComponentType, typeof(DelayedLeavePopupTrackedDataSource<TestVehicle>))
+            );
+
+            await cut.Instance.Map.OnMapInitializedAsync();
+
+            var primaryHitAreaLayer = cut.FindComponents<CircleLayer>()
+                .Single(layer => layer.Instance.Id == "tracked-data-hit-area")
+                .Instance;
+
+            // act
+            var openTask = cut.InvokeAsync(() =>
+                primaryHitAreaLayer.OnMouseEnter.InvokeAsync(CreateItemFeatureEvent("vehicle-1"))
+            );
+            await popupOpenStarted.Task.WaitAsync(cancellationToken);
+            await cut.InvokeAsync(() => primaryHitAreaLayer.OnMouseLeave.InvokeAsync());
+            await Task.Delay(350, cancellationToken);
+            popupOpenGate.SetResult();
+            await openTask;
+
+            // assert
+            cut.WaitForAssertion(() => JSInterop.Invocations[ShowPopupIdentifier].Should().BeEmpty());
+            cut.WaitForAssertion(() => JSInterop.Invocations[ClosePopupIdentifier].Should().HaveCount(1));
+        }
+        finally
+        {
+            DelayedLeavePopupTrackedDataSource<TestVehicle>.BeforeShowPopupAsync = () => _completedTask;
+        }
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_keep_newest_popup_visible_when_stale_open_finishes_late(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        var firstPopupOpenGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var openAttemptCount = 0;
+        DelayedOverlappingPopupTrackedDataSource<TestVehicle>.BeforeShowPopupAsync = () =>
+        {
+            // arrange
+            var currentOpenAttempt = Interlocked.Increment(ref openAttemptCount);
+
+            // act
+            var waitTask = currentOpenAttempt == 1 ? firstPopupOpenGate.Task : _completedTask;
+
+            // assert
+            return waitTask;
+        };
+
+        try
+        {
+            var cut = Render<TrackedDataSourceHarness>(parameters =>
+                parameters
+                    .Add(
+                        p => p.Items,
+                        [
+                            new TestVehicle("vehicle-1", new Coordinate(49.6, 6.1), "vehicle-icon", "Vehicle 1"),
+                            new TestVehicle("vehicle-2", new Coordinate(49.7, 6.2), "vehicle-icon", "Vehicle 2"),
+                        ]
+                    )
+                    .Add(
+                        p => p.PopupSelector,
+                        (TestVehicle vehicle) =>
+                            new PopupOptions($"<strong>{vehicle.Label}</strong>", PopupTrigger.Hover)
+                    )
+                    .Add(
+                        p => p.TrackedDataSourceComponentType,
+                        typeof(DelayedOverlappingPopupTrackedDataSource<TestVehicle>)
+                    )
+            );
+
+            await cut.Instance.Map.OnMapInitializedAsync();
+
+            var primaryHitAreaLayer = cut.FindComponents<CircleLayer>()
+                .Single(layer => layer.Instance.Id == "tracked-data-hit-area")
+                .Instance;
+
+            // act
+            var firstOpenTask = cut.InvokeAsync(() =>
+                primaryHitAreaLayer.OnMouseEnter.InvokeAsync(CreateItemFeatureEvent("vehicle-1"))
+            );
+            await cut.InvokeAsync(() =>
+                primaryHitAreaLayer.OnMouseEnter.InvokeAsync(CreateItemFeatureEvent("vehicle-2"))
+            );
+            firstPopupOpenGate.SetResult();
+            await firstOpenTask;
+            await Task.Delay(350, cancellationToken);
+
+            // assert
+            JSInterop.Invocations[ShowPopupIdentifier].Should().HaveCount(1);
+            JSInterop.Invocations[ClosePopupIdentifier].Should().BeEmpty();
+            JSInterop.Invocations[ShowPopupIdentifier][0].Arguments[2].Should().Be("<strong>Vehicle 2</strong>");
+        }
+        finally
+        {
+            DelayedOverlappingPopupTrackedDataSource<TestVehicle>.BeforeShowPopupAsync = () => _completedTask;
+        }
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -704,6 +1066,12 @@ public class TrackedDataSourceTests : BunitContext
         [Parameter]
         public bool EnableCluster { get; set; }
 
+        [Parameter]
+        public Func<TestVehicle, PopupOptions?>? PopupSelector { get; set; }
+
+        [Parameter]
+        public Type TrackedDataSourceComponentType { get; set; } = typeof(TrackedDataSource<TestVehicle>);
+
         public SgbMap Map { get; private set; } = null!;
 
         public TrackedEntityInteractionEventArgs<TestVehicle>? LastItemClick { get; private set; }
@@ -732,7 +1100,7 @@ public class TrackedDataSourceTests : BunitContext
                 (RenderFragment)(
                     mapBuilder =>
                     {
-                        mapBuilder.OpenComponent<TrackedDataSource<TestVehicle>>(0);
+                        mapBuilder.OpenComponent(0, TrackedDataSourceComponentType);
                         mapBuilder.AddAttribute(1, "Id", "tracked-data");
                         mapBuilder.AddAttribute(2, "Items", Items);
                         mapBuilder.AddAttribute(
@@ -746,7 +1114,8 @@ public class TrackedDataSourceTests : BunitContext
                             new TrackedDataSymbolOptions<TestVehicle>(
                                 vehicle => vehicle.Position,
                                 vehicle => vehicle.IconImage,
-                                ColorSelector: _ => "#2563eb"
+                                ColorSelector: _ => "#2563eb",
+                                PopupSelector: PopupSelector
                             )
                         );
                         mapBuilder.AddAttribute(
@@ -815,6 +1184,38 @@ public class TrackedDataSourceTests : BunitContext
         bool IsHovered = false,
         bool IsSelected = false
     );
+
+    private sealed class DelayedLeavePopupTrackedDataSource<TItem> : TrackedDataSource<TItem>
+    {
+        public static Func<Task> BeforeShowPopupAsync { get; set; } = () => _completedTask;
+
+        protected override Task OnBeforeShowPopupAsync()
+        {
+            // arrange
+
+            // act
+            var task = BeforeShowPopupAsync();
+
+            // assert
+            return task;
+        }
+    }
+
+    private sealed class DelayedOverlappingPopupTrackedDataSource<TItem> : TrackedDataSource<TItem>
+    {
+        public static Func<Task> BeforeShowPopupAsync { get; set; } = () => _completedTask;
+
+        protected override Task OnBeforeShowPopupAsync()
+        {
+            // arrange
+
+            // act
+            var task = BeforeShowPopupAsync();
+
+            // assert
+            return task;
+        }
+    }
 
     private static IReadOnlyDictionary<string, object?> GetLayerSpec(LayerBase layer)
     {

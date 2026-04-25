@@ -38,7 +38,7 @@ public class TrainTrackingExampleTests : BunitContext
 
         Services.AddSingleton<IConfiguration>(CreateConfiguration());
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(9);
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(10);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);

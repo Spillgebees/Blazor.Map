@@ -26,9 +26,13 @@ interface SceneReplayOptions {
 }
 
 interface StyleReloadReplayOptions {
-  replayImages?: () => void;
+  replayImages?: () => void | Promise<void>;
   replayComposedOverlays?: () => Promise<void>;
   onAfterReplay?: () => Promise<void>;
+}
+
+function isPromiseLike(value: unknown): value is Promise<void> {
+  return typeof value === "object" && value !== null && "then" in value;
 }
 
 export function applySceneMutations(mapElement: HTMLElement, batch: SceneMutationBatch): void {
@@ -151,7 +155,10 @@ export async function replayStyleReloadState(
     return;
   }
 
-  options?.replayImages?.();
+  const replayImagesResult = options?.replayImages?.();
+  if (isPromiseLike(replayImagesResult)) {
+    await replayImagesResult;
+  }
   replaySceneRegistrations(mapElement, { includeVisibilityGroups: false });
   await options?.replayComposedOverlays?.();
   replayVisibilityGroups(mapElement);

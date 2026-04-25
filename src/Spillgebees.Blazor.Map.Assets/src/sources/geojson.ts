@@ -466,15 +466,22 @@ export async function addImage(
   height: number,
   pixelRatio: number,
   sdf: boolean = false,
+  shouldAbort?: () => boolean,
 ): Promise<void> {
   const map = window.Spillgebees.Map.maps.get(mapElement);
   if (!map) return;
+
+  if (shouldAbort?.()) {
+    return;
+  }
 
   const imageStore = window.Spillgebees.Map.imageRegistrations.get(map) ?? new Map();
   imageStore.set(name, { name, url, width, height, pixelRatio, sdf });
   window.Spillgebees.Map.imageRegistrations.set(map, imageStore);
 
-  if (map.hasImage(name)) return;
+  if (map.hasImage(name)) {
+    map.removeImage(name);
+  }
 
   // render at native device resolution for crisp icons on HiDPI displays
   const dpr = window.devicePixelRatio || 1;
@@ -497,6 +504,10 @@ export async function addImage(
   if (!ctx) return;
   ctx.drawImage(img, 0, 0, renderWidth, renderHeight);
   const imageData = ctx.getImageData(0, 0, renderWidth, renderHeight);
+
+  if (shouldAbort?.()) {
+    return;
+  }
 
   // pixelRatio tells MapLibre the image is rendered at DPR scale —
   // it displays at width x height CSS pixels using the hi-res data

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using BlazorComponentUtilities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
@@ -77,6 +78,12 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     public List<TileOverlay> Overlays { get; set; } = [];
 
     /// <summary>
+    /// Declarative map images registered and replayed automatically across map lifecycle events.
+    /// </summary>
+    [Parameter]
+    public List<MapImageDefinition> Images { get; set; } = [];
+
+    /// <summary>
     /// The width of the map. If not set, the map will take the full width of its container.
     /// </summary>
     [Parameter]
@@ -144,6 +151,9 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     protected List<Circle> InternalCircles { get; set; } = [];
     protected List<Polyline> InternalPolylines { get; set; } = [];
     protected List<TileOverlay> InternalOverlays { get; set; } = [];
+    protected List<MapImageDefinition> InternalImages { get; set; } = [];
+
+    private List<MapImageDefinition> _imperativeImages = [];
 
     protected string InternalContainerClass =>
         new CssBuilder()
@@ -295,6 +305,8 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// <param name="height">The image height in pixels.</param>
     /// <param name="pixelRatio">The pixel ratio for retina displays. Default is 1.</param>
     /// <param name="sdf">Whether the image should be treated as an SDF (Signed Distance Field) for runtime tinting via <c>icon-color</c>. Default is false.</param>
+    [Obsolete("Use the Images parameter to declaratively register map images.")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public async ValueTask AddImageAsync(
         string name,
         string url,
@@ -304,16 +316,16 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         bool sdf = false
     )
     {
-        await JsRuntime.InvokeVoidAsync(
-            "Spillgebees.Map.mapFunctions.addImage",
-            MapReference,
-            name,
-            url,
-            width,
-            height,
-            pixelRatio,
-            sdf
-        );
+        _imperativeImages =
+        [
+            .. _imperativeImages.Where(image => image.Name != name),
+            new MapImageDefinition(name, url, width, height, pixelRatio, sdf),
+        ];
+
+        if (IsInitialized)
+        {
+            await SyncImagesAsync(force: true);
+        }
     }
 
     /// <summary>
@@ -447,6 +459,8 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             await FitBoundsAsync(fitBoundsOptions);
         }
 
+        await SyncImagesAsync(force: true);
+
         // Signal that the map is ready for child components (sources, layers)
         _readyTcs.TrySetResult(true);
     }
@@ -517,6 +531,8 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     [JSInvokable]
     public async Task OnMapStyleReloadedAsync()
     {
+        await SyncImagesAsync(force: true);
+
         if (StyleReloaded is null)
         {
             return;
@@ -544,6 +560,11 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         {
             InternalOverlays = Overlays;
             await SetOverlaysAsync();
+        }
+
+        if (ShouldSyncImages())
+        {
+            await SyncImagesAsync();
         }
 
         if (InternalControlOptions != ControlOptions)
@@ -597,6 +618,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         InternalCircles = [.. Circles];
         InternalPolylines = [.. Polylines];
         InternalOverlays = [.. Overlays];
+        InternalImages = [.. GetDesiredImages()];
 
         await MapJs.CreateMapAsync(
             JsRuntime,
@@ -643,4 +665,52 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         MapJs.SetMapOptionsAsync(JsRuntime, Logger.Value, MapReference, InternalMapOptions);
 
     private ValueTask SetThemeAsync() => MapJs.SetThemeAsync(JsRuntime, Logger.Value, MapReference, InternalTheme);
+
+    private async Task SyncImagesAsync(bool force = false)
+    {
+        if (!force && !ShouldSyncImages())
+        {
+            return;
+        }
+
+        InternalImages = [.. GetDesiredImages()];
+        await MapJs.SetImagesAsync(JsRuntime, Logger.Value, MapReference, InternalImages);
+    }
+
+    private bool ShouldSyncImages()
+    {
+        var desiredImages = GetDesiredImages();
+
+        if (InternalImages.Count != desiredImages.Count)
+        {
+            return true;
+        }
+
+        for (var i = 0; i < desiredImages.Count; i++)
+        {
+            if (InternalImages[i] != desiredImages[i])
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private IReadOnlyList<MapImageDefinition> GetDesiredImages()
+    {
+        var desiredByName = new Dictionary<string, MapImageDefinition>(StringComparer.Ordinal);
+
+        foreach (var image in Images)
+        {
+            desiredByName[image.Name] = image;
+        }
+
+        foreach (var image in _imperativeImages)
+        {
+            desiredByName[image.Name] = image;
+        }
+
+        return [.. desiredByName.Values];
+    }
 }
