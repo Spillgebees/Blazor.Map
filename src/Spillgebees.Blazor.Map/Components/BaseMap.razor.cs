@@ -532,8 +532,6 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     [JSInvokable]
     public async Task OnMapStyleReloadedAsync()
     {
-        await SyncImagesAsync(force: true);
-
         if (StyleReloaded is null)
         {
             return;

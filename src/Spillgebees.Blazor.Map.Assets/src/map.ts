@@ -1188,14 +1188,18 @@ function validateControlForContent(mapElement: HTMLElement, controlId: string, k
   const controlsPayload = window.Spillgebees.Map.controlsPayload.get(map) ?? [];
   const control = controlsPayload.find((entry) => entry.controlId === controlId) ?? null;
   if (!control) {
+    // biome-ignore lint/suspicious/noConsole: explicit control diagnostics for interop mismatches
+    console.warn(
+      `[Spillgebees.Map] setControlContent ignored: controlId='${controlId}' was not found for expected kind='${kind}'.`,
+    );
     return null;
   }
 
   if (control.kind !== kind) {
-    return null;
-  }
-
-  if (["navigation", "scale", "fullscreen", "geolocate", "terrain", "center"].includes(control.kind)) {
+    // biome-ignore lint/suspicious/noConsole: explicit control diagnostics for interop mismatches
+    console.warn(
+      `[Spillgebees.Map] setControlContent ignored: controlId='${controlId}' expected kind='${kind}' but actual kind='${control.kind}'.`,
+    );
     return null;
   }
 

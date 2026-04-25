@@ -2538,14 +2538,67 @@ describe("setControlContent", () => {
     const dotNetHelper = createMockDotNetHelper();
     const placeholder = document.createElement("div");
     const content = document.createElement("div");
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     createMap(dotNetHelper, "OnMapInitialized", mapElement, createDefaultMapOptions(), [], "light", [], [], [], []);
     const mockMap = getLatestMockMapInstance()!;
 
-    // act
-    window.Spillgebees.Map.mapFunctions.setControlContent(mapElement, "missing", "legend", placeholder, content);
+    try {
+      // act
+      window.Spillgebees.Map.mapFunctions.setControlContent(mapElement, "missing", "legend", placeholder, content);
 
-    // assert
-    expect(mockMap.addControl).not.toHaveBeenCalled();
+      // assert
+      expect(mockMap.addControl).not.toHaveBeenCalled();
+      // biome-ignore lint/security/noSecrets: diagnostic substring assertion, not a secret
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("controlId='missing'"));
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("expected kind='legend'"));
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it("should warn when control kind does not match requested content kind", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const placeholder = document.createElement("div");
+    const content = document.createElement("div");
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      [
+        {
+          kind: "navigation",
+          controlId: "nav-main",
+          enable: true,
+          position: "top-right",
+          order: 100,
+          showCompass: true,
+          showZoom: true,
+        },
+      ],
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const mockMap = getLatestMockMapInstance()!;
+
+    try {
+      // act
+      window.Spillgebees.Map.mapFunctions.setControlContent(mapElement, "nav-main", "legend", placeholder, content);
+
+      // assert
+      expect(mockMap.addControl).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("controlId='nav-main'"));
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("expected kind='legend'"));
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("actual kind='navigation'"));
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   it("should reuse the existing legend control when only control order changes", () => {

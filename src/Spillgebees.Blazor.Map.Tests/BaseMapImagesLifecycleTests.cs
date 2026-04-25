@@ -83,7 +83,7 @@ public class BaseMapImagesLifecycleTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public async Task Should_replay_images_when_style_reloads(CancellationToken cancellationToken)
+    public async Task Should_not_force_sync_images_when_style_reloads(CancellationToken cancellationToken)
     {
         // arrange
         var cut = Render<SgbMap>(parameters =>
@@ -102,7 +102,7 @@ public class BaseMapImagesLifecycleTests : BunitContext
         await cut.Instance.OnMapStyleReloadedAsync();
 
         // assert
-        JSInterop.Invocations[SetImagesIdentifier].Count.Should().Be(initialSetImagesCallCount + 1);
+        JSInterop.Invocations[SetImagesIdentifier].Count.Should().Be(initialSetImagesCallCount);
     }
 
     [Test, Timeout(TestTimeoutMs)]
