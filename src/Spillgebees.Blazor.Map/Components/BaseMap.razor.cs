@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using BlazorComponentUtilities;
 using Microsoft.AspNetCore.Components;
@@ -163,8 +162,6 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     protected List<TileOverlay> InternalOverlays { get; set; } = [];
     protected List<MapImageDefinition> InternalImages { get; set; } = [];
 
-    private List<MapImageDefinition> _imperativeImages = [];
-
     protected string InternalContainerClass =>
         new CssBuilder()
             .AddClass("sgb-map-container")
@@ -304,39 +301,6 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// </summary>
     public ValueTask SetStyleLayerVisibilityAsync(string styleId, string layerId, bool visible) =>
         MapJs.SetStyleLayerVisibilityAsync(JsRuntime, Logger.Value, MapReference, styleId, layerId, visible);
-
-    /// <summary>
-    /// Registers a custom image (icon) for use in SymbolLayer's <c>IconImage</c>.
-    /// Supports any image URL, data URI (inline SVG), or base64-encoded image.
-    /// </summary>
-    /// <param name="name">The image name to reference in <c>IconImage</c> expressions.</param>
-    /// <param name="url">The image URL or data URI.</param>
-    /// <param name="width">The image width in pixels.</param>
-    /// <param name="height">The image height in pixels.</param>
-    /// <param name="pixelRatio">The pixel ratio for retina displays. Default is 1.</param>
-    /// <param name="sdf">Whether the image should be treated as an SDF (Signed Distance Field) for runtime tinting via <c>icon-color</c>. Default is false.</param>
-    [Obsolete("Use the Images parameter to declaratively register map images.")]
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public async ValueTask AddImageAsync(
-        string name,
-        string url,
-        int width,
-        int height,
-        double pixelRatio = 1,
-        bool sdf = false
-    )
-    {
-        _imperativeImages =
-        [
-            .. _imperativeImages.Where(image => image.Name != name),
-            new MapImageDefinition(name, url, width, height, pixelRatio, sdf),
-        ];
-
-        if (IsInitialized)
-        {
-            await SyncImagesAsync(force: true);
-        }
-    }
 
     /// <summary>
     /// Shows a popup at the specified coordinate with HTML content.
@@ -743,19 +707,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     private IReadOnlyList<MapImageDefinition> GetDesiredImages()
     {
-        var desiredByName = new Dictionary<string, MapImageDefinition>(StringComparer.Ordinal);
-
-        foreach (var image in Images)
-        {
-            desiredByName[image.Name] = image;
-        }
-
-        foreach (var image in _imperativeImages)
-        {
-            desiredByName[image.Name] = image;
-        }
-
-        return [.. desiredByName.Values];
+        return [.. Images];
     }
 
     private static RenderFragment RenderTrackedDataLayer(ITrackedDataLayer trackedDataLayer) =>

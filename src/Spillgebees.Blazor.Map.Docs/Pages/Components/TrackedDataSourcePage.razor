@@ -10,10 +10,6 @@
 <h1>TrackedDataLayers</h1>
 <p>High-performance real-time entity rendering with smooth animation, decorations, clustering, and interaction.</p>
 
-<blockquote>
-    <p><strong>Phase 2 migration:</strong> tracked data is now configured on <code>SgbMap.TrackedDataLayers</code> using <code>TrackedDataLayer&lt;TItem&gt;</code>. Direct <code>&lt;TrackedDataSource /&gt;</code> usage is no longer supported.</p>
-</blockquote>
-
 <h2 id="train_tracking">// train_tracking</h2>
 <p>This example simulates 47 trains across the Luxembourg rail network. Each train is a tracked entity whose position, rotation, and feature-state properties update every tick without re-creating the underlying MapLibre source.</p>
 
@@ -29,7 +25,7 @@
     <li>Smooth position interpolation via <code>AnimationOptions</code></li>
     <li>SVG-to-data-URI custom icon registration via the map <code>Images</code> parameter</li>
     <li>Style composition with a railway overlay on a Positron base</li>
-    <li>Interactive <a href="components/map-legend">LegendMapControl</a> configured in <code>SgbMap.Controls</code>, with custom swatch templates</li>
+    <li>Interactive <a href="components/sgb-map#custom_controls">LegendMapControl</a> configured in <code>SgbMap.Controls</code>, with custom swatch templates</li>
 </ul>
 
 <ExampleView TComponent="TrainTrackingExample"

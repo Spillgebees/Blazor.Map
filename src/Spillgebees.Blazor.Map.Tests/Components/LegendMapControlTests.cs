@@ -352,38 +352,6 @@ public class LegendMapControlTests : BunitContext
         cut.FindAll("input[data-testid='map-legend-toggle-static-item']").Should().BeEmpty();
     }
 
-    [Test]
-    public void Should_throw_when_rendering_legacy_map_legend_component()
-    {
-        // arrange
-
-        // act
-#pragma warning disable CS0618
-        var action = () =>
-            Render(builder =>
-            {
-                builder.OpenComponent<SgbMap>(0);
-                builder.AddAttribute(
-                    1,
-                    nameof(SgbMap.ChildContent),
-                    (RenderFragment)(
-                        childBuilder =>
-                        {
-                            childBuilder.OpenComponent<MapLegend>(0);
-                            childBuilder.AddAttribute(1, nameof(MapLegend.ControlId), "legacy");
-                            childBuilder.AddAttribute(2, nameof(MapLegend.Definition), CreateDefinition());
-                            childBuilder.CloseComponent();
-                        }
-                    )
-                );
-                builder.CloseComponent();
-            });
-#pragma warning restore CS0618
-
-        // assert
-        action.Should().Throw<InvalidOperationException>();
-    }
-
     private static LegendMapControl CreateControl(
         string controlId,
         MapControlPlacement? placement = null,

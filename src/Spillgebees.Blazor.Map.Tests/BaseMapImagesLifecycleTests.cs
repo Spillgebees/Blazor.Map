@@ -106,18 +106,13 @@ public class BaseMapImagesLifecycleTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public void Should_mark_add_image_async_as_obsolete(CancellationToken cancellationToken)
+    public void Should_not_expose_imperative_add_image_api(CancellationToken cancellationToken)
     {
         // arrange & act
-        var obsoleteAttribute = typeof(SgbMap)
-            .GetMethod(nameof(SgbMap.AddImageAsync))
-            ?.GetCustomAttributes(false)
-            .OfType<ObsoleteAttribute>()
-            .SingleOrDefault();
+        var addImageMethod = typeof(SgbMap).GetMethod("AddImageAsync");
 
         // assert
-        obsoleteAttribute.Should().NotBeNull();
-        obsoleteAttribute!.Message.Should().Contain("Images");
+        addImageMethod.Should().BeNull();
     }
 
     private static object GetRequiredPropertyValue(object source, string propertyName)

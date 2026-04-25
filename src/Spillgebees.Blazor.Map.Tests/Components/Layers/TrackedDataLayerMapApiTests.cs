@@ -58,63 +58,6 @@ public class TrackedDataLayerMapApiTests : BunitContext
         renderedSources.Should().HaveCount(1);
     }
 
-    [Test]
-    public void Should_throw_migration_error_when_using_tracked_data_source_directly()
-    {
-        // arrange
-        var action = () =>
-            Render<TrackedDataSource<TestVehicle>>(parameters =>
-                parameters
-                    .Add(p => p.SourceId, "legacy-source")
-                    .Add(p => p.Items, [new TestVehicle("vehicle-1", new Coordinate(49.6, 6.1), "vehicle-icon")])
-                    .Add(p => p.Id, new TrackedDataIdOptions<TestVehicle>(item => item.Id))
-                    .Add(
-                        p => p.Symbol,
-                        new TrackedDataSymbolOptions<TestVehicle>(item => item.Position, item => item.IconImage)
-                    )
-            );
-
-        // act
-        var exception = action.Should().Throw<InvalidOperationException>().Subject.Single();
-
-        // assert
-        exception.Message.Should().Contain("SgbMap.TrackedDataLayers");
-    }
-
-    [Test]
-    public void Should_throw_migration_error_when_using_tracked_data_source_with_layer_parameter()
-    {
-        // arrange
-        var layer = new TrackedDataLayer<TestVehicle>(
-            Id: "legacy-source",
-            Items: [new TestVehicle("vehicle-1", new Coordinate(49.6, 6.1), "vehicle-icon")],
-            Item: new TrackedDataIdOptions<TestVehicle>(item => item.Id),
-            Visual: new TrackedDataVisualOptions<TestVehicle>(
-                Symbol: new TrackedDataSymbolOptions<TestVehicle>(item => item.Position, item => item.IconImage),
-                Decorations: [],
-                Cluster: new TrackedDataClusterOptions(),
-                Animation: null,
-                Visible: true,
-                PrimaryIconOpacity: null,
-                MaxZoom: 18,
-                Attribution: null,
-                Stack: null,
-                BeforeStack: null,
-                AfterStack: null
-            ),
-            Behavior: new TrackedDataBehaviorOptions<TestVehicle>(new TrackedDataInteractionOptions<TestVehicle>()),
-            Callbacks: new TrackedDataCallbacks<TestVehicle>()
-        );
-
-        var action = () => Render<TrackedDataSource<TestVehicle>>(parameters => parameters.Add(p => p.Layer, layer));
-
-        // act
-        var exception = action.Should().Throw<InvalidOperationException>().Subject.Single();
-
-        // assert
-        exception.Message.Should().Contain("SgbMap.TrackedDataLayers");
-    }
-
     [Test, Timeout(TestTimeoutMs)]
     public async Task Should_open_hover_popup_and_close_after_hover_leave_debounce(CancellationToken cancellationToken)
     {

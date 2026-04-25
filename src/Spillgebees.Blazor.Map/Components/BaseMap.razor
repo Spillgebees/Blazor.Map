@@ -14,12 +14,10 @@
                  {
                      <MapLegendControlHost Control="@legendControl" />
                  }
-                 <CascadingValue Name="@TrackedDataSourceGuard.CascadeName" Value="@TrackedDataSourceGuard.Token" IsFixed="true">
-                     @foreach (var trackedDataLayer in TrackedDataLayers)
-                     {
-                         @RenderTrackedDataLayer(trackedDataLayer)
-                     }
-                 </CascadingValue>
+                 @foreach (var trackedDataLayer in TrackedDataLayers)
+                 {
+                     @RenderTrackedDataLayer(trackedDataLayer)
+                 }
                  @ChildContent
              </CascadingValue>;
 }

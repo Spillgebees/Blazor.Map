@@ -166,62 +166,41 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
     [Parameter]
     public TrackedDataLayer<TItem>? Layer { get; set; }
 
-    [CascadingParameter(Name = TrackedDataSourceGuard.CascadeName)]
-    internal object? InternalGuard { get; set; }
+    private string SourceId { get; set; } = string.Empty;
 
-    [Parameter, EditorRequired]
-    public string SourceId { get; set; } = string.Empty;
+    private IReadOnlyList<TItem> Items { get; set; } = [];
 
-    [Parameter]
-    public IReadOnlyList<TItem> Items { get; set; } = [];
+    private TrackedDataIdOptions<TItem> Id { get; set; } = null!;
 
-    [Parameter, EditorRequired]
-    public TrackedDataIdOptions<TItem> Id { get; set; } = null!;
+    private TrackedDataSymbolOptions<TItem> Symbol { get; set; } = null!;
 
-    [Parameter, EditorRequired]
-    public TrackedDataSymbolOptions<TItem> Symbol { get; set; } = null!;
+    private IReadOnlyList<TrackedDataDecorationOptions<TItem>> Decorations { get; set; } = [];
 
-    [Parameter]
-    public IReadOnlyList<TrackedDataDecorationOptions<TItem>> Decorations { get; set; } = [];
+    private TrackedDataClusterOptions Cluster { get; set; } = new();
 
-    [Parameter]
-    public TrackedDataClusterOptions Cluster { get; set; } = new();
+    private TrackedDataInteractionOptions<TItem> Interaction { get; set; } = new();
 
-    [Parameter]
-    public TrackedDataInteractionOptions<TItem> Interaction { get; set; } = new();
+    private AnimationOptions? Animation { get; set; }
 
-    [Parameter]
-    public AnimationOptions? Animation { get; set; }
+    private bool Visible { get; set; } = true;
 
-    [Parameter]
-    public bool Visible { get; set; } = true;
+    private StyleValue<double>? PrimaryIconOpacity { get; set; }
 
-    [Parameter]
-    public StyleValue<double>? PrimaryIconOpacity { get; set; }
+    private EventCallback<TrackedEntityInteractionEventArgs<TItem>> OnItemClick { get; set; }
 
-    [Parameter]
-    public EventCallback<TrackedEntityInteractionEventArgs<TItem>> OnItemClick { get; set; }
+    private EventCallback<TrackedEntityInteractionEventArgs<TItem>> OnItemMouseEnter { get; set; }
 
-    [Parameter]
-    public EventCallback<TrackedEntityInteractionEventArgs<TItem>> OnItemMouseEnter { get; set; }
+    private EventCallback OnItemMouseLeave { get; set; }
 
-    [Parameter]
-    public EventCallback OnItemMouseLeave { get; set; }
+    private int MaxZoom { get; set; } = 18;
 
-    [Parameter]
-    public int MaxZoom { get; set; } = 18;
+    private string? Attribution { get; set; }
 
-    [Parameter]
-    public string? Attribution { get; set; }
+    private string? Stack { get; set; }
 
-    [Parameter]
-    public string? Stack { get; set; }
+    private string? BeforeStack { get; set; }
 
-    [Parameter]
-    public string? BeforeStack { get; set; }
-
-    [Parameter]
-    public string? AfterStack { get; set; }
+    private string? AfterStack { get; set; }
 
     [CascadingParameter]
     public BaseMap? Map { get; set; }
@@ -297,11 +276,9 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
 
     protected override void OnParametersSet()
     {
-        if (!ReferenceEquals(InternalGuard, TrackedDataSourceGuard.Token) || Layer is null)
+        if (Layer is null)
         {
-            throw new InvalidOperationException(
-                "TrackedDataSource direct usage is no longer supported. Configure tracked layers via SgbMap.TrackedDataLayers using TrackedDataLayer<TItem>."
-            );
+            throw new InvalidOperationException("Tracked data layer must be provided.");
         }
 
         SourceId = Layer.Id;
