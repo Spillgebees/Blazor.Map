@@ -1,5 +1,37 @@
 namespace Spillgebees.Blazor.Map.Models.Controls;
 
+using Microsoft.AspNetCore.Components;
+using Spillgebees.Blazor.Map.Models.Legends;
+
+/// <summary>
+/// Shared placement options for map controls.
+/// </summary>
+/// <param name="Position">Position of the control on the map.</param>
+/// <param name="Order">Deterministic order at the position. Lower values render first.</param>
+/// <param name="Enabled">Whether this control entry is enabled.</param>
+public sealed record MapControlPlacement(ControlPosition Position, int Order, bool Enabled);
+
+/// <summary>
+/// Visual chrome options for legend controls.
+/// </summary>
+/// <param name="Title">Optional title shown in the legend header.</param>
+/// <param name="Collapsible">Whether the legend shell can be collapsed.</param>
+/// <param name="InitiallyOpen">Whether the legend is initially open.</param>
+/// <param name="ClassName">Optional additional CSS class for the legend shell.</param>
+public sealed record LegendChromeOptions(string? Title, bool Collapsible, bool InitiallyOpen, string? ClassName);
+
+/// <summary>
+/// Content options for legend controls.
+/// </summary>
+/// <param name="Definition">Legend content definition.</param>
+/// <param name="ItemTemplate">Optional item template.</param>
+/// <param name="OnItemVisibilityChanged">Callback invoked when an item selection changes.</param>
+public sealed record LegendContentOptions(
+    MapLegendDefinition Definition,
+    RenderFragment<MapLegendItemTemplateContext>? ItemTemplate,
+    EventCallback<MapLegendVisibilityChangedEventArgs> OnItemVisibilityChanged
+);
+
 /// <summary>
 /// Base record for all declarative map controls.
 /// </summary>
@@ -78,14 +110,10 @@ public sealed record CenterMapControl(
 /// </summary>
 public sealed record LegendMapControl(
     string ControlId,
-    bool Enabled = true,
-    ControlPosition Position = ControlPosition.TopRight,
-    string? Title = "Legend",
-    bool Collapsible = true,
-    bool InitiallyOpen = true,
-    string? ClassName = null,
-    int Order = 500
-) : MapControl(ControlId, Position, Order, Enabled);
+    MapControlPlacement Placement,
+    LegendChromeOptions Chrome,
+    LegendContentOptions Content
+) : MapControl(ControlId, Placement.Position, Placement.Order, Placement.Enabled);
 
 /// <summary>
 /// A content control shell entry. The visual content is provided by child components.

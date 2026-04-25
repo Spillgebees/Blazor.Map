@@ -205,9 +205,6 @@ public static class TrainTrackingPresentation
             ClassName: "train-overlay-legend-content"
         );
 
-    public static LegendMapControl OverlayLegendControl { get; } =
-        new("overlay-legend", Position: ControlPosition.TopLeft);
-
     public static MapOptions BuildMapOptions(string? overlayStyleUrl, string? composedGlyphsUrl)
     {
         var resolvedOverlayStyleUrl = string.IsNullOrWhiteSpace(overlayStyleUrl)
@@ -228,8 +225,6 @@ public static class TrainTrackingPresentation
             WebFonts: ["11px 'Martian Mono'", "11px 'DM Sans'"]
         );
     }
-
-    public static IReadOnlyList<MapControl> Controls { get; } = [new NavigationMapControl(), OverlayLegendControl];
 
     public static AnimationOptions TrainAnimation { get; } = new(Duration: 2000, Easing: AnimationEasing.EaseInOut);
 

@@ -435,10 +435,10 @@ internal static class MapJs
                 legend.Enabled,
                 legend.Position,
                 legend.Order,
-                legend.Title,
-                legend.Collapsible,
-                legend.InitiallyOpen,
-                legend.ClassName,
+                Title = legend.Chrome.Title,
+                Collapsible = legend.Chrome.Collapsible,
+                InitiallyOpen = legend.Chrome.InitiallyOpen,
+                ClassName = legend.Chrome.ClassName,
             },
             ContentMapControl content => new
             {

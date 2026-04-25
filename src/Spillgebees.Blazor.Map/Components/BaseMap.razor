@@ -1,4 +1,5 @@
 @inherits ComponentBase
+@using Spillgebees.Blazor.Map.Models.Controls
 
 @code {
     protected virtual RenderFragment Render
@@ -8,6 +9,10 @@
                      style="@InternalContainerStyle"
                      @ref="@MapReference">
                 </div>
+                @foreach (var legendControl in Controls.OfType<LegendMapControl>())
+                {
+                    <MapLegendControlHost Control="@legendControl" />
+                }
                 @ChildContent
             </CascadingValue>;
 }

@@ -32,7 +32,6 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private IConfiguration Configuration { get; set; } = null!;
 
     private MapOptions _mapOptions = null!;
-    private readonly IReadOnlyList<MapControl> _controls = TrainTrackingPresentation.Controls;
     private readonly AnimationOptions _trainAnimation = TrainTrackingPresentation.TrainAnimation;
     private readonly TrackedDataClusterOptions _trainClusterOptions =
         TrainTrackingPresentation.TrackedTrainClusterOptions;
@@ -104,8 +103,6 @@ public partial class TrainTrackingExample : IAsyncDisposable
 
     private TrackedDataInteractionOptions<TrainSampleState> _trainInteraction =>
         new(IsHovered: train => train.Id == _hoveredTrainId, IsSelected: train => train.Id == _selectedTrainId);
-
-    private static MapLegendDefinition OverlayLegendDefinition => TrainTrackingPresentation.OverlayLegendDefinition;
 
     public TrainTrackingExample()
     {
@@ -269,21 +266,10 @@ public partial class TrainTrackingExample : IAsyncDisposable
 
     private Task HandleLegendItemVisibilityChangedAsync(MapLegendVisibilityChangedEventArgs args)
     {
-        _visibility.SetOverlayGroupVisibility(args.Item.Id, args.Visible);
+        _visibility.SetOverlayGroupVisibility(args.Item.Id, args.Selected);
 
         return Task.CompletedTask;
     }
-
-    private static bool ResolveLegendToggleValue(ChangeEventArgs args) =>
-        args.Value switch
-        {
-            bool boolValue => boolValue,
-            string stringValue when bool.TryParse(stringValue, out var parsed) => parsed,
-            _ => false,
-        };
-
-    private static string GetOverlayLegendSwatchClassName(MapLegendItemDefinition item) =>
-        $"train-overlay-swatch train-overlay-swatch-{item.Id}";
 
     public async ValueTask DisposeAsync()
     {

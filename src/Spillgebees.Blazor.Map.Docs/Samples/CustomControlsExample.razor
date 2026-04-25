@@ -8,9 +8,6 @@
         Controls="@_controls"
         Height="450px"
         Width="100%">
-    <MapLegend ControlId="network-legend"
-               Definition="@_legendDefinition" />
-
     <GeoJsonSource Id="network"
                    Data="@_networkData">
         <LineLayer Id="metro-line"
@@ -31,11 +28,16 @@
         Zoom: 12
     );
 
-    private readonly IReadOnlyList<MapControl> _controls =
+    private IReadOnlyList<MapControl> _controls =>
     [
         new NavigationMapControl(Order: 100),
         new FullscreenMapControl(Order: 200),
-        new LegendMapControl("network-legend", Order: 300, Title: "Network layers")
+        new LegendMapControl(
+            "network-legend",
+            new MapControlPlacement(ControlPosition.TopRight, 300, Enabled: true),
+            new LegendChromeOptions("Network layers", Collapsible: true, InitiallyOpen: true, ClassName: null),
+            new LegendContentOptions(_legendDefinition, ItemTemplate: null, OnItemVisibilityChanged: default)
+        ),
     ];
 
     private readonly MapLegendDefinition _legendDefinition =

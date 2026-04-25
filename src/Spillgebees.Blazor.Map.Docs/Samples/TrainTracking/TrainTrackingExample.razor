@@ -258,168 +258,11 @@
 <div class="train-showcase-map">
     <SgbMap @ref="_map"
             MapOptions="@_mapOptions"
-            Controls="@_controls"
+            Controls="@BuildControls()"
             Images="@_images"
             Theme="@GlobalTheme"
             Height="600px"
             Width="100%">
-        <MapLegend Definition="@OverlayLegendDefinition"
-                   ControlId="overlay-legend"
-                   OnItemVisibilityChanged="@HandleLegendItemVisibilityChangedAsync">
-            <ItemTemplate Context="context">
-                <label class="train-overlay-legend-item" data-active="@context.Visible.ToString().ToLowerInvariant()">
-                    <span class="@GetOverlayLegendSwatchClassName(context.Item)" aria-hidden="true">
-                        <span class="train-overlay-swatch-art">
-                            @switch (context.Item.Id)
-                            {
-                                case "tracks":
-                                    <svg class="train-overlay-swatch-svg" viewBox="98 120 104 64" aria-hidden="true">
-                                        <g transform="translate(152, 152)">
-                                            <polygon class="tk-tie-top" points="41.6,-14.5 20.8,-26.5 17.8,-24.8 38.5,-12.8" />
-                                            <polygon class="tk-tie-front" points="38.5,-12.8 38.5,-10.2 17.8,-22.2 17.8,-24.8" />
-                                            <polygon class="tk-tie-left" points="41.6,-14.5 41.6,-12.0 38.5,-10.2 38.5,-12.8" />
-                                            <polygon class="tk-tie-top" points="33.8,-10.0 13.0,-22.0 10.0,-20.2 30.7,-8.2" />
-                                            <polygon class="tk-tie-front" points="30.7,-8.2 30.7,-5.8 10.0,-17.8 10.0,-20.2" />
-                                            <polygon class="tk-tie-left" points="33.8,-10.0 33.8,-7.5 30.7,-5.8 30.7,-8.2" />
-                                            <polygon class="tk-tie-top" points="26.0,-5.5 5.2,-17.5 2.2,-15.8 22.9,-3.8" />
-                                            <polygon class="tk-tie-front" points="22.9,-3.8 22.9,-1.2 2.2,-13.2 2.2,-15.8" />
-                                            <polygon class="tk-tie-left" points="26.0,-5.5 26.0,-3.0 22.9,-1.2 22.9,-3.8" />
-                                            <polygon class="tk-tie-top" points="18.2,-1.0 -2.6,-13.0 -5.6,-11.2 15.2,0.8" />
-                                            <polygon class="tk-tie-front" points="15.2,0.8 15.2,3.2 -5.6,-8.8 -5.6,-11.2" />
-                                            <polygon class="tk-tie-left" points="18.2,-1.0 18.2,1.5 15.2,3.2 15.2,0.8" />
-                                            <polygon class="tk-tie-top" points="10.4,3.5 -10.4,-8.5 -13.4,-6.8 7.4,5.2" />
-                                            <polygon class="tk-tie-front" points="7.4,5.2 7.4,7.8 -13.4,-4.2 -13.4,-6.8" />
-                                            <polygon class="tk-tie-left" points="10.4,3.5 10.4,6.0 7.4,7.8 7.4,5.2" />
-                                            <polygon class="tk-tie-top" points="2.6,8.0 -18.2,-4.0 -21.2,-2.2 -0.4,9.8" />
-                                            <polygon class="tk-tie-front" points="-0.4,9.8 -0.4,12.2 -21.2,0.2 -21.2,-2.2" />
-                                            <polygon class="tk-tie-left" points="2.6,8.0 2.6,10.5 -0.4,12.2 -0.4,9.8" />
-                                            <polygon class="tk-tie-top" points="-5.2,12.5 -26.0,0.5 -29.0,2.2 -8.2,14.2" />
-                                            <polygon class="tk-tie-front" points="-8.2,14.2 -8.2,16.8 -29.0,4.8 -29.0,2.2" />
-                                            <polygon class="tk-tie-left" points="-5.2,12.5 -5.2,15.0 -8.2,16.8 -8.2,14.2" />
-                                            <polygon class="tk-tie-top" points="-13.0,17.0 -33.8,5.0 -36.8,6.8 -16.0,18.8" />
-                                            <polygon class="tk-tie-front" points="-16.0,18.8 -16.0,21.2 -36.8,9.2 -36.8,6.8" />
-                                            <polygon class="tk-tie-left" points="-13.0,17.0 -13.0,19.5 -16.0,21.2 -16.0,18.8" />
-                                            <polygon class="tk-tie-top" points="-20.8,21.5 -41.6,9.5 -44.6,11.2 -23.8,23.2" />
-                                            <polygon class="tk-tie-front" points="-23.8,23.2 -23.8,25.8 -44.6,13.8 -44.6,11.2" />
-                                            <polygon class="tk-tie-left" points="-20.8,21.5 -20.8,24.0 -23.8,25.8 -23.8,23.2" />
-                                            <polygon class="tk-rail-side" points="36.5,-19.4 36.5,-17.4 -32.7,22.6 -32.7,20.6" />
-                                            <polygon class="tk-rail-side" points="34.5,-20.6 34.5,-18.6 -34.8,21.4 -34.8,19.4" />
-                                            <polygon class="tk-rail-side" points="36.5,-17.4 34.5,-18.6 -34.8,21.4 -32.7,22.6" />
-                                            <polygon class="tk-rail-top" points="36.5,-19.4 34.5,-20.6 -34.8,19.4 -32.7,20.6" />
-                                            <polygon class="tk-rail-side" points="27.9,-24.4 27.9,-22.4 -41.4,17.6 -41.4,15.6" />
-                                            <polygon class="tk-rail-side" points="25.8,-25.6 25.8,-23.6 -43.5,16.4 -43.5,14.4" />
-                                            <polygon class="tk-rail-side" points="27.9,-22.4 25.8,-23.6 -43.5,16.4 -41.4,17.6" />
-                                            <polygon class="tk-rail-top" points="27.9,-24.4 25.8,-25.6 -43.5,14.4 -41.4,15.6" />
-                                        </g>
-                                    </svg>
-                                    break;
-                                case "tram":
-                                    <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
-                                        <!-- tram-stop sprite: red rounded square -->
-                                        <rect x="8" y="16" width="12" height="12" rx="3" ry="3" fill="#dc2626" stroke="#ffffff" stroke-width="1.5" />
-                                        <!-- subway-entrance sprite: blue triangle -->
-                                        <polygon points="30,16 36,28 24,28" fill="#1d4ed8" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round" />
-                                    </svg>
-                                    break;
-                                case "stations":
-                                    <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
-                                        <circle cx="15" cy="22" fill="#c2410c" stroke="#fff" stroke-width="1.5" r="5" />
-                                        <circle cx="30" cy="22" fill="#fff" stroke="#1e293b" stroke-width="1.5" r="5" />
-                                    </svg>
-                                    break;
-                                case "platforms":
-                                    <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
-                                        <g transform="translate(17.5, 25)">
-                                            <polygon class="p-left" points="-9,-1.5 0,3 0,4.2 -9,-0.3" />
-                                            <polygon class="p-right" points="0,3 9,-1.5 9,-0.3 0,4.2" />
-                                            <polygon class="p-right" points="9,-1.5 18,-6 18,-4.8 9,-0.3" />
-                                            <polygon class="p-roof" points="-9,-1.5 0,3 9,-1.5 18,-6 9,-10.5 0,-6" />
-                                        </g>
-                                    </svg>
-                                    break;
-                                case "routes":
-                                    <svg class="train-overlay-swatch-svg" viewBox="12.5 15 18 12" aria-hidden="true">
-                                        <g transform="translate(22, 22) rotate(-5)">
-                                            <!-- bundled corridor between stations -->
-                                            <polygon points="-4,2 4,-2 4,-2.7 -4,1.3" fill="#e03030" />
-                                            <polygon points="-4,1.3 4,-2.7 4,-3.4 -4,0.6" fill="#3080d0" />
-                                            <polygon points="-4,0.6 4,-3.4 4,-4.1 -4,-0.1" fill="#eab308" />
-                                            <!-- blue: straight through both stations -->
-                                            <path class="rt-line" d="M-7,2.6 L-4,1.3" stroke="#3080d0" />
-                                            <path class="rt-line" d="M4,-2.7 L7,-4" stroke="#3080d0" />
-                                            <!-- left side: red/green fan from left station -->
-                                            <path class="rt-line" d="M-4,1.3 L-6.5,0.5" stroke="#e03030" />
-                                            <path class="rt-line" d="M-4,1.3 L-4.9,3.8" stroke="#eab308" />
-                                            <!-- right side: red/green fan from right station -->
-                                            <path class="rt-line" d="M4,-2.7 L6.5,-1.9" stroke="#e03030" />
-                                            <path class="rt-line" d="M4,-2.7 L4.9,-5.2" stroke="#eab308" />
-                                            <!-- stations -->
-                                            <circle class="rt-station" cx="-4" cy="1.3" r="1.2" />
-                                            <circle class="rt-station" cx="4" cy="-2.7" r="1.2" />
-                                        </g>
-                                    </svg>
-                                    break;
-                                case "lifecycle":
-                                    <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
-                                        <line x1="6" y1="16" x2="38" y2="16" stroke="#d97706" stroke-width="2" stroke-dasharray="4 3" stroke-linecap="round" />
-                                        <line x1="6" y1="28" x2="38" y2="28" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 3" stroke-linecap="round" />
-                                    </svg>
-                                    break;
-                                case "infrastructure":
-                                    <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
-                                        <g transform="translate(22, 30)">
-                                            <line class="sig-post" x1="0" y1="18" x2="0" y2="-8" />
-                                            <g transform="translate(1.2, 0)">
-                                                <polygon class="sig-head" points="-6,-7 0,-3.5 0,-21 -6,-24.5" />
-                                                <polygon class="sig-head" points="0,-3.5 2.5,-5.2 2.5,-22.7 0,-21" />
-                                                <polygon class="sig-top" points="-6,-24.5 0,-21 2.5,-22.7 -3.5,-26.2" />
-                                                <g transform="translate(-3, -17.5)">
-                                                    <ellipse class="sig-inset" cx="0" cy="0" rx="2.4" ry="2.4" transform="scale(0.5, 1) rotate(-30)" />
-                                                    <ellipse class="sig-red" cx="0" cy="0" rx="1.7" ry="1.7" transform="scale(0.5, 1) rotate(-30)" />
-                                                </g>
-                                                <g transform="translate(-3, -10)">
-                                                    <ellipse class="sig-inset" cx="0" cy="0" rx="2.4" ry="2.4" transform="scale(0.5, 1) rotate(-30)" />
-                                                    <ellipse class="sig-off" cx="0" cy="0" rx="1.7" ry="1.7" transform="scale(0.5, 1) rotate(-30)" />
-                                                </g>
-                                            </g>
-                                        </g>
-                                    </svg>
-                                    break;
-                                case "3d-buildings":
-                                    <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
-                                        <g transform="translate(22, 20)">
-                                            <polygon class="b-left" points="-14,4 0,11 0,7 -14,0" />
-                                            <polygon class="b-right" points="0,11 14,4 14,0 0,7" />
-                                            <polygon class="b-roof" points="-14,0 0,7 14,0 0,-7" />
-                                        </g>
-                                    </svg>
-                                    break;
-                                case "trains":
-                                    <svg class="train-overlay-swatch-svg" viewBox="-4 -4 40 40" aria-hidden="true">
-                                        <g transform="translate(16, 16) rotate(-30)">
-                                            <path d="M27.5 16C24.5 12.5 19 7.8 13.2 7.8C7.5 7.8 4.5 11.8 4.5 16C4.5 20.2 7.5 24.2 13.2 24.2C19 24.2 24.5 19.5 27.5 16Z" fill="#2563eb" stroke="white" stroke-width="2" stroke-linejoin="round" transform="translate(-16, -16)" />
-                                        </g>
-                                    </svg>
-                                    break;
-                            }
-                        </span>
-                        <span class="train-overlay-swatch-badge"></span>
-                    </span>
-                    <span class="train-overlay-legend-copy">
-                        <span class="sgb-map-legend-item-label">@context.Item.Label</span>
-                        @if (!string.IsNullOrWhiteSpace(context.Item.Description))
-                        {
-                            <span class="sgb-map-legend-item-description">@context.Item.Description</span>
-                        }
-                    </span>
-                    <input type="checkbox"
-                           data-testid="@($"map-legend-toggle-{context.Item.Id}")"
-                           checked="@context.Visible"
-                           @onchange="@(async args => await context.SetVisibilityAsync(ResolveLegendToggleValue(args)))" />
-                </label>
-            </ItemTemplate>
-        </MapLegend>
-
         <FillExtrusionLayer Id="sgb-buildings-3d"
                             SourceId="openmaptiles"
                             SourceLayer="building"
@@ -448,3 +291,108 @@
 
     </SgbMap>
 </div>
+
+@code {
+    private IReadOnlyList<MapControl> BuildControls() =>
+    [
+        new NavigationMapControl(),
+        new LegendMapControl(
+            "overlay-legend",
+            new MapControlPlacement(ControlPosition.TopLeft, 500, Enabled: true),
+            new LegendChromeOptions("Legend", Collapsible: true, InitiallyOpen: true, ClassName: null),
+            new LegendContentOptions(
+                TrainTrackingPresentation.OverlayLegendDefinition,
+                OverlayLegendItemTemplate,
+                EventCallback.Factory.Create<MapLegendVisibilityChangedEventArgs>(
+                    this,
+                    HandleLegendItemVisibilityChangedAsync
+                )
+            )
+        ),
+    ];
+
+    private RenderFragment<MapLegendItemTemplateContext> OverlayLegendItemTemplate => context => @<label class="train-overlay-legend-item" data-active="@context.Selected.ToString().ToLowerInvariant()">
+            <span class="@GetOverlayLegendSwatchClassName(context.Item)" aria-hidden="true">
+                <span class="train-overlay-swatch-art">
+                    @switch (context.Item.Id)
+                    {
+                        case "tracks":
+                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
+                                <rect class="tk-rail-top" x="6" y="18" width="32" height="3" />
+                                <rect class="tk-tie-top" x="10" y="24" width="24" height="2" />
+                            </svg>
+                            break;
+                        case "tram":
+                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
+                                <rect x="8" y="16" width="12" height="12" rx="3" ry="3" fill="#dc2626" stroke="#ffffff" stroke-width="1.5" />
+                                <polygon points="30,16 36,28 24,28" fill="#1d4ed8" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round" />
+                            </svg>
+                            break;
+                        case "stations":
+                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
+                                <circle cx="15" cy="22" fill="#c2410c" stroke="#fff" stroke-width="1.5" r="5" />
+                                <circle cx="30" cy="22" fill="#fff" stroke="#1e293b" stroke-width="1.5" r="5" />
+                            </svg>
+                            break;
+                        case "platforms":
+                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
+                                <polygon class="p-roof" points="12,26 22,20 32,26 22,32" />
+                            </svg>
+                            break;
+                        case "routes":
+                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
+                                <path class="rt-line" d="M8,26 L36,18" stroke="#3080d0" />
+                                <circle class="rt-station" cx="16" cy="24" r="2" />
+                                <circle class="rt-station" cx="30" cy="20" r="2" />
+                            </svg>
+                            break;
+                        case "lifecycle":
+                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
+                                <line x1="6" y1="16" x2="38" y2="16" stroke="#d97706" stroke-width="2" stroke-dasharray="4 3" stroke-linecap="round" />
+                                <line x1="6" y1="28" x2="38" y2="28" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 3" stroke-linecap="round" />
+                            </svg>
+                            break;
+                        case "infrastructure":
+                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
+                                <line class="sig-post" x1="22" y1="32" x2="22" y2="10" />
+                                <circle class="sig-red" cx="22" cy="16" r="3" />
+                            </svg>
+                            break;
+                        case "3d-buildings":
+                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
+                                <polygon class="b-roof" points="10,22 22,14 34,22 22,30" />
+                            </svg>
+                            break;
+                        case "trains":
+                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
+                                <path d="M36 22C32 18 26 14 20 14C14 14 10 18 10 22C10 26 14 30 20 30C26 30 32 26 36 22Z" fill="#2563eb" stroke="white" stroke-width="2" stroke-linejoin="round" />
+                            </svg>
+                            break;
+                    }
+                </span>
+                <span class="train-overlay-swatch-badge"></span>
+            </span>
+            <span class="train-overlay-legend-copy">
+                <span class="sgb-map-legend-item-label">@context.Item.Label</span>
+                @if (!string.IsNullOrWhiteSpace(context.Item.Description))
+                {
+                    <span class="sgb-map-legend-item-description">@context.Item.Description</span>
+                }
+            </span>
+            <input type="checkbox"
+                   data-testid="@($"map-legend-toggle-{context.Item.Id}")"
+                   checked="@context.Selected"
+                   @onchange="@(async args => await context.SetSelectedAsync(ResolveLegendToggleValue(args)))" />
+        </label>;
+
+    private static bool ResolveLegendToggleValue(ChangeEventArgs args) =>
+        args.Value switch
+        {
+            bool boolValue => boolValue,
+            string stringValue when bool.TryParse(stringValue, out var parsed) => parsed,
+            _ => false,
+        };
+
+    private static string GetOverlayLegendSwatchClassName(MapLegendItemDefinition item) =>
+        $"train-overlay-swatch train-overlay-swatch-{item.Id}";
+}
