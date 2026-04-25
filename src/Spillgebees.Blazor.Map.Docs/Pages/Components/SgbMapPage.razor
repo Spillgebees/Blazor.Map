@@ -22,6 +22,13 @@
     <FitBoundsPaddingExample />
 </ExampleView>
 
+<h2 id="custom_controls">// custom_controls</h2>
+<p>Custom control components (like <code>MapLegend</code>) bind to a declarative control shell in <code>SgbMap.Controls</code> by matching <code>ControlId</code>. The shell controls map position and order, and the child component only provides content and behavior.</p>
+<p>Ordering is deterministic per map corner: controls are sorted by <code>Order</code> (ascending), then declaration order in <code>Controls</code>, then <code>ControlId</code> as a stable tie-breaker. Keep each <code>ControlId</code> unique and pass the same id to the matching child control component.</p>
+<ExampleView TComponent="CustomControlsExample">
+    <CustomControlsExample />
+</ExampleView>
+
 <h2 id="styles">// styles</h2>
 <p>Swap between built-in style presets using the <code>MapOptions.Style</code> property. The library ships with <code>MapStyle.OpenFreeMap.Liberty</code>, <code>Positron</code>, and <code>Bright</code>. Use <code>MapStyle.FromUrl</code> or <code>MapStyle.FromRasterUrl</code> for custom sources. Because <code>MapOptions</code> is a record, change styles reactively with a <code>with</code> expression.</p>
 <ExampleView TComponent="StyleSwitchingExample">

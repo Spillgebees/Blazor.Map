@@ -65,11 +65,7 @@ export interface OverlayStyleRequestOptions {
 export interface CustomControlRegistration {
   controlId: string;
   kind: "legend" | "content";
-  position: import("./controls").ControlPosition;
-  order: number;
-  options: IMapControl;
   control: IControl;
-  declarationOrder: number;
 }
 
 export interface SpillgebeesMapNamespace {

@@ -1220,13 +1220,10 @@ export function setControlContent(
   if (
     existingRegistration &&
     existingRegistration.kind === kind &&
-    existingRegistration.position === controlDefinition.position &&
-    existingRegistration.order === controlDefinition.order &&
     existingRegistration.control instanceof LegendControl &&
     kind === LEGEND_CONTROL_KIND
   ) {
     existingRegistration.control.update(controlDefinition as ILegendMapControl);
-    existingRegistration.options = structuredClone(controlDefinition);
     customControlStore.set(controlId, existingRegistration);
     return;
   }
@@ -1253,11 +1250,7 @@ export function setControlContent(
   customControlStore.set(controlId, {
     controlId,
     kind: kind as "legend" | "content",
-    position: controlDefinition.position,
-    order: controlDefinition.order,
-    options: structuredClone(controlDefinition),
     control,
-    declarationOrder: 0,
   });
 
   recomposeControls(mapElement, window.Spillgebees.Map.controlsPayload.get(map) ?? createDefaultControls());

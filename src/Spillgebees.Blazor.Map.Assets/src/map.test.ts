@@ -2497,6 +2497,135 @@ describe("setControlContent", () => {
     // assert
     expect(mockMap.addControl).not.toHaveBeenCalled();
   });
+
+  it("should reuse the existing legend control when only control order changes", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const placeholder = document.createElement("div");
+    const content = document.createElement("div");
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      [
+        {
+          kind: "legend",
+          controlId: "legend-main",
+          enable: true,
+          position: "top-right",
+          order: 500,
+          title: "Legend",
+          collapsible: true,
+          initiallyOpen: true,
+          className: null,
+        },
+      ],
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    window.Spillgebees.Map.mapFunctions.setControlContent(mapElement, "legend-main", "legend", placeholder, content);
+    const map = window.Spillgebees.Map.maps.get(mapElement)!;
+    const registrations = window.Spillgebees.Map.customControlRegistrations.get(map)!;
+    const initialControl = registrations.get("legend-main")?.control;
+
+    // act
+    setControls(mapElement, [
+      {
+        kind: "legend",
+        controlId: "legend-main",
+        enable: true,
+        position: "top-right",
+        order: 700,
+        title: "Legend",
+        collapsible: true,
+        initiallyOpen: true,
+        className: null,
+      },
+    ]);
+    window.Spillgebees.Map.mapFunctions.setControlContent(mapElement, "legend-main", "legend", placeholder, content);
+
+    // assert
+    const updatedControl = registrations.get("legend-main")?.control;
+    expect(initialControl).toBeDefined();
+    expect(updatedControl).toBe(initialControl);
+  });
+
+  it("should keep declaration ordering when content is bound out of order", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const firstPlaceholder = document.createElement("div");
+    const firstContent = document.createElement("div");
+    const secondPlaceholder = document.createElement("div");
+    const secondContent = document.createElement("div");
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      [
+        {
+          kind: "legend",
+          controlId: "legend-first",
+          enable: true,
+          position: "top-right",
+          order: 500,
+          title: "First",
+          collapsible: true,
+          initiallyOpen: true,
+          className: null,
+        },
+        {
+          kind: "legend",
+          controlId: "legend-second",
+          enable: true,
+          position: "top-right",
+          order: 500,
+          title: "Second",
+          collapsible: true,
+          initiallyOpen: true,
+          className: null,
+        },
+      ],
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const map = window.Spillgebees.Map.maps.get(mapElement)!;
+    const registrations = window.Spillgebees.Map.customControlRegistrations.get(map)!;
+    const mockMap = getLatestMockMapInstance()!;
+
+    // act
+    window.Spillgebees.Map.mapFunctions.setControlContent(
+      mapElement,
+      "legend-second",
+      "legend",
+      secondPlaceholder,
+      secondContent,
+    );
+    mockMap.addControl.mockClear();
+    window.Spillgebees.Map.mapFunctions.setControlContent(
+      mapElement,
+      "legend-first",
+      "legend",
+      firstPlaceholder,
+      firstContent,
+    );
+
+    // assert
+    expect(mockMap.addControl.mock.calls.map((call) => call[0])).toEqual([
+      registrations.get("legend-first")?.control,
+      registrations.get("legend-second")?.control,
+    ]);
+  });
 });
 
 function createDefaultMarker(overrides?: Partial<IMarker>): IMarker {
