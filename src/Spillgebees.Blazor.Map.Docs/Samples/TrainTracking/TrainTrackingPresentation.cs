@@ -14,24 +14,11 @@ public static class TrainTrackingPresentation
     public const string DefaultOverlayStyleUrl = "traintracking/style.json";
     public const string CodeSnippet =
         @"<SgbMap MapOptions=""@_mapOptions""
-        Controls=""@_controls""
-        OnMoveEnd=""@HandleMapViewChangedAsync""
-        OnZoomEnd=""@HandleMapViewChangedAsync"">
-    <TrackedDataSource @ref=""_trainSource""
-                       SourceId=""train-source""
-                       Items=""@_trains""
-                       Id=""@_trainId""
-                       Symbol=""@_trainSymbol""
-                       Decorations=""@_trainDecorations""
-                       Cluster=""@_trainClusterOptions""
-                       Interaction=""@_trainInteraction""
-                       Animation=""@(new AnimationOptions(Duration: 2000, Easing: AnimationEasing.EaseInOut))""
-                       Visible=""@_visibility.ShowTrains""
-                       PrimaryIconOpacity=""@_trainIconOpacityExpr""
-                       OnItemClick=""@HandleTrainClick""
-                       OnItemMouseEnter=""@HandleTrainHover""
-                       OnItemMouseLeave=""@HandleTrainLeave"" />
-</SgbMap>
+         Controls=""@_controls""
+         TrackedDataLayers=""@_trackedDataLayers""
+         OnMoveEnd=""@HandleMapViewChangedAsync""
+         OnZoomEnd=""@HandleMapViewChangedAsync"">
+ </SgbMap>
 
 // hover and selection use feature-state, labels stay screen-facing, and supplementary labels stay hidden while clustered";
 

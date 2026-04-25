@@ -12,6 +12,7 @@ using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Expressions;
 using Spillgebees.Blazor.Map.Models.Legends;
+using Spillgebees.Blazor.Map.Models.TrackedData;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 namespace Spillgebees.Blazor.Map.Tests.Samples.TrainTracking;
@@ -70,10 +71,11 @@ public class TrainTrackingExampleTests : BunitContext
     {
         // arrange & act
         var cut = Render<TrainTrackingExample>();
+        var map = cut.FindComponent<SgbMap>().Instance;
+        var trackedLayer = map.TrackedDataLayers.OfType<TrackedDataLayer<TrainSampleState>>().Single();
 
         // assert
-        cut.FindComponents<TrackedDataSource<TrainSampleState>>().Should().HaveCount(1);
-        cut.FindComponents<TrackedDataSource<TrainSampleState>>().Should().HaveCount(1);
+        map.TrackedDataLayers.Should().HaveCount(1);
         cut.FindComponents<GeoJsonSource>()
             .Select(source => source.Instance.Id)
             .Should()
@@ -87,13 +89,12 @@ public class TrainTrackingExampleTests : BunitContext
             .Should()
             .Contain(["train-source-hit-area"]);
 
-        var trackedDataSource = cut.FindComponent<TrackedDataSource<TrainSampleState>>().Instance;
-        trackedDataSource.Cluster.Enabled.Should().BeTrue();
-        trackedDataSource.Cluster.ClickBehavior.Should().Be(TrackedEntityClusterClickBehavior.ZoomToDissolve);
-        trackedDataSource.Cluster.Properties.Should().NotBeNull();
-        trackedDataSource.Cluster.Properties!.Should().ContainKey("internationalPresence");
-        trackedDataSource.Items.Should().NotBeEmpty();
-        trackedDataSource.TryGetEntity("cfl-re11", out _).Should().BeTrue();
+        trackedLayer.Visual.Cluster.Enabled.Should().BeTrue();
+        trackedLayer.Visual.Cluster.ClickBehavior.Should().Be(TrackedEntityClusterClickBehavior.ZoomToDissolve);
+        trackedLayer.Visual.Cluster.Properties.Should().NotBeNull();
+        trackedLayer.Visual.Cluster.Properties!.Should().ContainKey("internationalPresence");
+        trackedLayer.Items.Should().NotBeEmpty();
+        trackedLayer.Items.Any(train => train.Id == "cfl-re11").Should().BeTrue();
         cut.FindComponents<SymbolLayer>()
             .Single(layer => layer.Instance.Id == "train-source-cluster-count")
             .Instance.OnClick.HasDelegate.Should()
@@ -781,8 +782,7 @@ public class TrainTrackingExampleTests : BunitContext
     {
         // arrange
         var cut = Render<TrainTrackingExample>();
-        var trackedDataSource = cut.FindComponent<TrackedDataSource<TrainSampleState>>().Instance;
-        trackedDataSource.TryGetEntity("cfl-re11", out var firstEntity);
+        var firstEntity = ResolveTrackedEntity(cut, "cfl-re11");
         var interaction = CreateTrainInteraction(firstEntity!);
 
         // act
@@ -828,8 +828,7 @@ public class TrainTrackingExampleTests : BunitContext
     {
         // arrange
         var cut = Render<TrainTrackingExample>();
-        var trackedDataSource = cut.FindComponent<TrackedDataSource<TrainSampleState>>().Instance;
-        trackedDataSource.TryGetEntity("cfl-re11", out var trackedEntity);
+        var trackedEntity = ResolveTrackedEntity(cut, "cfl-re11");
         var interaction = CreateTrainInteraction(trackedEntity!);
 
         await InvokePrivateAsync(cut.Instance, "HandleTrainHover", interaction);
@@ -848,9 +847,7 @@ public class TrainTrackingExampleTests : BunitContext
     {
         // arrange
         var cut = Render<TrainTrackingExample>();
-        cut.FindComponent<TrackedDataSource<TrainSampleState>>()
-            .Instance.TryGetEntity("cfl-re11", out var selectedTrainEntity);
-        var selectedTrainBefore = selectedTrainEntity!;
+        var selectedTrainBefore = ResolveTrackedEntity(cut, "cfl-re11");
         var interaction = CreateTrainInteraction(selectedTrainBefore);
 
         await InvokePrivateAsync(cut.Instance, "HandleTrainClick", interaction);
@@ -869,8 +866,7 @@ public class TrainTrackingExampleTests : BunitContext
     {
         // arrange
         var cut = Render<TrainTrackingExample>();
-        var trackedDataSource = cut.FindComponent<TrackedDataSource<TrainSampleState>>().Instance;
-        trackedDataSource.TryGetEntity("cfl-re11", out var firstEntity);
+        var firstEntity = ResolveTrackedEntity(cut, "cfl-re11");
         var interaction = CreateTrainInteraction(firstEntity!);
 
         await InvokePrivateAsync(cut.Instance, "HandleTrainClick", interaction);
@@ -888,11 +884,11 @@ public class TrainTrackingExampleTests : BunitContext
     {
         // arrange & act
         var cut = Render<TrainTrackingExample>();
-        var trackedDataSource = cut.FindComponent<TrackedDataSource<TrainSampleState>>().Instance;
+        var trackedLayer = ResolveTrackedLayer(cut);
 
         // assert
-        trackedDataSource.Interaction.IsHovered.Should().NotBeNull();
-        trackedDataSource.Interaction.IsSelected.Should().NotBeNull();
+        trackedLayer.Behavior.Interaction.IsHovered.Should().NotBeNull();
+        trackedLayer.Behavior.Interaction.IsSelected.Should().NotBeNull();
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -900,7 +896,7 @@ public class TrainTrackingExampleTests : BunitContext
     {
         // arrange
         var cut = Render<TrainTrackingExample>();
-        cut.FindComponent<TrackedDataSource<TrainSampleState>>().Instance.TryGetEntity("cfl-re11", out var lastEntity);
+        var lastEntity = ResolveTrackedEntity(cut, "cfl-re11");
         var interaction = CreateTrainInteraction(lastEntity!);
         await InvokePrivateAsync(cut.Instance, "HandleTrainClick", interaction);
 
@@ -916,6 +912,39 @@ public class TrainTrackingExampleTests : BunitContext
         TrackedEntity<TrainSampleState> entity,
         string? decorationId = null
     ) => new(entity, new LayerFeatureEventArgs("train-source-symbols", entity.Position, null), decorationId);
+
+    private static TrackedDataLayer<TrainSampleState> ResolveTrackedLayer(IRenderedComponent<TrainTrackingExample> cut)
+    {
+        // arrange
+        var map = cut.FindComponent<SgbMap>().Instance;
+
+        // act
+        var trackedLayer = map.TrackedDataLayers.OfType<TrackedDataLayer<TrainSampleState>>().Single();
+
+        // assert
+        return trackedLayer;
+    }
+
+    private static TrackedEntity<TrainSampleState> ResolveTrackedEntity(
+        IRenderedComponent<TrainTrackingExample> cut,
+        string entityId
+    )
+    {
+        // arrange
+        var trackedLayer = ResolveTrackedLayer(cut);
+
+        // act
+        var entities = TrackedDataEntityMaterializer.Materialize(
+            trackedLayer.Items,
+            trackedLayer.Item,
+            trackedLayer.Visual.Symbol,
+            trackedLayer.Visual.Decorations
+        );
+        var entity = entities.Single(candidate => candidate.Id == entityId);
+
+        // assert
+        return entity;
+    }
 
     private static async Task InvokePrivateAsync(object instance, string methodName, params object[]? arguments)
     {

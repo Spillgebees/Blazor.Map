@@ -161,6 +161,13 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
     private int _hoverGeneration;
     private int _popupOperationGeneration;
     private TrackedPopupState? _activePopup;
+    private TrackedDataCallbacks<TItem> _callbacks = new();
+
+    [Parameter]
+    public TrackedDataLayer<TItem>? Layer { get; set; }
+
+    [CascadingParameter(Name = TrackedDataSourceGuard.CascadeName)]
+    internal object? InternalGuard { get; set; }
 
     [Parameter, EditorRequired]
     public string SourceId { get; set; } = string.Empty;
@@ -290,6 +297,30 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
 
     protected override void OnParametersSet()
     {
+        if (!ReferenceEquals(InternalGuard, TrackedDataSourceGuard.Token) || Layer is null)
+        {
+            throw new InvalidOperationException(
+                "TrackedDataSource direct usage is no longer supported. Configure tracked layers via SgbMap.TrackedDataLayers using TrackedDataLayer<TItem>."
+            );
+        }
+
+        SourceId = Layer.Id;
+        Items = Layer.Items;
+        Id = Layer.Item;
+        Symbol = Layer.Visual.Symbol;
+        Decorations = Layer.Visual.Decorations;
+        Cluster = Layer.Visual.Cluster;
+        Interaction = Layer.Behavior.Interaction;
+        Animation = Layer.Visual.Animation;
+        Visible = Layer.Visual.Visible;
+        PrimaryIconOpacity = Layer.Visual.PrimaryIconOpacity;
+        MaxZoom = Layer.Visual.MaxZoom;
+        Attribution = Layer.Visual.Attribution;
+        Stack = Layer.Visual.Stack;
+        BeforeStack = Layer.Visual.BeforeStack;
+        AfterStack = Layer.Visual.AfterStack;
+        _callbacks = Layer.Callbacks;
+
         if (string.IsNullOrWhiteSpace(SourceId))
         {
             throw new InvalidOperationException("Tracked data source ID must not be empty.");
@@ -465,6 +496,11 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
         }
 
         await OnItemClick.InvokeAsync(interaction);
+        if (_callbacks.OnItemClick is not null)
+        {
+            await _callbacks.OnItemClick(interaction);
+        }
+
         await HandlePopupOnClickAsync(interaction);
     }
 
@@ -478,7 +514,11 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
             return;
         }
 
-        await OnItemMouseEnter.InvokeAsync(interaction);
+        if (_callbacks.OnItemMouseEnter is not null)
+        {
+            await _callbacks.OnItemMouseEnter(interaction);
+        }
+
         await HandlePopupOnMouseEnterAsync(interaction);
     }
 
@@ -499,7 +539,11 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
                 && hoverGeneration == _hoverGeneration
             )
             {
-                if (OnItemMouseLeave.HasDelegate)
+                if (_callbacks.OnItemMouseLeave is not null)
+                {
+                    await _callbacks.OnItemMouseLeave();
+                }
+                else if (OnItemMouseLeave.HasDelegate)
                 {
                     await OnItemMouseLeave.InvokeAsync();
                 }
@@ -664,6 +708,11 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
 
     protected virtual Task OnBeforeShowPopupAsync()
     {
+        if (_callbacks.BeforeShowPopupAsync is not null)
+        {
+            return _callbacks.BeforeShowPopupAsync();
+        }
+
         return Task.CompletedTask;
     }
 

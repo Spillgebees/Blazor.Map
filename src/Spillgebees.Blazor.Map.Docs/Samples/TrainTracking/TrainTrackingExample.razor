@@ -260,6 +260,7 @@
             MapOptions="@_mapOptions"
             Controls="@BuildControls()"
             Images="@_images"
+            TrackedDataLayers="@_trackedDataLayers"
             Theme="@GlobalTheme"
             Height="600px"
             Width="100%">
@@ -272,22 +273,6 @@
                             Base="@(Expr.Get("render_min_height"))"
                             MinZoom="14"
                             Visible="@_visibility.ShowBuildings" />
-
-        <TrackedDataSource TItem="TrainSampleState"
-                           @ref="_trainSource"
-                           SourceId="train-source"
-                           Items="@_trains"
-                           Id="@_trainId"
-                           Symbol="@_trainSymbol"
-                           Decorations="@_trainDecorations"
-                           Cluster="@_trainClusterOptions"
-                           Interaction="@_trainInteraction"
-                           Animation="@_trainAnimation"
-                           Visible="@_visibility.ShowTrains"
-                           PrimaryIconOpacity="@_trainIconOpacityExpr"
-                           OnItemClick="@HandleTrainClick"
-                           OnItemMouseEnter="@HandleTrainHover"
-                           OnItemMouseLeave="@HandleTrainLeave" />
 
     </SgbMap>
 </div>

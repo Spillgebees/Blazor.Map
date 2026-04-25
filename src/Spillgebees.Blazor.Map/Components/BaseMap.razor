@@ -1,5 +1,6 @@
 @inherits ComponentBase
 @using Spillgebees.Blazor.Map.Models.Controls
+@using Spillgebees.Blazor.Map.Components.Layers
 
 @code {
     protected virtual RenderFragment Render
@@ -9,10 +10,16 @@
                      style="@InternalContainerStyle"
                      @ref="@MapReference">
                 </div>
-                @foreach (var legendControl in Controls.OfType<LegendMapControl>())
-                {
-                    <MapLegendControlHost Control="@legendControl" />
-                }
-                @ChildContent
-            </CascadingValue>;
+                 @foreach (var legendControl in Controls.OfType<LegendMapControl>())
+                 {
+                     <MapLegendControlHost Control="@legendControl" />
+                 }
+                 <CascadingValue Name="@TrackedDataSourceGuard.CascadeName" Value="@TrackedDataSourceGuard.Token" IsFixed="true">
+                     @foreach (var trackedDataLayer in TrackedDataLayers)
+                     {
+                         @RenderTrackedDataLayer(trackedDataLayer)
+                     }
+                 </CascadingValue>
+                 @ChildContent
+             </CascadingValue>;
 }

@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Configuration;
 using Spillgebees.Blazor.Map.Components;
-using Spillgebees.Blazor.Map.Components.Layers;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Events;
@@ -16,7 +15,6 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private const int SelectionDetailsMinZoom = 13;
 
     private SgbMap _map = null!;
-    private TrackedDataSource<TrainSampleState> _trainSource = null!;
     private PeriodicTimer? _timer;
     private CancellationTokenSource? _cts;
     private Task? _simulationTask;
@@ -104,6 +102,8 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private TrackedDataInteractionOptions<TrainSampleState> _trainInteraction =>
         new(IsHovered: train => train.Id == _hoveredTrainId, IsSelected: train => train.Id == _selectedTrainId);
 
+    private IReadOnlyList<ITrackedDataLayer> _trackedDataLayers = [];
+
     public TrainTrackingExample()
     {
         _images = BuildTrainImages(TrainSampleSimulation.CreateStates());
@@ -116,6 +116,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
             Configuration[TrainTrackingPresentation.ComposedGlyphsUrlConfigurationKey]
         );
         _trains.AddRange(TrainSampleSimulation.CreateStates());
+        RebuildTrackedLayers();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -151,6 +152,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
                     TrainSampleSimulation.Advance(train);
                 }
 
+                RebuildTrackedLayers();
                 await InvokeAsync(StateHasChanged);
                 await InvokeAsync(RefreshMapFocusForSelectionAsync);
             }
@@ -183,6 +185,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
         }
 
         _selectedTrainId = train.Id;
+        RebuildTrackedLayers();
         await InvokeAsync(StateHasChanged);
 
         var targetZoom = await GetSelectionFocusZoomAsync();
@@ -203,6 +206,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
         }
 
         _hoveredTrainId = train.Id;
+        RebuildTrackedLayers();
         return InvokeAsync(StateHasChanged);
     }
 
@@ -214,6 +218,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
         }
 
         _hoveredTrainId = null;
+        RebuildTrackedLayers();
         return InvokeAsync(StateHasChanged);
     }
 
@@ -232,6 +237,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
             _hoveredTrainId = null;
         }
 
+        RebuildTrackedLayers();
         await InvokeAsync(StateHasChanged);
         await _map.ClosePopupAsync();
     }
@@ -267,8 +273,41 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private Task HandleLegendItemVisibilityChangedAsync(MapLegendVisibilityChangedEventArgs args)
     {
         _visibility.SetOverlayGroupVisibility(args.Item.Id, args.Selected);
+        RebuildTrackedLayers();
 
         return Task.CompletedTask;
+    }
+
+    private void RebuildTrackedLayers()
+    {
+        _trackedDataLayers =
+        [
+            new TrackedDataLayer<TrainSampleState>(
+                Id: "train-source",
+                Items: _trains.ToArray(),
+                Item: _trainId,
+                Visual: new TrackedDataVisualOptions<TrainSampleState>(
+                    Symbol: _trainSymbol,
+                    Decorations: _trainDecorations,
+                    Cluster: _trainClusterOptions,
+                    Animation: _trainAnimation,
+                    Visible: _visibility.ShowTrains,
+                    PrimaryIconOpacity: _trainIconOpacityExpr,
+                    MaxZoom: 18,
+                    Attribution: null,
+                    Stack: null,
+                    BeforeStack: null,
+                    AfterStack: null
+                ),
+                Behavior: new TrackedDataBehaviorOptions<TrainSampleState>(_trainInteraction),
+                Callbacks: new TrackedDataCallbacks<TrainSampleState>(
+                    OnItemClick: HandleTrainClick,
+                    OnItemMouseEnter: HandleTrainHover,
+                    OnItemMouseLeave: HandleTrainLeave,
+                    BeforeShowPopupAsync: null
+                )
+            ),
+        ];
     }
 
     public async ValueTask DisposeAsync()

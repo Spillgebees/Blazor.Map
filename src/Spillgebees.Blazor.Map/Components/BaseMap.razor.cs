@@ -2,13 +2,16 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using BlazorComponentUtilities;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
+using Spillgebees.Blazor.Map.Components.Layers;
 using Spillgebees.Blazor.Map.Interop;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Layers;
+using Spillgebees.Blazor.Map.Models.TrackedData;
 using Spillgebees.Blazor.Map.Runtime.Scene;
 using Spillgebees.Blazor.Map.Utilities;
 
@@ -83,6 +86,12 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// </summary>
     [Parameter]
     public List<MapImageDefinition> Images { get; set; } = [];
+
+    /// <summary>
+    /// Map-level tracked data layer definitions.
+    /// </summary>
+    [Parameter]
+    public IReadOnlyList<ITrackedDataLayer> TrackedDataLayers { get; set; } = [];
 
     /// <summary>
     /// The width of the map. If not set, the map will take the full width of its container.
@@ -748,4 +757,25 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
         return [.. desiredByName.Values];
     }
+
+    private static RenderFragment RenderTrackedDataLayer(ITrackedDataLayer trackedDataLayer) =>
+        trackedDataLayer switch
+        {
+            TrackedDataLayer<object> objectLayer => builder =>
+            {
+                builder.OpenComponent<TrackedDataSource<object>>(0);
+                builder.AddAttribute(1, nameof(TrackedDataSource<object>.Layer), objectLayer);
+                builder.CloseComponent();
+            },
+            _ => BuildGenericTrackedDataSource(trackedDataLayer),
+        };
+
+    private static RenderFragment BuildGenericTrackedDataSource(ITrackedDataLayer trackedDataLayer) =>
+        builder =>
+        {
+            var componentType = typeof(TrackedDataSource<>).MakeGenericType(trackedDataLayer.ItemType);
+            builder.OpenComponent(0, componentType);
+            builder.AddAttribute(1, "Layer", trackedDataLayer);
+            builder.CloseComponent();
+        };
 }
