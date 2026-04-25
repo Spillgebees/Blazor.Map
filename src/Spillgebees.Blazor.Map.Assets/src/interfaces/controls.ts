@@ -1,53 +1,59 @@
-export interface IMapControlOptions {
-  navigation: INavigationControlOptions | null;
-  scale: IScaleControlOptions | null;
-  fullscreen: IFullscreenControlOptions | null;
-  geolocate: IGeolocateControlOptions | null;
-  terrain: ITerrainControlOptions | null;
-  center: ICenterControlOptions | null;
-}
-
-export interface INavigationControlOptions {
+export interface IMapControlBase {
+  kind: string;
+  controlId: string;
   enable: boolean;
   position: ControlPosition;
+  order: number;
+}
+
+export interface INavigationMapControl extends IMapControlBase {
+  kind: "navigation";
   showCompass: boolean;
   showZoom: boolean;
 }
 
-export interface IScaleControlOptions {
-  enable: boolean;
-  position: ControlPosition;
+export interface IScaleMapControl extends IMapControlBase {
+  kind: "scale";
   unit: "metric" | "imperial" | "nautical";
 }
 
-export interface IFullscreenControlOptions {
-  enable: boolean;
-  position: ControlPosition;
+export interface IFullscreenMapControl extends IMapControlBase {
+  kind: "fullscreen";
 }
 
-export interface IGeolocateControlOptions {
-  enable: boolean;
-  position: ControlPosition;
+export interface IGeolocateMapControl extends IMapControlBase {
+  kind: "geolocate";
   trackUser: boolean;
 }
 
-export interface ITerrainControlOptions {
-  enable: boolean;
-  position: ControlPosition;
+export interface ITerrainMapControl extends IMapControlBase {
+  kind: "terrain";
 }
 
-export interface ICenterControlOptions {
-  enable: boolean;
-  position: ControlPosition;
+export interface ICenterMapControl extends IMapControlBase {
+  kind: "center";
 }
 
-export interface ILegendControlOptions {
-  enable: boolean;
-  position: ControlPosition;
+export interface ILegendMapControl extends IMapControlBase {
+  kind: "legend";
   title: string | null;
   collapsible: boolean;
   initiallyOpen: boolean;
   className: string | null;
 }
+
+export interface IContentMapControl extends IMapControlBase {
+  kind: "content";
+}
+
+export type IMapControl =
+  | INavigationMapControl
+  | IScaleMapControl
+  | IFullscreenMapControl
+  | IGeolocateMapControl
+  | ITerrainMapControl
+  | ICenterMapControl
+  | ILegendMapControl
+  | IContentMapControl;
 
 export type ControlPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";

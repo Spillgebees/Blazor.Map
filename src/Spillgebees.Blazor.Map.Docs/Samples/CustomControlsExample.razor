@@ -1,0 +1,117 @@
+@using Spillgebees.Blazor.Map.Components
+@using Spillgebees.Blazor.Map.Components.Layers
+@using Spillgebees.Blazor.Map.Models
+@using Spillgebees.Blazor.Map.Models.Controls
+@using Spillgebees.Blazor.Map.Models.Legends
+
+<SgbMap MapOptions="@_mapOptions"
+        Controls="@_controls"
+        Height="450px"
+        Width="100%">
+    <MapLegend ControlId="network-legend"
+               Definition="@_legendDefinition" />
+
+    <GeoJsonSource Id="network"
+                   Data="@_networkData">
+        <LineLayer Id="metro-line"
+                   Color="@("#2563eb")"
+                   Width="4" />
+        <CircleLayer Id="station-layer"
+                     Color="@("#f97316")"
+                     Radius="5"
+                     StrokeColor="@("#ffffff")"
+                     StrokeWidth="2" />
+    </GeoJsonSource>
+</SgbMap>
+
+@code {
+    private readonly MapOptions _mapOptions = new(
+        Style: MapStyle.OpenFreeMap.Liberty,
+        Center: new Coordinate(49.6117, 6.1319),
+        Zoom: 12
+    );
+
+    private readonly IReadOnlyList<MapControl> _controls =
+    [
+        new NavigationMapControl(Order: 100),
+        new FullscreenMapControl(Order: 200),
+        new LegendMapControl("network-legend", Order: 300, Title: "Network layers")
+    ];
+
+    private readonly MapLegendDefinition _legendDefinition =
+        new(
+            [
+                new MapLegendSectionDefinition(
+                    "Transit",
+                    [
+                        new MapLegendItemDefinition(
+                            Id: "metro-lines",
+                            Label: "Metro lines",
+                            Targets:
+                            [
+                                new MapLegendTargetDefinition(
+                                    styleId: "sgb-liberty",
+                                    layerIds: ["metro-line"])
+                            ],
+                            IsVisibleByDefault: true,
+                            IsToggleable: true
+                        ),
+                        new MapLegendItemDefinition(
+                            Id: "stations",
+                            Label: "Stations",
+                            Targets:
+                            [
+                                new MapLegendTargetDefinition(
+                                    styleId: "sgb-liberty",
+                                    layerIds: ["station-layer"])
+                            ],
+                            IsVisibleByDefault: true,
+                            IsToggleable: true
+                        )
+                    ])
+            ]
+        );
+
+    private static readonly object _networkData = new
+    {
+        type = "FeatureCollection",
+        features = new object[]
+        {
+            new
+            {
+                type = "Feature",
+                properties = new { name = "Line A" },
+                geometry = new
+                {
+                    type = "LineString",
+                    coordinates = new[]
+                    {
+                        new[] { 6.0950, 49.6030 },
+                        new[] { 6.1319, 49.6117 },
+                        new[] { 6.1600, 49.6200 },
+                    },
+                },
+            },
+            new
+            {
+                type = "Feature",
+                properties = new { name = "Central Station" },
+                geometry = new
+                {
+                    type = "Point",
+                    coordinates = new[] { 6.1319, 49.6117 },
+                },
+            },
+            new
+            {
+                type = "Feature",
+                properties = new { name = "North Station" },
+                geometry = new
+                {
+                    type = "Point",
+                    coordinates = new[] { 6.1600, 49.6200 },
+                },
+            },
+        },
+    };
+}

@@ -11,15 +11,22 @@
 <p>The main map component. Renders an interactive MapLibre GL JS map with configurable styles, controls, markers, shapes, and popups.</p>
 
 <h2 id="basic_usage">// basic_usage</h2>
-<p>Provide a center coordinate and zoom level. The default style is OpenFreeMap Liberty, a clean vector style that requires no API key. Pass <code>MapControlOptions.Default</code> to add navigation controls. <code>FitBoundsOptions</code> auto-fits the viewport to a set of feature IDs.</p>
+<p>Provide a center coordinate and zoom level. The default style is OpenFreeMap Liberty, a clean vector style that requires no API key. Pass <code>Controls</code> entries such as <code>new NavigationMapControl()</code> to render map controls. <code>FitBoundsOptions</code> auto-fits the viewport to a set of feature IDs.</p>
 <ExampleView TComponent="BasicMapExample">
     <BasicMapExample />
 </ExampleView>
 
 <h2 id="fit_bounds_padding">// fit_bounds_padding</h2>
-<p><code>FitBoundsOptions</code> fits the map viewport to a set of features. Use <code>Padding</code> for uniform spacing on all sides, or <code>TopLeftPadding</code> and <code>BottomRightPadding</code> for asymmetric padding when UI elements like sidebars overlap the map. The <code>CenterControlOptions</code> button automatically reads the current <code>MapOptions</code> to re-center.</p>
+<p><code>FitBoundsOptions</code> fits the map viewport to a set of features. Use <code>Padding</code> for uniform spacing on all sides, or <code>TopLeftPadding</code> and <code>BottomRightPadding</code> for asymmetric padding when UI elements like sidebars overlap the map. The <code>CenterMapControl</code> button automatically reads the current <code>MapOptions</code> to re-center.</p>
 <ExampleView TComponent="FitBoundsPaddingExample">
     <FitBoundsPaddingExample />
+</ExampleView>
+
+<h2 id="custom_controls">// custom_controls</h2>
+<p>Custom control components (like <code>MapLegend</code>) bind to a declarative control shell in <code>SgbMap.Controls</code> by matching <code>ControlId</code>. The shell controls map position and order, and the child component only provides content and behavior.</p>
+<p>Ordering is deterministic per map corner: controls are sorted by <code>Order</code> (ascending), then declaration order in <code>Controls</code>, then <code>ControlId</code> as a stable tie-breaker. Keep each <code>ControlId</code> unique and pass the same id to the matching child control component.</p>
+<ExampleView TComponent="CustomControlsExample">
+    <CustomControlsExample />
 </ExampleView>
 
 <h2 id="styles">// styles</h2>

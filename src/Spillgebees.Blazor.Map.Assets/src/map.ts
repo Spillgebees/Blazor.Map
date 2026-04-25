@@ -21,11 +21,19 @@ import {
   updateCircles,
   updatePolylines,
 } from "./features/shapes";
-import type { ILegendControlOptions, IMapControlOptions } from "./interfaces/controls";
+import type { ControlPosition, ILegendMapControl, IMapControl } from "./interfaces/controls";
 import type { ICircle, IMarker, IPolyline } from "./interfaces/features";
-import type { ICoordinate, IFitBoundsOptions, IMapOptions, IMapStyle, ITileOverlay } from "./interfaces/map";
+import type {
+  ICoordinate,
+  IFitBoundsOptions,
+  IMapImageDefinition,
+  IMapOptions,
+  IMapStyle,
+  ITileOverlay,
+} from "./interfaces/map";
 import type {
   ComposedStyleLayerRegistration,
+  CustomControlRegistration,
   LayerEventSubscription,
   OverlayStyleRequestOptions,
   RegisteredMapImage,
@@ -58,7 +66,21 @@ import {
 import { applyOverlayStyles, validateComposedGlyphs } from "./styles/composition";
 import type { FeatureStorage } from "./types/feature-storage";
 
-export const PROTOCOL_VERSION = 9;
+export const PROTOCOL_VERSION = 12;
+
+const LEGEND_CONTROL_KIND = "legend";
+
+interface OrderedControlRegistration {
+  controlId: string;
+  control: IControl;
+  position: ControlPosition;
+  order: number;
+  declarationOrder: number;
+}
+
+function createDefaultControls(): IMapControl[] {
+  return [];
+}
 
 const DEFAULT_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 
@@ -195,13 +217,14 @@ function initializeNamespace(): void {
       syncFeatures,
       setOverlays,
       setControls,
-      setLegendControl,
-      removeLegendControl,
+      setControlContent,
+      removeControlContent,
       setMapOptions,
       setTheme,
       fitBounds,
       flyTo,
       resize,
+      setImages,
       disposeMap,
       applySceneMutations,
       addMapSource,
@@ -236,12 +259,11 @@ function initializeNamespace(): void {
     features: new Map<MapLibreMap, FeatureStorage>(),
     overlays: new Map<MapLibreMap, Map<string, unknown>>(),
     controls: new Map<MapLibreMap, Set<IControl>>(),
-    legendControls: new Map<MapLibreMap, IControl>(),
-    legendControlOptions: new Map<MapLibreMap, ILegendControlOptions | null>(),
+    customControlRegistrations: new Map<MapLibreMap, Map<string, CustomControlRegistration>>(),
     styles: new Map<MapLibreMap, string | StyleSpecification>(),
     mapOptions: new Map<MapLibreMap, IMapOptions>(),
     dotNetHelpers: new Map<MapLibreMap, DotNet.DotNetObject>(),
-    controlOptions: new Map<MapLibreMap, IMapControlOptions>(),
+    controlsPayload: new Map<MapLibreMap, IMapControl[]>(),
     sourceSpecs: new Map<MapLibreMap, Map<string, RegisteredMapSource>>(),
     layerSpecs: new Map<MapLibreMap, Map<string, RegisteredMapLayer>>(),
     imageRegistrations: new Map<MapLibreMap, Map<string, RegisteredMapImage>>(),
@@ -252,6 +274,7 @@ function initializeNamespace(): void {
     composedStyleLayerIds: new Map<MapLibreMap, Map<string, ComposedStyleLayerRegistration>>(),
     pendingStyleReloads: new WeakSet<MapLibreMap>(),
     requestContexts: new Map<MapLibreMap, { mapOptions: IMapOptions; overlays: ITileOverlay[] }>(),
+    imageSyncVersion: new Map<MapLibreMap, number>(),
   };
 }
 
@@ -322,22 +345,235 @@ function getBaseStyleId(mapOptions: IMapOptions): string | null {
   return stylesList[0]?.id ?? null;
 }
 
-function replayRegisteredImages(mapElement: HTMLElement): void {
+function replayRegisteredImages(mapElement: HTMLElement): void | Promise<void> {
   const map = window.Spillgebees.Map.maps.get(mapElement);
   if (!map) {
     return;
   }
 
-  const images = getRegisteredImageStore(map);
-  for (const registration of images.values()) {
-    void addImage(
-      mapElement,
-      registration.name,
-      registration.url,
-      registration.width,
-      registration.height,
-      registration.pixelRatio,
-    );
+  const images = Array.from(getRegisteredImageStore(map).values());
+  if (images.length === 0) {
+    return;
+  }
+
+  return setImages(mapElement, images);
+}
+
+function getCustomControlStore(map: MapLibreMap): Map<string, CustomControlRegistration> {
+  const existing = window.Spillgebees.Map.customControlRegistrations.get(map);
+  if (existing) {
+    return existing;
+  }
+
+  const created = new Map<string, CustomControlRegistration>();
+  window.Spillgebees.Map.customControlRegistrations.set(map, created);
+  return created;
+}
+
+function getOrderedRegistrations(map: MapLibreMap, controlsPayload: IMapControl[]): OrderedControlRegistration[] {
+  const registrations: OrderedControlRegistration[] = [];
+  for (const [declarationOrder, controlDefinition] of controlsPayload.entries()) {
+    if (!controlDefinition.enable) {
+      continue;
+    }
+
+    const customRegistration = getCustomControlStore(map).get(controlDefinition.controlId);
+    let control = customRegistration?.control;
+    if (!control) {
+      control = createControlFromDefinition(controlDefinition);
+    }
+
+    if (!control) {
+      continue;
+    }
+
+    registrations.push({
+      controlId: controlDefinition.controlId,
+      control,
+      position: controlDefinition.position,
+      order: controlDefinition.order,
+      declarationOrder,
+    });
+  }
+
+  registrations.sort((left, right) => {
+    if (left.position !== right.position) {
+      // cross-position ordering is irrelevant; stable sort preserves declaration order across buckets
+      return 0;
+    }
+
+    if (left.order !== right.order) {
+      return left.order - right.order;
+    }
+
+    if (left.declarationOrder !== right.declarationOrder) {
+      return left.declarationOrder - right.declarationOrder;
+    }
+
+    return left.controlId.localeCompare(right.controlId);
+  });
+
+  return registrations;
+}
+
+function createControlFromDefinition(control: IMapControl): IControl | null {
+  switch (control.kind) {
+    case "navigation":
+      return new NavigationControl({
+        showCompass: control.showCompass,
+        showZoom: control.showZoom,
+      });
+    case "scale":
+      return new ScaleControl({
+        unit: control.unit,
+      });
+    case "fullscreen":
+      return new FullscreenControl();
+    case "geolocate":
+      return new GeolocateControl({
+        trackUserLocation: control.trackUser,
+      });
+    case "terrain":
+      return new TerrainControl();
+    case "center":
+      return new CenterControl();
+    case "legend":
+    case "content":
+      return null;
+    default:
+      return null;
+  }
+}
+
+function ensureUniqueControlIds(controlsPayload: IMapControl[]): void {
+  const seen = new Set<string>();
+  for (const control of controlsPayload) {
+    if (!control.controlId || control.controlId.trim().length === 0) {
+      throw new Error("Control IDs must be non-empty.");
+    }
+
+    if (seen.has(control.controlId)) {
+      throw new Error(`Control IDs must be unique. Duplicate ID: '${control.controlId}'.`);
+    }
+
+    seen.add(control.controlId);
+  }
+}
+
+function recomposeControls(mapElement: HTMLElement, controlsPayload: IMapControl[]): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return;
+  }
+
+  ensureUniqueControlIds(controlsPayload);
+  window.Spillgebees.Map.controlsPayload.set(map, structuredClone(controlsPayload));
+
+  const existingControls = window.Spillgebees.Map.controls.get(map);
+  if (existingControls) {
+    for (const control of existingControls) {
+      map.removeControl(control);
+    }
+    existingControls.clear();
+  }
+
+  const controls = window.Spillgebees.Map.controls.get(map) ?? new Set<IControl>();
+  for (const registration of getOrderedRegistrations(map, controlsPayload)) {
+    map.addControl(registration.control, registration.position);
+    controls.add(registration.control);
+  }
+
+  window.Spillgebees.Map.controls.set(map, controls);
+}
+
+function hasImageChanged(previous: RegisteredMapImage | undefined, next: IMapImageDefinition): boolean {
+  if (!previous) {
+    return true;
+  }
+
+  return (
+    previous.url !== next.url ||
+    previous.width !== next.width ||
+    previous.height !== next.height ||
+    previous.pixelRatio !== next.pixelRatio ||
+    previous.sdf !== next.sdf
+  );
+}
+
+async function addImageRegistration(
+  mapElement: HTMLElement,
+  definition: IMapImageDefinition,
+  shouldAbort: () => boolean,
+): Promise<void> {
+  await addImage(
+    mapElement,
+    definition.name,
+    definition.url,
+    definition.width,
+    definition.height,
+    definition.pixelRatio,
+    definition.sdf,
+    shouldAbort,
+  );
+}
+
+export async function setImages(mapElement: HTMLElement, images: IMapImageDefinition[]): Promise<void> {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return;
+  }
+
+  const currentVersion = (window.Spillgebees.Map.imageSyncVersion.get(map) ?? 0) + 1;
+  window.Spillgebees.Map.imageSyncVersion.set(map, currentVersion);
+
+  const imageStore = getRegisteredImageStore(map);
+  const nextByName = new Map<string, IMapImageDefinition>();
+  for (const image of images) {
+    nextByName.set(image.name, image);
+  }
+
+  for (const existingName of Array.from(imageStore.keys())) {
+    if (!nextByName.has(existingName)) {
+      if (map.hasImage(existingName)) {
+        map.removeImage(existingName);
+      }
+
+      imageStore.delete(existingName);
+    }
+  }
+
+  for (const image of images) {
+    const previous = imageStore.get(image.name);
+    const changed = hasImageChanged(previous, image);
+    const missingAtRuntime = !map.hasImage(image.name);
+
+    if (changed && !missingAtRuntime) {
+      map.removeImage(image.name);
+    }
+
+    if (changed || missingAtRuntime) {
+      await addImageRegistration(mapElement, image, () => {
+        const latestVersion = window.Spillgebees.Map.imageSyncVersion.get(map);
+        return latestVersion !== currentVersion;
+      });
+    }
+
+    const latestVersion = window.Spillgebees.Map.imageSyncVersion.get(map);
+    if (latestVersion !== currentVersion) {
+      imageStore.delete(image.name);
+      return;
+    }
+
+    if (changed || missingAtRuntime) {
+      imageStore.set(image.name, {
+        name: image.name,
+        url: image.url,
+        width: image.width,
+        height: image.height,
+        pixelRatio: image.pixelRatio,
+        sdf: image.sdf,
+      });
+    }
   }
 }
 
@@ -372,9 +608,9 @@ function registerStyleReloadHandlers(mapElement: HTMLElement, map: MapLibreMap):
       }
     }
 
-    const controlOptions = window.Spillgebees.Map.controlOptions.get(map);
-    if (controlOptions) {
-      setControls(mapElement, controlOptions);
+    const controlsPayload = window.Spillgebees.Map.controlsPayload.get(map);
+    if (controlsPayload) {
+      setControls(mapElement, controlsPayload);
     }
 
     const overlays = Array.from((window.Spillgebees.Map.overlays.get(map) ?? new Map()).values()) as ITileOverlay[];
@@ -504,7 +740,7 @@ export function createMap(
   callbackName: string,
   mapElement: HTMLElement,
   mapOptions: IMapOptions,
-  controlOptions: IMapControlOptions,
+  controlsPayload: IMapControl[],
   theme: string,
   markers: IMarker[],
   circles: ICircle[],
@@ -568,8 +804,8 @@ export function createMap(
 
   // Initialize control storage
   window.Spillgebees.Map.controls.set(map, new Set());
-  window.Spillgebees.Map.controlOptions.set(map, controlOptions);
-  window.Spillgebees.Map.legendControlOptions.set(map, null);
+  window.Spillgebees.Map.controlsPayload.set(map, structuredClone(controlsPayload));
+  window.Spillgebees.Map.customControlRegistrations.set(map, new Map());
   window.Spillgebees.Map.mapOptions.set(map, mapOptions);
   window.Spillgebees.Map.requestContexts.set(map, {
     mapOptions: structuredClone(mapOptions),
@@ -585,6 +821,7 @@ export function createMap(
   window.Spillgebees.Map.overlayStyleUrls.set(map, [...overlayStyleUrls]);
   window.Spillgebees.Map.overlayStyleRequests.set(map, structuredClone(overlayStyles));
   window.Spillgebees.Map.composedStyleLayerIds.set(map, new Map());
+  window.Spillgebees.Map.imageSyncVersion.set(map, 0);
 
   // Track the current style for diffing in setMapOptions
   window.Spillgebees.Map.styles.set(map, baseStyle);
@@ -604,7 +841,7 @@ export function createMap(
     }
 
     // Apply controls
-    setControls(mapElement, controlOptions);
+    setControls(mapElement, controlsPayload);
 
     // Set up shape layers (circles + polylines) — needed for popup event handlers
     ensureShapeLayers(map);
@@ -691,9 +928,8 @@ export function disposeMap(mapElement: HTMLElement): void {
 
   // Clean up control storage
   window.Spillgebees.Map.controls.delete(map);
-  window.Spillgebees.Map.legendControls.delete(map);
-  window.Spillgebees.Map.legendControlOptions.delete(map);
-  window.Spillgebees.Map.controlOptions.delete(map);
+  window.Spillgebees.Map.customControlRegistrations.delete(map);
+  window.Spillgebees.Map.controlsPayload.delete(map);
 
   // Clean up style storage
   window.Spillgebees.Map.styles.delete(map);
@@ -709,6 +945,7 @@ export function disposeMap(mapElement: HTMLElement): void {
   window.Spillgebees.Map.overlayStyleUrls.delete(map);
   window.Spillgebees.Map.overlayStyleRequests.delete(map);
   window.Spillgebees.Map.composedStyleLayerIds.delete(map);
+  window.Spillgebees.Map.imageSyncVersion.delete(map);
 
   // Clean up dotNetHelper storage
   window.Spillgebees.Map.dotNetHelpers.delete(map);
@@ -933,139 +1170,118 @@ export function setOverlays(mapElement: HTMLElement, overlays: ITileOverlay[]): 
   window.Spillgebees.Map.overlays.set(map, existingOverlays);
 }
 
-export function setControls(mapElement: HTMLElement, controlOptions: IMapControlOptions): void {
+export function setControls(mapElement: HTMLElement, controlsPayload: IMapControl[]): void {
   const map = window.Spillgebees.Map.maps.get(mapElement);
   if (!map) {
     return;
   }
 
-  window.Spillgebees.Map.controlOptions.set(map, structuredClone(controlOptions));
-
-  // Remove all existing controls
-  const existingControls = window.Spillgebees.Map.controls.get(map);
-  if (existingControls) {
-    for (const control of existingControls) {
-      map.removeControl(control);
-    }
-    existingControls.clear();
-  }
-
-  const controls = window.Spillgebees.Map.controls.get(map) ?? new Set<IControl>();
-
-  // Navigation control (zoom + compass)
-  if (controlOptions.navigation?.enable) {
-    const nav = new NavigationControl({
-      showCompass: controlOptions.navigation.showCompass,
-      showZoom: controlOptions.navigation.showZoom,
-    });
-    map.addControl(nav, controlOptions.navigation.position);
-    controls.add(nav);
-  }
-
-  // Scale control
-  if (controlOptions.scale?.enable) {
-    const scale = new ScaleControl({
-      unit: controlOptions.scale.unit,
-    });
-    map.addControl(scale, controlOptions.scale.position);
-    controls.add(scale);
-  }
-
-  // Fullscreen control
-  if (controlOptions.fullscreen?.enable) {
-    const fs = new FullscreenControl();
-    map.addControl(fs, controlOptions.fullscreen.position);
-    controls.add(fs);
-  }
-
-  // Geolocate control
-  if (controlOptions.geolocate?.enable) {
-    const geo = new GeolocateControl({
-      trackUserLocation: controlOptions.geolocate.trackUser,
-    });
-    map.addControl(geo, controlOptions.geolocate.position);
-    controls.add(geo);
-  }
-
-  // Terrain control
-  if (controlOptions.terrain?.enable) {
-    const terrain = new TerrainControl();
-    map.addControl(terrain, controlOptions.terrain.position);
-    controls.add(terrain);
-  }
-
-  // Custom center control
-  if (controlOptions.center?.enable) {
-    const center = new CenterControl();
-    map.addControl(center, controlOptions.center.position);
-    controls.add(center);
-  }
-
-  window.Spillgebees.Map.controls.set(map, controls);
+  recomposeControls(mapElement, controlsPayload);
 }
 
-export function setLegendControl(
+function validateControlForContent(mapElement: HTMLElement, controlId: string, kind: string): IMapControl | null {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return null;
+  }
+
+  const controlsPayload = window.Spillgebees.Map.controlsPayload.get(map) ?? [];
+  const control = controlsPayload.find((entry) => entry.controlId === controlId) ?? null;
+  if (!control) {
+    // biome-ignore lint/suspicious/noConsole: explicit control diagnostics for interop mismatches
+    console.warn(
+      `[Spillgebees.Map] setControlContent ignored: controlId='${controlId}' was not found for expected kind='${kind}'.`,
+    );
+    return null;
+  }
+
+  if (control.kind !== kind) {
+    // biome-ignore lint/suspicious/noConsole: explicit control diagnostics for interop mismatches
+    console.warn(
+      `[Spillgebees.Map] setControlContent ignored: controlId='${controlId}' expected kind='${kind}' but actual kind='${control.kind}'.`,
+    );
+    return null;
+  }
+
+  return control;
+}
+
+export function setControlContent(
   mapElement: HTMLElement,
-  options: ILegendControlOptions,
-  placeholderHost: HTMLElement,
-  contentRoot: HTMLElement,
+  controlId: string,
+  kind: string,
+  placeholderHost?: HTMLElement,
+  contentRoot?: HTMLElement,
 ): void {
   const map = window.Spillgebees.Map.maps.get(mapElement);
   if (!map) {
     return;
   }
 
-  const previousOptions = window.Spillgebees.Map.legendControlOptions.get(map);
-  window.Spillgebees.Map.legendControlOptions.set(map, structuredClone(options));
+  if (kind !== LEGEND_CONTROL_KIND) {
+    throw new Error(`Unsupported control content kind '${kind}' for control '${controlId}'.`);
+  }
 
-  if (!options.enable) {
-    const existingControl = window.Spillgebees.Map.legendControls.get(map);
-    if (existingControl) {
-      map.removeControl(existingControl);
-      window.Spillgebees.Map.legendControls.delete(map);
-    }
-
-    contentRoot.hidden = true;
-    if (!placeholderHost.contains(contentRoot)) {
-      placeholderHost.appendChild(contentRoot);
-    }
+  const customControlStore = getCustomControlStore(map);
+  const existingRegistration = customControlStore.get(controlId);
+  const controlDefinition = validateControlForContent(mapElement, controlId, kind);
+  if (!controlDefinition) {
     return;
   }
 
-  const existingControl = window.Spillgebees.Map.legendControls.get(map);
-  if (existingControl instanceof LegendControl) {
-    if (previousOptions && previousOptions.position !== options.position) {
-      map.removeControl(existingControl);
-      window.Spillgebees.Map.legendControls.delete(map);
-      const legendControl = new LegendControl(options, placeholderHost, contentRoot);
-      window.Spillgebees.Map.legendControls.set(map, legendControl);
-      map.addControl(legendControl, options.position);
+  if (
+    existingRegistration &&
+    existingRegistration.kind === kind &&
+    existingRegistration.control instanceof LegendControl &&
+    kind === LEGEND_CONTROL_KIND
+  ) {
+    existingRegistration.control.update(controlDefinition as ILegendMapControl);
+    customControlStore.set(controlId, existingRegistration);
+    return;
+  }
+
+  let control: IControl;
+  if (kind === LEGEND_CONTROL_KIND) {
+    if (!(placeholderHost instanceof HTMLElement) || !(contentRoot instanceof HTMLElement)) {
       return;
     }
 
-    existingControl.update(options);
-    return;
+    control = new LegendControl(controlDefinition as ILegendMapControl, placeholderHost, contentRoot);
+  } else {
+    throw new Error(`Unsupported control content kind '${kind}' for control '${controlId}'.`);
   }
 
-  const legendControl = new LegendControl(options, placeholderHost, contentRoot);
-  window.Spillgebees.Map.legendControls.set(map, legendControl);
-  map.addControl(legendControl, options.position);
+  if (existingRegistration) {
+    const controls = window.Spillgebees.Map.controls.get(map);
+    if (controls?.has(existingRegistration.control)) {
+      map.removeControl(existingRegistration.control);
+      controls.delete(existingRegistration.control);
+    }
+  }
+
+  customControlStore.set(controlId, {
+    controlId,
+    kind: kind as "legend" | "content",
+    control,
+  });
+
+  recomposeControls(mapElement, window.Spillgebees.Map.controlsPayload.get(map) ?? createDefaultControls());
 }
 
-export function removeLegendControl(mapElement: HTMLElement): void {
+export function removeControlContent(mapElement: HTMLElement, controlId: string): void {
   const map = window.Spillgebees.Map.maps.get(mapElement);
   if (!map) {
     return;
   }
 
-  const legendControl = window.Spillgebees.Map.legendControls.get(map);
-  if (!legendControl) {
+  const customControlStore = getCustomControlStore(map);
+  const existingRegistration = customControlStore.get(controlId);
+  if (!existingRegistration) {
     return;
   }
 
-  map.removeControl(legendControl);
-  window.Spillgebees.Map.legendControls.delete(map);
-  window.Spillgebees.Map.legendControlOptions.delete(map);
+  customControlStore.delete(controlId);
+  recomposeControls(mapElement, window.Spillgebees.Map.controlsPayload.get(map) ?? createDefaultControls());
 }
 
 export function fitBounds(mapElement: HTMLElement, options: IFitBoundsOptions): void {

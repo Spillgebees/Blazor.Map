@@ -19,7 +19,7 @@ internal static class MapJs
     /// The protocol version this C# library expects from the JS module.
     /// Bumped whenever the JS interop contract changes (function names, parameter shapes, return types).
     /// </summary>
-    internal const int ProtocolVersion = 9;
+    internal const int ProtocolVersion = 12;
 
     private const string JsNamespace = "Spillgebees.Map.mapFunctions";
     private const string JsProtocolVersionFunction = "Spillgebees.Map.getProtocolVersion";
@@ -40,7 +40,7 @@ internal static class MapJs
         string onAfterCreateMapCallback,
         ElementReference mapReference,
         MapOptions mapOptions,
-        MapControlOptions mapControlOptions,
+        IReadOnlyList<MapControl> controls,
         MapTheme theme,
         List<Marker> markers,
         List<Circle> circles,
@@ -54,7 +54,7 @@ internal static class MapJs
             onAfterCreateMapCallback,
             mapReference,
             ToJsModel(mapOptions),
-            ToJsModel(mapControlOptions),
+            controls.Select(ToJsModel).ToArray(),
             theme,
             markers,
             circles,
@@ -124,38 +124,62 @@ internal static class MapJs
         );
 
     /// <summary>
+    /// Sets declarative map images on the map instance.
+    /// </summary>
+    internal static ValueTask SetImagesAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        List<MapImageDefinition> images
+    ) =>
+        jsRuntime.SafeInvokeVoidAsync(
+            logger,
+            $"{JsNamespace}.setImages",
+            mapReference,
+            images.Select(ToJsModel).ToArray()
+        );
+
+    /// <summary>
     /// Sets the map controls.
     /// </summary>
     internal static ValueTask SetControlsAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
         ElementReference mapReference,
-        MapControlOptions mapControlOptions
+        IReadOnlyList<MapControl> controls
     ) =>
-        jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.setControls", mapReference, ToJsModel(mapControlOptions));
+        jsRuntime.SafeInvokeVoidAsync(
+            logger,
+            $"{JsNamespace}.setControls",
+            mapReference,
+            controls.Select(ToJsModel).ToArray()
+        );
 
-    internal static ValueTask SetLegendControlAsync(
+    internal static ValueTask SetControlContentAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
         ElementReference mapReference,
-        LegendControlOptions legendControlOptions,
+        string controlId,
+        string kind,
         ElementReference placeholderReference,
         ElementReference contentReference
     ) =>
         jsRuntime.SafeInvokeVoidAsync(
             logger,
-            $"{JsNamespace}.setLegendControl",
+            $"{JsNamespace}.setControlContent",
             mapReference,
-            legendControlOptions,
+            controlId,
+            kind,
             placeholderReference,
             contentReference
         );
 
-    internal static ValueTask RemoveLegendControlAsync(
+    internal static ValueTask RemoveControlContentAsync(
         IJSRuntime jsRuntime,
         ILogger logger,
-        ElementReference mapReference
-    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.removeLegendControl", mapReference);
+        ElementReference mapReference,
+        string controlId
+    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.removeControlContent", mapReference, controlId);
 
     /// <summary>
     /// Updates map options (style, pitch, bearing, terrain, projection).
@@ -349,17 +373,82 @@ internal static class MapJs
             WebFonts = mapOptions.WebFonts?.ToArray(),
         };
 
-    private static object ToJsModel(MapControlOptions mapControlOptions) =>
-        new
+    private static object ToJsModel(MapControl control) =>
+        control switch
         {
-            mapControlOptions.Navigation,
-            mapControlOptions.Scale,
-            mapControlOptions.Fullscreen,
-            mapControlOptions.Geolocate,
-            mapControlOptions.Terrain,
-            Center = mapControlOptions.Center is null
-                ? null
-                : new { mapControlOptions.Center.Enable, mapControlOptions.Center.Position },
+            NavigationMapControl navigation => new
+            {
+                Kind = "navigation",
+                navigation.ControlId,
+                navigation.Enable,
+                navigation.Position,
+                navigation.Order,
+                navigation.ShowCompass,
+                navigation.ShowZoom,
+            },
+            ScaleMapControl scale => new
+            {
+                Kind = "scale",
+                scale.ControlId,
+                scale.Enable,
+                scale.Position,
+                scale.Order,
+                scale.Unit,
+            },
+            FullscreenMapControl fullscreen => new
+            {
+                Kind = "fullscreen",
+                fullscreen.ControlId,
+                fullscreen.Enable,
+                fullscreen.Position,
+                fullscreen.Order,
+            },
+            GeolocateMapControl geolocate => new
+            {
+                Kind = "geolocate",
+                geolocate.ControlId,
+                geolocate.Enable,
+                geolocate.Position,
+                geolocate.Order,
+                geolocate.TrackUser,
+            },
+            TerrainMapControl terrain => new
+            {
+                Kind = "terrain",
+                terrain.ControlId,
+                terrain.Enable,
+                terrain.Position,
+                terrain.Order,
+            },
+            CenterMapControl center => new
+            {
+                Kind = "center",
+                center.ControlId,
+                center.Enable,
+                center.Position,
+                center.Order,
+            },
+            LegendMapControl legend => new
+            {
+                Kind = "legend",
+                legend.ControlId,
+                legend.Enable,
+                legend.Position,
+                legend.Order,
+                legend.Title,
+                legend.Collapsible,
+                legend.InitiallyOpen,
+                legend.ClassName,
+            },
+            ContentMapControl content => new
+            {
+                Kind = "content",
+                content.ControlId,
+                content.Enable,
+                content.Position,
+                content.Order,
+            },
+            _ => throw new InvalidOperationException($"Unsupported map control type '{control.GetType().Name}'."),
         };
 
     private static object? ToJsModel(MapStyle? mapStyle) =>
@@ -420,6 +509,17 @@ internal static class MapJs
             tileOverlay.TileSize,
             tileOverlay.Opacity,
             tileOverlay.ReferrerPolicy,
+        };
+
+    private static object ToJsModel(MapImageDefinition mapImageDefinition) =>
+        new
+        {
+            mapImageDefinition.Name,
+            mapImageDefinition.Url,
+            mapImageDefinition.Width,
+            mapImageDefinition.Height,
+            mapImageDefinition.PixelRatio,
+            mapImageDefinition.Sdf,
         };
 
     private static object? ToJsModel(FitBoundsOptions? fitBoundsOptions) =>

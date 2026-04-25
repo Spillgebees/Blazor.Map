@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createMockDotNetHelper } from "../../test/dotNetHelperMock";
 import { getLatestMockMapInstance, getMockMapSources, resetMockMapState } from "../../test/maplibreMock";
 import { resetWindowGlobals } from "../../test/windowSetup";
-import type { IMapControlOptions } from "../interfaces/controls";
+import type { IMapControl } from "../interfaces/controls";
 import type { ICircle, IPolyline, IPopupOptions } from "../interfaces/features";
 import type { IMapOptions } from "../interfaces/map";
 import { bootstrap, createMap } from "../map";
@@ -36,15 +36,8 @@ function createDefaultMapOptions(): IMapOptions {
   };
 }
 
-function createDefaultControlOptions(): IMapControlOptions {
-  return {
-    navigation: null,
-    scale: null,
-    fullscreen: null,
-    geolocate: null,
-    terrain: null,
-    center: null,
-  };
+function createDefaultControls(): IMapControl[] {
+  return [];
 }
 
 function createEmptyFeatureStorage(): FeatureStorage {
@@ -96,7 +89,7 @@ function setupMapAndGetMockMap() {
     "OnMapInitialized",
     mapElement,
     createDefaultMapOptions(),
-    createDefaultControlOptions(),
+    createDefaultControls(),
     "light",
     [],
     [],

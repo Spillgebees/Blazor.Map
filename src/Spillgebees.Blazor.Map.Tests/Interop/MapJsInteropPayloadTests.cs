@@ -19,7 +19,7 @@ public class MapJsInteropPayloadTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(9);
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(12);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
@@ -55,18 +55,62 @@ public class MapJsInteropPayloadTests : BunitContext
     {
         // arrange & act
         Render<SgbMap>(parameters =>
-            parameters.Add(p => p.ControlOptions, new MapControlOptions(Center: new CenterControlOptions()))
+            parameters.Add<IReadOnlyList<MapControl>>(p => p.Controls, [new CenterMapControl()])
         );
 
         // assert
         var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
-        var controlOptionsPayload = invocation.Arguments[4];
-        var centerPayload = GetRequiredPropertyValue(controlOptionsPayload!, "Center");
+        var controlsPayload = invocation.Arguments[4].Should().BeOfType<object[]>().Subject;
+        var centerPayload = controlsPayload.Single();
+        var kindValue = GetRequiredPropertyValue(centerPayload, "Kind");
         var enableValue = GetRequiredPropertyValue(centerPayload, "Enable");
         var positionValue = GetRequiredPropertyValue(centerPayload, "Position");
 
+        kindValue.Should().Be("center");
         enableValue.Should().Be(true);
         positionValue.Should().Be(ControlPosition.TopLeft);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_send_content_control_kind_as_content_when_initializing_map(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        Render<SgbMap>(parameters =>
+            parameters.Add<IReadOnlyList<MapControl>>(p => p.Controls, [new ContentMapControl("content-main")])
+        );
+
+        // assert
+        var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
+        var controlsPayload = invocation.Arguments[4].Should().BeOfType<object[]>().Subject;
+        var contentPayload = controlsPayload.Single();
+        var kindValue = GetRequiredPropertyValue(contentPayload, "Kind");
+
+        kindValue.Should().Be("content");
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_send_control_order_payload_when_initializing_map(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        Render<SgbMap>(parameters =>
+            parameters.Add(
+                p => p.Controls,
+                new List<MapControl> { new NavigationMapControl(Order: 250), new ScaleMapControl(Order: 25) }
+            )
+        );
+
+        // assert
+        var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
+        var controlsPayload = invocation.Arguments[4].Should().BeOfType<object[]>().Subject;
+        var navigationPayload = controlsPayload.Single(payload =>
+            (string)GetRequiredPropertyValue(payload, "Kind") == "navigation"
+        );
+        var scalePayload = controlsPayload.Single(payload =>
+            (string)GetRequiredPropertyValue(payload, "Kind") == "scale"
+        );
+
+        GetRequiredPropertyValue(navigationPayload, "Order").Should().Be(250);
+        GetRequiredPropertyValue(scalePayload, "Order").Should().Be(25);
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -96,6 +140,10 @@ public class MapJsInteropPayloadTests : BunitContext
 
         stylesPayload.Should().BeOfType<object[]>();
         ((object[])stylesPayload).Should().HaveCount(styles.Count);
+        GetRequiredPropertyValue(((object[])stylesPayload)[0], "Url").Should().Be(MapStyle.OpenFreeMap.Positron.Url);
+        GetRequiredPropertyValue(((object[])stylesPayload)[1], "Url")
+            .Should()
+            .Be("https://example.com/overlay-style.json");
 
         webFontsPayload.Should().BeOfType<string[]>();
         ((string[])webFontsPayload).Should().Equal(webFonts);

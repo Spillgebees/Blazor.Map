@@ -84,3 +84,12 @@ export interface IFitBoundsOptions {
   topLeftPadding: IPoint | null;
   bottomRightPadding: IPoint | null;
 }
+
+export interface IMapImageDefinition {
+  name: string;
+  url: string;
+  width: number;
+  height: number;
+  pixelRatio: number;
+  sdf: boolean;
+}

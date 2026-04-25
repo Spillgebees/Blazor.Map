@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createMockDotNetHelper } from "../../test/dotNetHelperMock";
 import { fireLoadEvent, fireMapEvent, getLatestMockMapInstance, resetMockMapState } from "../../test/maplibreMock";
 import { resetWindowGlobals } from "../../test/windowSetup";
-import type { IMapControlOptions } from "../interfaces/controls";
+import type { IMapControl } from "../interfaces/controls";
 import type { IMapOptions } from "../interfaces/map";
 import { bootstrap, createMap } from "../map";
 import { addMapSource, wireLayerEvents } from "../sources/geojson";
@@ -33,15 +33,8 @@ describe.sequential("applySceneMutations", () => {
     };
   }
 
-  function createDefaultControlOptions(): IMapControlOptions {
-    return {
-      navigation: null,
-      scale: null,
-      fullscreen: null,
-      geolocate: null,
-      terrain: null,
-      center: null,
-    };
+  function createDefaultControls(): IMapControl[] {
+    return [];
   }
 
   it("should register and rehydrate custom scene state from a batched mutation payload", () => {
@@ -65,7 +58,7 @@ describe.sequential("applySceneMutations", () => {
           wmsSource: null,
         },
       }),
-      createDefaultControlOptions(),
+      createDefaultControls(),
       "light",
       [],
       [],
@@ -166,7 +159,7 @@ describe.sequential("applySceneMutations", () => {
           wmsSource: null,
         },
       }),
-      createDefaultControlOptions(),
+      createDefaultControls(),
       "light",
       [],
       [],
@@ -246,7 +239,7 @@ describe.sequential("applySceneMutations", () => {
           wmsSource: null,
         },
       }),
-      createDefaultControlOptions(),
+      createDefaultControls(),
       "light",
       [],
       [],
@@ -368,7 +361,7 @@ describe.sequential("applySceneMutations", () => {
           wmsSource: null,
         },
       }),
-      createDefaultControlOptions(),
+      createDefaultControls(),
       "light",
       [],
       [],
@@ -477,7 +470,7 @@ describe.sequential("applySceneMutations", () => {
           wmsSource: null,
         },
       }),
-      createDefaultControlOptions(),
+      createDefaultControls(),
       "light",
       [],
       [],
@@ -596,7 +589,7 @@ describe.sequential("applySceneMutations", () => {
           },
         ],
       }),
-      createDefaultControlOptions(),
+      createDefaultControls(),
       "light",
       [],
       [],

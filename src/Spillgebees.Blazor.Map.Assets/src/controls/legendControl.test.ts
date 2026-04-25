@@ -1,7 +1,7 @@
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { describe, expect, it } from "vitest";
 import "../../test/maplibreMock";
-import type { ILegendControlOptions } from "../interfaces/controls";
+import type { ILegendMapControl } from "../interfaces/controls";
 import { LegendControl } from "./legendControl";
 
 function setRect(
@@ -30,8 +30,11 @@ function createMockMap(): MapLibreMap {
   return {} as MapLibreMap;
 }
 
-function createDefaultLegendOptions(overrides?: Partial<ILegendControlOptions>): ILegendControlOptions {
+function createDefaultLegendOptions(overrides?: Partial<ILegendMapControl>): ILegendMapControl {
   return {
+    kind: "legend",
+    controlId: "legend",
+    order: 500,
     enable: true,
     position: "top-right",
     title: "Legend",

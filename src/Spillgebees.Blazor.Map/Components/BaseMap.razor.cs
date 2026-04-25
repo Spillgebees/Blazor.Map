@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using BlazorComponentUtilities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
@@ -40,10 +42,10 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     public MapOptions MapOptions { get; set; } = MapOptions.Default;
 
     /// <summary>
-    /// Options for the map controls (navigation, scale, fullscreen, etc.).
+    /// Declarative map controls (built-in, legend, and content controls).
     /// </summary>
     [Parameter]
-    public MapControlOptions ControlOptions { get; set; } = MapControlOptions.Default;
+    public IReadOnlyList<MapControl> Controls { get; set; } = MapControls.Default;
 
     /// <summary>
     /// The visual theme for UI controls, popups, and attribution.
@@ -75,6 +77,12 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// </summary>
     [Parameter]
     public List<TileOverlay> Overlays { get; set; } = [];
+
+    /// <summary>
+    /// Declarative map images registered and replayed automatically across map lifecycle events.
+    /// </summary>
+    [Parameter]
+    public List<MapImageDefinition> Images { get; set; } = [];
 
     /// <summary>
     /// The width of the map. If not set, the map will take the full width of its container.
@@ -138,12 +146,15 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     public EventCallback<MarkerDragEventArgs> OnMarkerDragEnd { get; set; }
 
     protected MapOptions InternalMapOptions = null!;
-    protected MapControlOptions InternalControlOptions = null!;
+    protected List<MapControl> InternalControls { get; set; } = [];
     protected MapTheme InternalTheme;
     protected List<Marker> InternalMarkers { get; set; } = [];
     protected List<Circle> InternalCircles { get; set; } = [];
     protected List<Polyline> InternalPolylines { get; set; } = [];
     protected List<TileOverlay> InternalOverlays { get; set; } = [];
+    protected List<MapImageDefinition> InternalImages { get; set; } = [];
+
+    private List<MapImageDefinition> _imperativeImages = [];
 
     protected string InternalContainerClass =>
         new CssBuilder()
@@ -295,6 +306,8 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// <param name="height">The image height in pixels.</param>
     /// <param name="pixelRatio">The pixel ratio for retina displays. Default is 1.</param>
     /// <param name="sdf">Whether the image should be treated as an SDF (Signed Distance Field) for runtime tinting via <c>icon-color</c>. Default is false.</param>
+    [Obsolete("Use the Images parameter to declaratively register map images.")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public async ValueTask AddImageAsync(
         string name,
         string url,
@@ -304,16 +317,16 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         bool sdf = false
     )
     {
-        await JsRuntime.InvokeVoidAsync(
-            "Spillgebees.Map.mapFunctions.addImage",
-            MapReference,
-            name,
-            url,
-            width,
-            height,
-            pixelRatio,
-            sdf
-        );
+        _imperativeImages =
+        [
+            .. _imperativeImages.Where(image => image.Name != name),
+            new MapImageDefinition(name, url, width, height, pixelRatio, sdf),
+        ];
+
+        if (IsInitialized)
+        {
+            await SyncImagesAsync(force: true);
+        }
     }
 
     /// <summary>
@@ -447,6 +460,8 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             await FitBoundsAsync(fitBoundsOptions);
         }
 
+        await SyncImagesAsync(force: true);
+
         // Signal that the map is ready for child components (sources, layers)
         _readyTcs.TrySetResult(true);
     }
@@ -532,6 +547,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     protected override async Task OnParametersSetAsync()
     {
         MapOptionsCompositionValidator.Validate(MapOptions);
+        ValidateControlIds(Controls);
 
         if (IsInitialized is false)
         {
@@ -546,9 +562,12 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             await SetOverlaysAsync();
         }
 
-        if (InternalControlOptions != ControlOptions)
+        var desiredImages = GetDesiredImages();
+        await SyncImagesAsync(desiredImages);
+
+        if (!InternalControls.SequenceEqual(Controls))
         {
-            InternalControlOptions = ControlOptions;
+            InternalControls = [.. Controls];
             await SetControlsAsync();
         }
 
@@ -591,12 +610,15 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         }
 
         InternalMapOptions = MapOptions;
-        InternalControlOptions = ControlOptions;
+        ValidateControlIds(Controls);
+
+        InternalControls = [.. Controls];
         InternalTheme = Theme;
         InternalMarkers = [.. Markers];
         InternalCircles = [.. Circles];
         InternalPolylines = [.. Polylines];
         InternalOverlays = [.. Overlays];
+        InternalImages = [.. GetDesiredImages()];
 
         await MapJs.CreateMapAsync(
             JsRuntime,
@@ -605,7 +627,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             nameof(OnMapInitializedAsync),
             MapReference,
             InternalMapOptions,
-            InternalControlOptions,
+            InternalControls,
             InternalTheme,
             InternalMarkers,
             InternalCircles,
@@ -637,10 +659,93 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         MapJs.SetOverlaysAsync(JsRuntime, Logger.Value, MapReference, InternalOverlays);
 
     private ValueTask SetControlsAsync() =>
-        MapJs.SetControlsAsync(JsRuntime, Logger.Value, MapReference, InternalControlOptions);
+        MapJs.SetControlsAsync(JsRuntime, Logger.Value, MapReference, InternalControls);
+
+    internal bool TryGetControl(string controlId, [NotNullWhen(true)] out MapControl? control)
+    {
+        control = InternalControls.FirstOrDefault(control => control.ControlId == controlId);
+        return control is not null;
+    }
+
+    private static void ValidateControlIds(IEnumerable<MapControl> controls)
+    {
+        var duplicateControlId = controls
+            .GroupBy(control => control.ControlId, StringComparer.Ordinal)
+            .FirstOrDefault(group => string.IsNullOrWhiteSpace(group.Key) || group.Count() > 1);
+
+        if (duplicateControlId is null)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            string.IsNullOrWhiteSpace(duplicateControlId.Key)
+                ? "Control IDs must be non-empty."
+                : $"Control IDs must be unique. Duplicate ID: '{duplicateControlId.Key}'."
+        );
+    }
 
     private ValueTask SetMapOptionsAsync() =>
         MapJs.SetMapOptionsAsync(JsRuntime, Logger.Value, MapReference, InternalMapOptions);
 
     private ValueTask SetThemeAsync() => MapJs.SetThemeAsync(JsRuntime, Logger.Value, MapReference, InternalTheme);
+
+    private async Task SyncImagesAsync(bool force = false)
+    {
+        var desiredImages = GetDesiredImages();
+
+        if (!force && !ShouldSyncImages(desiredImages))
+        {
+            return;
+        }
+
+        InternalImages = [.. desiredImages];
+        await MapJs.SetImagesAsync(JsRuntime, Logger.Value, MapReference, InternalImages);
+    }
+
+    private async Task SyncImagesAsync(IReadOnlyList<MapImageDefinition> desiredImages)
+    {
+        if (!ShouldSyncImages(desiredImages))
+        {
+            return;
+        }
+
+        InternalImages = [.. desiredImages];
+        await MapJs.SetImagesAsync(JsRuntime, Logger.Value, MapReference, InternalImages);
+    }
+
+    private bool ShouldSyncImages(IReadOnlyList<MapImageDefinition> desiredImages)
+    {
+        if (InternalImages.Count != desiredImages.Count)
+        {
+            return true;
+        }
+
+        for (var i = 0; i < desiredImages.Count; i++)
+        {
+            if (InternalImages[i] != desiredImages[i])
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private IReadOnlyList<MapImageDefinition> GetDesiredImages()
+    {
+        var desiredByName = new Dictionary<string, MapImageDefinition>(StringComparer.Ordinal);
+
+        foreach (var image in Images)
+        {
+            desiredByName[image.Name] = image;
+        }
+
+        foreach (var image in _imperativeImages)
+        {
+            desiredByName[image.Name] = image;
+        }
+
+        return [.. desiredByName.Values];
+    }
 }

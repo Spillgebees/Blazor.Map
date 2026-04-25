@@ -14,6 +14,8 @@ namespace Spillgebees.Blazor.Map.Components;
 /// </summary>
 public partial class MapLegend : ComponentBase, IAsyncDisposable
 {
+    private const string CustomControlKind = "legend";
+
     [CascadingParameter]
     private BaseMap? Map { get; set; }
 
@@ -26,8 +28,8 @@ public partial class MapLegend : ComponentBase, IAsyncDisposable
     [Parameter, EditorRequired]
     public MapLegendDefinition Definition { get; set; } = null!;
 
-    [Parameter]
-    public LegendControlOptions ControlOptions { get; set; } = LegendControlOptions.Default;
+    [Parameter, EditorRequired]
+    public string ControlId { get; set; } = string.Empty;
 
     [Parameter]
     public RenderFragment<MapLegendItemTemplateContext>? ItemTemplate { get; set; }
@@ -42,7 +44,9 @@ public partial class MapLegend : ComponentBase, IAsyncDisposable
     private bool _controlSyncPending = true;
     private bool _visibilitySyncPending = true;
     private bool _registered;
-    private LegendControlOptions? _previousControlOptions;
+    private LegendMapControl? _previousControl;
+    private string? _registeredControlId;
+    private string? _pendingControlIdRemoval;
     private readonly HashSet<string> _registeredVisibilityGroupIds = new(StringComparer.Ordinal);
 
     private ILogger Logger => LoggerFactory.CreateLogger<MapLegend>();
@@ -57,12 +61,25 @@ public partial class MapLegend : ComponentBase, IAsyncDisposable
     protected override void OnParametersSet()
     {
         ValidateDefinition();
+        ValidateControlReference();
         SyncItemVisibility();
         _visibilitySyncPending = true;
 
-        var shouldResyncShell = _previousControlOptions != ControlOptions;
+        var currentControl = GetLegendControl();
+
+        if (
+            _registered
+            && _previousControl is not null
+            && _previousControl.ControlId != currentControl.ControlId
+            && _pendingControlIdRemoval is null
+        )
+        {
+            _pendingControlIdRemoval = _previousControl.ControlId;
+        }
+
+        var shouldResyncShell = _previousControl != currentControl;
         _controlSyncPending = _controlSyncPending || !_registered || shouldResyncShell;
-        _previousControlOptions = ControlOptions;
+        _previousControl = currentControl;
     }
 
     /// <inheritdoc/>
@@ -81,28 +98,40 @@ public partial class MapLegend : ComponentBase, IAsyncDisposable
 
         if (_controlSyncPending)
         {
-            if (!ControlOptions.Enable)
+            if (!string.IsNullOrWhiteSpace(_pendingControlIdRemoval))
             {
-                if (_registered)
+                await MapJs.RemoveControlContentAsync(JsRuntime, Logger, Map.MapReference, _pendingControlIdRemoval);
+                _registered = false;
+                _registeredControlId = null;
+                _pendingControlIdRemoval = null;
+            }
+
+            var control = GetLegendControl();
+            if (!control.Enable)
+            {
+                if (_registered && !string.IsNullOrWhiteSpace(_registeredControlId))
                 {
-                    await MapJs.RemoveLegendControlAsync(JsRuntime, Logger, Map.MapReference);
+                    await MapJs.RemoveControlContentAsync(JsRuntime, Logger, Map.MapReference, _registeredControlId);
                     _registered = false;
+                    _registeredControlId = null;
                 }
 
                 _controlSyncPending = false;
                 return;
             }
 
-            await MapJs.SetLegendControlAsync(
+            await MapJs.SetControlContentAsync(
                 JsRuntime,
                 Logger,
                 Map.MapReference,
-                ControlOptions,
+                ControlId,
+                CustomControlKind,
                 _placeholderReference,
                 _contentReference
             );
 
-            _registered = ControlOptions.Enable;
+            _registered = control.Enable;
+            _registeredControlId = control.ControlId;
             _controlSyncPending = false;
         }
 
@@ -118,18 +147,24 @@ public partial class MapLegend : ComponentBase, IAsyncDisposable
     {
         await UnregisterVisibilityGroupsAsync();
 
-        if (Map is null || !_registered)
+        if (Map is null || !_registered || string.IsNullOrWhiteSpace(_registeredControlId))
         {
             return;
         }
 
         try
         {
-            await MapJs.RemoveLegendControlAsync(JsRuntime, Logger, Map.MapReference);
+            await MapJs.RemoveControlContentAsync(JsRuntime, Logger, Map.MapReference, _registeredControlId);
         }
         catch (Exception exception)
         {
             Logger.LogTrace(exception, "Legend control removal skipped during disposal.");
+        }
+        finally
+        {
+            _registered = false;
+            _registeredControlId = null;
+            _pendingControlIdRemoval = null;
         }
     }
 
@@ -272,6 +307,36 @@ public partial class MapLegend : ComponentBase, IAsyncDisposable
             await Map.SceneRegistry.UnregisterVisibilityGroupAsync(groupId);
             _registeredVisibilityGroupIds.Remove(groupId);
         }
+    }
+
+    private void ValidateControlReference()
+    {
+        if (string.IsNullOrWhiteSpace(ControlId))
+        {
+            throw new InvalidOperationException("A non-empty ControlId is required.");
+        }
+
+        _ = GetLegendControl();
+    }
+
+    private LegendMapControl GetLegendControl()
+    {
+        if (Map is null)
+        {
+            throw new InvalidOperationException("MapLegend must be used inside SgbMap.");
+        }
+
+        var legendControl = Map
+            .Controls.OfType<LegendMapControl>()
+            .FirstOrDefault(control => control.ControlId == ControlId);
+        if (legendControl is null)
+        {
+            throw new InvalidOperationException(
+                $"MapLegend requires a matching LegendMapControl in SgbMap.Controls. Missing control: '{ControlId}'."
+            );
+        }
+
+        return legendControl;
     }
 }
 

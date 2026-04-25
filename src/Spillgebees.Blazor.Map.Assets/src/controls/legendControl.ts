@@ -1,5 +1,5 @@
 import type { IControl, Map as MapLibreMap } from "maplibre-gl";
-import type { ILegendControlOptions } from "../interfaces/controls";
+import type { ILegendMapControl } from "../interfaces/controls";
 
 const LEGEND_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
   <rect x="3.5" y="5.5" width="3" height="3" rx="0.5" fill="currentColor"/>
@@ -21,7 +21,7 @@ export class LegendControl implements IControl {
   private static readonly MIN_HEIGHT = 160;
   private static readonly PANEL_GAP = 4;
 
-  private _options: ILegendControlOptions;
+  private _options: ILegendMapControl;
   private readonly _placeholderHost: HTMLElement;
   private readonly _contentRoot: HTMLElement;
   private _container: HTMLDivElement | null = null;
@@ -35,7 +35,7 @@ export class LegendControl implements IControl {
   private _resizeObserver: ResizeObserver | null = null;
   private _mutationObserver: MutationObserver | null = null;
 
-  constructor(options: ILegendControlOptions, placeholderHost: HTMLElement, contentRoot: HTMLElement) {
+  constructor(options: ILegendMapControl, placeholderHost: HTMLElement, contentRoot: HTMLElement) {
     this._options = options;
     this._placeholderHost = placeholderHost;
     this._contentRoot = contentRoot;
@@ -70,7 +70,7 @@ export class LegendControl implements IControl {
     this._toggleButton = null;
   }
 
-  update(options: ILegendControlOptions): void {
+  update(options: ILegendMapControl): void {
     const positionChanged = this._options.position !== options.position;
     const hadStructuralShell = Boolean(this._options.title) || this._options.collapsible;
     const hasStructuralShell = Boolean(options.title) || options.collapsible;

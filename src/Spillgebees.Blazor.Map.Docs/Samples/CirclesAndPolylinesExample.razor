@@ -1,5 +1,5 @@
 <SgbMap MapOptions="@_mapOptions"
-        ControlOptions="@MapControlOptions.Default"
+        Controls="@_controls"
         Circles="@_circles"
         Polylines="@_polylines"
         Height="400px"
@@ -10,6 +10,8 @@
         Center: new Coordinate(49.75, 6.10),
         Zoom: 10
     );
+
+    private readonly IReadOnlyList<MapControl> _controls = [new NavigationMapControl()];
 
     private readonly List<Circle> _circles =
     [

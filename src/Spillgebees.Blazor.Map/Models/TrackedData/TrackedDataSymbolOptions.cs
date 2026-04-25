@@ -1,9 +1,10 @@
+using Spillgebees.Blazor.Map.Models.Popups;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 namespace Spillgebees.Blazor.Map.Models.TrackedData;
 
 /// <summary>
-/// Primary symbol selectors for high-level tracked data items.
+/// Primary symbol selectors for high-level tracked data items, including optional popup configuration.
 /// </summary>
 /// <typeparam name="TItem">The raw app model type.</typeparam>
 public sealed record TrackedDataSymbolOptions<TItem>(
@@ -16,7 +17,8 @@ public sealed record TrackedDataSymbolOptions<TItem>(
     Func<TItem, string?>? ColorSelector = null,
     Func<TItem, TrackedEntityHoverIntent?>? HoverSelector = null,
     Func<TItem, double?>? RenderOrderSelector = null,
-    Func<TItem, IReadOnlyDictionary<string, object?>?>? PropertiesSelector = null
+    Func<TItem, IReadOnlyDictionary<string, object?>?>? PropertiesSelector = null,
+    Func<TItem, PopupOptions?>? PopupSelector = null
 )
 {
     public Coordinate GetPosition(TItem item) => PositionSelector(item);
@@ -38,4 +40,6 @@ public sealed record TrackedDataSymbolOptions<TItem>(
     public double? GetRenderOrder(TItem item) => RenderOrderSelector?.Invoke(item);
 
     public IReadOnlyDictionary<string, object?>? GetProperties(TItem item) => PropertiesSelector?.Invoke(item);
+
+    public PopupOptions? GetPopup(TItem item) => PopupSelector?.Invoke(item);
 }

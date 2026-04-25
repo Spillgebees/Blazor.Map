@@ -1,16 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockDotNetHelper } from "../test/dotNetHelperMock";
 import {
+  FullscreenControl,
   fireLoadEvent,
   fireMapEvent,
   getLatestMockMapInstance,
   getMockMapConstructor,
   getMockMarkerConstructor,
+  NavigationControl,
   resetMockMapState,
 } from "../test/maplibreMock";
 import { resetWindowGlobals } from "../test/windowSetup";
 import { LegendControl } from "./controls/legendControl";
-import type { IMapControlOptions } from "./interfaces/controls";
+import type { IMapControl } from "./interfaces/controls";
 import type { IMarker, IPolyline } from "./interfaces/features";
 import type { IFitBoundsOptions, IMapOptions, IMapStyle, ITileOverlay } from "./interfaces/map";
 import {
@@ -29,6 +31,7 @@ import {
   queryRenderedFeatures,
   resize,
   setControls,
+  setImages,
   setMapOptions,
   setOverlays,
   setStyleLayerVisibility,
@@ -64,15 +67,10 @@ function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions 
   };
 }
 
+type IMapControlOptions = IMapControl[];
+
 function createDefaultControlOptions(): IMapControlOptions {
-  return {
-    navigation: null,
-    scale: null,
-    fullscreen: null,
-    geolocate: null,
-    terrain: null,
-    center: null,
-  };
+  return [];
 }
 
 describe("bootstrap", () => {
@@ -105,6 +103,8 @@ describe("bootstrap", () => {
     expect(mapFunctions.syncFeatures).toBeTypeOf("function");
     expect(mapFunctions.setOverlays).toBeTypeOf("function");
     expect(mapFunctions.setControls).toBeTypeOf("function");
+    expect(mapFunctions.setControlContent).toBeTypeOf("function");
+    expect(mapFunctions.removeControlContent).toBeTypeOf("function");
     expect(mapFunctions.setMapOptions).toBeTypeOf("function");
     expect(mapFunctions.setTheme).toBeTypeOf("function");
     expect(mapFunctions.fitBounds).toBeTypeOf("function");
@@ -133,27 +133,17 @@ describe("bootstrap", () => {
     expect(window.Spillgebees.Map.overlays.size).toBe(0);
     expect(window.Spillgebees.Map.controls).toBeInstanceOf(Map);
     expect(window.Spillgebees.Map.controls.size).toBe(0);
-    expect(window.Spillgebees.Map.legendControls).toBeInstanceOf(Map);
-    expect(window.Spillgebees.Map.legendControls.size).toBe(0);
+    expect(window.Spillgebees.Map.controlsPayload).toBeInstanceOf(Map);
+    expect(window.Spillgebees.Map.controlsPayload.size).toBe(0);
   });
 
-  it("should register legend interop functions", () => {
+  it("should initialize custom control stores", () => {
     // arrange & act
     bootstrap();
 
     // assert
-    const { mapFunctions } = window.Spillgebees.Map;
-    expect(mapFunctions.setLegendControl).toBeTypeOf("function");
-    expect(mapFunctions.removeLegendControl).toBeTypeOf("function");
-  });
-
-  it("should initialize legend stores", () => {
-    // arrange & act
-    bootstrap();
-
-    // assert
-    expect(window.Spillgebees.Map.legendControlOptions).toBeInstanceOf(Map);
-    expect(window.Spillgebees.Map.legendControlOptions.size).toBe(0);
+    expect(window.Spillgebees.Map.customControlRegistrations).toBeInstanceOf(Map);
+    expect(window.Spillgebees.Map.customControlRegistrations.size).toBe(0);
   });
 
   it("should be a no-op when the protocol version already matches", () => {
@@ -969,6 +959,290 @@ describe("createMap", () => {
   });
 });
 
+describe("setImages", () => {
+  beforeEach(() => {
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+  });
+
+  class ImmediateMockImage {
+    public onload: (() => void) | null = null;
+    public onerror: (() => void) | null = null;
+
+    public set src(_value: string) {
+      queueMicrotask(() => this.onload?.());
+    }
+  }
+
+  class ControlledMockImage {
+    private static readonly pendingLoads: ControlledMockImage[] = [];
+
+    public onload: (() => void) | null = null;
+    public onerror: (() => void) | null = null;
+
+    public set src(_value: string) {
+      ControlledMockImage.pendingLoads.push(this);
+    }
+
+    public static flushLoads(): void {
+      while (ControlledMockImage.pendingLoads.length > 0) {
+        const image = ControlledMockImage.pendingLoads.shift();
+        image?.onload?.();
+      }
+    }
+  }
+
+  class MockOffscreenCanvas {
+    public getContext(_kind: string) {
+      return {
+        drawImage: vi.fn(),
+        getImageData: vi.fn().mockReturnValue({ data: new Uint8ClampedArray(16), width: 2, height: 2 }),
+      };
+    }
+  }
+
+  it("should register url and data-uri images in declaration order", async () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const originalImage = globalThis.Image;
+    const originalOffscreenCanvas = globalThis.OffscreenCanvas;
+    globalThis.Image = ImmediateMockImage as unknown as typeof Image;
+    globalThis.OffscreenCanvas = MockOffscreenCanvas as unknown as typeof OffscreenCanvas;
+
+    try {
+      const mockMap = getLatestMockMapInstance()!;
+
+      // act
+      await setImages(mapElement, [
+        {
+          name: "remote-icon",
+          url: "https://example.com/icon.png",
+          width: 32,
+          height: 32,
+          pixelRatio: 1,
+          sdf: false,
+        },
+        {
+          name: "base64-icon",
+          url: "data:image/png;base64,ZmFrZS1kYXRh",
+          width: 24,
+          height: 24,
+          pixelRatio: 1,
+          sdf: false,
+        },
+        {
+          name: "svg-icon",
+          // biome-ignore lint/security/noSecrets: inline svg test fixture data URI, not a secret
+          url: "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%3E%3C/svg%3E",
+          width: 28,
+          height: 28,
+          pixelRatio: 2,
+          sdf: true,
+        },
+      ]);
+
+      // assert
+      expect(mockMap.addImage.mock.calls.map((call) => call[0])).toEqual(["remote-icon", "base64-icon", "svg-icon"]);
+
+      const map = window.Spillgebees.Map.maps.get(mapElement)!;
+      expect(window.Spillgebees.Map.imageRegistrations.get(map)?.get("svg-icon")?.sdf).toBe(true);
+    } finally {
+      globalThis.Image = originalImage;
+      globalThis.OffscreenCanvas = originalOffscreenCanvas;
+    }
+  });
+
+  it("should replay registered images after style reload when runtime image is missing", async () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const originalImage = globalThis.Image;
+    const originalOffscreenCanvas = globalThis.OffscreenCanvas;
+    globalThis.Image = ImmediateMockImage as unknown as typeof Image;
+    globalThis.OffscreenCanvas = MockOffscreenCanvas as unknown as typeof OffscreenCanvas;
+
+    try {
+      const mockMap = getLatestMockMapInstance()!;
+      mockMap.hasImage.mockReturnValue(false);
+
+      await setImages(mapElement, [
+        {
+          name: "reload-icon",
+          url: "https://example.com/reload.png",
+          width: 16,
+          height: 16,
+          pixelRatio: 1,
+          sdf: false,
+        },
+      ]);
+      mockMap.addImage.mockClear();
+
+      // act
+      setMapOptions(
+        mapElement,
+        createDefaultMapOptions({
+          style: {
+            id: "sgb-reload-style",
+            url: "https://example.com/reload-style.json",
+            referrerPolicy: null,
+            rasterSource: null,
+            wmsSource: null,
+          },
+        }),
+      );
+      fireMapEvent("styledata");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // assert
+      expect(mockMap.hasImage).toHaveBeenCalledWith("reload-icon");
+      expect(mockMap.addImage.mock.calls.map((call) => call[0])).toEqual(["reload-icon"]);
+    } finally {
+      globalThis.Image = originalImage;
+      globalThis.OffscreenCanvas = originalOffscreenCanvas;
+    }
+  });
+
+  it("should keep only the latest registration during overlapping setImages calls", async () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const originalImage = globalThis.Image;
+    const originalOffscreenCanvas = globalThis.OffscreenCanvas;
+    globalThis.Image = ControlledMockImage as unknown as typeof Image;
+    globalThis.OffscreenCanvas = MockOffscreenCanvas as unknown as typeof OffscreenCanvas;
+
+    try {
+      const mockMap = getLatestMockMapInstance()!;
+
+      // act
+      const firstSync = setImages(mapElement, [
+        {
+          name: "race-icon",
+          url: "https://example.com/race-1.png",
+          width: 24,
+          height: 24,
+          pixelRatio: 1,
+          sdf: false,
+        },
+      ]);
+      const secondSync = setImages(mapElement, [
+        {
+          name: "race-icon",
+          url: "https://example.com/race-2.png",
+          width: 24,
+          height: 24,
+          pixelRatio: 1,
+          sdf: false,
+        },
+      ]);
+
+      ControlledMockImage.flushLoads();
+      await Promise.all([firstSync, secondSync]);
+
+      // assert
+      expect(mockMap.addImage).toHaveBeenCalledTimes(1);
+      const map = window.Spillgebees.Map.maps.get(mapElement)!;
+      expect(window.Spillgebees.Map.imageRegistrations.get(map)?.get("race-icon")?.url).toBe(
+        "https://example.com/race-2.png",
+      );
+    } finally {
+      globalThis.Image = originalImage;
+      globalThis.OffscreenCanvas = originalOffscreenCanvas;
+    }
+  });
+
+  it("should not keep stale registrations when a newer sync removes an in-flight image", async () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    const originalImage = globalThis.Image;
+    const originalOffscreenCanvas = globalThis.OffscreenCanvas;
+    globalThis.Image = ControlledMockImage as unknown as typeof Image;
+    globalThis.OffscreenCanvas = MockOffscreenCanvas as unknown as typeof OffscreenCanvas;
+
+    try {
+      const mockMap = getLatestMockMapInstance()!;
+
+      // act
+      const firstSync = setImages(mapElement, [
+        {
+          name: "stale-icon",
+          url: "https://example.com/stale.png",
+          width: 24,
+          height: 24,
+          pixelRatio: 1,
+          sdf: false,
+        },
+      ]);
+      const secondSync = setImages(mapElement, []);
+      ControlledMockImage.flushLoads();
+      await Promise.all([firstSync, secondSync]);
+
+      // assert
+      const map = window.Spillgebees.Map.maps.get(mapElement)!;
+      expect(window.Spillgebees.Map.imageRegistrations.get(map)?.has("stale-icon")).toBe(false);
+      expect(mockMap.addImage.mock.calls.map((call) => call[0])).not.toContain("stale-icon");
+    } finally {
+      globalThis.Image = originalImage;
+      globalThis.OffscreenCanvas = originalOffscreenCanvas;
+    }
+  });
+});
+
 describe("disposeMap", () => {
   beforeEach(() => {
     resetWindowGlobals();
@@ -1009,6 +1283,7 @@ describe("disposeMap", () => {
     expect(window.Spillgebees.Map.features.size).toBe(0);
     expect(window.Spillgebees.Map.overlays.size).toBe(0);
     expect(window.Spillgebees.Map.controls.size).toBe(0);
+    expect(window.Spillgebees.Map.customControlRegistrations.size).toBe(0);
   });
 
   it("should be a no-op for unknown elements", () => {
@@ -1483,15 +1758,17 @@ describe("setMapOptions", () => {
     mockMap.addSource.mockClear();
     mockMap.addLayer.mockClear();
 
-    const updatedControls: IMapControlOptions = {
-      ...createDefaultControlOptions(),
-      navigation: {
+    const updatedControls: IMapControlOptions = [
+      {
+        kind: "navigation",
+        controlId: "nav",
         enable: true,
         position: "top-right",
+        order: 100,
         showCompass: true,
         showZoom: true,
       },
-    };
+    ];
     setControls(mapElement, updatedControls);
 
     const overlay = createDefaultOverlay({ id: "live-overlay" });
@@ -2097,331 +2374,149 @@ describe("setControls", () => {
     bootstrap();
   });
 
-  it("should add navigation control when enabled", () => {
+  it("should add enabled built-in controls", () => {
     // arrange
     const mapElement = document.createElement("div");
     const dotNetHelper = createMockDotNetHelper();
-    const mapOptions = createDefaultMapOptions();
-    const controlOptions = createDefaultControlOptions();
-    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, createDefaultMapOptions(), [], "light", [], [], [], []);
     const mockMap = getLatestMockMapInstance()!;
 
-    const navControlOptions: IMapControlOptions = {
-      ...createDefaultControlOptions(),
-      navigation: {
+    // act
+    setControls(mapElement, [
+      {
+        kind: "navigation",
+        controlId: "nav",
         enable: true,
         position: "top-right",
+        order: 100,
         showCompass: true,
         showZoom: true,
       },
-    };
-
-    // act
-    setControls(mapElement, navControlOptions);
-
-    // assert
-    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
-    expect(mockMap.addControl).toHaveBeenCalledWith(expect.anything(), "top-right");
-  });
-
-  it("should add scale control when enabled", () => {
-    // arrange
-    const mapElement = document.createElement("div");
-    const dotNetHelper = createMockDotNetHelper();
-    const mapOptions = createDefaultMapOptions();
-    const controlOptions = createDefaultControlOptions();
-    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
-    const mockMap = getLatestMockMapInstance()!;
-
-    const scaleControlOptions: IMapControlOptions = {
-      ...createDefaultControlOptions(),
-      scale: {
+      {
+        kind: "scale",
+        controlId: "scale",
         enable: true,
         position: "bottom-left",
+        order: 100,
         unit: "metric",
       },
-    };
-
-    // act
-    setControls(mapElement, scaleControlOptions);
+    ]);
 
     // assert
-    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
-    expect(mockMap.addControl).toHaveBeenCalledWith(expect.anything(), "bottom-left");
+    expect(mockMap.addControl).toHaveBeenCalledTimes(2);
   });
 
-  it("should add multiple controls when multiple are enabled", () => {
+  it("should order controls by order then declaration then controlId", () => {
     // arrange
     const mapElement = document.createElement("div");
     const dotNetHelper = createMockDotNetHelper();
-    const mapOptions = createDefaultMapOptions();
-    const controlOptions = createDefaultControlOptions();
-    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, createDefaultMapOptions(), [], "light", [], [], [], []);
     const mockMap = getLatestMockMapInstance()!;
+    vi.mocked(NavigationControl).mockClear();
+    vi.mocked(FullscreenControl).mockClear();
 
-    const multiControlOptions: IMapControlOptions = {
-      navigation: {
+    // act
+    setControls(mapElement, [
+      {
+        kind: "navigation",
+        controlId: "b",
         enable: true,
         position: "top-right",
+        order: 100,
         showCompass: true,
         showZoom: true,
       },
-      scale: {
-        enable: true,
-        position: "bottom-left",
-        unit: "metric",
-      },
-      fullscreen: {
+      {
+        kind: "fullscreen",
+        controlId: "a",
         enable: true,
         position: "top-right",
+        order: 50,
       },
-      geolocate: null,
-      terrain: null,
-      center: null,
-    };
-
-    // act
-    setControls(mapElement, multiControlOptions);
-
-    // assert
-    expect(mockMap.addControl).toHaveBeenCalledTimes(3);
-  });
-
-  it("should remove existing controls before adding new ones", () => {
-    // arrange
-    const mapElement = document.createElement("div");
-    const dotNetHelper = createMockDotNetHelper();
-    const mapOptions = createDefaultMapOptions();
-    const controlOptions = createDefaultControlOptions();
-    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
-    const mockMap = getLatestMockMapInstance()!;
-
-    const firstControlOptions: IMapControlOptions = {
-      ...createDefaultControlOptions(),
-      navigation: {
+      {
+        kind: "navigation",
+        controlId: "c",
         enable: true,
         position: "top-right",
+        order: 100,
         showCompass: true,
         showZoom: true,
       },
-    };
+    ]);
 
-    // Add initial controls
-    setControls(mapElement, firstControlOptions);
-    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
-
-    const secondControlOptions: IMapControlOptions = {
-      ...createDefaultControlOptions(),
-      scale: {
-        enable: true,
-        position: "bottom-left",
-        unit: "metric",
-      },
-    };
-
-    // act — replace controls
-    setControls(mapElement, secondControlOptions);
-
-    // assert — the first control was removed, and the new one was added
-    expect(mockMap.removeControl).toHaveBeenCalledTimes(1);
-    expect(mockMap.addControl).toHaveBeenCalledTimes(2); // 1 from first + 1 from second
+    // assert
+    const fullscreenInstance = vi.mocked(FullscreenControl).mock.results[0]?.value;
+    const navigationInstances = vi.mocked(NavigationControl).mock.results.map((result) => result.value);
+    expect(mockMap.addControl.mock.calls.map((call) => call[0])).toEqual([
+      fullscreenInstance,
+      navigationInstances[0],
+      navigationInstances[1],
+    ]);
   });
 
-  it("should handle all controls being null gracefully", () => {
+  it("should throw when control IDs are duplicated", () => {
     // arrange
     const mapElement = document.createElement("div");
     const dotNetHelper = createMockDotNetHelper();
-    const mapOptions = createDefaultMapOptions();
-    const controlOptions = createDefaultControlOptions();
-    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
-    const mockMap = getLatestMockMapInstance()!;
-
-    const emptyControlOptions = createDefaultControlOptions();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, createDefaultMapOptions(), [], "light", [], [], [], []);
 
     // act
-    setControls(mapElement, emptyControlOptions);
+    const act = () =>
+      setControls(mapElement, [
+        {
+          kind: "navigation",
+          controlId: "duplicate",
+          enable: true,
+          position: "top-right",
+          order: 100,
+          showCompass: true,
+          showZoom: true,
+        },
+        {
+          kind: "fullscreen",
+          controlId: "duplicate",
+          enable: true,
+          position: "top-right",
+          order: 200,
+        },
+      ]);
 
     // assert
-    expect(mockMap.addControl).not.toHaveBeenCalled();
-  });
-
-  it("should add center control when enabled", () => {
-    // arrange
-    const mapElement = document.createElement("div");
-    const dotNetHelper = createMockDotNetHelper();
-    const mapOptions = createDefaultMapOptions();
-    const controlOptions = createDefaultControlOptions();
-    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
-    const mockMap = getLatestMockMapInstance()!;
-
-    const centerControlOptions: IMapControlOptions = {
-      ...createDefaultControlOptions(),
-      center: {
-        enable: true,
-        position: "bottom-right",
-        center: { latitude: 51.505, longitude: -0.09 },
-        zoom: 13,
-        fitBoundsOptions: null,
-      },
-    };
-
-    // act
-    setControls(mapElement, centerControlOptions);
-
-    // assert
-    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
-    expect(mockMap.addControl).toHaveBeenCalledWith(expect.anything(), "bottom-right");
-  });
-
-  it("should add geolocate control when enabled", () => {
-    // arrange
-    const mapElement = document.createElement("div");
-    const dotNetHelper = createMockDotNetHelper();
-    const mapOptions = createDefaultMapOptions();
-    const controlOptions = createDefaultControlOptions();
-    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
-    const mockMap = getLatestMockMapInstance()!;
-
-    const geolocateControlOptions: IMapControlOptions = {
-      ...createDefaultControlOptions(),
-      geolocate: {
-        enable: true,
-        position: "top-left",
-        trackUser: true,
-      },
-    };
-
-    // act
-    setControls(mapElement, geolocateControlOptions);
-
-    // assert
-    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
-    expect(mockMap.addControl).toHaveBeenCalledWith(expect.anything(), "top-left");
-  });
-
-  it("should add terrain control when enabled", () => {
-    // arrange
-    const mapElement = document.createElement("div");
-    const dotNetHelper = createMockDotNetHelper();
-    const mapOptions = createDefaultMapOptions();
-    const controlOptions = createDefaultControlOptions();
-    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
-    const mockMap = getLatestMockMapInstance()!;
-
-    const terrainControlOptions: IMapControlOptions = {
-      ...createDefaultControlOptions(),
-      terrain: {
-        enable: true,
-        position: "top-right",
-      },
-    };
-
-    // act
-    setControls(mapElement, terrainControlOptions);
-
-    // assert
-    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
-    expect(mockMap.addControl).toHaveBeenCalledWith(expect.anything(), "top-right");
-  });
-
-  it("should not add controls that are disabled", () => {
-    // arrange
-    const mapElement = document.createElement("div");
-    const dotNetHelper = createMockDotNetHelper();
-    const mapOptions = createDefaultMapOptions();
-    const controlOptions = createDefaultControlOptions();
-    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
-    const mockMap = getLatestMockMapInstance()!;
-
-    const disabledControlOptions: IMapControlOptions = {
-      navigation: {
-        enable: false,
-        position: "top-right",
-        showCompass: true,
-        showZoom: true,
-      },
-      scale: {
-        enable: false,
-        position: "bottom-left",
-        unit: "metric",
-      },
-      fullscreen: null,
-      geolocate: null,
-      terrain: null,
-      center: null,
-    };
-
-    // act
-    setControls(mapElement, disabledControlOptions);
-
-    // assert
-    expect(mockMap.addControl).not.toHaveBeenCalled();
-  });
-
-  it("should be a no-op for unknown elements", () => {
-    // arrange
-    const unknownElement = document.createElement("div");
-    const controlOptions = createDefaultControlOptions();
-
-    // act & assert
-    expect(() => setControls(unknownElement, controlOptions)).not.toThrow();
-  });
-
-  it("should track controls in the controls store", () => {
-    // arrange
-    const mapElement = document.createElement("div");
-    const dotNetHelper = createMockDotNetHelper();
-    const mapOptions = createDefaultMapOptions();
-    const controlOptions = createDefaultControlOptions();
-    createMap(dotNetHelper, "OnMapInitialized", mapElement, mapOptions, controlOptions, "light", [], [], [], []);
-    const map = window.Spillgebees.Map.maps.get(mapElement)!;
-
-    const navControlOptions: IMapControlOptions = {
-      ...createDefaultControlOptions(),
-      navigation: {
-        enable: true,
-        position: "top-right",
-        showCompass: true,
-        showZoom: true,
-      },
-      scale: {
-        enable: true,
-        position: "bottom-left",
-        unit: "metric",
-      },
-    };
-
-    // act
-    setControls(mapElement, navControlOptions);
-
-    // assert
-    const controls = window.Spillgebees.Map.controls.get(map);
-    expect(controls).toBeDefined();
-    expect(controls!.size).toBe(2);
+    expect(act).toThrow(/unique/i);
   });
 });
 
-describe("setLegendControl", () => {
+describe("setControlContent", () => {
   beforeEach(() => {
     resetWindowGlobals();
     resetMockMapState();
     bootstrap();
   });
 
-  it("should create the legend control once and update it in place", () => {
+  it("should bind legend content to matching legend control", () => {
     // arrange
     const mapElement = document.createElement("div");
     const dotNetHelper = createMockDotNetHelper();
-    const mapOptions = createDefaultMapOptions();
     const placeholder = document.createElement("div");
     const content = document.createElement("div");
-    const updateSpy = vi.spyOn(LegendControl.prototype, "update");
     createMap(
       dotNetHelper,
       "OnMapInitialized",
       mapElement,
-      mapOptions,
-      createDefaultControlOptions(),
+      createDefaultMapOptions(),
+      [
+        {
+          kind: "legend",
+          controlId: "legend-main",
+          enable: true,
+          position: "top-right",
+          order: 500,
+          title: "Legend",
+          collapsible: true,
+          initiallyOpen: true,
+          className: null,
+        },
+      ],
       "light",
       [],
       [],
@@ -2431,51 +2526,59 @@ describe("setLegendControl", () => {
     const mockMap = getLatestMockMapInstance()!;
 
     // act
-    window.Spillgebees.Map.mapFunctions.setLegendControl(
-      mapElement,
-      {
-        enable: true,
-        position: "top-right",
-        title: "Legend",
-        collapsible: true,
-        initiallyOpen: true,
-        className: null,
-      },
-      placeholder,
-      content,
-    );
-    window.Spillgebees.Map.mapFunctions.setLegendControl(
-      mapElement,
-      {
-        enable: true,
-        position: "top-right",
-        title: "Updated legend",
-        collapsible: true,
-        initiallyOpen: true,
-        className: "custom",
-      },
-      placeholder,
-      content,
-    );
+    window.Spillgebees.Map.mapFunctions.setControlContent(mapElement, "legend-main", "legend", placeholder, content);
 
     // assert
-    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
-    expect(updateSpy).toHaveBeenCalledTimes(1);
+    expect(mockMap.addControl.mock.calls.some((call) => call[0] instanceof LegendControl)).toBe(true);
   });
 
-  it("should remove the legend control when disabled", () => {
+  it("should ignore content registration when control id is missing", () => {
     // arrange
     const mapElement = document.createElement("div");
     const dotNetHelper = createMockDotNetHelper();
-    const mapOptions = createDefaultMapOptions();
     const placeholder = document.createElement("div");
     const content = document.createElement("div");
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, createDefaultMapOptions(), [], "light", [], [], [], []);
+    const mockMap = getLatestMockMapInstance()!;
+
+    try {
+      // act
+      window.Spillgebees.Map.mapFunctions.setControlContent(mapElement, "missing", "legend", placeholder, content);
+
+      // assert
+      expect(mockMap.addControl).not.toHaveBeenCalled();
+      // biome-ignore lint/security/noSecrets: diagnostic substring assertion, not a secret
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("controlId='missing'"));
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("expected kind='legend'"));
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it("should warn when control kind does not match requested content kind", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const placeholder = document.createElement("div");
+    const content = document.createElement("div");
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     createMap(
       dotNetHelper,
       "OnMapInitialized",
       mapElement,
-      mapOptions,
-      createDefaultControlOptions(),
+      createDefaultMapOptions(),
+      [
+        {
+          kind: "navigation",
+          controlId: "nav-main",
+          enable: true,
+          position: "top-right",
+          order: 100,
+          showCompass: true,
+          showZoom: true,
+        },
+      ],
       "light",
       [],
       [],
@@ -2484,109 +2587,192 @@ describe("setLegendControl", () => {
     );
     const mockMap = getLatestMockMapInstance()!;
 
-    window.Spillgebees.Map.mapFunctions.setLegendControl(
+    try {
+      // act
+      window.Spillgebees.Map.mapFunctions.setControlContent(mapElement, "nav-main", "legend", placeholder, content);
+
+      // assert
+      expect(mockMap.addControl).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("controlId='nav-main'"));
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("expected kind='legend'"));
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("actual kind='navigation'"));
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it("should reuse the existing legend control when only control order changes", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const placeholder = document.createElement("div");
+    const content = document.createElement("div");
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
       mapElement,
-      {
-        enable: true,
-        position: "top-right",
-        title: "Legend",
-        collapsible: true,
-        initiallyOpen: true,
-        className: null,
-      },
-      placeholder,
-      content,
+      createDefaultMapOptions(),
+      [
+        {
+          kind: "legend",
+          controlId: "legend-main",
+          enable: true,
+          position: "top-right",
+          order: 500,
+          title: "Legend",
+          collapsible: true,
+          initiallyOpen: true,
+          className: null,
+        },
+      ],
+      "light",
+      [],
+      [],
+      [],
+      [],
     );
+
+    window.Spillgebees.Map.mapFunctions.setControlContent(mapElement, "legend-main", "legend", placeholder, content);
+    const map = window.Spillgebees.Map.maps.get(mapElement)!;
+    const registrations = window.Spillgebees.Map.customControlRegistrations.get(map)!;
+    const initialControl = registrations.get("legend-main")?.control;
 
     // act
-    window.Spillgebees.Map.mapFunctions.setLegendControl(
-      mapElement,
+    setControls(mapElement, [
       {
-        enable: false,
+        kind: "legend",
+        controlId: "legend-main",
+        enable: true,
         position: "top-right",
+        order: 700,
         title: "Legend",
         collapsible: true,
         initiallyOpen: true,
         className: null,
       },
-      placeholder,
-      content,
-    );
+    ]);
+    window.Spillgebees.Map.mapFunctions.setControlContent(mapElement, "legend-main", "legend", placeholder, content);
 
     // assert
-    expect(mockMap.removeControl).toHaveBeenCalledTimes(1);
-    expect(content.hidden).toBe(true);
-    expect(placeholder.contains(content)).toBe(true);
+    const updatedControl = registrations.get("legend-main")?.control;
+    expect(initialControl).toBeDefined();
+    expect(updatedControl).toBe(initialControl);
   });
 
-  it("should remove and re-add the legend control when position changes", () => {
+  it("should keep declaration ordering when content is bound out of order", () => {
     // arrange
     const mapElement = document.createElement("div");
     const dotNetHelper = createMockDotNetHelper();
-    const mapOptions = createDefaultMapOptions();
-    const placeholder = document.createElement("div");
-    const content = document.createElement("div");
-    const removeSpy = vi.spyOn(window.Spillgebees.Map.mapFunctions, "removeLegendControl");
+    const firstPlaceholder = document.createElement("div");
+    const firstContent = document.createElement("div");
+    const secondPlaceholder = document.createElement("div");
+    const secondContent = document.createElement("div");
     createMap(
       dotNetHelper,
       "OnMapInitialized",
       mapElement,
-      mapOptions,
-      createDefaultControlOptions(),
+      createDefaultMapOptions(),
+      [
+        {
+          kind: "legend",
+          controlId: "legend-first",
+          enable: true,
+          position: "top-right",
+          order: 500,
+          title: "First",
+          collapsible: true,
+          initiallyOpen: true,
+          className: null,
+        },
+        {
+          kind: "legend",
+          controlId: "legend-second",
+          enable: true,
+          position: "top-right",
+          order: 500,
+          title: "Second",
+          collapsible: true,
+          initiallyOpen: true,
+          className: null,
+        },
+      ],
       "light",
       [],
       [],
       [],
       [],
     );
+    const map = window.Spillgebees.Map.maps.get(mapElement)!;
+    const registrations = window.Spillgebees.Map.customControlRegistrations.get(map)!;
     const mockMap = getLatestMockMapInstance()!;
 
-    window.Spillgebees.Map.mapFunctions.setLegendControl(
+    // act
+    window.Spillgebees.Map.mapFunctions.setControlContent(
       mapElement,
-      {
-        enable: true,
-        position: "top-right",
-        title: "Legend",
-        collapsible: true,
-        initiallyOpen: true,
-        className: null,
-      },
-      placeholder,
-      content,
-    );
-    const originalLegendControl = window.Spillgebees.Map.legendControls.get(
-      window.Spillgebees.Map.maps.get(mapElement)!,
+      "legend-second",
+      "legend",
+      secondPlaceholder,
+      secondContent,
     );
     mockMap.addControl.mockClear();
-    mockMap.removeControl.mockClear();
-
-    // act
-    window.Spillgebees.Map.mapFunctions.setLegendControl(
+    window.Spillgebees.Map.mapFunctions.setControlContent(
       mapElement,
-      {
-        enable: true,
-        position: "bottom-left",
-        title: "Legend",
-        collapsible: true,
-        initiallyOpen: true,
-        className: null,
-      },
-      placeholder,
-      content,
+      "legend-first",
+      "legend",
+      firstPlaceholder,
+      firstContent,
     );
 
     // assert
-    expect(removeSpy).not.toHaveBeenCalled();
-    expect(mockMap.removeControl).toHaveBeenCalledTimes(1);
-    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
-    expect(mockMap.addControl).toHaveBeenCalledWith(expect.any(LegendControl), "bottom-left");
-    const legendControl = window.Spillgebees.Map.legendControls.get(window.Spillgebees.Map.maps.get(mapElement)!);
-    const controlOptions = window.Spillgebees.Map.legendControlOptions.get(
-      window.Spillgebees.Map.maps.get(mapElement)!,
+    expect(mockMap.addControl.mock.calls.map((call) => call[0])).toEqual([
+      registrations.get("legend-first")?.control,
+      registrations.get("legend-second")?.control,
+    ]);
+  });
+
+  it("should throw when content kind is unsupported", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const placeholder = document.createElement("div");
+    const content = document.createElement("div");
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      [
+        {
+          kind: "legend",
+          controlId: "legend-main",
+          enable: true,
+          position: "top-right",
+          order: 500,
+          title: "Legend",
+          collapsible: true,
+          initiallyOpen: true,
+          className: null,
+        },
+      ],
+      "light",
+      [],
+      [],
+      [],
+      [],
     );
-    expect(legendControl).toBeDefined();
-    expect(legendControl).not.toBe(originalLegendControl);
-    expect(controlOptions?.position).toBe("bottom-left");
+
+    // act
+    const act = () =>
+      window.Spillgebees.Map.mapFunctions.setControlContent(
+        mapElement,
+        "legend-main",
+        "unsupported",
+        placeholder,
+        content,
+      );
+
+    // assert
+    expect(act).toThrow(/unsupported/i);
   });
 });
 

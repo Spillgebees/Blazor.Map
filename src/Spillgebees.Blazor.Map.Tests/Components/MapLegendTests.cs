@@ -17,8 +17,8 @@ public class MapLegendTests : BunitContext
     private const string ResizeIdentifier = "Spillgebees.Map.mapFunctions.resize";
     private const string GetProtocolVersionIdentifier = "Spillgebees.Map.getProtocolVersion";
     private const string ApplySceneMutationsIdentifier = "Spillgebees.Map.mapFunctions.applySceneMutations";
-    private const string SetLegendControlIdentifier = "Spillgebees.Map.mapFunctions.setLegendControl";
-    private const string RemoveLegendControlIdentifier = "Spillgebees.Map.mapFunctions.removeLegendControl";
+    private const string SetControlContentIdentifier = "Spillgebees.Map.mapFunctions.setControlContent";
+    private const string RemoveControlContentIdentifier = "Spillgebees.Map.mapFunctions.removeControlContent";
     private const string HasStyleLayerIdentifier = "Spillgebees.Map.mapFunctions.hasStyleLayer";
     private const string SetStyleLayerVisibilityIdentifier = "Spillgebees.Map.mapFunctions.setStyleLayerVisibility";
 
@@ -26,13 +26,13 @@ public class MapLegendTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(9);
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(12);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
         JSInterop.SetupVoid(ApplySceneMutationsIdentifier);
-        JSInterop.SetupVoid(SetLegendControlIdentifier);
-        JSInterop.SetupVoid(RemoveLegendControlIdentifier);
+        JSInterop.SetupVoid(SetControlContentIdentifier);
+        JSInterop.SetupVoid(RemoveControlContentIdentifier);
         JSInterop.Setup<bool>(HasStyleLayerIdentifier).SetResult(true);
         JSInterop.SetupVoid(SetStyleLayerVisibilityIdentifier);
     }
@@ -48,7 +48,7 @@ public class MapLegendTests : BunitContext
         await map.OnMapInitializedAsync();
 
         // assert
-        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetLegendControlIdentifier));
+        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetControlContentIdentifier));
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -65,7 +65,7 @@ public class MapLegendTests : BunitContext
         await map.OnMapInitializedAsync();
 
         // assert
-        cut.WaitForAssertion(() => JSInterop.Invocations[SetLegendControlIdentifier].Count.Should().Be(1));
+        cut.WaitForAssertion(() => JSInterop.Invocations[SetControlContentIdentifier].Count.Should().Be(1));
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -80,11 +80,45 @@ public class MapLegendTests : BunitContext
         cut.Render(parameters =>
             parameters
                 .Add(p => p.Definition, CreateDefinition())
-                .Add(p => p.ControlOptions, new LegendControlOptions(Enable: false))
+                .Add(p => p.Controls, new List<MapControl> { new LegendMapControl("legend-control", Enable: false) })
         );
 
         // assert
-        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(RemoveLegendControlIdentifier));
+        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(RemoveControlContentIdentifier));
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_unregister_previous_control_id_when_control_id_changes(CancellationToken cancellationToken)
+    {
+        // arrange
+        var cut = Render<ComponentHost>(parameters => parameters.Add(p => p.Definition, CreateDefinition()));
+        var map = cut.FindComponent<SgbMap>().Instance;
+        await map.OnMapInitializedAsync();
+        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetControlContentIdentifier));
+
+        // act
+        cut.Render(parameters =>
+            parameters
+                .Add(p => p.Definition, CreateDefinition())
+                .Add(p => p.LegendControlId, "legend-control-next")
+                .Add(
+                    p => p.Controls,
+                    new List<MapControl>
+                    {
+                        new LegendMapControl("legend-control"),
+                        new LegendMapControl("legend-control-next"),
+                    }
+                )
+        );
+
+        // assert
+        var removeInvocations = JSInterop.Invocations[RemoveControlContentIdentifier];
+        removeInvocations.Should().ContainSingle();
+        removeInvocations[0].Arguments[1].Should().Be("legend-control");
+
+        var setInvocations = JSInterop.Invocations[SetControlContentIdentifier];
+        var lastSetInvocation = setInvocations[setInvocations.Count - 1];
+        lastSetInvocation.Arguments[1].Should().Be("legend-control-next");
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -152,15 +186,15 @@ public class MapLegendTests : BunitContext
         var cut = Render<ComponentHost>(parameters => parameters.Add(p => p.Definition, CreateDefinition()));
         var map = cut.FindComponent<SgbMap>().Instance;
         await map.OnMapInitializedAsync();
-        cut.WaitForAssertion(() => JSInterop.Invocations[SetLegendControlIdentifier].Count.Should().BeGreaterThan(0));
+        cut.WaitForAssertion(() => JSInterop.Invocations[SetControlContentIdentifier].Count.Should().BeGreaterThan(0));
         var toggle = cut.Find("input[data-testid='map-legend-toggle-stations']");
-        var initialShellInvocationCount = JSInterop.Invocations[SetLegendControlIdentifier].Count;
+        var initialShellInvocationCount = JSInterop.Invocations[SetControlContentIdentifier].Count;
 
         // act
         await toggle.ChangeAsync(new ChangeEventArgs { Value = false });
 
         // assert
-        JSInterop.Invocations[SetLegendControlIdentifier].Count.Should().Be(initialShellInvocationCount);
+        JSInterop.Invocations[SetControlContentIdentifier].Count.Should().Be(initialShellInvocationCount);
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -201,18 +235,24 @@ public class MapLegendTests : BunitContext
         var cut = Render<ComponentHost>(parameters => parameters.Add(p => p.Definition, CreateDefinition()));
         var map = cut.FindComponent<SgbMap>().Instance;
         await map.OnMapInitializedAsync();
-        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetLegendControlIdentifier));
-        var initialRegisterInvocationCount = JSInterop.Invocations[SetLegendControlIdentifier].Count;
+        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetControlContentIdentifier));
+        var initialRegisterInvocationCount = JSInterop.Invocations[SetControlContentIdentifier].Count;
 
         // act
         cut.Render(parameters =>
             parameters
                 .Add(p => p.Definition, CreateDefinition())
-                .Add(p => p.ControlOptions, new LegendControlOptions(Position: ControlPosition.BottomLeft))
+                .Add(
+                    p => p.Controls,
+                    new List<MapControl>
+                    {
+                        new LegendMapControl("legend-control", Position: ControlPosition.BottomLeft),
+                    }
+                )
         );
 
         // assert
-        JSInterop.Invocations[SetLegendControlIdentifier].Count.Should().Be(initialRegisterInvocationCount + 1);
+        JSInterop.Invocations[SetControlContentIdentifier].Count.Should().Be(initialRegisterInvocationCount + 1);
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -221,12 +261,15 @@ public class MapLegendTests : BunitContext
     )
     {
         // arrange
-        var controlOptions = new LegendControlOptions(
+        var controlOptions = new LegendMapControl(
+            ControlId: "legend-control",
             Position: ControlPosition.BottomRight,
             ClassName: "legend-test-shell"
         );
         var cut = Render<ComponentHost>(parameters =>
-            parameters.Add(p => p.Definition, CreateDefinition()).Add(p => p.ControlOptions, controlOptions)
+            parameters
+                .Add(p => p.Definition, CreateDefinition())
+                .Add(p => p.Controls, new List<MapControl> { controlOptions })
         );
         var map = cut.FindComponent<SgbMap>().Instance;
 
@@ -234,9 +277,10 @@ public class MapLegendTests : BunitContext
         await map.OnMapInitializedAsync();
 
         // assert
-        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetLegendControlIdentifier));
-        var invocation = JSInterop.Invocations[SetLegendControlIdentifier].Single();
-        invocation.Arguments[1].Should().BeEquivalentTo(controlOptions);
+        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetControlContentIdentifier));
+        var invocation = JSInterop.Invocations[SetControlContentIdentifier].Single();
+        invocation.Arguments[1].Should().BeOfType<string>().Which.Should().NotBeNullOrWhiteSpace();
+        invocation.Arguments[2].Should().Be("legend");
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -470,7 +514,10 @@ public class MapLegendTests : BunitContext
         public EventCallback<MapLegendVisibilityChangedEventArgs> OnItemVisibilityChanged { get; set; }
 
         [Parameter]
-        public LegendControlOptions ControlOptions { get; set; } = LegendControlOptions.Default;
+        public List<MapControl> Controls { get; set; } = [new LegendMapControl("legend-control")];
+
+        [Parameter]
+        public string LegendControlId { get; set; } = "legend-control";
 
         protected override void BuildRenderTree(RenderTreeBuilder builder)
         {
@@ -490,11 +537,12 @@ public class MapLegendTests : BunitContext
                             nameof(MapLegend.OnItemVisibilityChanged),
                             OnItemVisibilityChanged
                         );
-                        childBuilder.AddAttribute(3, nameof(MapLegend.ControlOptions), ControlOptions);
+                        childBuilder.AddAttribute(3, nameof(MapLegend.ControlId), LegendControlId);
                         childBuilder.CloseComponent();
                     }
                 )
             );
+            builder.AddAttribute(2, nameof(SgbMap.Controls), Controls);
             builder.CloseComponent();
 
             // assert
@@ -509,6 +557,9 @@ public class MapLegendTests : BunitContext
         [Parameter]
         public EventCallback<MapLegendVisibilityChangedEventArgs> OnItemVisibilityChanged { get; set; }
 
+        [Parameter]
+        public List<MapControl> Controls { get; set; } = [new LegendMapControl("legend-control")];
+
         protected override void BuildRenderTree(RenderTreeBuilder builder)
         {
             // arrange
@@ -527,8 +578,9 @@ public class MapLegendTests : BunitContext
                             nameof(MapLegend.OnItemVisibilityChanged),
                             OnItemVisibilityChanged
                         );
+                        childBuilder.AddAttribute(3, nameof(MapLegend.ControlId), "legend-control");
                         childBuilder.AddAttribute(
-                            3,
+                            4,
                             nameof(MapLegend.ItemTemplate),
                             (RenderFragment<MapLegendItemTemplateContext>)(
                                 context =>
@@ -554,6 +606,7 @@ public class MapLegendTests : BunitContext
                     }
                 )
             );
+            builder.AddAttribute(2, nameof(SgbMap.Controls), Controls);
             builder.CloseComponent();
 
             // assert

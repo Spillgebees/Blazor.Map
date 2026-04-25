@@ -75,6 +75,12 @@ const loadCallbacks: Array<() => void> = [];
 const eventCallbacks = new Map<string, Array<(e?: unknown) => void>>();
 const mockSources = new Map<string, { setData: ReturnType<typeof vi.fn>; [key: string]: unknown }>();
 
+export const NavigationControl = vi.fn();
+export const ScaleControl = vi.fn();
+export const FullscreenControl = vi.fn();
+export const GeolocateControl = vi.fn();
+export const TerrainControl = vi.fn();
+
 export function getLatestMockMapInstance(): MockMapInstance | null {
   return latestMockMapInstance;
 }
@@ -94,6 +100,11 @@ export function resetMockMapState(): void {
   mockSources.clear();
   MockMarker.mockClear();
   MockPopup.mockClear();
+  NavigationControl.mockClear();
+  ScaleControl.mockClear();
+  FullscreenControl.mockClear();
+  GeolocateControl.mockClear();
+  TerrainControl.mockClear();
 }
 
 /**
@@ -253,11 +264,11 @@ vi.mock("maplibre-gl", () => {
     Map: MockMapConstructor,
     Marker: MockMarker,
     Popup: MockPopup,
-    NavigationControl: vi.fn(),
-    ScaleControl: vi.fn(),
-    FullscreenControl: vi.fn(),
-    GeolocateControl: vi.fn(),
-    TerrainControl: vi.fn(),
+    NavigationControl,
+    ScaleControl,
+    FullscreenControl,
+    GeolocateControl,
+    TerrainControl,
     IControl: vi.fn(),
   };
 });

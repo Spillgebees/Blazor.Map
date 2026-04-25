@@ -1,5 +1,5 @@
 <SgbMap MapOptions="@_mapOptions"
-        ControlOptions="@MapControlOptions.Default"
+        Controls="@_controls"
         Markers="@_markers"
         Polylines="@_polylines"
         Height="400px"
@@ -14,6 +14,8 @@
             FeatureIds: ["route-1"],
             Padding: new Point(60, 60))
     );
+
+    private readonly IReadOnlyList<MapControl> _controls = [new NavigationMapControl()];
 
     private readonly List<Marker> _markers =
     [
