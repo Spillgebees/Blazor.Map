@@ -69,7 +69,6 @@ export interface CustomControlRegistration {
 }
 
 export interface SpillgebeesMapNamespace {
-  getProtocolVersion: () => number;
   mapFunctions: Record<string, (...args: unknown[]) => unknown>;
   maps: Map<HTMLElement, MapLibreMap>;
   features: Map<MapLibreMap, FeatureStorage>;

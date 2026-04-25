@@ -11,7 +11,6 @@ public class BaseMapSyncFeaturesTests : BunitContext
     private const string DisposeMapIdentifier = "Spillgebees.Map.mapFunctions.disposeMap";
     private const string ResizeIdentifier = "Spillgebees.Map.mapFunctions.resize";
     private const string SyncFeaturesIdentifier = "Spillgebees.Map.mapFunctions.syncFeatures";
-    private const string GetProtocolVersionIdentifier = "Spillgebees.Map.getProtocolVersion";
 
     /// <summary>
     /// Timeout in milliseconds for tests to prevent hanging.
@@ -22,7 +21,6 @@ public class BaseMapSyncFeaturesTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(13);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);

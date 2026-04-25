@@ -10,7 +10,6 @@ public class BaseMapImagesLifecycleTests : BunitContext
     private const string DisposeMapIdentifier = "Spillgebees.Map.mapFunctions.disposeMap";
     private const string ResizeIdentifier = "Spillgebees.Map.mapFunctions.resize";
     private const string SetImagesIdentifier = "Spillgebees.Map.mapFunctions.setImages";
-    private const string GetProtocolVersionIdentifier = "Spillgebees.Map.getProtocolVersion";
 
     private const int TestTimeoutMs = 5000;
 
@@ -18,7 +17,6 @@ public class BaseMapImagesLifecycleTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(13);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);

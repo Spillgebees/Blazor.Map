@@ -562,25 +562,13 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         firstRender ? InitializeMapAsync() : Task.CompletedTask;
 
     /// <summary>
-    /// Initializes the map by validating the protocol version and creating the map instance.
+    /// Initializes the map and creates the map instance.
     /// </summary>
     protected virtual async Task InitializeMapAsync()
     {
         MapOptionsCompositionValidator.Validate(MapOptions);
 
         DotNetObjectReference = Microsoft.JSInterop.DotNetObjectReference.Create(this);
-
-        // Protocol version handshake — safety net for cached JS modules
-        var jsProtocolVersion = await MapJs.GetProtocolVersionAsync(JsRuntime, Logger.Value);
-        if (jsProtocolVersion != MapJs.ProtocolVersion)
-        {
-            throw new InvalidOperationException(
-                $"Spillgebees.Blazor.Map: JavaScript/C# version mismatch. "
-                    + $"The loaded JavaScript module is protocol version {jsProtocolVersion} "
-                    + $"but the .NET library expects protocol version {MapJs.ProtocolVersion}. "
-                    + "Clear your browser cache and reload the page."
-            );
-        }
 
         InternalMapOptions = MapOptions;
         ValidateControlIds(Controls);

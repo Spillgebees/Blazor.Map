@@ -15,20 +15,7 @@ namespace Spillgebees.Blazor.Map.Interop;
 /// </summary>
 internal static class MapJs
 {
-    /// <summary>
-    /// The protocol version this C# library expects from the JS module.
-    /// Bumped whenever the JS interop contract changes (function names, parameter shapes, return types).
-    /// </summary>
-    internal const int ProtocolVersion = 13;
-
     private const string JsNamespace = "Spillgebees.Map.mapFunctions";
-    private const string JsProtocolVersionFunction = "Spillgebees.Map.getProtocolVersion";
-
-    /// <summary>
-    /// Retrieves the protocol version from the loaded JavaScript module.
-    /// </summary>
-    internal static ValueTask<int> GetProtocolVersionAsync(IJSRuntime jsRuntime, ILogger logger) =>
-        jsRuntime.SafeInvokeAsync<int>(logger, JsProtocolVersionFunction);
 
     /// <summary>
     /// Creates a new map instance with the given options, controls, and initial features.

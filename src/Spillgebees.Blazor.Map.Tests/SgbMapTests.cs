@@ -12,7 +12,6 @@ public class SgbMapTests : BunitContext
     private const string CreateMapIdentifier = "Spillgebees.Map.mapFunctions.createMap";
     private const string DisposeMapIdentifier = "Spillgebees.Map.mapFunctions.disposeMap";
     private const string ResizeIdentifier = "Spillgebees.Map.mapFunctions.resize";
-    private const string GetProtocolVersionIdentifier = "Spillgebees.Map.getProtocolVersion";
     private const string HasStyleLayerIdentifier = "Spillgebees.Map.mapFunctions.hasStyleLayer";
     private const string SetStyleLayerVisibilityIdentifier = "Spillgebees.Map.mapFunctions.setStyleLayerVisibility";
     private const string GetCenterIdentifier = "Spillgebees.Map.mapFunctions.getCenter";
@@ -34,7 +33,6 @@ public class SgbMapTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(13);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);

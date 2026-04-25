@@ -23,7 +23,6 @@ public class TrainTrackingExampleTests : BunitContext
     private const string CreateMapIdentifier = "Spillgebees.Map.mapFunctions.createMap";
     private const string DisposeMapIdentifier = "Spillgebees.Map.mapFunctions.disposeMap";
     private const string ResizeIdentifier = "Spillgebees.Map.mapFunctions.resize";
-    private const string GetProtocolVersionIdentifier = "Spillgebees.Map.getProtocolVersion";
     private const string GetClusterExpansionZoomIdentifier = "Spillgebees.Map.mapFunctions.getClusterExpansionZoom";
     private const string FlyToIdentifier = "Spillgebees.Map.mapFunctions.flyTo";
     private const string HasStyleLayerIdentifier = "Spillgebees.Map.mapFunctions.hasStyleLayer";
@@ -39,7 +38,6 @@ public class TrainTrackingExampleTests : BunitContext
 
         Services.AddSingleton<IConfiguration>(CreateConfiguration());
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(13);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);

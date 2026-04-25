@@ -18,7 +18,6 @@ public class TrackedDataLayerMapApiTests : BunitContext
     private const string CreateMapIdentifier = "Spillgebees.Map.mapFunctions.createMap";
     private const string DisposeMapIdentifier = "Spillgebees.Map.mapFunctions.disposeMap";
     private const string ResizeIdentifier = "Spillgebees.Map.mapFunctions.resize";
-    private const string GetProtocolVersionIdentifier = "Spillgebees.Map.getProtocolVersion";
     private const string SetTrackedEntityFeatureStateIdentifier =
         "Spillgebees.Map.mapFunctions.setTrackedEntityFeatureState";
     private const string FlyToIdentifier = "Spillgebees.Map.mapFunctions.flyTo";
@@ -32,7 +31,6 @@ public class TrackedDataLayerMapApiTests : BunitContext
         JSInterop.Mode = JSRuntimeMode.Loose;
 
         // act
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(13);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);

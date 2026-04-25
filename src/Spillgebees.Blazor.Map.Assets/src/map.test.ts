@@ -27,7 +27,6 @@ import {
   getZoom,
   hasLayer,
   hasStyleLayer,
-  PROTOCOL_VERSION,
   queryRenderedFeatures,
   resize,
   setControls,
@@ -90,7 +89,7 @@ describe("bootstrap", () => {
     // assert
     expect(window.Spillgebees).toBeDefined();
     expect(window.Spillgebees.Map).toBeDefined();
-    expect(window.Spillgebees.Map.getProtocolVersion()).toBe(PROTOCOL_VERSION);
+    expect(window.Spillgebees.Map.mapFunctions.createMap).toBeTypeOf("function");
   });
 
   it("should register all map functions", () => {
@@ -146,7 +145,7 @@ describe("bootstrap", () => {
     expect(window.Spillgebees.Map.customControlRegistrations.size).toBe(0);
   });
 
-  it("should be a no-op when the protocol version already matches", () => {
+  it("should be a no-op when the namespace is already valid", () => {
     // arrange
     bootstrap();
     const originalMapFunctions = window.Spillgebees.Map.mapFunctions;
@@ -160,11 +159,10 @@ describe("bootstrap", () => {
     expect(window.Spillgebees.Map.maps).toBe(originalMaps);
   });
 
-  it("should force-reinitialize when the protocol version mismatches", () => {
-    // arrange — simulate a stale namespace from an older version
+  it("should force-reinitialize when mapFunctions are missing", () => {
+    // arrange — simulate a stale namespace that has no callable map API
     window.Spillgebees = {
       Map: {
-        getProtocolVersion: () => PROTOCOL_VERSION - 1,
         mapFunctions: { staleFunction: () => {} } as never,
         maps: new Map(),
         features: new Map(),
@@ -178,41 +176,38 @@ describe("bootstrap", () => {
     bootstrap();
 
     // assert — namespace was replaced, not preserved
-    expect(window.Spillgebees.Map.getProtocolVersion()).toBe(PROTOCOL_VERSION);
     expect(window.Spillgebees.Map.mapFunctions).not.toBe(staleMapFunctions);
     expect(window.Spillgebees.Map.mapFunctions.createMap).toBeTypeOf("function");
     expect((window.Spillgebees.Map.mapFunctions as Record<string, unknown>).staleFunction).toBeUndefined();
   });
 
-  it("should reinitialize when getProtocolVersion is missing", () => {
-    // arrange — simulate a corrupted namespace with no version function
-    window.Spillgebees = {
-      Map: {
-        mapFunctions: {},
-        maps: new Map(),
-        features: new Map(),
-        overlays: new Map(),
-        controls: new Map(),
-      } as never,
-    };
+  it("should keep valid namespace even when unrelated legacy field is broken", () => {
+    // arrange
+    bootstrap();
+    const originalMapFunctions = window.Spillgebees.Map.mapFunctions;
+
+    Object.defineProperty(window.Spillgebees.Map as object, "legacyField", {
+      get: () => {
+        throw new Error("legacy field is broken");
+      },
+      configurable: true,
+    });
 
     // act
     bootstrap();
 
     // assert
-    expect(window.Spillgebees.Map.getProtocolVersion()).toBe(PROTOCOL_VERSION);
-    expect(window.Spillgebees.Map.mapFunctions.createMap).toBeTypeOf("function");
+    expect(window.Spillgebees.Map.mapFunctions).toBe(originalMapFunctions);
   });
 
-  it("should reinitialize when getProtocolVersion throws", () => {
-    // arrange — simulate a namespace where getProtocolVersion is corrupted
+  it("should reinitialize when maps store is missing", () => {
+    // arrange — simulate a corrupted namespace with missing stores
     window.Spillgebees = {
       Map: {
-        getProtocolVersion: () => {
-          throw new Error("corrupted");
+        mapFunctions: {
+          createMap: vi.fn(),
+          disposeMap: vi.fn(),
         },
-        mapFunctions: {},
-        maps: new Map(),
         features: new Map(),
         overlays: new Map(),
         controls: new Map(),
@@ -223,7 +218,28 @@ describe("bootstrap", () => {
     bootstrap();
 
     // assert
-    expect(window.Spillgebees.Map.getProtocolVersion()).toBe(PROTOCOL_VERSION);
+    expect(window.Spillgebees.Map.mapFunctions.createMap).toBeTypeOf("function");
+    expect(window.Spillgebees.Map.maps).toBeInstanceOf(Map);
+  });
+
+  it("should reinitialize when mapFunctions throws on access", () => {
+    // arrange — simulate a namespace where mapFunctions accessor is corrupted
+    const brokenMapNamespace = {};
+    Object.defineProperty(brokenMapNamespace, "mapFunctions", {
+      get: () => {
+        throw new Error("corrupted");
+      },
+    });
+
+    window.Spillgebees = {
+      Map: brokenMapNamespace as never,
+    };
+
+    // act
+    bootstrap();
+
+    // assert
+    expect(window.Spillgebees.Map.mapFunctions.createMap).toBeTypeOf("function");
   });
 
   it("should preserve other Spillgebees namespace properties", () => {
@@ -236,7 +252,24 @@ describe("bootstrap", () => {
     bootstrap();
 
     // assert — Map is initialized but OtherLibrary is preserved
-    expect(window.Spillgebees.Map.getProtocolVersion()).toBe(PROTOCOL_VERSION);
+    expect(window.Spillgebees.Map.mapFunctions.createMap).toBeTypeOf("function");
+    expect((window.Spillgebees as Record<string, unknown>).OtherLibrary).toEqual({ foo: "bar" });
+  });
+
+  it("should preserve other Spillgebees namespace siblings when map is reinitialized", () => {
+    // arrange
+    window.Spillgebees = {
+      OtherLibrary: { foo: "bar" },
+      Map: {
+        mapFunctions: {} as never,
+      } as never,
+    } as never;
+
+    // act
+    bootstrap();
+
+    // assert
+    expect(window.Spillgebees.Map.mapFunctions.createMap).toBeTypeOf("function");
     expect((window.Spillgebees as Record<string, unknown>).OtherLibrary).toEqual({ foo: "bar" });
   });
 });
@@ -255,7 +288,7 @@ describe("index lifecycle hooks", () => {
 
     // assert
     expect(window.hasBeforeStartBeenCalledForSpillgebeesMap).toBe(true);
-    expect(window.Spillgebees.Map.getProtocolVersion()).toBe(PROTOCOL_VERSION);
+    expect(window.Spillgebees.Map.mapFunctions.createMap).toBeTypeOf("function");
   });
 
   it("should not re-bootstrap on duplicate lifecycle hook calls", async () => {

@@ -15,7 +15,6 @@ public class LegendMapControlTests : BunitContext
     private const string CreateMapIdentifier = "Spillgebees.Map.mapFunctions.createMap";
     private const string DisposeMapIdentifier = "Spillgebees.Map.mapFunctions.disposeMap";
     private const string ResizeIdentifier = "Spillgebees.Map.mapFunctions.resize";
-    private const string GetProtocolVersionIdentifier = "Spillgebees.Map.getProtocolVersion";
     private const string ApplySceneMutationsIdentifier = "Spillgebees.Map.mapFunctions.applySceneMutations";
     private const string SetControlContentIdentifier = "Spillgebees.Map.mapFunctions.setControlContent";
     private const string RemoveControlContentIdentifier = "Spillgebees.Map.mapFunctions.removeControlContent";
@@ -26,7 +25,6 @@ public class LegendMapControlTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(13);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
