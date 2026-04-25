@@ -7,7 +7,7 @@ namespace Spillgebees.Blazor.Map.Models.TrackedData;
 public sealed record TrackedDataLayer<TItem>(
     string Id,
     IReadOnlyList<TItem> Items,
-    TrackedDataIdOptions<TItem> Item,
+    TrackedDataIdOptions<TItem> IdOptions,
     TrackedDataVisualOptions<TItem> Visual,
     TrackedDataBehaviorOptions<TItem> Behavior,
     TrackedDataCallbacks<TItem> Callbacks

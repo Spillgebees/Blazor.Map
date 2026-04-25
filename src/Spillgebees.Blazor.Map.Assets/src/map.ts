@@ -111,6 +111,8 @@ const REQUIRED_MAP_FUNCTION_NAMES = [
   "unregisterLayerEvents",
 ] as const;
 
+const MAP_NAMESPACE_BUNDLE_MARKER = "spillgebees.blazor.map.assets.bundle.v1";
+
 const LEGEND_CONTROL_KIND = "legend";
 
 interface OrderedControlRegistration {
@@ -256,6 +258,10 @@ function isValidMapNamespace(): boolean {
       return false;
     }
 
+    if (mapNamespace.__bundleMarker !== MAP_NAMESPACE_BUNDLE_MARKER) {
+      return false;
+    }
+
     for (const functionName of REQUIRED_MAP_FUNCTION_NAMES) {
       if (typeof mapFunctions[functionName] !== "function") {
         return false;
@@ -291,6 +297,7 @@ function isValidMapNamespace(): boolean {
 
 function initializeNamespace(): void {
   window.Spillgebees.Map = {
+    __bundleMarker: MAP_NAMESPACE_BUNDLE_MARKER,
     mapFunctions: {
       createMap,
       syncFeatures,

@@ -24,6 +24,8 @@ public class TrackedDataLayerMapApiTests : BunitContext
     private const string GetClusterExpansionZoomIdentifier = "Spillgebees.Map.mapFunctions.getClusterExpansionZoom";
     private const string ShowPopupIdentifier = "Spillgebees.Map.mapFunctions.showPopup";
     private const string ClosePopupIdentifier = "Spillgebees.Map.mapFunctions.closePopup";
+    private static readonly TimeSpan HoverLeaveWait =
+        TrackedDataSource<object>.HoverLeaveDebounce + TimeSpan.FromMilliseconds(50);
 
     public TrackedDataLayerMapApiTests()
     {
@@ -69,7 +71,7 @@ public class TrackedDataLayerMapApiTests : BunitContext
         // act
         await cut.InvokeAsync(() => hitArea.OnMouseEnter.InvokeAsync(CreateItemFeatureEvent("vehicle-1")));
         await cut.InvokeAsync(() => hitArea.OnMouseLeave.InvokeAsync());
-        await Task.Delay(350, cancellationToken);
+        await Task.Delay(HoverLeaveWait, cancellationToken);
 
         // assert
         JSInterop.Invocations[ShowPopupIdentifier].Should().HaveCount(1);
@@ -154,7 +156,7 @@ public class TrackedDataLayerMapApiTests : BunitContext
         await cut.InvokeAsync(() => hitArea.OnMouseEnter.InvokeAsync(CreateItemFeatureEvent("vehicle-2")));
         firstPopupGate.SetResult();
         await firstOpen;
-        await Task.Delay(350, cancellationToken);
+        await Task.Delay(HoverLeaveWait, cancellationToken);
 
         // assert
         JSInterop.Invocations[ShowPopupIdentifier].Should().HaveCount(1);
@@ -349,49 +351,31 @@ public class TrackedDataLayerMapApiTests : BunitContext
 
     private static LayerFeatureEventArgs CreateItemFeatureEvent(string entityId, string? decorationId = null)
     {
-        // arrange
         var json = decorationId is null
             ? $"{{\"{TrackedEntityFeatureProperties.EntityId}\":\"{entityId}\"}}"
             : $"{{\"{TrackedEntityFeatureProperties.EntityId}\":\"{entityId}\",\"{TrackedEntityFeatureProperties.DecorationId}\":\"{decorationId}\"}}";
 
-        // act
         var properties = JsonSerializer.Deserialize<JsonElement>(json);
 
-        // assert
         return new LayerFeatureEventArgs("tracked-data-symbols", new Coordinate(49.6, 6.1), properties);
     }
 
     private static LayerFeatureEventArgs CreateClusterFeatureEvent()
     {
-        // arrange
         var properties = JsonSerializer.Deserialize<JsonElement>("{\"cluster_id\":42}");
-
-        // act
-
-        // assert
         return new LayerFeatureEventArgs("tracked-data-cluster-count", new Coordinate(49.6, 6.1), properties);
     }
 
     private static IReadOnlyDictionary<string, object?> GetLayerSpec(LayerBase layer)
     {
-        // arrange
-
-        // act
         var spec = layer.BuildLayerSpec();
-
-        // assert
         return spec;
     }
 
     private static object? GetPaintValue(IReadOnlyDictionary<string, object?> layerSpec, string propertyName)
     {
-        // arrange
         var paint = layerSpec["paint"].Should().BeAssignableTo<IReadOnlyDictionary<string, object?>>().Subject;
-
-        // act
         var found = paint.TryGetValue(propertyName, out var value);
-
-        // assert
         found.Should().BeTrue();
         return value;
     }
@@ -419,22 +403,16 @@ public class TrackedDataLayerMapApiTests : BunitContext
 
         public void UpdateItems(IReadOnlyList<TestVehicle> items)
         {
-            // arrange
             Items = items;
-
-            // act
             StateHasChanged();
-
-            // assert
         }
 
         protected override void BuildRenderTree(RenderTreeBuilder builder)
         {
-            // arrange
             var layer = new TrackedDataLayer<TestVehicle>(
                 Id: "tracked-data",
                 Items: Items,
-                Item: new TrackedDataIdOptions<TestVehicle>(vehicle => vehicle.Id),
+                IdOptions: new TrackedDataIdOptions<TestVehicle>(vehicle => vehicle.Id),
                 Visual: new TrackedDataVisualOptions<TestVehicle>(
                     Symbol: new TrackedDataSymbolOptions<TestVehicle>(
                         vehicle => vehicle.Position,
@@ -447,12 +425,7 @@ public class TrackedDataLayerMapApiTests : BunitContext
                         : new TrackedDataClusterOptions(),
                     Animation: null,
                     Visible: true,
-                    PrimaryIconOpacity: null,
-                    MaxZoom: 18,
-                    Attribution: null,
-                    Stack: null,
-                    BeforeStack: null,
-                    AfterStack: null
+                    PrimaryIconOpacity: null
                 ),
                 Behavior: new TrackedDataBehaviorOptions<TestVehicle>(
                     new TrackedDataInteractionOptions<TestVehicle>(
@@ -464,17 +437,14 @@ public class TrackedDataLayerMapApiTests : BunitContext
                     OnItemClick: null,
                     OnItemMouseEnter: null,
                     OnItemMouseLeave: null,
-                    BeforeShowPopupAsync: BeforeShowPopupAsync
+                    OnBeforeShowPopup: BeforeShowPopupAsync
                 )
             );
 
-            // act
             builder.OpenComponent<SgbMap>(0);
             builder.AddAttribute(1, nameof(SgbMap.TrackedDataLayers), new ITrackedDataLayer[] { layer });
             builder.AddComponentReferenceCapture(2, value => Map = (SgbMap)value);
             builder.CloseComponent();
-
-            // assert
         }
     }
 

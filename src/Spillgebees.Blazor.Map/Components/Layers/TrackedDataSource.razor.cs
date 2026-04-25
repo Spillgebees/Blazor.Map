@@ -16,7 +16,7 @@ namespace Spillgebees.Blazor.Map.Components.Layers;
 /// <typeparam name="TItem">The raw app model type.</typeparam>
 public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
 {
-    private static readonly TimeSpan _hoverLeaveDebounce = TimeSpan.FromMilliseconds(300);
+    internal static readonly TimeSpan HoverLeaveDebounce = TimeSpan.FromMilliseconds(300);
     private static readonly object[] _clusterFilter = Expr.Has("point_count");
     private static readonly object[] _primaryFilter = Expr.All(
         Expr.Eq(TrackedEntityFeatureProperties.Kind, TrackedEntityFeatureKind.Primary.ToMapLibreValue()),
@@ -170,7 +170,7 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
 
     private IReadOnlyList<TItem> Items { get; set; } = [];
 
-    private TrackedDataIdOptions<TItem> Id { get; set; } = null!;
+    private TrackedDataIdOptions<TItem> IdOptions { get; set; } = null!;
 
     private TrackedDataSymbolOptions<TItem> Symbol { get; set; } = null!;
 
@@ -185,12 +185,6 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
     private bool Visible { get; set; } = true;
 
     private StyleValue<double>? PrimaryIconOpacity { get; set; }
-
-    private EventCallback<TrackedEntityInteractionEventArgs<TItem>> OnItemClick { get; set; }
-
-    private EventCallback<TrackedEntityInteractionEventArgs<TItem>> OnItemMouseEnter { get; set; }
-
-    private EventCallback OnItemMouseLeave { get; set; }
 
     private int MaxZoom { get; set; } = 18;
 
@@ -283,7 +277,7 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
 
         SourceId = Layer.Id;
         Items = Layer.Items;
-        Id = Layer.Item;
+        IdOptions = Layer.IdOptions;
         Symbol = Layer.Visual.Symbol;
         Decorations = Layer.Visual.Decorations;
         Cluster = Layer.Visual.Cluster;
@@ -303,10 +297,10 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
             throw new InvalidOperationException("Tracked data source ID must not be empty.");
         }
 
-        ArgumentNullException.ThrowIfNull(Id);
+        ArgumentNullException.ThrowIfNull(IdOptions);
         ArgumentNullException.ThrowIfNull(Symbol);
 
-        _entities = TrackedDataEntityMaterializer.Materialize(Items, Id, Symbol, Decorations);
+        _entities = TrackedDataEntityMaterializer.Materialize(Items, IdOptions, Symbol, Decorations);
 
         var nextPrimaryProjection = BuildPrimaryProjection(_entities);
         var nextDecorationProjection = BuildDecorationProjection(_entities);
@@ -472,7 +466,6 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
             return;
         }
 
-        await OnItemClick.InvokeAsync(interaction);
         if (_callbacks.OnItemClick is not null)
         {
             await _callbacks.OnItemClick(interaction);
@@ -509,7 +502,7 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
 
         try
         {
-            await Task.Delay(_hoverLeaveDebounce, cancellationTokenSource.Token);
+            await Task.Delay(HoverLeaveDebounce, cancellationTokenSource.Token);
 
             if (
                 ReferenceEquals(_hoverLeaveCancellationTokenSource, cancellationTokenSource)
@@ -519,10 +512,6 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
                 if (_callbacks.OnItemMouseLeave is not null)
                 {
                     await _callbacks.OnItemMouseLeave();
-                }
-                else if (OnItemMouseLeave.HasDelegate)
-                {
-                    await OnItemMouseLeave.InvokeAsync();
                 }
 
                 await HandlePopupOnMouseLeaveAsync();
@@ -587,7 +576,7 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
         }
 
         return Items
-            .Select(item => new KeyValuePair<string, bool>(Id.GetId(item), selector(item)))
+            .Select(item => new KeyValuePair<string, bool>(IdOptions.GetId(item), selector(item)))
             .Where(pair => pair.Value)
             .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
     }
@@ -685,9 +674,9 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
 
     protected virtual Task OnBeforeShowPopupAsync()
     {
-        if (_callbacks.BeforeShowPopupAsync is not null)
+        if (_callbacks.OnBeforeShowPopup is not null)
         {
-            return _callbacks.BeforeShowPopupAsync();
+            return _callbacks.OnBeforeShowPopup();
         }
 
         return Task.CompletedTask;

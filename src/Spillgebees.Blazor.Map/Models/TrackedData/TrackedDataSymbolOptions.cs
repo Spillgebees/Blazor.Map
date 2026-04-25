@@ -41,5 +41,5 @@ public sealed record TrackedDataSymbolOptions<TItem>(
 
     public IReadOnlyDictionary<string, object?>? GetProperties(TItem item) => PropertiesSelector?.Invoke(item);
 
-    public PopupOptions? GetPopup(TItem itemValue) => PopupSelector?.Invoke(itemValue);
+    public PopupOptions? GetPopup(TItem item) => PopupSelector?.Invoke(item);
 }

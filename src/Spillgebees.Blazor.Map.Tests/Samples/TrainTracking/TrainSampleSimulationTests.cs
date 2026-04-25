@@ -196,7 +196,7 @@ public class TrainSampleSimulationTests
     }
 
     [Test]
-    public void Should_not_assign_rotation_to_operator_click_banner()
+    public void Should_not_assign_rotation_to_operator_selected_banner()
     {
         // arrange
         var train = new TrainSampleState(

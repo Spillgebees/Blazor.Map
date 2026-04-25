@@ -28,17 +28,7 @@
         Zoom: 12
     );
 
-    private IReadOnlyList<MapControl> _controls =>
-    [
-        new NavigationMapControl(Order: 100),
-        new FullscreenMapControl(Order: 200),
-        new LegendMapControl(
-            "network-legend",
-            new MapControlPlacement(ControlPosition.TopRight, 300, Enabled: true),
-            new LegendChromeOptions("Network layers", Collapsible: true, InitiallyOpen: true, ClassName: null),
-            new LegendContentOptions(_legendDefinition, ItemTemplate: null, OnItemVisibilityChanged: default)
-        ),
-    ];
+    private readonly IReadOnlyList<MapControl> _controls;
 
     private readonly MapLegendDefinition _legendDefinition =
         new(
@@ -116,4 +106,19 @@
             },
         },
     };
+
+    public CustomControlsExample()
+    {
+        _controls =
+        [
+            new NavigationMapControl(Order: 100),
+            new FullscreenMapControl(Order: 200),
+            new LegendMapControl(
+                "network-legend",
+                new MapControlPlacement(ControlPosition.TopRight, 300),
+                new LegendChromeOptions("Network layers", Collapsible: true, InitiallyOpen: true, ClassName: null),
+                new LegendContentOptions(_legendDefinition, ItemTemplate: null, OnItemVisibilityChanged: default)
+            ),
+        ];
+    }
 }

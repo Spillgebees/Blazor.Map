@@ -9,7 +9,7 @@ using Spillgebees.Blazor.Map.Models.Legends;
 /// <param name="Position">Position of the control on the map.</param>
 /// <param name="Order">Deterministic order at the position. Lower values render first.</param>
 /// <param name="Enabled">Whether this control entry is enabled.</param>
-public sealed record MapControlPlacement(ControlPosition Position, int Order, bool Enabled);
+public sealed record MapControlPlacement(ControlPosition Position, int Order, bool Enabled = true);
 
 /// <summary>
 /// Visual chrome options for legend controls.

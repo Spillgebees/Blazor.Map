@@ -37,8 +37,9 @@ public partial class MapLegendControlHost : ComponentBase, IAsyncDisposable
     private bool _visibilitySyncPending = true;
     private bool _registered;
     private string? _registeredControlId;
+    private ILogger? _logger;
 
-    private ILogger Logger => LoggerFactory.CreateLogger<MapLegendControlHost>();
+    private ILogger Logger => _logger ??= LoggerFactory.CreateLogger<MapLegendControlHost>();
 
     private string ContentClassName =>
         new CssBuilder()
@@ -103,8 +104,7 @@ public partial class MapLegendControlHost : ComponentBase, IAsyncDisposable
 
                 _controlSyncPending = false;
             }
-
-            if (Control.Enabled)
+            else
             {
                 await MapJs.SetControlContentAsync(
                     JsRuntime,
@@ -215,11 +215,6 @@ public partial class MapLegendControlHost : ComponentBase, IAsyncDisposable
         if (string.IsNullOrWhiteSpace(Control.ControlId))
         {
             throw new InvalidOperationException("A non-empty ControlId is required.");
-        }
-
-        if (Control.Content.Definition is null)
-        {
-            throw new InvalidOperationException("A legend definition is required.");
         }
     }
 

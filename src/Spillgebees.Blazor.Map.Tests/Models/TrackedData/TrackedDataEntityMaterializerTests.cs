@@ -8,7 +8,7 @@ namespace Spillgebees.Blazor.Map.Tests.Models.TrackedData;
 public class TrackedDataEntityMaterializerTests
 {
     [Test]
-    public void Should_materialize_raw_items_into_tracked_entities_with_metadata_and_generated_decorations()
+    public void Should_materialize_raw_items_into_tracked_entities_with_item_and_generated_decorations()
     {
         // arrange
         var item = new TestVehicle(

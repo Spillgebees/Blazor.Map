@@ -715,7 +715,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         {
             var componentType = typeof(TrackedDataSource<>).MakeGenericType(trackedDataLayer.ItemType);
             builder.OpenComponent(0, componentType);
-            builder.AddAttribute(1, "Layer", trackedDataLayer);
+            builder.AddAttribute(1, nameof(TrackedDataSource<object>.Layer), trackedDataLayer);
             builder.CloseComponent();
         };
 }

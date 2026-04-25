@@ -2,6 +2,11 @@ using Spillgebees.Blazor.Map.Models.Expressions;
 
 namespace Spillgebees.Blazor.Map.Models.TrackedData;
 
+public static class TrackedDataVisualDefaults
+{
+    public const int DefaultMaxZoom = 18;
+}
+
 /// <summary>
 /// Visual options for tracked data rendering.
 /// </summary>
@@ -13,16 +18,9 @@ public sealed record TrackedDataVisualOptions<TItem>(
     AnimationOptions? Animation,
     bool Visible,
     StyleValue<double>? PrimaryIconOpacity,
-    int MaxZoom,
-    string? Attribution,
-    string? Stack,
-    string? BeforeStack,
-    string? AfterStack
-)
-{
-    /// <summary>
-    /// Creates visual options with defaults equivalent to the former tracked component API.
-    /// </summary>
-    public TrackedDataVisualOptions(TrackedDataSymbolOptions<TItem> symbol)
-        : this(symbol, [], new TrackedDataClusterOptions(), null, true, null, 18, null, null, null, null) { }
-}
+    int MaxZoom = TrackedDataVisualDefaults.DefaultMaxZoom,
+    string? Attribution = null,
+    string? Stack = null,
+    string? BeforeStack = null,
+    string? AfterStack = null
+) { }

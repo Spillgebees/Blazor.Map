@@ -18,7 +18,7 @@ public static class TrainTrackingPresentation
          TrackedDataLayers=""@_trackedDataLayers""
          OnMoveEnd=""@HandleMapViewChangedAsync""
          OnZoomEnd=""@HandleMapViewChangedAsync"">
- </SgbMap>
+  </SgbMap>
 
 // hover and selection use feature-state, labels stay screen-facing, and supplementary labels stay hidden while clustered";
 

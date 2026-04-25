@@ -258,7 +258,7 @@
 <div class="train-showcase-map">
     <SgbMap @ref="_map"
             MapOptions="@_mapOptions"
-            Controls="@BuildControls()"
+            Controls="@_controls"
             Images="@_images"
             TrackedDataLayers="@_trackedDataLayers"
             Theme="@GlobalTheme"
@@ -278,20 +278,34 @@
 </div>
 
 @code {
+    protected override void OnParametersSet()
+    {
+        if (!_legendItemVisibilityChangedCallback.HasDelegate)
+        {
+            _legendItemVisibilityChangedCallback = EventCallback.Factory.Create<MapLegendVisibilityChangedEventArgs>(
+                this,
+                HandleLegendItemVisibilityChangedAsync
+            );
+        }
+
+        if (_controls.Count == 0)
+        {
+            _overlayLegendItemTemplate ??= OverlayLegendItemTemplate;
+            _controls = BuildControls();
+        }
+    }
+
     private IReadOnlyList<MapControl> BuildControls() =>
     [
         new NavigationMapControl(),
         new LegendMapControl(
             "overlay-legend",
-            new MapControlPlacement(ControlPosition.TopLeft, 500, Enabled: true),
+            new MapControlPlacement(ControlPosition.TopLeft, 500),
             new LegendChromeOptions("Legend", Collapsible: true, InitiallyOpen: true, ClassName: null),
             new LegendContentOptions(
                 TrainTrackingPresentation.OverlayLegendDefinition,
-                OverlayLegendItemTemplate,
-                EventCallback.Factory.Create<MapLegendVisibilityChangedEventArgs>(
-                    this,
-                    HandleLegendItemVisibilityChangedAsync
-                )
+                _overlayLegendItemTemplate!,
+                _legendItemVisibilityChangedCallback
             )
         ),
     ];
@@ -370,13 +384,20 @@
                    @onchange="@(async args => await context.SetSelectedAsync(ResolveLegendToggleValue(args)))" />
         </label>;
 
-    private static bool ResolveLegendToggleValue(ChangeEventArgs args) =>
-        args.Value switch
+    private static bool ResolveLegendToggleValue(ChangeEventArgs args)
+    {
+        return args.Value switch
         {
             bool boolValue => boolValue,
             string stringValue when bool.TryParse(stringValue, out var parsed) => parsed,
-            _ => false,
+            null => throw new InvalidOperationException(
+                "ResolveLegendToggleValue expected ChangeEventArgs.Value to be a bool or parseable string, but ChangeEventArgs.Value was null."
+            ),
+            var value => throw new InvalidOperationException(
+                $"ResolveLegendToggleValue expected ChangeEventArgs.Value to be a bool or parseable string, but received type '{value.GetType().FullName}'."
+            ),
         };
+    }
 
     private static string GetOverlayLegendSwatchClassName(MapLegendItemDefinition item) =>
         $"train-overlay-swatch train-overlay-swatch-{item.Id}";

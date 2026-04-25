@@ -781,7 +781,7 @@ public class TrainTrackingExampleTests : BunitContext
         // arrange
         var cut = Render<TrainTrackingExample>();
         var firstEntity = ResolveTrackedEntity(cut, "cfl-re11");
-        var interaction = CreateTrainInteraction(firstEntity!);
+        var interaction = CreateTrainInteraction(firstEntity);
 
         // act
         await InvokePrivateAsync(cut.Instance, "HandleTrainHover", interaction);
@@ -827,7 +827,7 @@ public class TrainTrackingExampleTests : BunitContext
         // arrange
         var cut = Render<TrainTrackingExample>();
         var trackedEntity = ResolveTrackedEntity(cut, "cfl-re11");
-        var interaction = CreateTrainInteraction(trackedEntity!);
+        var interaction = CreateTrainInteraction(trackedEntity);
 
         await InvokePrivateAsync(cut.Instance, "HandleTrainHover", interaction);
         await InvokePrivateAsync(cut.Instance, "HandleTrainClick", interaction);
@@ -865,7 +865,7 @@ public class TrainTrackingExampleTests : BunitContext
         // arrange
         var cut = Render<TrainTrackingExample>();
         var firstEntity = ResolveTrackedEntity(cut, "cfl-re11");
-        var interaction = CreateTrainInteraction(firstEntity!);
+        var interaction = CreateTrainInteraction(firstEntity);
 
         await InvokePrivateAsync(cut.Instance, "HandleTrainClick", interaction);
         var flyToInvocationCountBeforeRefresh = JSInterop.Invocations[FlyToIdentifier].Count;
@@ -895,7 +895,7 @@ public class TrainTrackingExampleTests : BunitContext
         // arrange
         var cut = Render<TrainTrackingExample>();
         var lastEntity = ResolveTrackedEntity(cut, "cfl-re11");
-        var interaction = CreateTrainInteraction(lastEntity!);
+        var interaction = CreateTrainInteraction(lastEntity);
         await InvokePrivateAsync(cut.Instance, "HandleTrainClick", interaction);
 
         // act
@@ -913,13 +913,8 @@ public class TrainTrackingExampleTests : BunitContext
 
     private static TrackedDataLayer<TrainSampleState> ResolveTrackedLayer(IRenderedComponent<TrainTrackingExample> cut)
     {
-        // arrange
         var map = cut.FindComponent<SgbMap>().Instance;
-
-        // act
         var trackedLayer = map.TrackedDataLayers.OfType<TrackedDataLayer<TrainSampleState>>().Single();
-
-        // assert
         return trackedLayer;
     }
 
@@ -928,32 +923,24 @@ public class TrainTrackingExampleTests : BunitContext
         string entityId
     )
     {
-        // arrange
         var trackedLayer = ResolveTrackedLayer(cut);
-
-        // act
         var entities = TrackedDataEntityMaterializer.Materialize(
             trackedLayer.Items,
-            trackedLayer.Item,
+            trackedLayer.IdOptions,
             trackedLayer.Visual.Symbol,
             trackedLayer.Visual.Decorations
         );
         var entity = entities.Single(candidate => candidate.Id == entityId);
-
-        // assert
         return entity;
     }
 
     private static async Task InvokePrivateAsync(object instance, string methodName, params object[]? arguments)
     {
-        // arrange
         var method = instance.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
 
-        // act
         method.Should().NotBeNull();
         var result = method!.Invoke(instance, arguments ?? []);
 
-        // assert
         if (result is Task task)
         {
             await task;
@@ -967,16 +954,13 @@ public class TrainTrackingExampleTests : BunitContext
         params object[]? arguments
     )
     {
-        // arrange
         var method = instance
             .GetType()
             .GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic, parameterTypes);
 
-        // act
         method.Should().NotBeNull();
         var result = method!.Invoke(instance, arguments ?? []);
 
-        // assert
         if (result is Task<T> task)
         {
             return await task;
@@ -987,63 +971,47 @@ public class TrainTrackingExampleTests : BunitContext
 
     private static void InvokePrivate(object instance, string methodName, params object[]? arguments)
     {
-        // arrange
         var method = instance.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
 
-        // act
         method.Should().NotBeNull();
         _ = method!.Invoke(instance, arguments ?? []);
     }
 
     private static T? GetPrivateField<T>(object instance, string fieldName)
     {
-        // arrange
         var field = instance.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
 
-        // act
         field.Should().NotBeNull();
         var value = field!.GetValue(instance);
 
-        // assert
         return (T?)value;
     }
 
     private static T? InvokePrivateStatic<T>(Type type, string methodName, params object[]? arguments)
     {
-        // arrange
         var method = type.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
 
-        // act
         method.Should().NotBeNull();
         var result = method!.Invoke(null, arguments ?? []);
 
-        // assert
         return (T?)result;
     }
 
     private static IReadOnlyDictionary<string, object?> GetLayerSpec(LayerBase layer)
     {
-        // arrange
         var method = typeof(LayerBase).GetMethod("BuildLayerSpec", BindingFlags.Instance | BindingFlags.NonPublic);
 
-        // act
         method.Should().NotBeNull();
         var spec = method!.Invoke(layer, []);
 
-        // assert
         spec.Should().BeAssignableTo<IReadOnlyDictionary<string, object?>>();
         return (IReadOnlyDictionary<string, object?>)spec!;
     }
 
     private static object? GetPaintValue(IReadOnlyDictionary<string, object?> layerSpec, string propertyName)
     {
-        // arrange
         layerSpec.TryGetValue("paint", out var paint);
-
-        // act
         var paintDictionary = paint.Should().BeAssignableTo<IReadOnlyDictionary<string, object?>>().Subject;
-
-        // assert
         paintDictionary.Should().ContainKey(propertyName);
         return paintDictionary[propertyName] is StyleValue<string> styleValue
             ? GetStyleValueLiteral(styleValue)
@@ -1052,17 +1020,12 @@ public class TrainTrackingExampleTests : BunitContext
 
     private static string? GetStyleValueLiteral(StyleValue<string> styleValue)
     {
-        // arrange
         var property = typeof(StyleValue<string>).GetProperty(
             "Literal",
             BindingFlags.Instance | BindingFlags.NonPublic
         );
-
-        // act
         property.Should().NotBeNull();
         var value = property!.GetValue(styleValue);
-
-        // assert
         return value as string;
     }
 
@@ -1071,25 +1034,15 @@ public class TrainTrackingExampleTests : BunitContext
         string propertyName
     )
     {
-        // arrange
         var layoutProperty = GetLayoutValue(layerSpec, propertyName);
-
-        // act
         var containsFeatureState = ContainsExpressionOperator(layoutProperty, "feature-state");
-
-        // assert
         containsFeatureState.Should().BeFalse();
     }
 
     private static object? GetLayoutValue(IReadOnlyDictionary<string, object?> layerSpec, string propertyName)
     {
-        // arrange
         layerSpec.TryGetValue("layout", out var layout);
-
-        // act
         var layoutDictionary = layout.Should().BeAssignableTo<IReadOnlyDictionary<string, object?>>().Subject;
-
-        // assert
         layoutDictionary.Should().ContainKey(propertyName);
         return layoutDictionary[propertyName];
     }
@@ -1100,14 +1053,9 @@ public class TrainTrackingExampleTests : BunitContext
         out object? value
     )
     {
-        // arrange
         layerSpec.TryGetValue("layout", out var layout);
-
-        // act
         var layoutDictionary = layout.Should().BeAssignableTo<IReadOnlyDictionary<string, object?>>().Subject;
         var found = layoutDictionary.TryGetValue(propertyName, out value);
-
-        // assert
         return found;
     }
 
@@ -1117,27 +1065,17 @@ public class TrainTrackingExampleTests : BunitContext
         out object? value
     )
     {
-        // arrange
-
-        // act
         var found = dictionary.TryGetValue(propertyName, out value);
-
-        // assert
         return found;
     }
 
     private static bool ContainsExpressionOperator(object? expression, string operatorName)
     {
-        // arrange
         if (expression is not object[] expressionArray)
         {
             return false;
         }
-
-        // act
         var nestedExpressions = expressionArray.OfType<object[]>();
-
-        // assert
         return expressionArray.FirstOrDefault() as string == operatorName
             || nestedExpressions.Any(nested => ContainsExpressionOperator(nested, operatorName));
     }

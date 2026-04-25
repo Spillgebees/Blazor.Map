@@ -90,6 +90,24 @@ describe("bootstrap", () => {
     expect(window.Spillgebees).toBeDefined();
     expect(window.Spillgebees.Map).toBeDefined();
     expect(window.Spillgebees.Map.mapFunctions.createMap).toBeTypeOf("function");
+    expect(window.Spillgebees.Map.__bundleMarker).toBeTypeOf("string");
+  });
+
+  it("should reinitialize when bundle marker is missing or mismatched", () => {
+    // arrange
+    bootstrap();
+    const staleNamespace = {
+      ...window.Spillgebees.Map,
+      __bundleMarker: "stale-bundle",
+    };
+    window.Spillgebees.Map = staleNamespace;
+
+    // act
+    bootstrap();
+
+    // assert
+    expect(window.Spillgebees.Map).not.toBe(staleNamespace);
+    expect(window.Spillgebees.Map.__bundleMarker).not.toBe("stale-bundle");
   });
 
   it("should register all map functions", () => {

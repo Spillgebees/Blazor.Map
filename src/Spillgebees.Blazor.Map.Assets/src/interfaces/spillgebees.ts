@@ -69,6 +69,7 @@ export interface CustomControlRegistration {
 }
 
 export interface SpillgebeesMapNamespace {
+  __bundleMarker: string;
   mapFunctions: Record<string, (...args: unknown[]) => unknown>;
   maps: Map<HTMLElement, MapLibreMap>;
   features: Map<MapLibreMap, FeatureStorage>;

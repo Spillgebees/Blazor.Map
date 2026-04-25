@@ -22,6 +22,9 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private string? _selectedTrainId;
     private readonly List<TrainSampleState> _trains = [];
     private readonly List<MapImageDefinition> _images;
+    private IReadOnlyList<MapControl> _controls = [];
+    private RenderFragment<MapLegendItemTemplateContext>? _overlayLegendItemTemplate;
+    private EventCallback<MapLegendVisibilityChangedEventArgs> _legendItemVisibilityChangedCallback;
 
     [CascadingParameter]
     public MapTheme GlobalTheme { get; set; }
@@ -33,9 +36,12 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private readonly AnimationOptions _trainAnimation = TrainTrackingPresentation.TrainAnimation;
     private readonly TrackedDataClusterOptions _trainClusterOptions =
         TrainTrackingPresentation.TrackedTrainClusterOptions;
+    private readonly TrackedDataBehaviorOptions<TrainSampleState> _trainBehavior;
+    private readonly TrackedDataCallbacks<TrainSampleState> _trainCallbacks;
     private readonly object[] _trainIconOpacityExpr = TrainTrackingPresentation.TrainIconOpacityExpression;
     private readonly TrainTrackingVisibilityState _visibility = new();
     private readonly TrackedDataIdOptions<TrainSampleState> _trainId = new(train => train.Id);
+    private readonly TrackedDataInteractionOptions<TrainSampleState> _trainInteraction;
     private readonly TrackedDataSymbolOptions<TrainSampleState> _trainSymbol = new(
         train => train.CurrentPosition,
         train => $"train-{train.Color.TrimStart('#')}",
@@ -49,64 +55,72 @@ public partial class TrainTrackingExample : IAsyncDisposable
             ["internationalPresence"] = TrainSampleSimulation.IsInternational(train) ? 1 : 0,
         }
     );
-    private static IReadOnlyList<TrackedDataDecorationOptions<TrainSampleState>> _trainDecorations =>
-        [
-            new(
-                "cluster-sentinel",
-                IconImageSelector: train => $"train-{train.Color.TrimStart('#')}",
-                DisplayMode: TrackedEntityDecorationDisplayMode.Always,
-                IconSizeSelector: _ => 0.0,
-                RenderOrderSelector: _ => -1
-            ),
-            new(
-                "service",
-                TextSelector: train => train.ServiceNumber,
-                Offset: new Point(13.3, -3.3),
-                Anchor: "left",
-                DisplayMode: TrackedEntityDecorationDisplayMode.Always,
-                ColorSelector: _ => "#0f172a",
-                TextSizeSelector: _ => 12,
-                RenderOrderSelector: _ => 110,
-                HaloColorSelector: _ => "#ffffff",
-                HaloWidthSelector: _ => 1.5,
-                TextFont: ["DM Sans", "Noto Sans Regular"]
-            ),
-            new(
-                "route",
-                TextSelector: train => train.Route.Replace(">", "\u203A"),
-                Offset: new Point(20, 7.5),
-                Anchor: "left",
-                DisplayMode: TrackedEntityDecorationDisplayMode.HoverOrSelected,
-                ColorSelector: _ => "#94a3b8",
-                TextSizeSelector: _ => 8,
-                RenderOrderSelector: _ => 105,
-                HaloColorSelector: _ => "#ffffff",
-                HaloWidthSelector: _ => 1.0,
-                TextFont: ["DM Sans", "Noto Sans Regular"]
-            ),
-            new(
-                "operator",
-                TextSelector: train => train.Operator,
-                Offset: new Point(-16, -4),
-                Anchor: "right",
-                DisplayMode: TrackedEntityDecorationDisplayMode.HoverOrSelected,
-                ColorSelector: train => train.Color,
-                TextSizeSelector: _ => 10,
-                RenderOrderSelector: _ => 108,
-                HaloColorSelector: _ => "#ffffff",
-                HaloWidthSelector: _ => 1.5,
-                TextFont: ["Martian Mono", "Noto Sans Regular"]
-            ),
-        ];
-
-    private TrackedDataInteractionOptions<TrainSampleState> _trainInteraction =>
-        new(IsHovered: train => train.Id == _hoveredTrainId, IsSelected: train => train.Id == _selectedTrainId);
+    private static readonly IReadOnlyList<TrackedDataDecorationOptions<TrainSampleState>> _trainDecorations =
+    [
+        new(
+            "cluster-sentinel",
+            IconImageSelector: train => $"train-{train.Color.TrimStart('#')}",
+            DisplayMode: TrackedEntityDecorationDisplayMode.Always,
+            IconSizeSelector: _ => 0.0,
+            RenderOrderSelector: _ => -1
+        ),
+        new(
+            "service",
+            TextSelector: train => train.ServiceNumber,
+            Offset: new Point(13.3, -3.3),
+            Anchor: "left",
+            DisplayMode: TrackedEntityDecorationDisplayMode.Always,
+            ColorSelector: _ => "#0f172a",
+            TextSizeSelector: _ => 12,
+            RenderOrderSelector: _ => 110,
+            HaloColorSelector: _ => "#ffffff",
+            HaloWidthSelector: _ => 1.5,
+            TextFont: ["DM Sans", "Noto Sans Regular"]
+        ),
+        new(
+            "route",
+            TextSelector: train => train.Route.Replace(">", "\u203A"),
+            Offset: new Point(20, 7.5),
+            Anchor: "left",
+            DisplayMode: TrackedEntityDecorationDisplayMode.HoverOrSelected,
+            ColorSelector: _ => "#94a3b8",
+            TextSizeSelector: _ => 8,
+            RenderOrderSelector: _ => 105,
+            HaloColorSelector: _ => "#ffffff",
+            HaloWidthSelector: _ => 1.0,
+            TextFont: ["DM Sans", "Noto Sans Regular"]
+        ),
+        new(
+            "operator",
+            TextSelector: train => train.Operator,
+            Offset: new Point(-16, -4),
+            Anchor: "right",
+            DisplayMode: TrackedEntityDecorationDisplayMode.HoverOrSelected,
+            ColorSelector: train => train.Color,
+            TextSizeSelector: _ => 10,
+            RenderOrderSelector: _ => 108,
+            HaloColorSelector: _ => "#ffffff",
+            HaloWidthSelector: _ => 1.5,
+            TextFont: ["Martian Mono", "Noto Sans Regular"]
+        ),
+    ];
 
     private IReadOnlyList<ITrackedDataLayer> _trackedDataLayers = [];
 
     public TrainTrackingExample()
     {
         _images = BuildTrainImages(TrainSampleSimulation.CreateStates());
+        _trainInteraction = new(
+            IsHovered: train => train.Id == _hoveredTrainId,
+            IsSelected: train => train.Id == _selectedTrainId
+        );
+        _trainBehavior = new(_trainInteraction);
+        _trainCallbacks = new(
+            OnItemClick: HandleTrainClick,
+            OnItemMouseEnter: HandleTrainHover,
+            OnItemMouseLeave: HandleTrainLeave,
+            OnBeforeShowPopup: null
+        );
     }
 
     protected override void OnInitialized()
@@ -284,28 +298,18 @@ public partial class TrainTrackingExample : IAsyncDisposable
         [
             new TrackedDataLayer<TrainSampleState>(
                 Id: "train-source",
-                Items: _trains.ToArray(),
-                Item: _trainId,
+                Items: _trains,
+                IdOptions: _trainId,
                 Visual: new TrackedDataVisualOptions<TrainSampleState>(
                     Symbol: _trainSymbol,
                     Decorations: _trainDecorations,
                     Cluster: _trainClusterOptions,
                     Animation: _trainAnimation,
                     Visible: _visibility.ShowTrains,
-                    PrimaryIconOpacity: _trainIconOpacityExpr,
-                    MaxZoom: 18,
-                    Attribution: null,
-                    Stack: null,
-                    BeforeStack: null,
-                    AfterStack: null
+                    PrimaryIconOpacity: _trainIconOpacityExpr
                 ),
-                Behavior: new TrackedDataBehaviorOptions<TrainSampleState>(_trainInteraction),
-                Callbacks: new TrackedDataCallbacks<TrainSampleState>(
-                    OnItemClick: HandleTrainClick,
-                    OnItemMouseEnter: HandleTrainHover,
-                    OnItemMouseLeave: HandleTrainLeave,
-                    BeforeShowPopupAsync: null
-                )
+                Behavior: _trainBehavior,
+                Callbacks: _trainCallbacks
             ),
         ];
     }

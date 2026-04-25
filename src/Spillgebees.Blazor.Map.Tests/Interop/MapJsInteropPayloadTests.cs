@@ -61,11 +61,11 @@ public class MapJsInteropPayloadTests : BunitContext
         var controlsPayload = invocation.Arguments[4].Should().BeOfType<object[]>().Subject;
         var centerPayload = controlsPayload.Single();
         var kindValue = GetRequiredPropertyValue(centerPayload, "Kind");
-        var enableValue = GetRequiredPropertyValue(centerPayload, "Enabled");
+        var enabledValue = GetRequiredPropertyValue(centerPayload, "Enabled");
         var positionValue = GetRequiredPropertyValue(centerPayload, "Position");
 
         kindValue.Should().Be("center");
-        enableValue.Should().Be(true);
+        enabledValue.Should().Be(true);
         positionValue.Should().Be(ControlPosition.TopLeft);
     }
 

@@ -43,6 +43,7 @@ public class LegendMapControlTests : BunitContext
             parameters.Add(p => p.Controls, [CreateControl("legend-control")])
         );
         var map = cut.FindComponent<SgbMap>().Instance;
+        cancellationToken.ThrowIfCancellationRequested();
 
         // act
         await map.OnMapInitializedAsync();
@@ -59,6 +60,7 @@ public class LegendMapControlTests : BunitContext
             parameters.Add(p => p.Controls, [CreateControl("legend-control")])
         );
         var map = cut.FindComponent<SgbMap>().Instance;
+        cancellationToken.ThrowIfCancellationRequested();
         await map.OnMapInitializedAsync();
 
         // act
@@ -219,7 +221,7 @@ public class LegendMapControlTests : BunitContext
     {
         // arrange
         MapLegendVisibilityChangedEventArgs? callbackArgs = null;
-        var cut = Render<TemplatedComponentHost>(parameters =>
+        var cut = Render<ComponentHost>(parameters =>
             parameters.Add(
                 p => p.Controls,
                 [
@@ -390,24 +392,6 @@ public class LegendMapControlTests : BunitContext
         );
 
     public sealed class ComponentHost : ComponentBase
-    {
-        [Parameter, EditorRequired]
-        public IReadOnlyList<MapControl> Controls { get; set; } = [CreateControl("legend-control")];
-
-        protected override void BuildRenderTree(RenderTreeBuilder builder)
-        {
-            // arrange
-            builder.OpenComponent<SgbMap>(0);
-            builder.AddAttribute(1, nameof(SgbMap.Controls), Controls);
-            builder.CloseComponent();
-
-            // act
-
-            // assert
-        }
-    }
-
-    public sealed class TemplatedComponentHost : ComponentBase
     {
         [Parameter, EditorRequired]
         public IReadOnlyList<MapControl> Controls { get; set; } = [CreateControl("legend-control")];

@@ -11,7 +11,7 @@ public sealed record TrackedDataCallbacks<TItem>(
     Func<TrackedEntityInteractionEventArgs<TItem>, Task>? OnItemClick,
     Func<TrackedEntityInteractionEventArgs<TItem>, Task>? OnItemMouseEnter,
     Func<Task>? OnItemMouseLeave,
-    Func<Task>? BeforeShowPopupAsync
+    Func<Task>? OnBeforeShowPopup
 )
 {
     /// <summary>
