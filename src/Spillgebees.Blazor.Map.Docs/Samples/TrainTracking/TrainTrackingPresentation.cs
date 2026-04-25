@@ -14,7 +14,7 @@ public static class TrainTrackingPresentation
     public const string DefaultOverlayStyleUrl = "traintracking/style.json";
     public const string CodeSnippet =
         @"<SgbMap MapOptions=""@_mapOptions""
-        ControlOptions=""@_mapControlOptions""
+        Controls=""@_controls""
         OnMoveEnd=""@HandleMapViewChangedAsync""
         OnZoomEnd=""@HandleMapViewChangedAsync"">
     <TrackedDataSource @ref=""_trainSource""
@@ -205,7 +205,8 @@ public static class TrainTrackingPresentation
             ClassName: "train-overlay-legend-content"
         );
 
-    public static LegendControlOptions LegendControlOptions { get; } = new(Position: ControlPosition.TopLeft);
+    public static LegendMapControl OverlayLegendControl { get; } =
+        new("overlay-legend", Position: ControlPosition.TopLeft);
 
     public static MapOptions BuildMapOptions(string? overlayStyleUrl, string? composedGlyphsUrl)
     {
@@ -228,7 +229,7 @@ public static class TrainTrackingPresentation
         );
     }
 
-    public static MapControlOptions MapControlOptions { get; } = MapControlOptions.Default;
+    public static IReadOnlyList<MapControl> Controls { get; } = [new NavigationMapControl(), OverlayLegendControl];
 
     public static AnimationOptions TrainAnimation { get; } = new(Duration: 2000, Easing: AnimationEasing.EaseInOut);
 

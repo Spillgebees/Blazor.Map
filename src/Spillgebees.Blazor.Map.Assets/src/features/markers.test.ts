@@ -7,7 +7,7 @@ import {
   resetMockMapState,
 } from "../../test/maplibreMock";
 import { resetWindowGlobals } from "../../test/windowSetup";
-import type { IMapControlOptions } from "../interfaces/controls";
+import type { IMapControl } from "../interfaces/controls";
 import type { IMarker, IPopupOptions } from "../interfaces/features";
 import type { IMapOptions } from "../interfaces/map";
 import { bootstrap, createMap } from "../map";
@@ -34,15 +34,8 @@ function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions 
   };
 }
 
-function createDefaultControlOptions(): IMapControlOptions {
-  return {
-    navigation: null,
-    scale: null,
-    fullscreen: null,
-    geolocate: null,
-    terrain: null,
-    center: null,
-  };
+function createDefaultControlOptions(): IMapControl[] {
+  return [];
 }
 
 function createDefaultMarker(overrides?: Partial<IMarker>): IMarker {

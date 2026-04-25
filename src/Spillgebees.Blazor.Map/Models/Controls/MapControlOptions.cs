@@ -1,107 +1,110 @@
 namespace Spillgebees.Blazor.Map.Models.Controls;
 
 /// <summary>
-/// Options for the map controls.
+/// Base record for all declarative map controls.
 /// </summary>
-/// <param name="Navigation">Options for the navigation control (zoom + compass). Default is <see langword="null"/>.</param>
-/// <param name="Scale">Options for the scale control. Default is <see langword="null"/>.</param>
-/// <param name="Fullscreen">Options for the fullscreen control. Default is <see langword="null"/>.</param>
-/// <param name="Geolocate">Options for the geolocate control. Default is <see langword="null"/>.</param>
-/// <param name="Terrain">Options for the terrain control. Default is <see langword="null"/>.</param>
-/// <param name="Center">Options for the center control (re-center to the configured map position). Default is <see langword="null"/>.</param>
-public record MapControlOptions(
-    NavigationControlOptions? Navigation = null,
-    ScaleControlOptions? Scale = null,
-    FullscreenControlOptions? Fullscreen = null,
-    GeolocateControlOptions? Geolocate = null,
-    TerrainControlOptions? Terrain = null,
-    CenterControlOptions? Center = null
-)
-{
-    /// <summary>
-    /// Default control options with navigation enabled.
-    /// </summary>
-    public static MapControlOptions Default => new(Navigation: new NavigationControlOptions());
-}
+/// <param name="ControlId">Stable unique ID of the control entry.</param>
+/// <param name="Position">Position of the control on the map.</param>
+/// <param name="Order">Deterministic order at the position. Lower values render first.</param>
+/// <param name="Enable">Whether this control entry is enabled.</param>
+public abstract record MapControl(string ControlId, ControlPosition Position, int Order, bool Enable = true);
 
 /// <summary>
-/// Options for the navigation control (zoom buttons and compass).
+/// A navigation control entry (zoom buttons and compass).
 /// </summary>
-/// <param name="Enable">Whether to show the navigation control. Default is <see langword="true"/>.</param>
-/// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.TopRight"/>.</param>
-/// <param name="ShowCompass">Whether to show the compass button. Default is <see langword="true"/>.</param>
-/// <param name="ShowZoom">Whether to show the zoom buttons. Default is <see langword="true"/>.</param>
-/// <param name="Order">Deterministic order at the position. Lower values render first.</param>
-public record NavigationControlOptions(
+public sealed record NavigationMapControl(
+    string ControlId = "navigation",
     bool Enable = true,
     ControlPosition Position = ControlPosition.TopRight,
     bool ShowCompass = true,
     bool ShowZoom = true,
     int Order = 100
-);
+) : MapControl(ControlId, Position, Order, Enable);
 
 /// <summary>
-/// Options for the scale control.
+/// A scale control entry.
 /// </summary>
-/// <param name="Enable">Whether to show the scale control. Default is <see langword="true"/>.</param>
-/// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.BottomLeft"/>.</param>
-/// <param name="Unit">The unit system to display. Default is <see cref="ScaleUnit.Metric"/>.</param>
-/// <param name="Order">Deterministic order at the position. Lower values render first.</param>
-public record ScaleControlOptions(
+public sealed record ScaleMapControl(
+    string ControlId = "scale",
     bool Enable = true,
     ControlPosition Position = ControlPosition.BottomLeft,
     ScaleUnit Unit = ScaleUnit.Metric,
     int Order = 100
-);
+) : MapControl(ControlId, Position, Order, Enable);
 
 /// <summary>
-/// Options for the fullscreen control.
+/// A fullscreen control entry.
 /// </summary>
-/// <param name="Enable">Whether to show the fullscreen control. Default is <see langword="true"/>.</param>
-/// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.TopRight"/>.</param>
-/// <param name="Order">Deterministic order at the position. Lower values render first.</param>
-public record FullscreenControlOptions(
+public sealed record FullscreenMapControl(
+    string ControlId = "fullscreen",
     bool Enable = true,
     ControlPosition Position = ControlPosition.TopRight,
     int Order = 200
-);
+) : MapControl(ControlId, Position, Order, Enable);
 
 /// <summary>
-/// Options for the geolocate control.
+/// A geolocate control entry.
 /// </summary>
-/// <param name="Enable">Whether to show the geolocate control. Default is <see langword="true"/>.</param>
-/// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.TopRight"/>.</param>
-/// <param name="TrackUser">Whether to continuously track the user's location. Default is <see langword="false"/>.</param>
-/// <param name="Order">Deterministic order at the position. Lower values render first.</param>
-public record GeolocateControlOptions(
+public sealed record GeolocateMapControl(
+    string ControlId = "geolocate",
     bool Enable = true,
     ControlPosition Position = ControlPosition.TopRight,
     bool TrackUser = false,
     int Order = 300
-);
+) : MapControl(ControlId, Position, Order, Enable);
 
 /// <summary>
-/// Options for the terrain control.
+/// A terrain control entry.
 /// </summary>
-/// <param name="Enable">Whether to show the terrain control. Default is <see langword="true"/>.</param>
-/// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.TopRight"/>.</param>
-/// <param name="Order">Deterministic order at the position. Lower values render first.</param>
-public record TerrainControlOptions(
+public sealed record TerrainMapControl(
+    string ControlId = "terrain",
     bool Enable = true,
     ControlPosition Position = ControlPosition.TopRight,
     int Order = 400
-);
+) : MapControl(ControlId, Position, Order, Enable);
 
 /// <summary>
-/// Options for the center control (re-center the map to its configured position).
-/// When clicked, the control reads the current <see cref="MapOptions"/> to determine the target.
-/// If <see cref="MapOptions.FitBoundsOptions"/> is set, it fits to those bounds; otherwise it flies to <see cref="MapOptions.Center"/> and <see cref="MapOptions.Zoom"/>.
+/// A center control entry that re-centers to current <see cref="MapOptions"/>.
 /// </summary>
-/// <param name="Enable">Whether to show the center control. Default is <see langword="true"/>.</param>
-/// <param name="Position">Position of the control on the map. Default is <see cref="ControlPosition.TopLeft"/>.</param>
-/// <param name="Order">Deterministic order at the position. Lower values render first.</param>
-public record CenterControlOptions(
+public sealed record CenterMapControl(
+    string ControlId = "center",
     bool Enable = true,
     ControlPosition Position = ControlPosition.TopLeft,
     int Order = 100
-);
+) : MapControl(ControlId, Position, Order, Enable);
+
+/// <summary>
+/// A legend control shell entry.
+/// </summary>
+public sealed record LegendMapControl(
+    string ControlId,
+    bool Enable = true,
+    ControlPosition Position = ControlPosition.TopRight,
+    string? Title = "Legend",
+    bool Collapsible = true,
+    bool InitiallyOpen = true,
+    string? ClassName = null,
+    int Order = 500
+) : MapControl(ControlId, Position, Order, Enable);
+
+/// <summary>
+/// A custom content control entry. The visual content is provided by child components.
+/// </summary>
+public sealed record ContentMapControl(
+    string ControlId,
+    string Kind,
+    bool Enable = true,
+    ControlPosition Position = ControlPosition.TopRight,
+    int Order = 500
+) : MapControl(ControlId, Position, Order, Enable);
+
+/// <summary>
+/// Shared control presets.
+/// </summary>
+public static class MapControls
+{
+    /// <summary>
+    /// Default controls with navigation enabled.
+    /// </summary>
+    public static IReadOnlyList<MapControl> Default { get; } = [new NavigationMapControl()];
+}

@@ -1,7 +1,7 @@
 import type { DotNet } from "@microsoft/dotnet-js-interop";
 import type { IControl, Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
 import type { FeatureStorage } from "../types/feature-storage";
-import type { ILegendControlOptions, IMapControlOptions } from "./controls";
+import type { IMapControl } from "./controls";
 import type { IMapImageDefinition, IMapOptions, ITileOverlay, ReferrerPolicy } from "./map";
 
 export interface RegisteredMapSource {
@@ -64,11 +64,12 @@ export interface OverlayStyleRequestOptions {
 
 export interface CustomControlRegistration {
   controlId: string;
-  kind: string;
+  kind: "legend" | "content";
   position: import("./controls").ControlPosition;
   order: number;
-  options: Record<string, unknown>;
+  options: IMapControl;
   control: IControl;
+  declarationOrder: number;
 }
 
 export interface SpillgebeesMapNamespace {
@@ -78,13 +79,11 @@ export interface SpillgebeesMapNamespace {
   features: Map<MapLibreMap, FeatureStorage>;
   overlays: Map<MapLibreMap, Map<string, ITileOverlay>>;
   controls: Map<MapLibreMap, Set<IControl>>;
-  legendControls: Map<MapLibreMap, IControl>;
-  legendControlOptions: Map<MapLibreMap, ILegendControlOptions | null>;
   customControlRegistrations: Map<MapLibreMap, Map<string, CustomControlRegistration>>;
   styles: Map<MapLibreMap, string | StyleSpecification>;
   mapOptions: Map<MapLibreMap, IMapOptions>;
   dotNetHelpers: Map<MapLibreMap, DotNet.DotNetObject>;
-  controlOptions: Map<MapLibreMap, IMapControlOptions>;
+  controlsPayload: Map<MapLibreMap, IMapControl[]>;
   sourceSpecs: Map<MapLibreMap, Map<string, RegisteredMapSource>>;
   layerSpecs: Map<MapLibreMap, Map<string, RegisteredMapLayer>>;
   imageRegistrations: Map<MapLibreMap, Map<string, RegisteredMapImage>>;

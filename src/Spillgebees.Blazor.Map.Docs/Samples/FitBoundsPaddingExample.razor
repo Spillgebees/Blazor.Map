@@ -4,7 +4,7 @@
 </div>
 
 <SgbMap MapOptions="@_mapOptions"
-        ControlOptions="@_controlOptions"
+        Controls="@_controls"
         Markers="@_markers"
         Height="400px"
         Width="100%" />
@@ -12,10 +12,7 @@
 @code {
     private bool _isUniform = true;
 
-    private readonly MapControlOptions _controlOptions = new(
-        Navigation: new NavigationControlOptions(),
-        Center: new CenterControlOptions()
-    );
+    private readonly IReadOnlyList<MapControl> _controls = [new NavigationMapControl(), new CenterMapControl()];
 
     private MapOptions _mapOptions = new(
         Center: new Coordinate(49.75, 6.10),

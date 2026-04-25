@@ -1,5 +1,5 @@
 <SgbMap MapOptions="@_mapOptions"
-        ControlOptions="@MapControlOptions.Default"
+        Controls="@_controls"
         Markers="@_markers"
         Height="400px"
         Width="100%" />
@@ -9,6 +9,8 @@
         Center: new Coordinate(49.6117, 6.1319),
         Zoom: 12
     );
+
+    private readonly IReadOnlyList<MapControl> _controls = [new NavigationMapControl()];
 
     private readonly List<Marker> _markers =
     [

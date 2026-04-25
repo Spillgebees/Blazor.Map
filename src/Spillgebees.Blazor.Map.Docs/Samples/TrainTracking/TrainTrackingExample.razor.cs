@@ -32,7 +32,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private IConfiguration Configuration { get; set; } = null!;
 
     private MapOptions _mapOptions = null!;
-    private readonly MapControlOptions _mapControlOptions = TrainTrackingPresentation.MapControlOptions;
+    private readonly IReadOnlyList<MapControl> _controls = TrainTrackingPresentation.Controls;
     private readonly AnimationOptions _trainAnimation = TrainTrackingPresentation.TrainAnimation;
     private readonly TrackedDataClusterOptions _trainClusterOptions =
         TrainTrackingPresentation.TrackedTrainClusterOptions;
@@ -106,8 +106,6 @@ public partial class TrainTrackingExample : IAsyncDisposable
         new(IsHovered: train => train.Id == _hoveredTrainId, IsSelected: train => train.Id == _selectedTrainId);
 
     private static MapLegendDefinition OverlayLegendDefinition => TrainTrackingPresentation.OverlayLegendDefinition;
-
-    private static LegendControlOptions OverlayLegendControlOptions => TrainTrackingPresentation.LegendControlOptions;
 
     protected override void OnInitialized()
     {

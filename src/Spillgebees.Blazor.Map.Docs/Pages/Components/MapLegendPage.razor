@@ -39,14 +39,19 @@
 })" />
 
 <h2 id="control_options">// control_options</h2>
-<p><code>LegendControlOptions</code> sets the position and collapsed state of the legend panel on the map.</p>
+<p><code>MapLegend</code> binds to a legend control entry declared in <code>SgbMap.Controls</code> via <code>ControlId</code>. Position and ordering are defined exclusively on that map control entry.</p>
 
 <CodeBlock Language="csharp" Files="@(new Dictionary<string, string>
 {
     ["Control options"] =
-@"var options = new LegendControlOptions(
-    Position: MapControlPosition.TopRight,
-    Collapsed: false);",
+@"var controls = new List<MapControl>
+{
+    new LegendMapControl(""overlay-legend"", Position: ControlPosition.TopRight, Collapsible: true),
+};
+
+<SgbMap Controls=""@controls"">
+    <MapLegend ControlId=""overlay-legend"" Definition=""@legend"" />
+</SgbMap>",
 })" />
 
 <h2 id="custom_templates">// custom_templates</h2>

@@ -258,13 +258,13 @@
 <div class="train-showcase-map">
     <SgbMap @ref="_map"
             MapOptions="@_mapOptions"
-            ControlOptions="@_mapControlOptions"
+            Controls="@_controls"
             Images="@_images"
             Theme="@GlobalTheme"
             Height="600px"
             Width="100%">
         <MapLegend Definition="@OverlayLegendDefinition"
-                   ControlOptions="@OverlayLegendControlOptions"
+                   ControlId="overlay-legend"
                    OnItemVisibilityChanged="@HandleLegendItemVisibilityChangedAsync">
             <ItemTemplate Context="context">
                 <label class="train-overlay-legend-item" data-active="@context.Visible.ToString().ToLowerInvariant()">

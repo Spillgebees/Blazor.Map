@@ -8,7 +8,7 @@ import {
   resetMockMapState,
 } from "../../test/maplibreMock";
 import { resetWindowGlobals } from "../../test/windowSetup";
-import type { IMapControlOptions } from "../interfaces/controls";
+import type { IMapControl } from "../interfaces/controls";
 import type { IMapOptions } from "../interfaces/map";
 import { bootstrap, createMap } from "../map";
 import {
@@ -45,15 +45,8 @@ function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions 
   };
 }
 
-function createDefaultControlOptions(): IMapControlOptions {
-  return {
-    navigation: null,
-    scale: null,
-    fullscreen: null,
-    geolocate: null,
-    terrain: null,
-    center: null,
-  };
+function createDefaultControlOptions(): IMapControl[] {
+  return [];
 }
 
 function setupMapElement(): HTMLElement {

@@ -19,7 +19,7 @@ public class MapJsInteropPayloadTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(11);
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(12);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
@@ -55,16 +55,18 @@ public class MapJsInteropPayloadTests : BunitContext
     {
         // arrange & act
         Render<SgbMap>(parameters =>
-            parameters.Add(p => p.ControlOptions, new MapControlOptions(Center: new CenterControlOptions()))
+            parameters.Add<IReadOnlyList<MapControl>>(p => p.Controls, [new CenterMapControl()])
         );
 
         // assert
         var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
-        var controlOptionsPayload = invocation.Arguments[4];
-        var centerPayload = GetRequiredPropertyValue(controlOptionsPayload!, "Center");
+        var controlsPayload = invocation.Arguments[4].Should().BeOfType<object[]>().Subject;
+        var centerPayload = controlsPayload.Single();
+        var kindValue = GetRequiredPropertyValue(centerPayload, "Kind");
         var enableValue = GetRequiredPropertyValue(centerPayload, "Enable");
         var positionValue = GetRequiredPropertyValue(centerPayload, "Position");
 
+        kindValue.Should().Be("center");
         enableValue.Should().Be(true);
         positionValue.Should().Be(ControlPosition.TopLeft);
     }
@@ -75,19 +77,20 @@ public class MapJsInteropPayloadTests : BunitContext
         // arrange & act
         Render<SgbMap>(parameters =>
             parameters.Add(
-                p => p.ControlOptions,
-                new MapControlOptions(
-                    Navigation: new NavigationControlOptions(Order: 250),
-                    Scale: new ScaleControlOptions(Order: 25)
-                )
+                p => p.Controls,
+                new List<MapControl> { new NavigationMapControl(Order: 250), new ScaleMapControl(Order: 25) }
             )
         );
 
         // assert
         var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
-        var controlOptionsPayload = invocation.Arguments[4];
-        var navigationPayload = GetRequiredPropertyValue(controlOptionsPayload!, "Navigation");
-        var scalePayload = GetRequiredPropertyValue(controlOptionsPayload!, "Scale");
+        var controlsPayload = invocation.Arguments[4].Should().BeOfType<object[]>().Subject;
+        var navigationPayload = controlsPayload.Single(payload =>
+            (string)GetRequiredPropertyValue(payload, "Kind") == "navigation"
+        );
+        var scalePayload = controlsPayload.Single(payload =>
+            (string)GetRequiredPropertyValue(payload, "Kind") == "scale"
+        );
 
         GetRequiredPropertyValue(navigationPayload, "Order").Should().Be(250);
         GetRequiredPropertyValue(scalePayload, "Order").Should().Be(25);

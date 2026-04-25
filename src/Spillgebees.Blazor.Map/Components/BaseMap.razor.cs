@@ -41,10 +41,10 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     public MapOptions MapOptions { get; set; } = MapOptions.Default;
 
     /// <summary>
-    /// Options for the map controls (navigation, scale, fullscreen, etc.).
+    /// Declarative map controls (built-in, legend, and content controls).
     /// </summary>
     [Parameter]
-    public MapControlOptions ControlOptions { get; set; } = MapControlOptions.Default;
+    public IReadOnlyList<MapControl> Controls { get; set; } = MapControls.Default;
 
     /// <summary>
     /// The visual theme for UI controls, popups, and attribution.
@@ -145,7 +145,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     public EventCallback<MarkerDragEventArgs> OnMarkerDragEnd { get; set; }
 
     protected MapOptions InternalMapOptions = null!;
-    protected MapControlOptions InternalControlOptions = null!;
+    protected List<MapControl> InternalControls { get; set; } = [];
     protected MapTheme InternalTheme;
     protected List<Marker> InternalMarkers { get; set; } = [];
     protected List<Circle> InternalCircles { get; set; } = [];
@@ -548,6 +548,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     protected override async Task OnParametersSetAsync()
     {
         MapOptionsCompositionValidator.Validate(MapOptions);
+        ValidateControlIds(Controls);
 
         if (IsInitialized is false)
         {
@@ -567,9 +568,9 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             await SyncImagesAsync();
         }
 
-        if (InternalControlOptions != ControlOptions)
+        if (!InternalControls.SequenceEqual(Controls))
         {
-            InternalControlOptions = ControlOptions;
+            InternalControls = [.. Controls];
             await SetControlsAsync();
         }
 
@@ -612,7 +613,9 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         }
 
         InternalMapOptions = MapOptions;
-        InternalControlOptions = ControlOptions;
+        ValidateControlIds(Controls);
+
+        InternalControls = [.. Controls];
         InternalTheme = Theme;
         InternalMarkers = [.. Markers];
         InternalCircles = [.. Circles];
@@ -627,7 +630,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             nameof(OnMapInitializedAsync),
             MapReference,
             InternalMapOptions,
-            InternalControlOptions,
+            InternalControls,
             InternalTheme,
             InternalMarkers,
             InternalCircles,
@@ -659,7 +662,31 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         MapJs.SetOverlaysAsync(JsRuntime, Logger.Value, MapReference, InternalOverlays);
 
     private ValueTask SetControlsAsync() =>
-        MapJs.SetControlsAsync(JsRuntime, Logger.Value, MapReference, InternalControlOptions);
+        MapJs.SetControlsAsync(JsRuntime, Logger.Value, MapReference, InternalControls);
+
+    internal bool TryGetControl(string controlId, out MapControl control)
+    {
+        control = InternalControls.FirstOrDefault(control => control.ControlId == controlId)!;
+        return control is not null;
+    }
+
+    private static void ValidateControlIds(IEnumerable<MapControl> controls)
+    {
+        var duplicateControlId = controls
+            .GroupBy(control => control.ControlId, StringComparer.Ordinal)
+            .FirstOrDefault(group => string.IsNullOrWhiteSpace(group.Key) || group.Count() > 1);
+
+        if (duplicateControlId is null)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            string.IsNullOrWhiteSpace(duplicateControlId.Key)
+                ? "Control IDs must be non-empty."
+                : $"Control IDs must be unique. Duplicate ID: '{duplicateControlId.Key}'."
+        );
+    }
 
     private ValueTask SetMapOptionsAsync() =>
         MapJs.SetMapOptionsAsync(JsRuntime, Logger.Value, MapReference, InternalMapOptions);
