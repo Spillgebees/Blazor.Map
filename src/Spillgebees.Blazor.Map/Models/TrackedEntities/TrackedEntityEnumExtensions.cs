@@ -7,7 +7,7 @@ internal static class TrackedEntityEnumExtensions
         {
             TrackedEntityDecorationDisplayMode.Always => "always",
             TrackedEntityDecorationDisplayMode.Hover => "hover",
-            TrackedEntityDecorationDisplayMode.Click => "click",
+            TrackedEntityDecorationDisplayMode.Selected => "selected",
             TrackedEntityDecorationDisplayMode.HoverOrSelected => "hover-or-selected",
             _ => throw new ArgumentOutOfRangeException(nameof(displayMode), displayMode, null),
         };

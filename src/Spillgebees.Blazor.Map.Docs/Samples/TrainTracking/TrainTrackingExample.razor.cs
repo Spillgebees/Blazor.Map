@@ -38,7 +38,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
         TrainTrackingPresentation.TrackedTrainClusterOptions;
     private readonly object[] _trainIconOpacityExpr = TrainTrackingPresentation.TrainIconOpacityExpression;
     private readonly TrainTrackingVisibilityState _visibility = new();
-    private readonly TrackedDataIdentityOptions<TrainSampleState> _trainIdentity = new(train => train.Id);
+    private readonly TrackedDataIdOptions<TrainSampleState> _trainId = new(train => train.Id);
     private readonly TrackedDataSymbolOptions<TrainSampleState> _trainSymbol = new(
         train => train.CurrentPosition,
         train => $"train-{train.Color.TrimStart('#')}",
@@ -180,7 +180,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
 
     private async Task HandleTrainClick(TrackedEntityInteractionEventArgs<TrainSampleState> interaction)
     {
-        if (interaction.Entity.Metadata is not { } train)
+        if (interaction.Entity.Item is not { } train)
         {
             return;
         }
@@ -195,7 +195,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
 
     private Task HandleTrainHover(TrackedEntityInteractionEventArgs<TrainSampleState> interaction)
     {
-        if (interaction.Entity.Metadata is not { } train)
+        if (interaction.Entity.Item is not { } train)
         {
             return Task.CompletedTask;
         }

@@ -48,7 +48,7 @@ public class TrackedEntityGeoJsonBuilderTests
         primaryProperties[TrackedEntityFeatureProperties.HoverScale].Should().Be(1.3);
         primaryProperties[TrackedEntityFeatureProperties.HoverRaise].Should().Be(true);
         primaryProperties[TrackedEntityFeatureProperties.RenderOrder].Should().Be(25d);
-        primaryProperties[TrackedEntityFeatureProperties.Metadata].Should().Be("express");
+        primaryProperties[TrackedEntityFeatureProperties.Item].Should().Be("express");
         primaryProperties["service"].Should().Be("RE 1");
 
         var decorationFeatures = GetFeatures(decorations);

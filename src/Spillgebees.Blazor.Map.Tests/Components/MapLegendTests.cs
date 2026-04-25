@@ -26,7 +26,7 @@ public class MapLegendTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(12);
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(13);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
@@ -80,7 +80,7 @@ public class MapLegendTests : BunitContext
         cut.Render(parameters =>
             parameters
                 .Add(p => p.Definition, CreateDefinition())
-                .Add(p => p.Controls, new List<MapControl> { new LegendMapControl("legend-control", Enable: false) })
+                .Add(p => p.Controls, new List<MapControl> { new LegendMapControl("legend-control", Enabled: false) })
         );
 
         // assert

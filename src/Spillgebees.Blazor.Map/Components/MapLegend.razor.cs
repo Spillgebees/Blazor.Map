@@ -107,7 +107,7 @@ public partial class MapLegend : ComponentBase, IAsyncDisposable
             }
 
             var control = GetLegendControl();
-            if (!control.Enable)
+            if (!control.Enabled)
             {
                 if (_registered && !string.IsNullOrWhiteSpace(_registeredControlId))
                 {
@@ -130,7 +130,7 @@ public partial class MapLegend : ComponentBase, IAsyncDisposable
                 _contentReference
             );
 
-            _registered = control.Enable;
+            _registered = control.Enabled;
             _registeredControlId = control.ControlId;
             _controlSyncPending = false;
         }

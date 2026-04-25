@@ -66,7 +66,7 @@ import {
 import { applyOverlayStyles, validateComposedGlyphs } from "./styles/composition";
 import type { FeatureStorage } from "./types/feature-storage";
 
-export const PROTOCOL_VERSION = 12;
+export const PROTOCOL_VERSION = 13;
 
 const LEGEND_CONTROL_KIND = "legend";
 
@@ -373,7 +373,7 @@ function getCustomControlStore(map: MapLibreMap): Map<string, CustomControlRegis
 function getOrderedRegistrations(map: MapLibreMap, controlsPayload: IMapControl[]): OrderedControlRegistration[] {
   const registrations: OrderedControlRegistration[] = [];
   for (const [declarationOrder, controlDefinition] of controlsPayload.entries()) {
-    if (!controlDefinition.enable) {
+    if (!controlDefinition.enabled) {
       continue;
     }
 

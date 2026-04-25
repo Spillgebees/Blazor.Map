@@ -19,7 +19,7 @@ public class MapJsInteropPayloadTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(12);
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(13);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
@@ -63,7 +63,7 @@ public class MapJsInteropPayloadTests : BunitContext
         var controlsPayload = invocation.Arguments[4].Should().BeOfType<object[]>().Subject;
         var centerPayload = controlsPayload.Single();
         var kindValue = GetRequiredPropertyValue(centerPayload, "Kind");
-        var enableValue = GetRequiredPropertyValue(centerPayload, "Enable");
+        var enableValue = GetRequiredPropertyValue(centerPayload, "Enabled");
         var positionValue = GetRequiredPropertyValue(centerPayload, "Position");
 
         kindValue.Should().Be("center");

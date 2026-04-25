@@ -5,8 +5,8 @@ namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
 /// <summary>
 /// Typed interaction details for a tracked entity feature.
 /// </summary>
-public sealed record TrackedEntityInteractionEventArgs<TMetadata>(
-    TrackedEntity<TMetadata> Entity,
+public sealed record TrackedEntityInteractionEventArgs<TItem>(
+    TrackedEntity<TItem> Entity,
     LayerFeatureEventArgs FeatureEvent,
     string? DecorationId = null
 )

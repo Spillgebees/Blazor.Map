@@ -18,9 +18,9 @@ public static class TrainTrackingPresentation
         OnMoveEnd=""@HandleMapViewChangedAsync""
         OnZoomEnd=""@HandleMapViewChangedAsync"">
     <TrackedDataSource @ref=""_trainSource""
-                       Id=""train-source""
+                       SourceId=""train-source""
                        Items=""@_trains""
-                       Identity=""@_trainIdentity""
+                       Id=""@_trainId""
                        Symbol=""@_trainSymbol""
                        Decorations=""@_trainDecorations""
                        Cluster=""@_trainClusterOptions""

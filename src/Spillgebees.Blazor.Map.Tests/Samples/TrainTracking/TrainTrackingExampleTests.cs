@@ -38,7 +38,7 @@ public class TrainTrackingExampleTests : BunitContext
 
         Services.AddSingleton<IConfiguration>(CreateConfiguration());
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(12);
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(13);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
@@ -212,7 +212,12 @@ public class TrainTrackingExampleTests : BunitContext
                         1.0,
                         0.0,
                     },
-                    new object[] { "==", new object[] { "get", TrackedEntityFeatureProperties.DisplayMode }, "click" },
+                    new object[]
+                    {
+                        "==",
+                        new object[] { "get", TrackedEntityFeatureProperties.DisplayMode },
+                        "selected",
+                    },
                     new object[]
                     {
                         "case",

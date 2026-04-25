@@ -3,7 +3,7 @@
 @using Spillgebees.Blazor.Map.Models.TrackedEntities
 @typeparam TItem
 
-<GeoJsonSource Id="@Id"
+<GeoJsonSource Id="@SourceId"
                @ref="_primarySource"
                Data="@_primaryData"
                Stack="@Stack"
@@ -20,7 +20,7 @@
     @if (Cluster.Enabled)
     {
         <CircleLayer Id="@ClusterHitAreaLayerId"
-                     SourceId="@Id"
+                     SourceId="@SourceId"
                      Filter="@ClusterFilter"
                      Radius="@ClusterHitAreaRadiusValue"
                      Color="@("#000000")"
@@ -30,7 +30,7 @@
                      Visible="@Visible"
                      OnClick="@HandleGeneratedClusterClickAsync" />
         <CircleLayer Id="@ClusterLayerId"
-                     SourceId="@Id"
+                     SourceId="@SourceId"
                      Filter="@ClusterFilter"
                      Radius="@ClusterRadiusValue"
                      Color="@("#2563eb")"
@@ -42,7 +42,7 @@
                      Visible="@Visible"
                      OnClick="@HandleGeneratedClusterClickAsync" />
         <SymbolLayer Id="@ClusterCountLayerId"
-                     SourceId="@Id"
+                     SourceId="@SourceId"
                      Filter="@ClusterFilter"
                      TextField="@ClusterCountTextField"
                      TextSize="14"
@@ -56,7 +56,7 @@
     }
 
     <SymbolLayer Id="@PrimaryLayerId"
-                 SourceId="@Id"
+                 SourceId="@SourceId"
                  Filter="@PrimaryFilter"
                  IconImage="@Expr.Get(TrackedEntityFeatureProperties.IconImage)"
                  IconSize="@PrimaryIconSizeValue"
@@ -74,7 +74,7 @@
                  OnMouseLeave="@HandleGeneratedItemMouseLeaveAsync" />
 
     <CircleLayer Id="@PrimaryHitAreaLayerId"
-                 SourceId="@Id"
+                 SourceId="@SourceId"
                  Filter="@PrimaryFilter"
                  Radius="24"
                  Color="@("#000000")"

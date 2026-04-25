@@ -31,7 +31,7 @@ public class TrackedDataSourceTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(12);
+        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(13);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
@@ -624,12 +624,12 @@ public class TrackedDataSourceTests : BunitContext
 
         var cut = Render<TrackedDataSource<TestVehicle>>(parameters =>
             parameters
-                .Add(p => p.Id, "vehicles")
+                .Add(p => p.SourceId, "vehicles")
                 .Add(
                     p => p.Items,
                     new[] { new TestVehicle("vehicle-1", new Coordinate(49.6, 6.1), "vehicle-icon", "Vehicle 1") }
                 )
-                .Add(p => p.Identity, new TrackedDataIdentityOptions<TestVehicle>(vehicle => vehicle.Id))
+                .Add(p => p.Id, new TrackedDataIdOptions<TestVehicle>(vehicle => vehicle.Id))
                 .Add(
                     p => p.Symbol,
                     new TrackedDataSymbolOptions<TestVehicle>(vehicle => vehicle.Position, vehicle => vehicle.IconImage)
@@ -679,7 +679,12 @@ public class TrackedDataSourceTests : BunitContext
                         1.0,
                         0.0,
                     },
-                    new object[] { "==", new object[] { "get", TrackedEntityFeatureProperties.DisplayMode }, "click" },
+                    new object[]
+                    {
+                        "==",
+                        new object[] { "get", TrackedEntityFeatureProperties.DisplayMode },
+                        "selected",
+                    },
                     new object[]
                     {
                         "case",
@@ -716,12 +721,12 @@ public class TrackedDataSourceTests : BunitContext
         // arrange
         var cut = Render<TrackedDataSource<TestVehicle>>(parameters =>
             parameters
-                .Add(p => p.Id, "vehicles")
+                .Add(p => p.SourceId, "vehicles")
                 .Add(
                     p => p.Items,
                     new[] { new TestVehicle("vehicle-1", new Coordinate(49.6, 6.1), "vehicle-icon", "Vehicle 1") }
                 )
-                .Add(p => p.Identity, new TrackedDataIdentityOptions<TestVehicle>(vehicle => vehicle.Id))
+                .Add(p => p.Id, new TrackedDataIdOptions<TestVehicle>(vehicle => vehicle.Id))
                 .Add(
                     p => p.Symbol,
                     new TrackedDataSymbolOptions<TestVehicle>(vehicle => vehicle.Position, vehicle => vehicle.IconImage)
@@ -763,7 +768,12 @@ public class TrackedDataSourceTests : BunitContext
                         1.0,
                         0.0,
                     },
-                    new object[] { "==", new object[] { "get", TrackedEntityFeatureProperties.DisplayMode }, "click" },
+                    new object[]
+                    {
+                        "==",
+                        new object[] { "get", TrackedEntityFeatureProperties.DisplayMode },
+                        "selected",
+                    },
                     new object[]
                     {
                         "case",
@@ -802,12 +812,12 @@ public class TrackedDataSourceTests : BunitContext
         // arrange
         var cut = Render<TrackedDataSource<TestVehicle>>(parameters =>
             parameters
-                .Add(p => p.Id, "vehicles")
+                .Add(p => p.SourceId, "vehicles")
                 .Add(
                     p => p.Items,
                     new[] { new TestVehicle("vehicle-1", new Coordinate(49.6, 6.1), "vehicle-icon", "Vehicle 1") }
                 )
-                .Add(p => p.Identity, new TrackedDataIdentityOptions<TestVehicle>(vehicle => vehicle.Id))
+                .Add(p => p.Id, new TrackedDataIdOptions<TestVehicle>(vehicle => vehicle.Id))
                 .Add(
                     p => p.Symbol,
                     new TrackedDataSymbolOptions<TestVehicle>(vehicle => vehicle.Position, vehicle => vehicle.IconImage)
@@ -834,9 +844,9 @@ public class TrackedDataSourceTests : BunitContext
         // act
         var cut = Render<TrackedDataSource<TestVehicle>>(parameters =>
             parameters
-                .Add(p => p.Id, "vehicles")
+                .Add(p => p.SourceId, "vehicles")
                 .Add(p => p.Items, items)
-                .Add(p => p.Identity, new TrackedDataIdentityOptions<TestVehicle>(vehicle => vehicle.Id))
+                .Add(p => p.Id, new TrackedDataIdOptions<TestVehicle>(vehicle => vehicle.Id))
                 .Add(
                     p => p.Symbol,
                     new TrackedDataSymbolOptions<TestVehicle>(
@@ -884,12 +894,12 @@ public class TrackedDataSourceTests : BunitContext
         // arrange
         var cut = Render<TrackedDataSource<TestVehicle>>(parameters =>
             parameters
-                .Add(p => p.Id, "vehicles")
+                .Add(p => p.SourceId, "vehicles")
                 .Add(
                     p => p.Items,
                     new[] { new TestVehicle("vehicle-1", new Coordinate(49.6, 6.1), "vehicle-icon", "Vehicle 1") }
                 )
-                .Add(p => p.Identity, new TrackedDataIdentityOptions<TestVehicle>(vehicle => vehicle.Id))
+                .Add(p => p.Id, new TrackedDataIdOptions<TestVehicle>(vehicle => vehicle.Id))
                 .Add(
                     p => p.Symbol,
                     new TrackedDataSymbolOptions<TestVehicle>(vehicle => vehicle.Position, vehicle => vehicle.IconImage)
@@ -905,7 +915,7 @@ public class TrackedDataSourceTests : BunitContext
                         new TrackedDataDecorationOptions<TestVehicle>(
                             "selected-label",
                             TextSelector: vehicle => vehicle.Label,
-                            DisplayMode: TrackedEntityDecorationDisplayMode.Click
+                            DisplayMode: TrackedEntityDecorationDisplayMode.Selected
                         ),
                     ]
                 )
@@ -940,7 +950,12 @@ public class TrackedDataSourceTests : BunitContext
                         1.0,
                         0.0,
                     },
-                    new object[] { "==", new object[] { "get", TrackedEntityFeatureProperties.DisplayMode }, "click" },
+                    new object[]
+                    {
+                        "==",
+                        new object[] { "get", TrackedEntityFeatureProperties.DisplayMode },
+                        "selected",
+                    },
                     new object[]
                     {
                         "case",
@@ -977,12 +992,12 @@ public class TrackedDataSourceTests : BunitContext
         // arrange
         var cut = Render<TrackedDataSource<TestVehicle>>(parameters =>
             parameters
-                .Add(p => p.Id, "vehicles")
+                .Add(p => p.SourceId, "vehicles")
                 .Add(
                     p => p.Items,
                     new[] { new TestVehicle("vehicle-1", new Coordinate(49.6, 6.1), "vehicle-icon", "Vehicle 1") }
                 )
-                .Add(p => p.Identity, new TrackedDataIdentityOptions<TestVehicle>(vehicle => vehicle.Id))
+                .Add(p => p.Id, new TrackedDataIdOptions<TestVehicle>(vehicle => vehicle.Id))
                 .Add(
                     p => p.Symbol,
                     new TrackedDataSymbolOptions<TestVehicle>(
@@ -1172,13 +1187,9 @@ public class TrackedDataSourceTests : BunitContext
                     mapBuilder =>
                     {
                         mapBuilder.OpenComponent(0, TrackedDataSourceComponentType);
-                        mapBuilder.AddAttribute(1, "Id", "tracked-data");
+                        mapBuilder.AddAttribute(1, "SourceId", "tracked-data");
                         mapBuilder.AddAttribute(2, "Items", Items);
-                        mapBuilder.AddAttribute(
-                            3,
-                            "Identity",
-                            new TrackedDataIdentityOptions<TestVehicle>(vehicle => vehicle.Id)
-                        );
+                        mapBuilder.AddAttribute(3, "Id", new TrackedDataIdOptions<TestVehicle>(vehicle => vehicle.Id));
                         mapBuilder.AddAttribute(
                             4,
                             "Symbol",

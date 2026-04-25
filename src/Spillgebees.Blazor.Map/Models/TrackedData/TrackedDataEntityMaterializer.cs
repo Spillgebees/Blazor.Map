@@ -12,21 +12,21 @@ public static class TrackedDataEntityMaterializer
     /// </summary>
     public static IReadOnlyList<TrackedEntity<TItem>> Materialize<TItem>(
         IReadOnlyList<TItem> items,
-        TrackedDataIdentityOptions<TItem> identity,
+        TrackedDataIdOptions<TItem> id,
         TrackedDataSymbolOptions<TItem> symbol,
         IReadOnlyList<TrackedDataDecorationOptions<TItem>>? decorations = null
     )
     {
         ArgumentNullException.ThrowIfNull(items);
-        ArgumentNullException.ThrowIfNull(identity);
+        ArgumentNullException.ThrowIfNull(id);
         ArgumentNullException.ThrowIfNull(symbol);
 
-        return items.Select(item => MaterializeEntity(item, identity, symbol, decorations ?? [])).ToArray();
+        return items.Select(item => MaterializeEntity(item, id, symbol, decorations ?? [])).ToArray();
     }
 
     private static TrackedEntity<TItem> MaterializeEntity<TItem>(
         TItem item,
-        TrackedDataIdentityOptions<TItem> identity,
+        TrackedDataIdOptions<TItem> id,
         TrackedDataSymbolOptions<TItem> symbol,
         IReadOnlyList<TrackedDataDecorationOptions<TItem>> decorations
     )
@@ -38,7 +38,7 @@ public static class TrackedDataEntityMaterializer
             .ToArray();
 
         return new TrackedEntity<TItem>(
-            identity.GetId(item),
+            id.GetId(item),
             symbol.GetPosition(item),
             new TrackedEntitySymbol(
                 symbol.GetIconImage(item),
@@ -51,7 +51,7 @@ public static class TrackedDataEntityMaterializer
             hover: symbol.GetHover(item),
             renderOrder: symbol.GetRenderOrder(item),
             decorations: trackedDecorations,
-            metadata: item,
+            item: item,
             properties: symbol.GetProperties(item)
         );
     }

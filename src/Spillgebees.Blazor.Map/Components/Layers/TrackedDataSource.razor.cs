@@ -107,7 +107,10 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
         1.0,
         Expr.Eq(TrackedEntityFeatureProperties.DisplayMode, TrackedEntityDecorationDisplayMode.Hover.ToMapLibreValue()),
         new object[] { "case", _hoverState, 1.0, 0.0 },
-        Expr.Eq(TrackedEntityFeatureProperties.DisplayMode, TrackedEntityDecorationDisplayMode.Click.ToMapLibreValue()),
+        Expr.Eq(
+            TrackedEntityFeatureProperties.DisplayMode,
+            TrackedEntityDecorationDisplayMode.Selected.ToMapLibreValue()
+        ),
         new object[] { "case", _selectedState, 1.0, 0.0 },
         Expr.Eq(
             TrackedEntityFeatureProperties.DisplayMode,
@@ -160,13 +163,13 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
     private TrackedPopupState? _activePopup;
 
     [Parameter, EditorRequired]
-    public string Id { get; set; } = string.Empty;
+    public string SourceId { get; set; } = string.Empty;
 
     [Parameter]
     public IReadOnlyList<TItem> Items { get; set; } = [];
 
     [Parameter, EditorRequired]
-    public TrackedDataIdentityOptions<TItem> Identity { get; set; } = null!;
+    public TrackedDataIdOptions<TItem> Id { get; set; } = null!;
 
     [Parameter, EditorRequired]
     public TrackedDataSymbolOptions<TItem> Symbol { get; set; } = null!;
@@ -216,17 +219,17 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
     [CascadingParameter]
     public BaseMap? Map { get; set; }
 
-    internal string ClusterHitAreaLayerId => $"{Id}-cluster-hit-area";
+    internal string ClusterHitAreaLayerId => $"{SourceId}-cluster-hit-area";
 
-    internal string DecorationSourceId => $"{Id}-decorations";
+    internal string DecorationSourceId => $"{SourceId}-decorations";
 
-    internal string ClusterLayerId => $"{Id}-clusters";
+    internal string ClusterLayerId => $"{SourceId}-clusters";
 
-    internal string ClusterCountLayerId => $"{Id}-cluster-count";
+    internal string ClusterCountLayerId => $"{SourceId}-cluster-count";
 
-    internal string PrimaryHitAreaLayerId => $"{Id}-hit-area";
+    internal string PrimaryHitAreaLayerId => $"{SourceId}-hit-area";
 
-    internal string PrimaryLayerId => $"{Id}-symbols";
+    internal string PrimaryLayerId => $"{SourceId}-symbols";
 
     internal string? PrimaryAfterStack => Cluster.Enabled ? ClusterCountLayerId : null;
 
@@ -287,15 +290,15 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
 
     protected override void OnParametersSet()
     {
-        if (string.IsNullOrWhiteSpace(Id))
+        if (string.IsNullOrWhiteSpace(SourceId))
         {
             throw new InvalidOperationException("Tracked data source ID must not be empty.");
         }
 
-        ArgumentNullException.ThrowIfNull(Identity);
+        ArgumentNullException.ThrowIfNull(Id);
         ArgumentNullException.ThrowIfNull(Symbol);
 
-        _entities = TrackedDataEntityMaterializer.Materialize(Items, Identity, Symbol, Decorations);
+        _entities = TrackedDataEntityMaterializer.Materialize(Items, Id, Symbol, Decorations);
 
         var nextPrimaryProjection = BuildPrimaryProjection(_entities);
         var nextDecorationProjection = BuildDecorationProjection(_entities);
@@ -337,7 +340,7 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
         );
 
     internal string GetDecorationLayerId(TrackedDataDecorationOptions<TItem> decoration, string? anchor) =>
-        anchor is null ? $"{Id}-{decoration.Id}" : $"{Id}-{decoration.Id}-{anchor}";
+        anchor is null ? $"{SourceId}-{decoration.Id}" : $"{SourceId}-{decoration.Id}-{anchor}";
 
     internal static string GetResolvedAnchor(string? anchor) => string.IsNullOrWhiteSpace(anchor) ? "center" : anchor;
 
@@ -379,7 +382,7 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
             throw new InvalidOperationException("Tracked entity feature state requires a parent map.");
         }
 
-        return Map.SetTrackedEntityFeatureStateAsync(Id, DecorationSourceId, entityId, state);
+        return Map.SetTrackedEntityFeatureStateAsync(SourceId, DecorationSourceId, entityId, state);
     }
 
     public ValueTask SetFeatureStateAsync(string entityId, KeyValuePair<string, object> state)
@@ -563,7 +566,7 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
         }
 
         return Items
-            .Select(item => new KeyValuePair<string, bool>(Identity.GetId(item), selector(item)))
+            .Select(item => new KeyValuePair<string, bool>(Id.GetId(item), selector(item)))
             .Where(pair => pair.Value)
             .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
     }
@@ -619,12 +622,12 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
     {
         popup = null;
 
-        if (interaction.Entity.Metadata is null)
+        if (interaction.Entity.Item is null)
         {
             return false;
         }
 
-        var resolvedPopup = Symbol.GetPopup(interaction.Entity.Metadata);
+        var resolvedPopup = Symbol.GetPopup(interaction.Entity.Item);
         if (resolvedPopup?.Trigger == PopupTrigger.Permanent)
         {
             return false;

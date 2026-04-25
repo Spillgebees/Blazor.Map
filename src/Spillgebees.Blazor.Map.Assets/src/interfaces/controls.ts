@@ -1,7 +1,7 @@
 export interface IMapControlBase {
   kind: string;
   controlId: string;
-  enable: boolean;
+  enabled: boolean;
   position: ControlPosition;
   order: number;
 }

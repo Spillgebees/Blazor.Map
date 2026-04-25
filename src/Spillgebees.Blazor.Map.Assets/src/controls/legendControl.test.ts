@@ -35,7 +35,7 @@ function createDefaultLegendOptions(overrides?: Partial<ILegendMapControl>): ILe
     kind: "legend",
     controlId: "legend",
     order: 500,
-    enable: true,
+    enabled: true,
     position: "top-right",
     title: "Legend",
     collapsible: true,

@@ -142,7 +142,7 @@ public class TrainSampleSimulationTests
         // assert
         trackedEntities.Should().HaveCount(1);
         trackedEntities[0].Id.Should().Be("re11");
-        trackedEntities[0].Metadata.Should().BeSameAs(train);
+        trackedEntities[0].Item.Should().BeSameAs(train);
         trackedEntities[0].Symbol.IconImage.Should().Be("train-2563eb");
         trackedEntities[0].Hover.Should().BeEquivalentTo(new TrackedEntityHoverIntent(1.2, true));
         trackedEntities[0]
@@ -156,7 +156,7 @@ public class TrainSampleSimulationTests
         trackedEntities[0]
             .Decorations.Single(decoration => decoration.Id == "operator")
             .DisplayMode.Should()
-            .Be(TrackedEntityDecorationDisplayMode.Click);
+            .Be(TrackedEntityDecorationDisplayMode.Selected);
 
         trackedEntities[0]
             .Decorations.Where(decoration => decoration.Id is "service" or "route")
@@ -258,7 +258,7 @@ public class TrainSampleSimulationTests
             .Equal(
                 initialTrackedEntity.Decorations.Select(decoration => $"{initialTrackedEntity.Id}::{decoration.Id}")
             );
-        rebuiltTrackedEntity.Metadata.Should().BeSameAs(train);
+        rebuiltTrackedEntity.Item.Should().BeSameAs(train);
         rebuiltTrackedEntity.Position.Should().NotBe(initialTrackedEntity.Position);
     }
 

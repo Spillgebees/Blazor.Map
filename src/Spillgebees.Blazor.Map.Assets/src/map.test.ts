@@ -1762,7 +1762,7 @@ describe("setMapOptions", () => {
       {
         kind: "navigation",
         controlId: "nav",
-        enable: true,
+        enabled: true,
         position: "top-right",
         order: 100,
         showCompass: true,
@@ -2386,7 +2386,7 @@ describe("setControls", () => {
       {
         kind: "navigation",
         controlId: "nav",
-        enable: true,
+        enabled: true,
         position: "top-right",
         order: 100,
         showCompass: true,
@@ -2395,7 +2395,7 @@ describe("setControls", () => {
       {
         kind: "scale",
         controlId: "scale",
-        enable: true,
+        enabled: true,
         position: "bottom-left",
         order: 100,
         unit: "metric",
@@ -2420,7 +2420,7 @@ describe("setControls", () => {
       {
         kind: "navigation",
         controlId: "b",
-        enable: true,
+        enabled: true,
         position: "top-right",
         order: 100,
         showCompass: true,
@@ -2429,14 +2429,14 @@ describe("setControls", () => {
       {
         kind: "fullscreen",
         controlId: "a",
-        enable: true,
+        enabled: true,
         position: "top-right",
         order: 50,
       },
       {
         kind: "navigation",
         controlId: "c",
-        enable: true,
+        enabled: true,
         position: "top-right",
         order: 100,
         showCompass: true,
@@ -2466,7 +2466,7 @@ describe("setControls", () => {
         {
           kind: "navigation",
           controlId: "duplicate",
-          enable: true,
+          enabled: true,
           position: "top-right",
           order: 100,
           showCompass: true,
@@ -2475,7 +2475,7 @@ describe("setControls", () => {
         {
           kind: "fullscreen",
           controlId: "duplicate",
-          enable: true,
+          enabled: true,
           position: "top-right",
           order: 200,
         },
@@ -2508,7 +2508,7 @@ describe("setControlContent", () => {
         {
           kind: "legend",
           controlId: "legend-main",
-          enable: true,
+          enabled: true,
           position: "top-right",
           order: 500,
           title: "Legend",
@@ -2572,7 +2572,7 @@ describe("setControlContent", () => {
         {
           kind: "navigation",
           controlId: "nav-main",
-          enable: true,
+          enabled: true,
           position: "top-right",
           order: 100,
           showCompass: true,
@@ -2616,7 +2616,7 @@ describe("setControlContent", () => {
         {
           kind: "legend",
           controlId: "legend-main",
-          enable: true,
+          enabled: true,
           position: "top-right",
           order: 500,
           title: "Legend",
@@ -2642,7 +2642,7 @@ describe("setControlContent", () => {
       {
         kind: "legend",
         controlId: "legend-main",
-        enable: true,
+        enabled: true,
         position: "top-right",
         order: 700,
         title: "Legend",
@@ -2676,7 +2676,7 @@ describe("setControlContent", () => {
         {
           kind: "legend",
           controlId: "legend-first",
-          enable: true,
+          enabled: true,
           position: "top-right",
           order: 500,
           title: "First",
@@ -2687,7 +2687,7 @@ describe("setControlContent", () => {
         {
           kind: "legend",
           controlId: "legend-second",
-          enable: true,
+          enabled: true,
           position: "top-right",
           order: 500,
           title: "Second",
@@ -2745,7 +2745,7 @@ describe("setControlContent", () => {
         {
           kind: "legend",
           controlId: "legend-main",
-          enable: true,
+          enabled: true,
           position: "top-right",
           order: 500,
           title: "Legend",
