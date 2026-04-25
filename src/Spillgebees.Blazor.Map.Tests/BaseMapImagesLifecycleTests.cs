@@ -10,7 +10,6 @@ public class BaseMapImagesLifecycleTests : BunitContext
     private const string DisposeMapIdentifier = "Spillgebees.Map.mapFunctions.disposeMap";
     private const string ResizeIdentifier = "Spillgebees.Map.mapFunctions.resize";
     private const string SetImagesIdentifier = "Spillgebees.Map.mapFunctions.setImages";
-    private const string GetProtocolVersionIdentifier = "Spillgebees.Map.getProtocolVersion";
 
     private const int TestTimeoutMs = 5000;
 
@@ -18,7 +17,6 @@ public class BaseMapImagesLifecycleTests : BunitContext
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(12);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
@@ -106,18 +104,13 @@ public class BaseMapImagesLifecycleTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public void Should_mark_add_image_async_as_obsolete(CancellationToken cancellationToken)
+    public void Should_not_expose_imperative_add_image_api(CancellationToken cancellationToken)
     {
         // arrange & act
-        var obsoleteAttribute = typeof(SgbMap)
-            .GetMethod(nameof(SgbMap.AddImageAsync))
-            ?.GetCustomAttributes(false)
-            .OfType<ObsoleteAttribute>()
-            .SingleOrDefault();
+        var addImageMethod = typeof(SgbMap).GetMethod("AddImageAsync");
 
         // assert
-        obsoleteAttribute.Should().NotBeNull();
-        obsoleteAttribute!.Message.Should().Contain("Images");
+        addImageMethod.Should().BeNull();
     }
 
     private static object GetRequiredPropertyValue(object source, string propertyName)

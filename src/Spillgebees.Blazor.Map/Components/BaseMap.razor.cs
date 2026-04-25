@@ -1,14 +1,16 @@
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using BlazorComponentUtilities;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
+using Spillgebees.Blazor.Map.Components.Layers;
 using Spillgebees.Blazor.Map.Interop;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Layers;
+using Spillgebees.Blazor.Map.Models.TrackedData;
 using Spillgebees.Blazor.Map.Runtime.Scene;
 using Spillgebees.Blazor.Map.Utilities;
 
@@ -85,6 +87,12 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     public List<MapImageDefinition> Images { get; set; } = [];
 
     /// <summary>
+    /// Map-level tracked data layer definitions.
+    /// </summary>
+    [Parameter]
+    public IReadOnlyList<ITrackedDataLayer> TrackedDataLayers { get; set; } = [];
+
+    /// <summary>
     /// The width of the map. If not set, the map will take the full width of its container.
     /// </summary>
     [Parameter]
@@ -153,8 +161,6 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     protected List<Polyline> InternalPolylines { get; set; } = [];
     protected List<TileOverlay> InternalOverlays { get; set; } = [];
     protected List<MapImageDefinition> InternalImages { get; set; } = [];
-
-    private List<MapImageDefinition> _imperativeImages = [];
 
     protected string InternalContainerClass =>
         new CssBuilder()
@@ -295,39 +301,6 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// </summary>
     public ValueTask SetStyleLayerVisibilityAsync(string styleId, string layerId, bool visible) =>
         MapJs.SetStyleLayerVisibilityAsync(JsRuntime, Logger.Value, MapReference, styleId, layerId, visible);
-
-    /// <summary>
-    /// Registers a custom image (icon) for use in SymbolLayer's <c>IconImage</c>.
-    /// Supports any image URL, data URI (inline SVG), or base64-encoded image.
-    /// </summary>
-    /// <param name="name">The image name to reference in <c>IconImage</c> expressions.</param>
-    /// <param name="url">The image URL or data URI.</param>
-    /// <param name="width">The image width in pixels.</param>
-    /// <param name="height">The image height in pixels.</param>
-    /// <param name="pixelRatio">The pixel ratio for retina displays. Default is 1.</param>
-    /// <param name="sdf">Whether the image should be treated as an SDF (Signed Distance Field) for runtime tinting via <c>icon-color</c>. Default is false.</param>
-    [Obsolete("Use the Images parameter to declaratively register map images.")]
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public async ValueTask AddImageAsync(
-        string name,
-        string url,
-        int width,
-        int height,
-        double pixelRatio = 1,
-        bool sdf = false
-    )
-    {
-        _imperativeImages =
-        [
-            .. _imperativeImages.Where(image => image.Name != name),
-            new MapImageDefinition(name, url, width, height, pixelRatio, sdf),
-        ];
-
-        if (IsInitialized)
-        {
-            await SyncImagesAsync(force: true);
-        }
-    }
 
     /// <summary>
     /// Shows a popup at the specified coordinate with HTML content.
@@ -589,25 +562,13 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         firstRender ? InitializeMapAsync() : Task.CompletedTask;
 
     /// <summary>
-    /// Initializes the map by validating the protocol version and creating the map instance.
+    /// Initializes the map and creates the map instance.
     /// </summary>
     protected virtual async Task InitializeMapAsync()
     {
         MapOptionsCompositionValidator.Validate(MapOptions);
 
         DotNetObjectReference = Microsoft.JSInterop.DotNetObjectReference.Create(this);
-
-        // Protocol version handshake — safety net for cached JS modules
-        var jsProtocolVersion = await MapJs.GetProtocolVersionAsync(JsRuntime, Logger.Value);
-        if (jsProtocolVersion != MapJs.ProtocolVersion)
-        {
-            throw new InvalidOperationException(
-                $"Spillgebees.Blazor.Map: JavaScript/C# version mismatch. "
-                    + $"The loaded JavaScript module is protocol version {jsProtocolVersion} "
-                    + $"but the .NET library expects protocol version {MapJs.ProtocolVersion}. "
-                    + "Clear your browser cache and reload the page."
-            );
-        }
 
         InternalMapOptions = MapOptions;
         ValidateControlIds(Controls);
@@ -734,18 +695,27 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     private IReadOnlyList<MapImageDefinition> GetDesiredImages()
     {
-        var desiredByName = new Dictionary<string, MapImageDefinition>(StringComparer.Ordinal);
-
-        foreach (var image in Images)
-        {
-            desiredByName[image.Name] = image;
-        }
-
-        foreach (var image in _imperativeImages)
-        {
-            desiredByName[image.Name] = image;
-        }
-
-        return [.. desiredByName.Values];
+        return [.. Images];
     }
+
+    private static RenderFragment RenderTrackedDataLayer(ITrackedDataLayer trackedDataLayer) =>
+        trackedDataLayer switch
+        {
+            TrackedDataLayer<object> objectLayer => builder =>
+            {
+                builder.OpenComponent<TrackedDataSource<object>>(0);
+                builder.AddAttribute(1, nameof(TrackedDataSource<object>.Layer), objectLayer);
+                builder.CloseComponent();
+            },
+            _ => BuildGenericTrackedDataSource(trackedDataLayer),
+        };
+
+    private static RenderFragment BuildGenericTrackedDataSource(ITrackedDataLayer trackedDataLayer) =>
+        builder =>
+        {
+            var componentType = typeof(TrackedDataSource<>).MakeGenericType(trackedDataLayer.ItemType);
+            builder.OpenComponent(0, componentType);
+            builder.AddAttribute(1, nameof(TrackedDataSource<object>.Layer), trackedDataLayer);
+            builder.CloseComponent();
+        };
 }

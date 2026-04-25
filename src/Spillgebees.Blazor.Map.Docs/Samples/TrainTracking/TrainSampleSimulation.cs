@@ -105,14 +105,14 @@ public static class TrainSampleSimulation
                             text: train.Operator,
                             offset: new Point(-1.3, 0.0),
                             anchor: "right",
-                            displayMode: TrackedEntityDecorationDisplayMode.Click,
+                            displayMode: TrackedEntityDecorationDisplayMode.Selected,
                             color: train.Color,
                             textSize: 8,
                             rotation: null,
                             renderOrder: 108
                         ),
                     ],
-                    metadata: train,
+                    item: train,
                     properties: new Dictionary<string, object?> { ["internationalPresence"] = isInternational ? 1 : 0 }
                 );
             })

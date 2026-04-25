@@ -66,7 +66,52 @@ import {
 import { applyOverlayStyles, validateComposedGlyphs } from "./styles/composition";
 import type { FeatureStorage } from "./types/feature-storage";
 
-export const PROTOCOL_VERSION = 12;
+const REQUIRED_MAP_FUNCTION_NAMES = [
+  "createMap",
+  "syncFeatures",
+  "setOverlays",
+  "setControls",
+  "setControlContent",
+  "removeControlContent",
+  "setMapOptions",
+  "setTheme",
+  "fitBounds",
+  "flyTo",
+  "resize",
+  "setImages",
+  "disposeMap",
+  "applySceneMutations",
+  "addMapSource",
+  "removeMapSource",
+  "setSourceData",
+  "setSourceDataAnimated",
+  "addMapLayer",
+  "moveMapLayer",
+  "removeMapLayer",
+  "addImage",
+  "showPopup",
+  "closePopup",
+  "setFeatureState",
+  "setTrackedEntityFeatureState",
+  // biome-ignore lint/security/noSecrets: map interop function identifier, not a secret
+  "getClusterExpansionZoom",
+  "getCenter",
+  "hasLayer",
+  "hasStyleLayer",
+  "getZoom",
+  "getBounds",
+  "queryRenderedFeatures",
+  "setFilter",
+  "setLayerVisibility",
+  "setStyleLayerVisibility",
+  "setLayerZoomRange",
+  "setLayoutProperty",
+  "setPaintProperty",
+  "wireLayerEvents",
+  "unregisterLayerEvents",
+] as const;
+
+const MAP_NAMESPACE_BUNDLE_MARKER = "spillgebees.blazor.map.assets.bundle.v1";
 
 const LEGEND_CONTROL_KIND = "legend";
 
@@ -201,9 +246,50 @@ function updateMapRequestContext(map: MapLibreMap, mapOptions: IMapOptions, over
   });
 }
 
-function isNamespaceCompatible(): boolean {
+function isValidMapNamespace(): boolean {
   try {
-    return window.Spillgebees?.Map?.getProtocolVersion?.() === PROTOCOL_VERSION;
+    const mapNamespace = window.Spillgebees?.Map as Record<string, unknown> | undefined;
+    if (!mapNamespace || typeof mapNamespace !== "object") {
+      return false;
+    }
+
+    const mapFunctions = mapNamespace.mapFunctions as Record<string, unknown> | undefined;
+    if (!mapFunctions || typeof mapFunctions !== "object") {
+      return false;
+    }
+
+    if (mapNamespace.__bundleMarker !== MAP_NAMESPACE_BUNDLE_MARKER) {
+      return false;
+    }
+
+    for (const functionName of REQUIRED_MAP_FUNCTION_NAMES) {
+      if (typeof mapFunctions[functionName] !== "function") {
+        return false;
+      }
+    }
+
+    return (
+      mapNamespace.maps instanceof Map &&
+      mapNamespace.features instanceof Map &&
+      mapNamespace.overlays instanceof Map &&
+      mapNamespace.controls instanceof Map &&
+      mapNamespace.customControlRegistrations instanceof Map &&
+      mapNamespace.styles instanceof Map &&
+      mapNamespace.mapOptions instanceof Map &&
+      mapNamespace.dotNetHelpers instanceof Map &&
+      mapNamespace.controlsPayload instanceof Map &&
+      mapNamespace.sourceSpecs instanceof Map &&
+      mapNamespace.layerSpecs instanceof Map &&
+      mapNamespace.imageRegistrations instanceof Map &&
+      mapNamespace.layerEventSubscriptions instanceof Map &&
+      mapNamespace.visibilityGroups instanceof Map &&
+      mapNamespace.overlayStyleUrls instanceof Map &&
+      mapNamespace.overlayStyleRequests instanceof Map &&
+      mapNamespace.composedStyleLayerIds instanceof Map &&
+      mapNamespace.pendingStyleReloads instanceof WeakSet &&
+      mapNamespace.requestContexts instanceof Map &&
+      mapNamespace.imageSyncVersion instanceof Map
+    );
   } catch {
     return false;
   }
@@ -211,7 +297,7 @@ function isNamespaceCompatible(): boolean {
 
 function initializeNamespace(): void {
   window.Spillgebees.Map = {
-    getProtocolVersion: () => PROTOCOL_VERSION,
+    __bundleMarker: MAP_NAMESPACE_BUNDLE_MARKER,
     mapFunctions: {
       createMap,
       syncFeatures,
@@ -373,7 +459,7 @@ function getCustomControlStore(map: MapLibreMap): Map<string, CustomControlRegis
 function getOrderedRegistrations(map: MapLibreMap, controlsPayload: IMapControl[]): OrderedControlRegistration[] {
   const registrations: OrderedControlRegistration[] = [];
   for (const [declarationOrder, controlDefinition] of controlsPayload.entries()) {
-    if (!controlDefinition.enable) {
+    if (!controlDefinition.enabled) {
       continue;
     }
 
@@ -655,13 +741,12 @@ function registerStyleReloadHandlers(mapElement: HTMLElement, map: MapLibreMap):
 export function bootstrap(): void {
   window.Spillgebees = window.Spillgebees || ({} as typeof window.Spillgebees);
 
-  if (isNamespaceCompatible()) {
-    // Already initialized with the correct protocol version — nothing to do.
+  if (isValidMapNamespace()) {
+    // namespace is already initialized and structurally valid
     return;
   }
 
-  // Either no namespace exists, or an outdated/incompatible one is present.
-  // Force-clear and reinitialize with the current version.
+  // namespace is missing or structurally invalid
   initializeNamespace();
 }
 

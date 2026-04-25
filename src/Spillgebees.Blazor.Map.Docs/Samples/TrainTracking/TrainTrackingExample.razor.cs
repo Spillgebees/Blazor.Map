@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Configuration;
 using Spillgebees.Blazor.Map.Components;
-using Spillgebees.Blazor.Map.Components.Layers;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Events;
@@ -16,7 +15,6 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private const int SelectionDetailsMinZoom = 13;
 
     private SgbMap _map = null!;
-    private TrackedDataSource<TrainSampleState> _trainSource = null!;
     private PeriodicTimer? _timer;
     private CancellationTokenSource? _cts;
     private Task? _simulationTask;
@@ -24,6 +22,9 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private string? _selectedTrainId;
     private readonly List<TrainSampleState> _trains = [];
     private readonly List<MapImageDefinition> _images;
+    private IReadOnlyList<MapControl> _controls = [];
+    private RenderFragment<MapLegendItemTemplateContext>? _overlayLegendItemTemplate;
+    private EventCallback<MapLegendVisibilityChangedEventArgs> _legendItemVisibilityChangedCallback;
 
     [CascadingParameter]
     public MapTheme GlobalTheme { get; set; }
@@ -32,13 +33,15 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private IConfiguration Configuration { get; set; } = null!;
 
     private MapOptions _mapOptions = null!;
-    private readonly IReadOnlyList<MapControl> _controls = TrainTrackingPresentation.Controls;
     private readonly AnimationOptions _trainAnimation = TrainTrackingPresentation.TrainAnimation;
     private readonly TrackedDataClusterOptions _trainClusterOptions =
         TrainTrackingPresentation.TrackedTrainClusterOptions;
+    private readonly TrackedDataBehaviorOptions<TrainSampleState> _trainBehavior;
+    private readonly TrackedDataCallbacks<TrainSampleState> _trainCallbacks;
     private readonly object[] _trainIconOpacityExpr = TrainTrackingPresentation.TrainIconOpacityExpression;
     private readonly TrainTrackingVisibilityState _visibility = new();
-    private readonly TrackedDataIdentityOptions<TrainSampleState> _trainIdentity = new(train => train.Id);
+    private readonly TrackedDataIdOptions<TrainSampleState> _trainId = new(train => train.Id);
+    private readonly TrackedDataInteractionOptions<TrainSampleState> _trainInteraction;
     private readonly TrackedDataSymbolOptions<TrainSampleState> _trainSymbol = new(
         train => train.CurrentPosition,
         train => $"train-{train.Color.TrimStart('#')}",
@@ -52,64 +55,72 @@ public partial class TrainTrackingExample : IAsyncDisposable
             ["internationalPresence"] = TrainSampleSimulation.IsInternational(train) ? 1 : 0,
         }
     );
-    private static IReadOnlyList<TrackedDataDecorationOptions<TrainSampleState>> _trainDecorations =>
-        [
-            new(
-                "cluster-sentinel",
-                IconImageSelector: train => $"train-{train.Color.TrimStart('#')}",
-                DisplayMode: TrackedEntityDecorationDisplayMode.Always,
-                IconSizeSelector: _ => 0.0,
-                RenderOrderSelector: _ => -1
-            ),
-            new(
-                "service",
-                TextSelector: train => train.ServiceNumber,
-                Offset: new Point(13.3, -3.3),
-                Anchor: "left",
-                DisplayMode: TrackedEntityDecorationDisplayMode.Always,
-                ColorSelector: _ => "#0f172a",
-                TextSizeSelector: _ => 12,
-                RenderOrderSelector: _ => 110,
-                HaloColorSelector: _ => "#ffffff",
-                HaloWidthSelector: _ => 1.5,
-                TextFont: ["DM Sans", "Noto Sans Regular"]
-            ),
-            new(
-                "route",
-                TextSelector: train => train.Route.Replace(">", "\u203A"),
-                Offset: new Point(20, 7.5),
-                Anchor: "left",
-                DisplayMode: TrackedEntityDecorationDisplayMode.HoverOrSelected,
-                ColorSelector: _ => "#94a3b8",
-                TextSizeSelector: _ => 8,
-                RenderOrderSelector: _ => 105,
-                HaloColorSelector: _ => "#ffffff",
-                HaloWidthSelector: _ => 1.0,
-                TextFont: ["DM Sans", "Noto Sans Regular"]
-            ),
-            new(
-                "operator",
-                TextSelector: train => train.Operator,
-                Offset: new Point(-16, -4),
-                Anchor: "right",
-                DisplayMode: TrackedEntityDecorationDisplayMode.HoverOrSelected,
-                ColorSelector: train => train.Color,
-                TextSizeSelector: _ => 10,
-                RenderOrderSelector: _ => 108,
-                HaloColorSelector: _ => "#ffffff",
-                HaloWidthSelector: _ => 1.5,
-                TextFont: ["Martian Mono", "Noto Sans Regular"]
-            ),
-        ];
+    private static readonly IReadOnlyList<TrackedDataDecorationOptions<TrainSampleState>> _trainDecorations =
+    [
+        new(
+            "cluster-sentinel",
+            IconImageSelector: train => $"train-{train.Color.TrimStart('#')}",
+            DisplayMode: TrackedEntityDecorationDisplayMode.Always,
+            IconSizeSelector: _ => 0.0,
+            RenderOrderSelector: _ => -1
+        ),
+        new(
+            "service",
+            TextSelector: train => train.ServiceNumber,
+            Offset: new Point(13.3, -3.3),
+            Anchor: "left",
+            DisplayMode: TrackedEntityDecorationDisplayMode.Always,
+            ColorSelector: _ => "#0f172a",
+            TextSizeSelector: _ => 12,
+            RenderOrderSelector: _ => 110,
+            HaloColorSelector: _ => "#ffffff",
+            HaloWidthSelector: _ => 1.5,
+            TextFont: ["DM Sans", "Noto Sans Regular"]
+        ),
+        new(
+            "route",
+            TextSelector: train => train.Route.Replace(">", "\u203A"),
+            Offset: new Point(20, 7.5),
+            Anchor: "left",
+            DisplayMode: TrackedEntityDecorationDisplayMode.HoverOrSelected,
+            ColorSelector: _ => "#94a3b8",
+            TextSizeSelector: _ => 8,
+            RenderOrderSelector: _ => 105,
+            HaloColorSelector: _ => "#ffffff",
+            HaloWidthSelector: _ => 1.0,
+            TextFont: ["DM Sans", "Noto Sans Regular"]
+        ),
+        new(
+            "operator",
+            TextSelector: train => train.Operator,
+            Offset: new Point(-16, -4),
+            Anchor: "right",
+            DisplayMode: TrackedEntityDecorationDisplayMode.HoverOrSelected,
+            ColorSelector: train => train.Color,
+            TextSizeSelector: _ => 10,
+            RenderOrderSelector: _ => 108,
+            HaloColorSelector: _ => "#ffffff",
+            HaloWidthSelector: _ => 1.5,
+            TextFont: ["Martian Mono", "Noto Sans Regular"]
+        ),
+    ];
 
-    private TrackedDataInteractionOptions<TrainSampleState> _trainInteraction =>
-        new(IsHovered: train => train.Id == _hoveredTrainId, IsSelected: train => train.Id == _selectedTrainId);
-
-    private static MapLegendDefinition OverlayLegendDefinition => TrainTrackingPresentation.OverlayLegendDefinition;
+    private IReadOnlyList<ITrackedDataLayer> _trackedDataLayers = [];
 
     public TrainTrackingExample()
     {
         _images = BuildTrainImages(TrainSampleSimulation.CreateStates());
+        _trainInteraction = new(
+            IsHovered: train => train.Id == _hoveredTrainId,
+            IsSelected: train => train.Id == _selectedTrainId
+        );
+        _trainBehavior = new(_trainInteraction);
+        _trainCallbacks = new(
+            OnItemClick: HandleTrainClick,
+            OnItemMouseEnter: HandleTrainHover,
+            OnItemMouseLeave: HandleTrainLeave,
+            OnBeforeShowPopup: null
+        );
     }
 
     protected override void OnInitialized()
@@ -119,6 +130,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
             Configuration[TrainTrackingPresentation.ComposedGlyphsUrlConfigurationKey]
         );
         _trains.AddRange(TrainSampleSimulation.CreateStates());
+        RebuildTrackedLayers();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -154,6 +166,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
                     TrainSampleSimulation.Advance(train);
                 }
 
+                RebuildTrackedLayers();
                 await InvokeAsync(StateHasChanged);
                 await InvokeAsync(RefreshMapFocusForSelectionAsync);
             }
@@ -180,12 +193,13 @@ public partial class TrainTrackingExample : IAsyncDisposable
 
     private async Task HandleTrainClick(TrackedEntityInteractionEventArgs<TrainSampleState> interaction)
     {
-        if (interaction.Entity.Metadata is not { } train)
+        if (interaction.Entity.Item is not { } train)
         {
             return;
         }
 
         _selectedTrainId = train.Id;
+        RebuildTrackedLayers();
         await InvokeAsync(StateHasChanged);
 
         var targetZoom = await GetSelectionFocusZoomAsync();
@@ -195,7 +209,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
 
     private Task HandleTrainHover(TrackedEntityInteractionEventArgs<TrainSampleState> interaction)
     {
-        if (interaction.Entity.Metadata is not { } train)
+        if (interaction.Entity.Item is not { } train)
         {
             return Task.CompletedTask;
         }
@@ -206,6 +220,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
         }
 
         _hoveredTrainId = train.Id;
+        RebuildTrackedLayers();
         return InvokeAsync(StateHasChanged);
     }
 
@@ -217,6 +232,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
         }
 
         _hoveredTrainId = null;
+        RebuildTrackedLayers();
         return InvokeAsync(StateHasChanged);
     }
 
@@ -235,6 +251,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
             _hoveredTrainId = null;
         }
 
+        RebuildTrackedLayers();
         await InvokeAsync(StateHasChanged);
         await _map.ClosePopupAsync();
     }
@@ -269,21 +286,33 @@ public partial class TrainTrackingExample : IAsyncDisposable
 
     private Task HandleLegendItemVisibilityChangedAsync(MapLegendVisibilityChangedEventArgs args)
     {
-        _visibility.SetOverlayGroupVisibility(args.Item.Id, args.Visible);
+        _visibility.SetOverlayGroupVisibility(args.Item.Id, args.Selected);
+        RebuildTrackedLayers();
 
         return Task.CompletedTask;
     }
 
-    private static bool ResolveLegendToggleValue(ChangeEventArgs args) =>
-        args.Value switch
-        {
-            bool boolValue => boolValue,
-            string stringValue when bool.TryParse(stringValue, out var parsed) => parsed,
-            _ => false,
-        };
-
-    private static string GetOverlayLegendSwatchClassName(MapLegendItemDefinition item) =>
-        $"train-overlay-swatch train-overlay-swatch-{item.Id}";
+    private void RebuildTrackedLayers()
+    {
+        _trackedDataLayers =
+        [
+            new TrackedDataLayer<TrainSampleState>(
+                Id: "train-source",
+                Items: _trains,
+                IdOptions: _trainId,
+                Visual: new TrackedDataVisualOptions<TrainSampleState>(
+                    Symbol: _trainSymbol,
+                    Decorations: _trainDecorations,
+                    Cluster: _trainClusterOptions,
+                    Animation: _trainAnimation,
+                    Visible: _visibility.ShowTrains,
+                    PrimaryIconOpacity: _trainIconOpacityExpr
+                ),
+                Behavior: _trainBehavior,
+                Callbacks: _trainCallbacks
+            ),
+        ];
+    }
 
     public async ValueTask DisposeAsync()
     {

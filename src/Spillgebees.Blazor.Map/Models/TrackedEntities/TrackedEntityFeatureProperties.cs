@@ -23,7 +23,7 @@ public static class TrackedEntityFeatureProperties
     public const string HaloColor = "haloColor";
     public const string HaloWidth = "haloWidth";
     public const string IconColor = "iconColor";
-    public const string Metadata = "metadata";
+    public const string Item = "item";
 
     internal static readonly ISet<string> Reserved = new HashSet<string>(StringComparer.Ordinal)
     {
@@ -45,6 +45,6 @@ public static class TrackedEntityFeatureProperties
         HaloColor,
         HaloWidth,
         IconColor,
-        Metadata,
+        Item,
     };
 }

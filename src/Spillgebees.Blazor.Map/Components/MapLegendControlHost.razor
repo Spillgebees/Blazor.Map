@@ -3,7 +3,7 @@
 
 <div @ref="_placeholderReference" class="sgb-map-legend-placeholder" hidden>
     <div id="@_contentId" @ref="_contentReference" class="@ContentClassName" hidden>
-        @foreach (var legendSection in Definition.Sections)
+        @foreach (var legendSection in Control.Content.Definition.Sections)
         {
             <div class="@GetSectionClassName(legendSection)">
                 <header class="sgb-map-legend-section-header">
@@ -17,9 +17,15 @@
                 <div class="sgb-map-legend-items">
                     @foreach (var item in legendSection.Items)
                     {
-                        @if (ItemTemplate is not null)
+                        @if (Control.Content.ItemTemplate is not null)
                         {
-                            @ItemTemplate(new MapLegendItemTemplateContext(item, GetItemVisibility(item.Id), visible => SetItemVisibilityAsync(item, visible)))
+                            @Control.Content.ItemTemplate(
+                                new MapLegendItemTemplateContext(
+                                    item,
+                                    GetItemSelected(item.Id),
+                                    selected => SetItemSelectedAsync(item, selected)
+                                )
+                            )
                         }
                         else
                         {
@@ -37,9 +43,9 @@
                                         <span class="sgb-map-legend-item-switch">
                                             <input type="checkbox"
                                                    role="switch"
-                                                   aria-checked="@(GetItemVisibility(item.Id).ToString().ToLowerInvariant())"
+                                                   aria-checked="@(GetItemSelected(item.Id).ToString().ToLowerInvariant())"
                                                    data-testid="@($"map-legend-toggle-{item.Id}")"
-                                                   checked="@GetItemVisibility(item.Id)"
+                                                   checked="@GetItemSelected(item.Id)"
                                                    @onchange="@((ChangeEventArgs args) => ToggleItemAsync(item, args))" />
                                             <span class="sgb-map-legend-item-switch-track"></span>
                                         </span>

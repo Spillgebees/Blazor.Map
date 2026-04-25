@@ -16,9 +16,9 @@ public enum TrackedEntityDecorationDisplayMode
     Hover,
 
     /// <summary>
-    /// Visible after click or selection.
+    /// Visible while selected.
     /// </summary>
-    Click,
+    Selected,
 
     /// <summary>
     /// Visible while hovered or selected.

@@ -15,20 +15,7 @@ namespace Spillgebees.Blazor.Map.Interop;
 /// </summary>
 internal static class MapJs
 {
-    /// <summary>
-    /// The protocol version this C# library expects from the JS module.
-    /// Bumped whenever the JS interop contract changes (function names, parameter shapes, return types).
-    /// </summary>
-    internal const int ProtocolVersion = 12;
-
     private const string JsNamespace = "Spillgebees.Map.mapFunctions";
-    private const string JsProtocolVersionFunction = "Spillgebees.Map.getProtocolVersion";
-
-    /// <summary>
-    /// Retrieves the protocol version from the loaded JavaScript module.
-    /// </summary>
-    internal static ValueTask<int> GetProtocolVersionAsync(IJSRuntime jsRuntime, ILogger logger) =>
-        jsRuntime.SafeInvokeAsync<int>(logger, JsProtocolVersionFunction);
 
     /// <summary>
     /// Creates a new map instance with the given options, controls, and initial features.
@@ -380,7 +367,7 @@ internal static class MapJs
             {
                 Kind = "navigation",
                 navigation.ControlId,
-                navigation.Enable,
+                navigation.Enabled,
                 navigation.Position,
                 navigation.Order,
                 navigation.ShowCompass,
@@ -390,7 +377,7 @@ internal static class MapJs
             {
                 Kind = "scale",
                 scale.ControlId,
-                scale.Enable,
+                scale.Enabled,
                 scale.Position,
                 scale.Order,
                 scale.Unit,
@@ -399,7 +386,7 @@ internal static class MapJs
             {
                 Kind = "fullscreen",
                 fullscreen.ControlId,
-                fullscreen.Enable,
+                fullscreen.Enabled,
                 fullscreen.Position,
                 fullscreen.Order,
             },
@@ -407,7 +394,7 @@ internal static class MapJs
             {
                 Kind = "geolocate",
                 geolocate.ControlId,
-                geolocate.Enable,
+                geolocate.Enabled,
                 geolocate.Position,
                 geolocate.Order,
                 geolocate.TrackUser,
@@ -416,7 +403,7 @@ internal static class MapJs
             {
                 Kind = "terrain",
                 terrain.ControlId,
-                terrain.Enable,
+                terrain.Enabled,
                 terrain.Position,
                 terrain.Order,
             },
@@ -424,7 +411,7 @@ internal static class MapJs
             {
                 Kind = "center",
                 center.ControlId,
-                center.Enable,
+                center.Enabled,
                 center.Position,
                 center.Order,
             },
@@ -432,19 +419,19 @@ internal static class MapJs
             {
                 Kind = "legend",
                 legend.ControlId,
-                legend.Enable,
+                legend.Enabled,
                 legend.Position,
                 legend.Order,
-                legend.Title,
-                legend.Collapsible,
-                legend.InitiallyOpen,
-                legend.ClassName,
+                Title = legend.Chrome.Title,
+                Collapsible = legend.Chrome.Collapsible,
+                InitiallyOpen = legend.Chrome.InitiallyOpen,
+                ClassName = legend.Chrome.ClassName,
             },
             ContentMapControl content => new
             {
                 Kind = "content",
                 content.ControlId,
-                content.Enable,
+                content.Enabled,
                 content.Position,
                 content.Order,
             },

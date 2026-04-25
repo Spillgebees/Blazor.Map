@@ -8,7 +8,7 @@ namespace Spillgebees.Blazor.Map.Tests.Models.TrackedData;
 public class TrackedDataEntityMaterializerTests
 {
     [Test]
-    public void Should_materialize_raw_items_into_tracked_entities_with_metadata_and_generated_decorations()
+    public void Should_materialize_raw_items_into_tracked_entities_with_item_and_generated_decorations()
     {
         // arrange
         var item = new TestVehicle(
@@ -26,7 +26,7 @@ public class TrackedDataEntityMaterializerTests
         // act
         var entities = TrackedDataEntityMaterializer.Materialize(
             [item],
-            new TrackedDataIdentityOptions<TestVehicle>(vehicle => vehicle.Id),
+            new TrackedDataIdOptions<TestVehicle>(vehicle => vehicle.Id),
             new TrackedDataSymbolOptions<TestVehicle>(
                 vehicle => vehicle.Position,
                 vehicle => vehicle.IconImage,
@@ -52,7 +52,7 @@ public class TrackedDataEntityMaterializerTests
         // assert
         entities.Should().HaveCount(1);
         entities[0].Id.Should().Be("vehicle-1");
-        entities[0].Metadata.Should().BeSameAs(item);
+        entities[0].Item.Should().BeSameAs(item);
         entities[0].Position.Should().Be(item.Position);
         entities[0].Color.Should().Be("#2563eb");
         entities[0].RenderOrder.Should().Be(7);
@@ -87,7 +87,7 @@ public class TrackedDataEntityMaterializerTests
         // act
         var entities = TrackedDataEntityMaterializer.Materialize(
             [item],
-            new TrackedDataIdentityOptions<TestVehicle>(vehicle => vehicle.Id),
+            new TrackedDataIdOptions<TestVehicle>(vehicle => vehicle.Id),
             new TrackedDataSymbolOptions<TestVehicle>(vehicle => vehicle.Position, vehicle => vehicle.IconImage),
             [new TrackedDataDecorationOptions<TestVehicle>("label", TextSelector: vehicle => vehicle.Label)]
         );

@@ -1,13 +1,14 @@
+@page "/components/tracked-data-layers"
 @page "/components/tracked-data-source"
 
-<PageTitle>TrackedDataSource | Spillgebees.Blazor.Map</PageTitle>
+<PageTitle>Tracked Data Layers | Spillgebees.Blazor.Map</PageTitle>
 
-<Breadcrumb Section="components" PageName="TrackedDataSource"
-            ApiReferenceUrl="api/Spillgebees.Blazor.Map.Components.Layers.TrackedDataSource`1"
-            SourceUrl="https://github.com/Spillgebees/Blazor.Map/blob/main/src/Spillgebees.Blazor.Map/Components/Layers/TrackedDataSource.razor" />
+<Breadcrumb Section="components" PageName="TrackedDataLayers"
+            ApiReferenceUrl="api/Spillgebees.Blazor.Map.Components.BaseMap"
+            SourceUrl="https://github.com/Spillgebees/Blazor.Map/blob/main/src/Spillgebees.Blazor.Map/Components/BaseMap.razor.cs" />
 <OnThisPage />
 
-<h1>TrackedDataSource</h1>
+<h1>TrackedDataLayers</h1>
 <p>High-performance real-time entity rendering with smooth animation, decorations, clustering, and interaction.</p>
 
 <h2 id="train_tracking">// train_tracking</h2>
@@ -15,6 +16,8 @@
 
 <p>Features demonstrated:</p>
 <ul>
+    <li>Map-level tracked orchestration with <code>SgbMap.TrackedDataLayers</code></li>
+    <li>Grouped constructor-complete tracked options: visual, behavior, and callbacks</li>
     <li><code>TrackedDataSymbolOptions</code> for icon, position, rotation, and color selectors</li>
     <li>Optional tracked popups via <code>TrackedDataSymbolOptions.PopupSelector</code> (click and hover triggers)</li>
     <li>Multi-layer decorations with conditional display modes (always, hover, selected)</li>
@@ -23,7 +26,7 @@
     <li>Smooth position interpolation via <code>AnimationOptions</code></li>
     <li>SVG-to-data-URI custom icon registration via the map <code>Images</code> parameter</li>
     <li>Style composition with a railway overlay on a Positron base</li>
-    <li>Interactive <a href="components/map-legend">MapLegend</a> with custom swatch templates</li>
+    <li>Interactive <a href="components/sgb-map#custom_controls">LegendMapControl</a> configured in <code>SgbMap.Controls</code>, with custom swatch templates</li>
 </ul>
 
 <ExampleView TComponent="TrainTrackingExample"

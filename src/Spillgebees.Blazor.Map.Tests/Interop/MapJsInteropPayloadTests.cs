@@ -12,14 +12,12 @@ public class MapJsInteropPayloadTests : BunitContext
     private const string DisposeMapIdentifier = "Spillgebees.Map.mapFunctions.disposeMap";
     private const string ResizeIdentifier = "Spillgebees.Map.mapFunctions.resize";
     private const string SyncFeaturesIdentifier = "Spillgebees.Map.mapFunctions.syncFeatures";
-    private const string GetProtocolVersionIdentifier = "Spillgebees.Map.getProtocolVersion";
     private const int TestTimeoutMs = 5000;
 
     public MapJsInteropPayloadTests()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
 
-        JSInterop.Setup<int>(GetProtocolVersionIdentifier).SetResult(12);
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
@@ -63,11 +61,11 @@ public class MapJsInteropPayloadTests : BunitContext
         var controlsPayload = invocation.Arguments[4].Should().BeOfType<object[]>().Subject;
         var centerPayload = controlsPayload.Single();
         var kindValue = GetRequiredPropertyValue(centerPayload, "Kind");
-        var enableValue = GetRequiredPropertyValue(centerPayload, "Enable");
+        var enabledValue = GetRequiredPropertyValue(centerPayload, "Enabled");
         var positionValue = GetRequiredPropertyValue(centerPayload, "Position");
 
         kindValue.Should().Be("center");
-        enableValue.Should().Be(true);
+        enabledValue.Should().Be(true);
         positionValue.Should().Be(ControlPosition.TopLeft);
     }
 

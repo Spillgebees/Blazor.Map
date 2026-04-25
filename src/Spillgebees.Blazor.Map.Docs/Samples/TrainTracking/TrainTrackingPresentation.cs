@@ -14,24 +14,11 @@ public static class TrainTrackingPresentation
     public const string DefaultOverlayStyleUrl = "traintracking/style.json";
     public const string CodeSnippet =
         @"<SgbMap MapOptions=""@_mapOptions""
-        Controls=""@_controls""
-        OnMoveEnd=""@HandleMapViewChangedAsync""
-        OnZoomEnd=""@HandleMapViewChangedAsync"">
-    <TrackedDataSource @ref=""_trainSource""
-                       Id=""train-source""
-                       Items=""@_trains""
-                       Identity=""@_trainIdentity""
-                       Symbol=""@_trainSymbol""
-                       Decorations=""@_trainDecorations""
-                       Cluster=""@_trainClusterOptions""
-                       Interaction=""@_trainInteraction""
-                       Animation=""@(new AnimationOptions(Duration: 2000, Easing: AnimationEasing.EaseInOut))""
-                       Visible=""@_visibility.ShowTrains""
-                       PrimaryIconOpacity=""@_trainIconOpacityExpr""
-                       OnItemClick=""@HandleTrainClick""
-                       OnItemMouseEnter=""@HandleTrainHover""
-                       OnItemMouseLeave=""@HandleTrainLeave"" />
-</SgbMap>
+         Controls=""@_controls""
+         TrackedDataLayers=""@_trackedDataLayers""
+         OnMoveEnd=""@HandleMapViewChangedAsync""
+         OnZoomEnd=""@HandleMapViewChangedAsync"">
+  </SgbMap>
 
 // hover and selection use feature-state, labels stay screen-facing, and supplementary labels stay hidden while clustered";
 
@@ -205,9 +192,6 @@ public static class TrainTrackingPresentation
             ClassName: "train-overlay-legend-content"
         );
 
-    public static LegendMapControl OverlayLegendControl { get; } =
-        new("overlay-legend", Position: ControlPosition.TopLeft);
-
     public static MapOptions BuildMapOptions(string? overlayStyleUrl, string? composedGlyphsUrl)
     {
         var resolvedOverlayStyleUrl = string.IsNullOrWhiteSpace(overlayStyleUrl)
@@ -228,8 +212,6 @@ public static class TrainTrackingPresentation
             WebFonts: ["11px 'Martian Mono'", "11px 'DM Sans'"]
         );
     }
-
-    public static IReadOnlyList<MapControl> Controls { get; } = [new NavigationMapControl(), OverlayLegendControl];
 
     public static AnimationOptions TrainAnimation { get; } = new(Duration: 2000, Easing: AnimationEasing.EaseInOut);
 

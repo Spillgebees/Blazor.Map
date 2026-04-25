@@ -5,8 +5,8 @@ namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
 /// <summary>
 /// A high-frequency tracked entity with a stable ID, primary symbol, and optional companion decorations.
 /// </summary>
-/// <typeparam name="TMetadata">Optional strongly typed metadata associated with the entity.</typeparam>
-public sealed record TrackedEntity<TMetadata>
+/// <typeparam name="TItem">Optional strongly typed domain item associated with the entity.</typeparam>
+public sealed record TrackedEntity<TItem>
 {
     /// <summary>
     /// Creates a new tracked entity.
@@ -19,7 +19,7 @@ public sealed record TrackedEntity<TMetadata>
         TrackedEntityHoverIntent? hover = null,
         double? renderOrder = null,
         IReadOnlyList<TrackedEntityDecoration>? decorations = null,
-        TMetadata? metadata = default,
+        TItem? item = default,
         IReadOnlyDictionary<string, object?>? properties = null
     )
     {
@@ -35,7 +35,7 @@ public sealed record TrackedEntity<TMetadata>
         Hover = hover;
         RenderOrder = renderOrder;
         Decorations = new ReadOnlyCollection<TrackedEntityDecoration>((decorations ?? []).ToList());
-        Metadata = metadata;
+        Item = item;
         Properties = properties is null ? null : new ReadOnlyDictionary<string, object?>(properties.ToDictionary());
     }
 
@@ -75,9 +75,9 @@ public sealed record TrackedEntity<TMetadata>
     public IReadOnlyList<TrackedEntityDecoration> Decorations { get; }
 
     /// <summary>
-    /// Optional strongly typed metadata payload.
+    /// Optional strongly typed domain item payload.
     /// </summary>
-    public TMetadata? Metadata { get; }
+    public TItem? Item { get; }
 
     /// <summary>
     /// Additional flat GeoJSON properties for raw interop and custom styling.

@@ -8,22 +8,22 @@ public static class TrackedEntityGeoJsonBuilder
     /// <summary>
     /// Builds the primary entity feature collection.
     /// </summary>
-    public static IReadOnlyDictionary<string, object?> BuildPrimaryFeatureCollection<TMetadata>(
-        IReadOnlyList<TrackedEntity<TMetadata>> entities
+    public static IReadOnlyDictionary<string, object?> BuildPrimaryFeatureCollection<TItem>(
+        IReadOnlyList<TrackedEntity<TItem>> entities
     ) => BuildFeatureCollection(entities.Select(BuildPrimaryFeature));
 
     /// <summary>
     /// Builds the companion decoration feature collection.
     /// </summary>
-    public static IReadOnlyDictionary<string, object?> BuildDecorationFeatureCollection<TMetadata>(
-        IReadOnlyList<TrackedEntity<TMetadata>> entities
+    public static IReadOnlyDictionary<string, object?> BuildDecorationFeatureCollection<TItem>(
+        IReadOnlyList<TrackedEntity<TItem>> entities
     ) => BuildFeatureCollection(entities.SelectMany(BuildDecorationFeatures));
 
     private static IReadOnlyDictionary<string, object?> BuildFeatureCollection(
         IEnumerable<Dictionary<string, object?>> features
     ) => new Dictionary<string, object?> { ["type"] = "FeatureCollection", ["features"] = features.ToArray() };
 
-    private static Dictionary<string, object?> BuildPrimaryFeature<TMetadata>(TrackedEntity<TMetadata> entity)
+    private static Dictionary<string, object?> BuildPrimaryFeature<TItem>(TrackedEntity<TItem> entity)
     {
         var properties = CreateBaseProperties(entity, TrackedEntityFeatureKind.Primary);
         properties[TrackedEntityFeatureProperties.IconImage] = entity.Symbol.IconImage;
@@ -35,9 +35,7 @@ public static class TrackedEntityGeoJsonBuilder
         return BuildPointFeature(entity.Id, entity.Position, properties);
     }
 
-    private static IEnumerable<Dictionary<string, object?>> BuildDecorationFeatures<TMetadata>(
-        TrackedEntity<TMetadata> entity
-    )
+    private static IEnumerable<Dictionary<string, object?>> BuildDecorationFeatures<TItem>(TrackedEntity<TItem> entity)
     {
         foreach (var decoration in entity.Decorations)
         {
@@ -68,8 +66,8 @@ public static class TrackedEntityGeoJsonBuilder
         }
     }
 
-    private static Dictionary<string, object?> CreateBaseProperties<TMetadata>(
-        TrackedEntity<TMetadata> entity,
+    private static Dictionary<string, object?> CreateBaseProperties<TItem>(
+        TrackedEntity<TItem> entity,
         TrackedEntityFeatureKind kind
     )
     {
@@ -81,7 +79,7 @@ public static class TrackedEntityGeoJsonBuilder
             [TrackedEntityFeatureProperties.HoverScale] = entity.Hover?.Scale,
             [TrackedEntityFeatureProperties.HoverRaise] = entity.Hover?.RaiseToTop,
             [TrackedEntityFeatureProperties.RenderOrder] = entity.RenderOrder,
-            [TrackedEntityFeatureProperties.Metadata] = entity.Metadata,
+            [TrackedEntityFeatureProperties.Item] = entity.Item,
         };
 
         if (entity.Properties is not null)
