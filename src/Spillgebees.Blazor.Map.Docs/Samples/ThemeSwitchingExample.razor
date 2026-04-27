@@ -4,16 +4,15 @@
 </div>
 
 <SgbMap MapOptions="@_mapOptions"
-        Controls="@_controls"
         Theme="@_theme"
         Markers="@_markers"
         Height="400px"
-        Width="100%" />
+        Width="100%">
+    <MapNavigationControl />
+</SgbMap>
 
 @code {
     private MapTheme _theme = MapTheme.Light;
-
-    private readonly IReadOnlyList<MapControl> _controls = [new NavigationMapControl()];
 
     private readonly MapOptions _mapOptions = new(
         Center: new Coordinate(49.6117, 6.1319),

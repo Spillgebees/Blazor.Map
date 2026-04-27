@@ -128,14 +128,3 @@ public sealed record ContentMapControl(
 {
     public string Kind => "content";
 }
-
-/// <summary>
-/// Shared control presets.
-/// </summary>
-public static class MapControls
-{
-    /// <summary>
-    /// Default controls with navigation enabled.
-    /// </summary>
-    public static IReadOnlyList<MapControl> Default { get; } = [new NavigationMapControl()];
-}

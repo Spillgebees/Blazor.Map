@@ -16,6 +16,7 @@ public class LegendMapControlTests : BunitContext
     private const string DisposeMapIdentifier = "Spillgebees.Map.mapFunctions.disposeMap";
     private const string ResizeIdentifier = "Spillgebees.Map.mapFunctions.resize";
     private const string ApplySceneMutationsIdentifier = "Spillgebees.Map.mapFunctions.applySceneMutations";
+    private const string SetControlsIdentifier = "Spillgebees.Map.mapFunctions.setControls";
     private const string SetControlContentIdentifier = "Spillgebees.Map.mapFunctions.setControlContent";
     private const string RemoveControlContentIdentifier = "Spillgebees.Map.mapFunctions.removeControlContent";
     private const string HasStyleLayerIdentifier = "Spillgebees.Map.mapFunctions.hasStyleLayer";
@@ -29,6 +30,7 @@ public class LegendMapControlTests : BunitContext
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
         JSInterop.SetupVoid(ApplySceneMutationsIdentifier);
+        JSInterop.SetupVoid(SetControlsIdentifier);
         JSInterop.SetupVoid(SetControlContentIdentifier);
         JSInterop.SetupVoid(RemoveControlContentIdentifier);
         JSInterop.Setup<bool>(HasStyleLayerIdentifier).SetResult(true);
@@ -352,6 +354,63 @@ public class LegendMapControlTests : BunitContext
         cut.FindAll("input[data-testid='map-legend-toggle-static-item']").Should().BeEmpty();
     }
 
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_register_legend_component_with_the_map_shell(CancellationToken cancellationToken)
+    {
+        // arrange
+        var cut = Render<SgbMap>(parameters =>
+            parameters.AddChildContent<MapLegendControl>(control =>
+                control
+                    .Add(c => c.Id, "legend-component")
+                    .Add(c => c.Definition, CreateDefinition())
+                    .Add(c => c.Title, "Legend")
+                    .Add(c => c.Collapsible, true)
+            )
+        );
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // act
+        await cut.Instance.OnMapInitializedAsync();
+
+        // assert
+        cut.Markup.Should().Contain("Operational layers");
+        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetControlContentIdentifier));
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_remove_legend_component_content_when_disposed(CancellationToken cancellationToken)
+    {
+        // arrange
+        var showLegend = true;
+        var cut = Render<ConditionalLegendHost>(parameters => parameters.Add(p => p.ShowLegend, showLegend));
+        var map = cut.FindComponent<SgbMap>().Instance;
+        cancellationToken.ThrowIfCancellationRequested();
+        await map.OnMapInitializedAsync();
+
+        // act
+        showLegend = false;
+        cut.Render(parameters => parameters.Add(p => p.ShowLegend, showLegend));
+
+        // assert
+        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(RemoveControlContentIdentifier));
+    }
+
+    [Test]
+    public void Should_not_sync_legend_component_when_disposed_before_map_ready()
+    {
+        // arrange
+        var showLegend = true;
+        var cut = Render<ConditionalLegendHost>(parameters => parameters.Add(p => p.ShowLegend, showLegend));
+
+        // act
+        showLegend = false;
+        cut.Render(parameters => parameters.Add(p => p.ShowLegend, showLegend));
+
+        // assert
+        JSInterop.Invocations[RemoveControlContentIdentifier].Count.Should().Be(0);
+        JSInterop.Invocations[SetControlsIdentifier].Count.Should().Be(0);
+    }
+
     private static LegendMapControl CreateControl(
         string controlId,
         MapControlPlacement? placement = null,
@@ -401,6 +460,39 @@ public class LegendMapControlTests : BunitContext
             // arrange
             builder.OpenComponent<SgbMap>(0);
             builder.AddAttribute(1, nameof(SgbMap.Controls), Controls);
+            builder.CloseComponent();
+
+            // act
+
+            // assert
+        }
+    }
+
+    public sealed class ConditionalLegendHost : ComponentBase
+    {
+        [Parameter]
+        public bool ShowLegend { get; set; }
+
+        protected override void BuildRenderTree(RenderTreeBuilder builder)
+        {
+            // arrange
+            builder.OpenComponent<SgbMap>(0);
+            builder.AddAttribute(
+                1,
+                nameof(SgbMap.ChildContent),
+                (RenderFragment)(
+                    childBuilder =>
+                    {
+                        if (ShowLegend)
+                        {
+                            childBuilder.OpenComponent<MapLegendControl>(0);
+                            childBuilder.AddAttribute(1, nameof(MapLegendControl.Id), "legend-component");
+                            childBuilder.AddAttribute(2, nameof(MapLegendControl.Definition), CreateDefinition());
+                            childBuilder.CloseComponent();
+                        }
+                    }
+                )
+            );
             builder.CloseComponent();
 
             // act

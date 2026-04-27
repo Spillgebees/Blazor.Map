@@ -5,14 +5,23 @@
 @using Spillgebees.Blazor.Map.Models.Legends
 
 <SgbMap MapOptions="@_mapOptions"
-        Controls="@_controls"
         Height="450px"
         Width="100%">
     <MapCustomControls>
+        <MapNavigationControl Position="ControlPosition.TopRight" Order="10" />
+        <MapFullscreenControl Position="ControlPosition.TopRight" Order="20" />
+        <MapGeolocateControl Position="ControlPosition.TopRight" Order="30" TrackUser="true" />
+        <MapTerrainControl Position="ControlPosition.TopRight" Order="40" />
+        <MapCenterControl Position="ControlPosition.TopLeft" Order="5" />
+        <MapScaleControl Position="ControlPosition.BottomLeft" Order="5" />
+
         <MapCustomControl Id="refresh-map" Position="ControlPosition.TopLeft" Order="10" Class="docs-map-button-control">
             <div class="sgb-map-ctrl-group">
                 <button type="button" title="Refresh map data" @onclick="RefreshData">
-                    <span aria-hidden="true">↻</span>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M17.7 6.3A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.76-4.24L13 11h8V3l-3.3 3.3Z'/%3E%3C/svg%3E"
+                         width="18"
+                         height="18"
+                         alt="" />
                     <span class="visually-hidden">Refresh map data</span>
                 </button>
             </div>
@@ -49,6 +58,14 @@
                 <p>Mode: @(_networkModeEnabled ? "network" : "standard")</p>
             </section>
         </MapCustomControl>
+
+        <MapLegendControl Id="network-legend"
+                          Position="ControlPosition.TopRight"
+                          Order="50"
+                          Title="Network layers"
+                          Collapsible="true"
+                          InitiallyOpen="true"
+                          Definition="@_legendDefinition" />
     </MapCustomControls>
 
     <GeoJsonSource Id="network"
@@ -71,7 +88,6 @@
         Zoom: 12
     );
 
-    private readonly IReadOnlyList<MapControl> _controls;
     private bool _liveUpdatesEnabled = true;
     private bool _networkModeEnabled;
     private bool _detailsVisible;
@@ -153,21 +169,6 @@
             },
         },
     };
-
-    public CustomControlsExample()
-    {
-        _controls =
-        [
-            new NavigationMapControl(Order: 100),
-            new FullscreenMapControl(Order: 200),
-            new LegendMapControl(
-                "network-legend",
-                new MapControlPlacement(ControlPosition.TopRight, 300),
-                new LegendChromeOptions("Network layers", Collapsible: true, InitiallyOpen: true, ClassName: null),
-                new LegendContentOptions(_legendDefinition, ItemTemplate: null, OnItemVisibilityChanged: default)
-            ),
-        ];
-    }
 
     private void RefreshData()
     {

@@ -11,7 +11,7 @@
 <p>The main map component. Renders an interactive MapLibre GL JS map with configurable styles, controls, markers, shapes, and popups.</p>
 
 <h2 id="basic_usage">// basic_usage</h2>
-<p>Provide a center coordinate and zoom level. The default style is OpenFreeMap Liberty, a clean vector style that requires no API key. Pass <code>Controls</code> entries such as <code>new NavigationMapControl()</code> to render map controls. <code>FitBoundsOptions</code> auto-fits the viewport to a set of feature IDs.</p>
+<p>Provide a center coordinate and zoom level. The default style is OpenFreeMap Liberty, a clean vector style that requires no API key. Add controls with subcomponents such as <code>MapNavigationControl</code>, <code>MapScaleControl</code>, and <code>MapLegendControl</code>. <code>FitBoundsOptions</code> auto-fits the viewport to a set of feature IDs.</p>
 <ExampleView TComponent="BasicMapExample">
     <BasicMapExample />
 </ExampleView>
@@ -23,9 +23,10 @@
 </ExampleView>
 
 <h2 id="custom_controls">// custom_controls</h2>
-<p>Use <code>MapCustomControl</code> inside <code>SgbMap</code> when the UI belongs in Razor. Blazor renders the content and handles events such as <code>@@onclick</code> and <code>@@bind</code>. JavaScript only creates the MapLibre control shell, places it, orders it, and removes it.</p>
-<p>Use <code>MapCustomControls</code> as an optional grouping component when a map has several custom controls. Use the existing <code>Controls</code> records for built-in controls and <code>LegendMapControl</code>.</p>
-<p>Ordering is deterministic per map corner: controls are sorted by <code>Order</code> (ascending), then declaration order, then <code>ControlId</code> as a stable tie-breaker. Keep each custom control <code>Id</code> unique.</p>
+<p>Use control subcomponents inside <code>SgbMap</code> for built-in controls, custom controls, and legends. Available built-ins are <code>MapNavigationControl</code>, <code>MapScaleControl</code>, <code>MapFullscreenControl</code>, <code>MapGeolocateControl</code>, <code>MapTerrainControl</code>, and <code>MapCenterControl</code>.</p>
+<p>Use <code>MapCustomControl</code> when the UI belongs in Razor. Blazor renders the content and handles events such as <code>@@onclick</code> and <code>@@bind</code>. JavaScript only creates the MapLibre control shell, places it, orders it, and removes it. Custom controls can render inline SVG buttons, image icons, grouped buttons, stateful toggles, and full panels.</p>
+<p>Use <code>MapLegendControl</code> for component-first legends with collapsible chrome, item templates, visibility groups, and visibility callbacks. Component controls are explicit: maps render no controls by default. The record-backed <code>Controls</code> API remains available for advanced composition, but component markup is the preferred authoring model.</p>
+<p>Ordering is deterministic per map corner: controls are sorted by <code>Order</code> ascending, then declaration order, then <code>ControlId</code> as a stable tie-breaker. Keep each control <code>Id</code> unique.</p>
 <ExampleView TComponent="CustomControlsExample">
     <CustomControlsExample />
 </ExampleView>

@@ -46,10 +46,10 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     public MapOptions MapOptions { get; set; } = MapOptions.Default;
 
     /// <summary>
-    /// Declarative map controls (built-in, legend, and content controls).
+    /// Declarative map controls (built-in, legend, and content controls). Empty by default. Prefer control subcomponents.
     /// </summary>
     [Parameter]
-    public IReadOnlyList<MapControl> Controls { get; set; } = Models.Controls.MapControls.Default;
+    public IReadOnlyList<MapControl> Controls { get; set; } = [];
 
     /// <summary>
     /// The visual theme for UI controls, popups, and attribution.
@@ -182,11 +182,12 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     protected bool IsInitialized;
     protected bool IsDisposing;
     internal bool RuntimeIsInitialized => IsInitialized;
+    internal bool RuntimeIsReady { get; private set; }
 
     internal event Func<Task>? StyleReloaded;
 
     private readonly TaskCompletionSource<bool> _readyTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    private readonly List<RegisteredCustomControl> _registeredCustomControls = [];
+    private readonly List<RegisteredControl> _registeredControls = [];
 
     /// <summary>
     /// Returns a task that completes when the map has been initialized and is ready
@@ -387,6 +388,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             return;
         }
         IsDisposing = true;
+        RuntimeIsReady = false;
 
         // Unblock any child components awaiting WhenReadyAsync()
         _readyTcs.TrySetResult(false);
@@ -439,6 +441,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         await SyncImagesAsync(force: true);
 
         // Signal that the map is ready for child components (sources, layers)
+        RuntimeIsReady = true;
         _readyTcs.TrySetResult(true);
     }
 
@@ -660,9 +663,9 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     internal ValueTask RemoveControlContentAsync(string controlId) =>
         MapJs.RemoveControlContentAsync(JsRuntime, Logger.Value, MapReference, controlId);
 
-    internal bool RegisterCustomControl(string ownerId, ContentMapControl control)
+    internal bool RegisterControl(string ownerId, MapControl control)
     {
-        var existing = _registeredCustomControls.FirstOrDefault(entry => entry.OwnerId == ownerId);
+        var existing = _registeredControls.FirstOrDefault(entry => entry.OwnerId == ownerId);
         if (existing is not null)
         {
             if (existing.Control == control)
@@ -674,41 +677,41 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             return true;
         }
 
-        _registeredCustomControls.Add(new RegisteredCustomControl(ownerId, control));
+        _registeredControls.Add(new RegisteredControl(ownerId, control));
         return true;
     }
 
-    internal bool UnregisterCustomControl(string controlId)
+    internal bool UnregisterControl(string controlId)
     {
         var removed = false;
-        for (var index = _registeredCustomControls.Count - 1; index >= 0; index--)
+        for (var index = _registeredControls.Count - 1; index >= 0; index--)
         {
-            if (!string.Equals(_registeredCustomControls[index].Control.ControlId, controlId, StringComparison.Ordinal))
+            if (!string.Equals(_registeredControls[index].Control.ControlId, controlId, StringComparison.Ordinal))
             {
                 continue;
             }
 
-            _registeredCustomControls.RemoveAt(index);
+            _registeredControls.RemoveAt(index);
             removed = true;
         }
 
         return removed;
     }
 
-    internal bool UnregisterCustomControlByOwner(string ownerId)
+    internal bool UnregisterControlByOwner(string ownerId)
     {
-        var index = _registeredCustomControls.FindIndex(entry => entry.OwnerId == ownerId);
+        var index = _registeredControls.FindIndex(entry => entry.OwnerId == ownerId);
         if (index < 0)
         {
             return false;
         }
 
-        _registeredCustomControls.RemoveAt(index);
+        _registeredControls.RemoveAt(index);
         return true;
     }
 
     protected List<MapControl> GetDesiredControls() =>
-        [.. Controls, .. _registeredCustomControls.Select(entry => entry.Control)];
+        [.. Controls, .. _registeredControls.Select(entry => entry.Control)];
 
     internal bool TryGetControl(string controlId, [NotNullWhen(true)] out MapControl? control)
     {
@@ -734,11 +737,11 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         );
     }
 
-    private sealed class RegisteredCustomControl(string ownerId, ContentMapControl control)
+    private sealed class RegisteredControl(string ownerId, MapControl control)
     {
         public string OwnerId { get; } = ownerId;
 
-        public ContentMapControl Control { get; set; } = control;
+        public MapControl Control { get; set; } = control;
     }
 
     private ValueTask SetMapOptionsAsync() =>

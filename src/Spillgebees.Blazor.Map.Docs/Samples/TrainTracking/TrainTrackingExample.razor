@@ -258,12 +258,21 @@
 <div class="train-showcase-map">
     <SgbMap @ref="_map"
             MapOptions="@_mapOptions"
-            Controls="@_controls"
             Images="@_images"
             TrackedDataLayers="@_trackedDataLayers"
             Theme="@GlobalTheme"
             Height="600px"
             Width="100%">
+        <MapNavigationControl />
+        <MapLegendControl Id="overlay-legend"
+                          Position="ControlPosition.TopLeft"
+                          Order="500"
+                          Title="Legend"
+                          Collapsible="true"
+                          InitiallyOpen="true"
+                          Definition="TrainTrackingPresentation.OverlayLegendDefinition"
+                          ItemTemplate="_overlayLegendItemTemplate"
+                          OnItemVisibilityChanged="_legendItemVisibilityChangedCallback" />
         <FillExtrusionLayer Id="sgb-buildings-3d"
                             SourceId="openmaptiles"
                             SourceLayer="building"
@@ -288,27 +297,8 @@
             );
         }
 
-        if (_controls.Count == 0)
-        {
-            _overlayLegendItemTemplate ??= OverlayLegendItemTemplate;
-            _controls = BuildControls();
-        }
+        _overlayLegendItemTemplate ??= OverlayLegendItemTemplate;
     }
-
-    private IReadOnlyList<MapControl> BuildControls() =>
-    [
-        new NavigationMapControl(),
-        new LegendMapControl(
-            "overlay-legend",
-            new MapControlPlacement(ControlPosition.TopLeft, 500),
-            new LegendChromeOptions("Legend", Collapsible: true, InitiallyOpen: true, ClassName: null),
-            new LegendContentOptions(
-                TrainTrackingPresentation.OverlayLegendDefinition,
-                _overlayLegendItemTemplate!,
-                _legendItemVisibilityChangedCallback
-            )
-        ),
-    ];
 
     private RenderFragment<MapLegendItemTemplateContext> OverlayLegendItemTemplate => context => @<label class="train-overlay-legend-item" data-active="@context.Selected.ToString().ToLowerInvariant()">
             <span class="@GetOverlayLegendSwatchClassName(context.Item)" aria-hidden="true">

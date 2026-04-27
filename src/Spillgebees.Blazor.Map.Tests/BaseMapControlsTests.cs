@@ -156,7 +156,7 @@ public class BaseMapControlsTests
             // arrange
 
             // act
-            base.RegisterCustomControl(ownerId, control);
+            base.RegisterControl(ownerId, control);
 
             // assert
         }
@@ -166,7 +166,7 @@ public class BaseMapControlsTests
             // arrange
 
             // act
-            base.UnregisterCustomControlByOwner(ownerId);
+            base.UnregisterControlByOwner(ownerId);
 
             // assert
         }

@@ -1,9 +1,10 @@
 <SgbMap MapOptions="@_mapOptions"
-        Controls="@_controls"
         Markers="@_markers"
         Polylines="@_polylines"
         Height="400px"
-        Width="100%" />
+        Width="100%">
+    <MapNavigationControl />
+</SgbMap>
 
 @code {
     private readonly MapOptions _mapOptions = new(
@@ -14,8 +15,6 @@
             FeatureIds: ["route-1"],
             Padding: new Point(60, 60))
     );
-
-    private readonly IReadOnlyList<MapControl> _controls = [new NavigationMapControl()];
 
     private readonly List<Marker> _markers =
     [
