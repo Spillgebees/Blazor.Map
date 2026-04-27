@@ -23,8 +23,9 @@
 </ExampleView>
 
 <h2 id="custom_controls">// custom_controls</h2>
-<p>Custom controls are configured directly in <code>SgbMap.Controls</code>. For legends, use <code>LegendMapControl</code> with grouped content options to define legend sections and items, while the control shell sets map position and order.</p>
-<p>Ordering is deterministic per map corner: controls are sorted by <code>Order</code> (ascending), then declaration order in <code>Controls</code>, then <code>ControlId</code> as a stable tie-breaker. Keep each <code>ControlId</code> unique and pass the same id to the matching child control component.</p>
+<p>Use <code>MapCustomControl</code> inside <code>SgbMap</code> when the UI belongs in Razor. Blazor renders the content and handles events such as <code>@@onclick</code> and <code>@@bind</code>. JavaScript only creates the MapLibre control shell, places it, orders it, and removes it.</p>
+<p>Use <code>MapCustomControls</code> as an optional grouping component when a map has several custom controls. Use the existing <code>Controls</code> records for built-in controls and <code>LegendMapControl</code>.</p>
+<p>Ordering is deterministic per map corner: controls are sorted by <code>Order</code> (ascending), then declaration order, then <code>ControlId</code> as a stable tie-breaker. Keep each custom control <code>Id</code> unique.</p>
 <ExampleView TComponent="CustomControlsExample">
     <CustomControlsExample />
 </ExampleView>

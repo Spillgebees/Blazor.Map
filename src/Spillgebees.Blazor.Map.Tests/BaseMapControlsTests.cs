@@ -55,8 +55,81 @@ public class BaseMapControlsTests
         resolvedControl.Should().BeNull();
     }
 
+    [Test]
+    public void Should_preserve_declaration_order_when_custom_control_id_changes()
+    {
+        // arrange
+        var map = new TestBaseMap();
+        var firstOwnerId = "first-owner";
+        var secondOwnerId = "second-owner";
+        map.RegisterTestCustomControl(firstOwnerId, CreateContentControl("first"));
+        map.RegisterTestCustomControl(secondOwnerId, CreateContentControl("second"));
+
+        // act
+        map.RegisterTestCustomControl(firstOwnerId, CreateContentControl("renamed-first"));
+
+        // assert
+        map.GetDesiredControlIds().Should().Equal("renamed-first", "second");
+    }
+
+    [Test]
+    public void Should_append_control_when_removed_and_readded_with_new_declaration_owner()
+    {
+        // arrange
+        var map = new TestBaseMap();
+        map.RegisterTestCustomControl("first-owner", CreateContentControl("first"));
+        map.RegisterTestCustomControl("second-owner", CreateContentControl("second"));
+
+        // act
+        map.UnregisterTestCustomControlByOwner("first-owner");
+        map.RegisterTestCustomControl("third-owner", CreateContentControl("first"));
+
+        // assert
+        map.GetDesiredControlIds().Should().Equal("second", "first");
+    }
+
+    [Test]
+    public void Should_keep_declaration_slot_when_disabled_control_is_reenabled()
+    {
+        // arrange
+        var map = new TestBaseMap();
+        var firstOwnerId = "first-owner";
+        map.RegisterTestCustomControl(firstOwnerId, CreateContentControl("first"));
+        map.RegisterTestCustomControl("second-owner", CreateContentControl("second"));
+
+        // act
+        map.RegisterTestCustomControl(firstOwnerId, CreateContentControl("first", enabled: false));
+        map.RegisterTestCustomControl(firstOwnerId, CreateContentControl("first", enabled: true));
+
+        // assert
+        map.GetDesiredControlIds().Should().Equal("first", "second");
+    }
+
+    [Test]
+    public void Should_remove_custom_control_when_owner_is_disposed()
+    {
+        // arrange
+        var map = new TestBaseMap();
+        map.RegisterTestCustomControl("first-owner", CreateContentControl("first"));
+        map.RegisterTestCustomControl("second-owner", CreateContentControl("second"));
+
+        // act
+        map.UnregisterTestCustomControlByOwner("first-owner");
+
+        // assert
+        map.GetDesiredControlIds().Should().Equal("second");
+    }
+
+    private static ContentMapControl CreateContentControl(string controlId, bool enabled = true) =>
+        new(controlId, enabled, ControlPosition.TopRight, 500);
+
     private sealed class TestBaseMap : BaseMap
     {
+        public TestBaseMap()
+        {
+            Controls = [];
+        }
+
         public void SetInternalControls(IReadOnlyList<MapControl> controls)
         {
             // arrange
@@ -76,6 +149,37 @@ public class BaseMapControlsTests
 
             // assert
             return found;
+        }
+
+        public void RegisterTestCustomControl(string ownerId, ContentMapControl control)
+        {
+            // arrange
+
+            // act
+            base.RegisterCustomControl(ownerId, control);
+
+            // assert
+        }
+
+        public void UnregisterTestCustomControlByOwner(string ownerId)
+        {
+            // arrange
+
+            // act
+            base.UnregisterCustomControlByOwner(ownerId);
+
+            // assert
+        }
+
+        public IReadOnlyList<string> GetDesiredControlIds()
+        {
+            // arrange
+
+            // act
+            var controls = GetDesiredControls();
+
+            // assert
+            return [.. controls.Select(control => control.ControlId)];
         }
     }
 }

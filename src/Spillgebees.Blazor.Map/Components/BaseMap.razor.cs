@@ -24,6 +24,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     protected BaseMap()
     {
         SceneRegistry = new MapSceneRegistry(this);
+        ControlRegistry = new MapControlRegistryContext(this);
     }
 
     [Inject]
@@ -34,6 +35,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     protected Lazy<ILogger> Logger => new(() => _loggerFactory.CreateLogger(GetType()));
     internal MapSceneRegistry SceneRegistry { get; }
+    internal MapControlRegistryContext ControlRegistry { get; }
     internal IJSRuntime Runtime => JsRuntime;
     internal ILogger RuntimeLogger => Logger.Value;
 
@@ -47,7 +49,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// Declarative map controls (built-in, legend, and content controls).
     /// </summary>
     [Parameter]
-    public IReadOnlyList<MapControl> Controls { get; set; } = MapControls.Default;
+    public IReadOnlyList<MapControl> Controls { get; set; } = Models.Controls.MapControls.Default;
 
     /// <summary>
     /// The visual theme for UI controls, popups, and attribution.
@@ -184,6 +186,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     internal event Func<Task>? StyleReloaded;
 
     private readonly TaskCompletionSource<bool> _readyTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly List<RegisteredCustomControl> _registeredCustomControls = [];
 
     /// <summary>
     /// Returns a task that completes when the map has been initialized and is ready
@@ -520,7 +523,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     protected override async Task OnParametersSetAsync()
     {
         MapOptionsCompositionValidator.Validate(MapOptions);
-        ValidateControlIds(Controls);
+        ValidateControlIds(GetDesiredControls());
 
         if (IsInitialized is false)
         {
@@ -538,9 +541,10 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         var desiredImages = GetDesiredImages();
         await SyncImagesAsync(desiredImages);
 
-        if (!InternalControls.SequenceEqual(Controls))
+        var desiredControls = GetDesiredControls();
+        if (!InternalControls.SequenceEqual(desiredControls))
         {
-            InternalControls = [.. Controls];
+            InternalControls = desiredControls;
             await SetControlsAsync();
         }
 
@@ -571,9 +575,10 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         DotNetObjectReference = Microsoft.JSInterop.DotNetObjectReference.Create(this);
 
         InternalMapOptions = MapOptions;
-        ValidateControlIds(Controls);
+        ValidateControlIds(GetDesiredControls());
 
-        InternalControls = [.. Controls];
+        InternalControls = GetDesiredControls();
+        ValidateControlIds(InternalControls);
         InternalTheme = Theme;
         InternalMarkers = [.. Markers];
         InternalCircles = [.. Circles];
@@ -619,8 +624,91 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     private ValueTask SetOverlaysAsync() =>
         MapJs.SetOverlaysAsync(JsRuntime, Logger.Value, MapReference, InternalOverlays);
 
+    internal ValueTask SyncControlsAsync()
+    {
+        var desiredControls = GetDesiredControls();
+        ValidateControlIds(desiredControls);
+
+        if (InternalControls.SequenceEqual(desiredControls))
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        InternalControls = desiredControls;
+        return SetControlsAsync();
+    }
+
     private ValueTask SetControlsAsync() =>
         MapJs.SetControlsAsync(JsRuntime, Logger.Value, MapReference, InternalControls);
+
+    internal ValueTask SetControlContentAsync(
+        string controlId,
+        string kind,
+        ElementReference placeholderReference,
+        ElementReference contentReference
+    ) =>
+        MapJs.SetControlContentAsync(
+            JsRuntime,
+            Logger.Value,
+            MapReference,
+            controlId,
+            kind,
+            placeholderReference,
+            contentReference
+        );
+
+    internal ValueTask RemoveControlContentAsync(string controlId) =>
+        MapJs.RemoveControlContentAsync(JsRuntime, Logger.Value, MapReference, controlId);
+
+    internal bool RegisterCustomControl(string ownerId, ContentMapControl control)
+    {
+        var existing = _registeredCustomControls.FirstOrDefault(entry => entry.OwnerId == ownerId);
+        if (existing is not null)
+        {
+            if (existing.Control == control)
+            {
+                return false;
+            }
+
+            existing.Control = control;
+            return true;
+        }
+
+        _registeredCustomControls.Add(new RegisteredCustomControl(ownerId, control));
+        return true;
+    }
+
+    internal bool UnregisterCustomControl(string controlId)
+    {
+        var removed = false;
+        for (var index = _registeredCustomControls.Count - 1; index >= 0; index--)
+        {
+            if (!string.Equals(_registeredCustomControls[index].Control.ControlId, controlId, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            _registeredCustomControls.RemoveAt(index);
+            removed = true;
+        }
+
+        return removed;
+    }
+
+    internal bool UnregisterCustomControlByOwner(string ownerId)
+    {
+        var index = _registeredCustomControls.FindIndex(entry => entry.OwnerId == ownerId);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        _registeredCustomControls.RemoveAt(index);
+        return true;
+    }
+
+    protected List<MapControl> GetDesiredControls() =>
+        [.. Controls, .. _registeredCustomControls.Select(entry => entry.Control)];
 
     internal bool TryGetControl(string controlId, [NotNullWhen(true)] out MapControl? control)
     {
@@ -644,6 +732,13 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
                 ? "Control IDs must be non-empty."
                 : $"Control IDs must be unique. Duplicate ID: '{duplicateControlId.Key}'."
         );
+    }
+
+    private sealed class RegisteredCustomControl(string ownerId, ContentMapControl control)
+    {
+        public string OwnerId { get; } = ownerId;
+
+        public ContentMapControl Control { get; set; } = control;
     }
 
     private ValueTask SetMapOptionsAsync() =>

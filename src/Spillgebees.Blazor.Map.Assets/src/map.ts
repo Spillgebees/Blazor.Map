@@ -9,6 +9,7 @@ import {
   TerrainControl,
 } from "maplibre-gl";
 import { CenterControl } from "./controls/centerControl";
+import { ContentControl } from "./controls/contentControl";
 import { LegendControl } from "./controls/legendControl";
 import { addMarkers, removeMarkers, updateMarkers } from "./features/markers";
 import {
@@ -21,7 +22,7 @@ import {
   updateCircles,
   updatePolylines,
 } from "./features/shapes";
-import type { ControlPosition, ILegendMapControl, IMapControl } from "./interfaces/controls";
+import type { ControlPosition, IContentMapControl, ILegendMapControl, IMapControl } from "./interfaces/controls";
 import type { ICircle, IMarker, IPolyline } from "./interfaces/features";
 import type {
   ICoordinate,
@@ -114,6 +115,7 @@ const REQUIRED_MAP_FUNCTION_NAMES = [
 const MAP_NAMESPACE_BUNDLE_MARKER = "spillgebees.blazor.map.assets.bundle.v1";
 
 const LEGEND_CONTROL_KIND = "legend";
+const CONTENT_CONTROL_KIND = "content";
 
 interface OrderedControlRegistration {
   controlId: string;
@@ -1303,7 +1305,7 @@ export function setControlContent(
     return;
   }
 
-  if (kind !== LEGEND_CONTROL_KIND) {
+  if (kind !== LEGEND_CONTROL_KIND && kind !== CONTENT_CONTROL_KIND) {
     throw new Error(`Unsupported control content kind '${kind}' for control '${controlId}'.`);
   }
 
@@ -1317,10 +1319,14 @@ export function setControlContent(
   if (
     existingRegistration &&
     existingRegistration.kind === kind &&
-    existingRegistration.control instanceof LegendControl &&
-    kind === LEGEND_CONTROL_KIND
+    ((existingRegistration.control instanceof LegendControl && kind === LEGEND_CONTROL_KIND) ||
+      (existingRegistration.control instanceof ContentControl && kind === CONTENT_CONTROL_KIND))
   ) {
-    existingRegistration.control.update(controlDefinition as ILegendMapControl);
+    if (kind === LEGEND_CONTROL_KIND) {
+      existingRegistration.control.update(controlDefinition as ILegendMapControl);
+    } else {
+      existingRegistration.control.update(controlDefinition as IContentMapControl);
+    }
     customControlStore.set(controlId, existingRegistration);
     return;
   }
@@ -1332,6 +1338,12 @@ export function setControlContent(
     }
 
     control = new LegendControl(controlDefinition as ILegendMapControl, placeholderHost, contentRoot);
+  } else if (kind === CONTENT_CONTROL_KIND) {
+    if (!(placeholderHost instanceof HTMLElement) || !(contentRoot instanceof HTMLElement)) {
+      return;
+    }
+
+    control = new ContentControl(controlDefinition as IContentMapControl, placeholderHost, contentRoot);
   } else {
     throw new Error(`Unsupported control content kind '${kind}' for control '${controlId}'.`);
   }
