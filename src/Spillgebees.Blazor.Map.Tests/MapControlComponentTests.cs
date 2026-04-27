@@ -94,6 +94,11 @@ public class MapControlComponentTests : BunitContext
 
         // assert
         JSInterop.Invocations[SetControlsIdentifier].Count.Should().BeGreaterThan(initialCount);
+
+        var setControlsInvocations = JSInterop.Invocations[SetControlsIdentifier];
+        var latestInvocation = setControlsInvocations[setControlsInvocations.Count - 1];
+        var controlsPayload = latestInvocation.Arguments[1].Should().BeAssignableTo<IEnumerable<object>>().Subject;
+        controlsPayload.Select(GetControlId).Should().NotContain("scale-tools");
     }
 
     [Test]
@@ -136,7 +141,6 @@ public class MapControlComponentTests : BunitContext
 
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder)
         {
-            // arrange
             builder.OpenComponent<SgbMap>(0);
             builder.AddAttribute(
                 1,
@@ -154,10 +158,9 @@ public class MapControlComponentTests : BunitContext
                 )
             );
             builder.CloseComponent();
-
-            // act
-
-            // assert
         }
     }
+
+    private static string? GetControlId(object control) =>
+        control.GetType().GetProperty("ControlId")?.GetValue(control)?.ToString();
 }

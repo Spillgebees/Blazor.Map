@@ -578,7 +578,6 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         DotNetObjectReference = Microsoft.JSInterop.DotNetObjectReference.Create(this);
 
         InternalMapOptions = MapOptions;
-        ValidateControlIds(GetDesiredControls());
 
         InternalControls = GetDesiredControls();
         ValidateControlIds(InternalControls);
@@ -683,19 +682,16 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     internal bool UnregisterControl(string controlId)
     {
-        var removed = false;
-        for (var index = _registeredControls.Count - 1; index >= 0; index--)
+        var index = _registeredControls.FindIndex(entry =>
+            string.Equals(entry.Control.ControlId, controlId, StringComparison.Ordinal)
+        );
+        if (index < 0)
         {
-            if (!string.Equals(_registeredControls[index].Control.ControlId, controlId, StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            _registeredControls.RemoveAt(index);
-            removed = true;
+            return false;
         }
 
-        return removed;
+        _registeredControls.RemoveAt(index);
+        return true;
     }
 
     internal bool UnregisterControlByOwner(string ownerId)

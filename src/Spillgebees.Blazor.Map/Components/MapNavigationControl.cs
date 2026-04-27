@@ -11,6 +11,7 @@ public sealed class MapNavigationControl : MapControlComponentBase
     public MapNavigationControl()
     {
         Id = "navigation";
+        Position = ControlPosition.TopRight;
     }
 
     [Parameter]

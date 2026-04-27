@@ -7,15 +7,14 @@
 <SgbMap MapOptions="@_mapOptions"
         Height="450px"
         Width="100%">
-    <MapCustomControls>
-        <MapNavigationControl Position="ControlPosition.TopRight" Order="10" />
-        <MapFullscreenControl Position="ControlPosition.TopRight" Order="20" />
-        <MapGeolocateControl Position="ControlPosition.TopRight" Order="30" TrackUser="true" />
-        <MapTerrainControl Position="ControlPosition.TopRight" Order="40" />
-        <MapCenterControl Position="ControlPosition.TopLeft" Order="5" />
-        <MapScaleControl Position="ControlPosition.BottomLeft" Order="5" />
+    <MapNavigationControl Position="ControlPosition.TopRight" Order="10" />
+    <MapFullscreenControl Position="ControlPosition.TopRight" Order="20" />
+    <MapGeolocateControl Position="ControlPosition.TopRight" Order="30" TrackUser="true" />
+    <MapTerrainControl Position="ControlPosition.TopRight" Order="40" />
+    <MapCenterControl Position="ControlPosition.TopLeft" Order="5" />
+    <MapScaleControl Position="ControlPosition.BottomLeft" Order="5" />
 
-        <MapCustomControl Id="refresh-map" Position="ControlPosition.TopLeft" Order="10" Class="docs-map-button-control">
+    <MapCustomControl Id="refresh-map" Position="ControlPosition.TopLeft" Order="10" Class="docs-map-button-control">
             <div class="sgb-map-ctrl-group">
                 <button type="button" title="Refresh map data" @onclick="RefreshData">
                     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M17.7 6.3A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.76-4.24L13 11h8V3l-3.3 3.3Z'/%3E%3C/svg%3E"
@@ -25,9 +24,9 @@
                     <span class="visually-hidden">Refresh map data</span>
                 </button>
             </div>
-        </MapCustomControl>
+    </MapCustomControl>
 
-        <MapCustomControl Id="network-mode" Position="ControlPosition.TopLeft" Order="20" Class="docs-map-button-control">
+    <MapCustomControl Id="network-mode" Position="ControlPosition.TopLeft" Order="20" Class="docs-map-button-control">
             <div class="sgb-map-ctrl-group">
                 <button type="button" title="Network mode" @onclick="ToggleNetworkMode">
                     <svg width="18" height="18" viewBox="0 0 24 24" role="img" aria-label="Network mode">
@@ -35,38 +34,37 @@
                     </svg>
                 </button>
             </div>
-        </MapCustomControl>
+    </MapCustomControl>
 
-        <MapCustomControl Id="view-tools" Position="ControlPosition.TopLeft" Order="30" Class="docs-map-button-control">
+    <MapCustomControl Id="view-tools" Position="ControlPosition.TopLeft" Order="30" Class="docs-map-button-control">
             <div class="sgb-map-ctrl-group">
                 <button type="button" title="Zoom to network" @onclick="ZoomToNetwork">⌖</button>
                 <button type="button" title="Show details" @onclick="ToggleDetails">i</button>
             </div>
-        </MapCustomControl>
+    </MapCustomControl>
 
-        <MapCustomControl Id="live-toggle" Position="ControlPosition.BottomLeft" Order="10" Class="docs-map-toggle-control">
+    <MapCustomControl Id="live-toggle" Position="ControlPosition.BottomLeft" Order="10" Class="docs-map-toggle-control">
             <label class="docs-map-toggle">
                 <input type="checkbox" @bind="_liveUpdatesEnabled" />
                 <span>Live updates</span>
             </label>
-        </MapCustomControl>
+    </MapCustomControl>
 
-        <MapCustomControl Id="network-panel" Position="ControlPosition.BottomRight" Order="10" Class="docs-map-panel-control">
+    <MapCustomControl Id="network-panel" Position="ControlPosition.BottomRight" Order="10" Class="docs-map-panel-control">
             <section class="docs-map-panel">
                 <strong>Network summary</strong>
                 <p>@_statusMessage</p>
                 <p>Mode: @(_networkModeEnabled ? "network" : "standard")</p>
             </section>
-        </MapCustomControl>
+    </MapCustomControl>
 
-        <MapLegendControl Id="network-legend"
-                          Position="ControlPosition.TopRight"
-                          Order="50"
-                          Title="Network layers"
-                          Collapsible="true"
-                          InitiallyOpen="true"
-                          Definition="@_legendDefinition" />
-    </MapCustomControls>
+    <MapLegendControl Id="network-legend"
+                      Position="ControlPosition.TopRight"
+                      Order="50"
+                      Title="Network layers"
+                      Collapsible="true"
+                      InitiallyOpen="true"
+                      Definition="@_legendDefinition" />
 
     <GeoJsonSource Id="network"
                    Data="@_networkData">

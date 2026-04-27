@@ -1312,7 +1312,7 @@ export function setControlContent(
   const customControlStore = getCustomControlStore(map);
   const existingRegistration = customControlStore.get(controlId);
   const controlDefinition = validateControlForContent(mapElement, controlId, kind);
-  if (!controlDefinition) {
+  if (!controlDefinition || !(placeholderHost instanceof HTMLElement) || !(contentRoot instanceof HTMLElement)) {
     return;
   }
 
@@ -1333,19 +1333,9 @@ export function setControlContent(
 
   let control: IControl;
   if (kind === LEGEND_CONTROL_KIND) {
-    if (!(placeholderHost instanceof HTMLElement) || !(contentRoot instanceof HTMLElement)) {
-      return;
-    }
-
     control = new LegendControl(controlDefinition as ILegendMapControl, placeholderHost, contentRoot);
-  } else if (kind === CONTENT_CONTROL_KIND) {
-    if (!(placeholderHost instanceof HTMLElement) || !(contentRoot instanceof HTMLElement)) {
-      return;
-    }
-
-    control = new ContentControl(controlDefinition as IContentMapControl, placeholderHost, contentRoot);
   } else {
-    throw new Error(`Unsupported control content kind '${kind}' for control '${controlId}'.`);
+    control = new ContentControl(controlDefinition as IContentMapControl, placeholderHost, contentRoot);
   }
 
   if (existingRegistration) {

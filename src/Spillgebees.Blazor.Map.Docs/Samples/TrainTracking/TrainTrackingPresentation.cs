@@ -19,9 +19,9 @@ public static class TrainTrackingPresentation
          OnZoomEnd=""@HandleMapViewChangedAsync"">
      <MapNavigationControl />
      <MapLegendControl Id=""overlay-legend""
-                       Position=""ControlPosition.TopLeft""
+                        Position=""@ControlPosition.TopLeft""
                        Title=""Legend""
-                       Definition=""TrainTrackingPresentation.OverlayLegendDefinition"" />
+                        Definition=""@TrainTrackingPresentation.OverlayLegendDefinition"" />
    </SgbMap>
 
 // hover and selection use feature-state, labels stay screen-facing, and supplementary labels stay hidden while clustered";

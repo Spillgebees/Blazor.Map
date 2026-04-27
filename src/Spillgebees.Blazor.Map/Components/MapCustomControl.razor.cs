@@ -78,10 +78,12 @@ public partial class MapCustomControl : ComponentBase, IAsyncDisposable
             return;
         }
 
-        foreach (var pendingRemovalId in _pendingRemovalIds.ToArray())
+        var pendingRemovalIds = _pendingRemovalIds.ToArray();
+        _pendingRemovalIds.Clear();
+
+        foreach (var pendingRemovalId in pendingRemovalIds)
         {
             await Registry.RemoveControlContentAsync(pendingRemovalId);
-            _pendingRemovalIds.Remove(pendingRemovalId);
         }
 
         if (_controlSyncPending)
@@ -107,18 +109,38 @@ public partial class MapCustomControl : ComponentBase, IAsyncDisposable
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
-        if (Registry is null || string.IsNullOrWhiteSpace(_registeredId))
+        if (Registry is null)
         {
             return;
         }
 
         var controlId = _registeredId;
+        var pendingRemovalIds = _pendingRemovalIds.ToArray();
         Registry.UnregisterByOwner(_ownerId);
 
         try
         {
-            await Registry.RemoveControlContentAsync(controlId);
-            await Registry.SyncControlsAsync();
+            if (!Registry.IsReady)
+            {
+                _pendingRemovalIds.Clear();
+                return;
+            }
+
+            var removalIds = pendingRemovalIds
+                .Append(controlId)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+
+            foreach (var removalId in removalIds)
+            {
+                await Registry.RemoveControlContentAsync(removalId!);
+            }
+
+            if (removalIds.Length > 0)
+            {
+                await Registry.SyncControlsAsync();
+            }
         }
         catch (Exception)
         {
@@ -127,6 +149,7 @@ public partial class MapCustomControl : ComponentBase, IAsyncDisposable
         finally
         {
             _registeredId = null;
+            _pendingRemovalIds.Clear();
         }
     }
 

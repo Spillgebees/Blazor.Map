@@ -219,6 +219,60 @@ public class LegendMapControlTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_update_legend_visibility_group_when_descriptor_changes(CancellationToken cancellationToken)
+    {
+        // arrange
+        var definition = CreateDefinition();
+        var cut = Render<SgbMap>(parameters =>
+            parameters.AddChildContent<MapLegendControl>(control =>
+                control.Add(c => c.Id, "legend-component").Add(c => c.Definition, definition)
+            )
+        );
+        cancellationToken.ThrowIfCancellationRequested();
+        await cut.Instance.OnMapInitializedAsync();
+        cut.WaitForAssertion(() =>
+            JSInterop.Invocations[ApplySceneMutationsIdentifier].Count.Should().BeGreaterThan(0)
+        );
+        var initialBatchCount = JSInterop.Invocations[ApplySceneMutationsIdentifier].Count;
+
+        // act
+        cut.Render(parameters =>
+            parameters.AddChildContent<MapLegendControl>(control =>
+                control.Add(c => c.Id, "legend-component").Add(c => c.Definition, definition)
+            )
+        );
+
+        // assert
+        JSInterop.Invocations[ApplySceneMutationsIdentifier].Count.Should().Be(initialBatchCount);
+
+        // act
+        cut.Render(parameters =>
+            parameters.AddChildContent<MapLegendControl>(control =>
+                control.Add(c => c.Id, "legend-component").Add(c => c.Definition, CreateUpdatedDefinition())
+            )
+        );
+
+        // assert
+        cut.WaitForAssertion(() =>
+            JSInterop.Invocations[ApplySceneMutationsIdentifier].Count.Should().BeGreaterThan(initialBatchCount)
+        );
+        var updatedBatch = GetLatestSceneMutationBatch();
+        var mutation = updatedBatch
+            .Mutations.Should()
+            .ContainSingle(m =>
+                m.Kind == "setVisibilityGroup"
+                && string.Equals(GetMutationProperty<string>(m, "GroupId"), "legend:stations", StringComparison.Ordinal)
+            )
+            .Subject;
+        var targets = GetMutationProperty<IReadOnlyList<MapVisibilityGroupTargetDescriptor>>(
+            mutation,
+            "VisibilityTargets"
+        );
+        targets.Should().NotBeNull();
+        targets![0].LayerIds.Should().Equal("stations-circle", "stations-label", "stations-hover");
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
     public async Task Should_allow_custom_item_templates_to_toggle_item_visibility(CancellationToken cancellationToken)
     {
         // arrange
@@ -395,6 +449,34 @@ public class LegendMapControlTests : BunitContext
         cut.WaitForAssertion(() => JSInterop.VerifyInvoke(RemoveControlContentIdentifier));
     }
 
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_remove_pending_legend_component_content_when_disposed(CancellationToken cancellationToken)
+    {
+        // arrange
+        var showLegend = true;
+        var pendingControlId = "previous-legend-component";
+        var cut = Render<ConditionalLegendHost>(parameters => parameters.Add(p => p.ShowLegend, showLegend));
+        var map = cut.FindComponent<SgbMap>().Instance;
+        cancellationToken.ThrowIfCancellationRequested();
+        await map.OnMapInitializedAsync();
+        AddPendingRemovalId(cut.FindComponent<MapLegendControl>().Instance, pendingControlId);
+
+        // act
+        showLegend = false;
+        cut.Render(parameters => parameters.Add(p => p.ShowLegend, showLegend));
+
+        // assert
+        cut.WaitForAssertion(() =>
+            JSInterop
+                .Invocations[RemoveControlContentIdentifier]
+                .Any(invocation =>
+                    string.Equals(invocation.Arguments[1]?.ToString(), pendingControlId, StringComparison.Ordinal)
+                )
+                .Should()
+                .BeTrue()
+        );
+    }
+
     [Test]
     public void Should_not_sync_legend_component_when_disposed_before_map_ready()
     {
@@ -442,6 +524,31 @@ public class LegendMapControlTests : BunitContext
                             "Stations",
                             "Passenger stops and station labels.",
                             [new MapLegendTargetDefinition("overlay-style", ["stations-circle", "stations-label"])],
+                            true,
+                            IsToggleable: true
+                        ),
+                    ]
+                ),
+            ]
+        );
+
+    private static MapLegendDefinition CreateUpdatedDefinition() =>
+        new(
+            Sections:
+            [
+                new MapLegendSectionDefinition(
+                    "Operational layers",
+                    [
+                        new MapLegendItemDefinition(
+                            "stations",
+                            "Stations",
+                            "Passenger stops and station labels.",
+                            [
+                                new MapLegendTargetDefinition(
+                                    "overlay-style",
+                                    ["stations-circle", "stations-label", "stations-hover"]
+                                ),
+                            ],
                             true,
                             IsToggleable: true
                         ),
@@ -517,5 +624,17 @@ public class LegendMapControlTests : BunitContext
         }
 
         return (T?)property.GetValue(mutation);
+    }
+
+    private static void AddPendingRemovalId(object component, string controlId)
+    {
+        var field = component
+            .GetType()
+            .GetField(
+                "_pendingRemovalIds",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
+            );
+        var pendingRemovalIds = field!.GetValue(component).Should().BeAssignableTo<ICollection<string>>().Subject;
+        pendingRemovalIds.Add(controlId);
     }
 }
