@@ -4,7 +4,6 @@
 @using Spillgebees.Blazor.Map.Models.Events
 @using Spillgebees.Blazor.Map.Models.Expressions
 @using Spillgebees.Blazor.Map.Models.Legends
-@using Spillgebees.Blazor.Map.Models.TrackedData
 @using Spillgebees.Blazor.Map.Models.TrackedEntities
 @using Spillgebees.Blazor.Map.Docs.Samples.TrainTracking
 
@@ -396,6 +395,6 @@
         };
     }
 
-    private static string GetOverlayLegendSwatchClassName(MapLegendItemDefinition item) =>
+    private static string GetOverlayLegendSwatchClassName(MapLegendItem item) =>
         $"train-overlay-swatch train-overlay-swatch-{item.Id}";
 }

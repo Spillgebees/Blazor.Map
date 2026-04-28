@@ -4,7 +4,6 @@ using Spillgebees.Blazor.Map.Components;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Legends;
-using Spillgebees.Blazor.Map.Models.TrackedData;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 namespace Spillgebees.Blazor.Map.Docs.Samples.TrainTracking;
@@ -20,7 +19,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private string? _hoveredTrainId;
     private string? _selectedTrainId;
     private readonly List<TrainSampleState> _trains = [];
-    private readonly List<MapImageDefinition> _images;
+    private readonly List<MapImage> _images;
     private RenderFragment<MapLegendItemTemplateContext>? _overlayLegendItemTemplate;
     private EventCallback<MapLegendVisibilityChangedEventArgs> _legendItemVisibilityChangedCallback;
 
@@ -32,15 +31,15 @@ public partial class TrainTrackingExample : IAsyncDisposable
 
     private MapOptions _mapOptions = null!;
     private readonly AnimationOptions _trainAnimation = TrainTrackingPresentation.TrainAnimation;
-    private readonly TrackedDataClusterOptions _trainClusterOptions =
+    private readonly TrackedEntityClusterOptions _trainClusterOptions =
         TrainTrackingPresentation.TrackedTrainClusterOptions;
-    private readonly TrackedDataBehaviorOptions<TrainSampleState> _trainBehavior;
-    private readonly TrackedDataCallbacks<TrainSampleState> _trainCallbacks;
+    private readonly TrackedEntityBehaviorOptions<TrainSampleState> _trainBehavior;
+    private readonly TrackedEntityCallbacks<TrainSampleState> _trainCallbacks;
     private readonly object[] _trainIconOpacityExpr = TrainTrackingPresentation.TrainIconOpacityExpression;
     private readonly TrainTrackingVisibilityState _visibility = new();
-    private readonly TrackedDataIdOptions<TrainSampleState> _trainId = new(train => train.Id);
-    private readonly TrackedDataInteractionOptions<TrainSampleState> _trainInteraction;
-    private readonly TrackedDataSymbolOptions<TrainSampleState> _trainSymbol = new(
+    private readonly TrackedEntityIdOptions<TrainSampleState> _trainId = new(train => train.Id);
+    private readonly TrackedEntityInteractionOptions<TrainSampleState> _trainInteraction;
+    private readonly TrackedEntitySymbolOptions<TrainSampleState> _trainSymbol = new(
         train => train.CurrentPosition,
         train => $"train-{train.Color.TrimStart('#')}",
         SizeSelector: _ => 1.0,
@@ -53,7 +52,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
             ["internationalPresence"] = TrainSampleSimulation.IsInternational(train) ? 1 : 0,
         }
     );
-    private static readonly IReadOnlyList<TrackedDataDecorationOptions<TrainSampleState>> _trainDecorations =
+    private static readonly IReadOnlyList<TrackedEntityDecorationOptions<TrainSampleState>> _trainDecorations =
     [
         new(
             "cluster-sentinel",
@@ -103,7 +102,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
         ),
     ];
 
-    private TrackedDataLayer<TrainSampleState>? _trackedEntityLayer;
+    private TrackedEntityLayerDefinition<TrainSampleState>? _trackedEntityLayer;
 
     public TrainTrackingExample()
     {
@@ -172,7 +171,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
         catch (OperationCanceledException) { }
     }
 
-    private static List<MapImageDefinition> BuildTrainImages(IEnumerable<TrainSampleState> trains)
+    private static List<MapImage> BuildTrainImages(IEnumerable<TrainSampleState> trains)
     {
         return
         [
@@ -184,7 +183,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
                     var iconName = $"train-{color.TrimStart('#')}";
                     var svg = TrainSampleSimulation.BuildIconSvg(color);
                     var dataUri = $"data:image/svg+xml,{Uri.EscapeDataString(svg)}";
-                    return new MapImageDefinition(iconName, dataUri, 28, 28);
+                    return new MapImage(iconName, dataUri, 28, 28);
                 }),
         ];
     }
@@ -292,11 +291,11 @@ public partial class TrainTrackingExample : IAsyncDisposable
 
     private void RebuildTrackedLayers()
     {
-        _trackedEntityLayer = new TrackedDataLayer<TrainSampleState>(
+        _trackedEntityLayer = new TrackedEntityLayerDefinition<TrainSampleState>(
             Id: "train-source",
             Items: _trains,
             IdOptions: _trainId,
-            Visual: new TrackedDataVisualOptions<TrainSampleState>(
+            Visual: new TrackedEntityVisualOptions<TrainSampleState>(
                 Symbol: _trainSymbol,
                 Decorations: _trainDecorations,
                 Cluster: _trainClusterOptions,

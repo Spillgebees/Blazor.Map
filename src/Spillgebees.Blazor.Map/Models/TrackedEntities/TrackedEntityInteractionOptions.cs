@@ -1,10 +1,10 @@
-namespace Spillgebees.Blazor.Map.Models.TrackedData;
+namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 /// <summary>
-/// Declarative interaction selectors for high-level tracked data items.
+/// Declarative interaction selectors for high-level tracked entity items.
 /// </summary>
 /// <typeparam name="TItem">The raw app model type.</typeparam>
-public sealed record TrackedDataInteractionOptions<TItem>(
+public sealed record TrackedEntityInteractionOptions<TItem>(
     Func<TItem, bool>? IsHovered = null,
     Func<TItem, bool>? IsSelected = null
 )

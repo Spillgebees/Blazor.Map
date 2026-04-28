@@ -1,9 +1,9 @@
-namespace Spillgebees.Blazor.Map.Models.TrackedData;
+namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 /// <summary>
-/// Non-generic tracked data layer contract for heterogeneous map layer collections.
+/// Non-generic tracked entity layer contract for heterogeneous map layer collections.
 /// </summary>
-public interface ITrackedDataLayer
+public interface ITrackedEntityLayerDefinition
 {
     /// <summary>
     /// Stable tracked layer source ID.

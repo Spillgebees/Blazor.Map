@@ -1,11 +1,10 @@
 using AwesomeAssertions;
 using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.TrackedData;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
-namespace Spillgebees.Blazor.Map.Tests.Models.TrackedData;
+namespace Spillgebees.Blazor.Map.Tests.Models.TrackedEntities;
 
-public class TrackedDataEntityMaterializerTests
+public class TrackedEntityMaterializerTests
 {
     [Test]
     public void Should_materialize_raw_items_into_tracked_entities_with_item_and_generated_decorations()
@@ -24,10 +23,10 @@ public class TrackedDataEntityMaterializerTests
         );
 
         // act
-        var entities = TrackedDataEntityMaterializer.Materialize(
+        var entities = TrackedEntityMaterializer.Materialize(
             [item],
-            new TrackedDataIdOptions<TestVehicle>(vehicle => vehicle.Id),
-            new TrackedDataSymbolOptions<TestVehicle>(
+            new TrackedEntityIdOptions<TestVehicle>(vehicle => vehicle.Id),
+            new TrackedEntitySymbolOptions<TestVehicle>(
                 vehicle => vehicle.Position,
                 vehicle => vehicle.IconImage,
                 SizeSelector: vehicle => vehicle.Size,
@@ -38,7 +37,7 @@ public class TrackedDataEntityMaterializerTests
                 PropertiesSelector: vehicle => new Dictionary<string, object?> { ["group"] = "freight" }
             ),
             [
-                new TrackedDataDecorationOptions<TestVehicle>(
+                new TrackedEntityDecorationOptions<TestVehicle>(
                     "label",
                     TextSelector: vehicle => vehicle.Label,
                     Offset: new Point(0, -18),
@@ -85,11 +84,11 @@ public class TrackedDataEntityMaterializerTests
         );
 
         // act
-        var entities = TrackedDataEntityMaterializer.Materialize(
+        var entities = TrackedEntityMaterializer.Materialize(
             [item],
-            new TrackedDataIdOptions<TestVehicle>(vehicle => vehicle.Id),
-            new TrackedDataSymbolOptions<TestVehicle>(vehicle => vehicle.Position, vehicle => vehicle.IconImage),
-            [new TrackedDataDecorationOptions<TestVehicle>("label", TextSelector: vehicle => vehicle.Label)]
+            new TrackedEntityIdOptions<TestVehicle>(vehicle => vehicle.Id),
+            new TrackedEntitySymbolOptions<TestVehicle>(vehicle => vehicle.Position, vehicle => vehicle.IconImage),
+            [new TrackedEntityDecorationOptions<TestVehicle>("label", TextSelector: vehicle => vehicle.Label)]
         );
 
         // assert

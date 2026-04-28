@@ -159,13 +159,13 @@ public partial class MapLegendControlHost : ComponentBase, IAsyncDisposable
         }
     }
 
-    private static string GetSectionClassName(MapLegendSectionDefinition section) =>
+    private static string GetSectionClassName(MapLegendSection section) =>
         new CssBuilder()
             .AddClass("sgb-map-legend-section")
             .AddClass(section.ClassName, !string.IsNullOrWhiteSpace(section.ClassName))
             .Build();
 
-    private string GetItemClassName(MapLegendItemDefinition item) =>
+    private string GetItemClassName(MapLegendItem item) =>
         new CssBuilder()
             .AddClass("sgb-map-legend-item")
             .AddClass("sgb-map-legend-item-toggleable", item.IsToggleable)
@@ -175,7 +175,7 @@ public partial class MapLegendControlHost : ComponentBase, IAsyncDisposable
 
     private bool GetItemSelected(string itemId) => _itemSelection.TryGetValue(itemId, out var selected) && selected;
 
-    private async Task ToggleItemAsync(MapLegendItemDefinition item, ChangeEventArgs args)
+    private async Task ToggleItemAsync(MapLegendItem item, ChangeEventArgs args)
     {
         var selected = args.Value switch
         {
@@ -187,7 +187,7 @@ public partial class MapLegendControlHost : ComponentBase, IAsyncDisposable
         await SetItemSelectedAsync(item, selected);
     }
 
-    private async Task SetItemSelectedAsync(MapLegendItemDefinition item, bool selected)
+    private async Task SetItemSelectedAsync(MapLegendItem item, bool selected)
     {
         _itemSelection[item.Id] = selected;
 
@@ -292,7 +292,7 @@ public partial class MapLegendControlHost : ComponentBase, IAsyncDisposable
         }
     }
 
-    private MapVisibilityGroupDescriptor BuildVisibilityGroupDescriptor(MapLegendItemDefinition item) =>
+    private MapVisibilityGroupDescriptor BuildVisibilityGroupDescriptor(MapLegendItem item) =>
         new(
             GetVisibilityGroupId(item),
             GetItemSelected(item.Id),
@@ -301,7 +301,7 @@ public partial class MapLegendControlHost : ComponentBase, IAsyncDisposable
                 ?? []
         );
 
-    private static string GetVisibilityGroupId(MapLegendItemDefinition item) => $"legend:{item.Id}";
+    private static string GetVisibilityGroupId(MapLegendItem item) => $"legend:{item.Id}";
 
     private async Task UnregisterVisibilityGroupsAsync()
     {

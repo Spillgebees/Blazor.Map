@@ -1,20 +1,20 @@
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
-namespace Spillgebees.Blazor.Map.Models.TrackedData;
+namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 /// <summary>
 /// Materializes raw tracked items into low-level tracked entities.
 /// </summary>
-public static class TrackedDataEntityMaterializer
+public static class TrackedEntityMaterializer
 {
     /// <summary>
     /// Converts raw items into tracked entities.
     /// </summary>
     public static IReadOnlyList<TrackedEntity<TItem>> Materialize<TItem>(
         IReadOnlyList<TItem> items,
-        TrackedDataIdOptions<TItem> id,
-        TrackedDataSymbolOptions<TItem> symbol,
-        IReadOnlyList<TrackedDataDecorationOptions<TItem>>? decorations = null
+        TrackedEntityIdOptions<TItem> id,
+        TrackedEntitySymbolOptions<TItem> symbol,
+        IReadOnlyList<TrackedEntityDecorationOptions<TItem>>? decorations = null
     )
     {
         ArgumentNullException.ThrowIfNull(items);
@@ -26,9 +26,9 @@ public static class TrackedDataEntityMaterializer
 
     private static TrackedEntity<TItem> MaterializeEntity<TItem>(
         TItem item,
-        TrackedDataIdOptions<TItem> id,
-        TrackedDataSymbolOptions<TItem> symbol,
-        IReadOnlyList<TrackedDataDecorationOptions<TItem>> decorations
+        TrackedEntityIdOptions<TItem> id,
+        TrackedEntitySymbolOptions<TItem> symbol,
+        IReadOnlyList<TrackedEntityDecorationOptions<TItem>> decorations
     )
     {
         var trackedDecorations = decorations
@@ -58,7 +58,7 @@ public static class TrackedDataEntityMaterializer
 
     private static TrackedEntityDecoration? MaterializeDecoration<TItem>(
         TItem item,
-        TrackedDataDecorationOptions<TItem> decoration
+        TrackedEntityDecorationOptions<TItem> decoration
     )
     {
         var text = NormalizeOptionalString(decoration.GetText(item));

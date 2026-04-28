@@ -1081,29 +1081,29 @@ describe("setImages", () => {
       // act
       await setImages(mapElement, [
         {
-          name: "remote-icon",
+          id: "remote-icon",
           url: "https://example.com/icon.png",
           width: 32,
           height: 32,
           pixelRatio: 1,
-          sdf: false,
+          isSdf: false,
         },
         {
-          name: "base64-icon",
+          id: "base64-icon",
           url: "data:image/png;base64,ZmFrZS1kYXRh",
           width: 24,
           height: 24,
           pixelRatio: 1,
-          sdf: false,
+          isSdf: false,
         },
         {
-          name: "svg-icon",
+          id: "svg-icon",
           // biome-ignore lint/security/noSecrets: inline svg test fixture data URI, not a secret
           url: "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%3E%3C/svg%3E",
           width: 28,
           height: 28,
           pixelRatio: 2,
-          sdf: true,
+          isSdf: true,
         },
       ]);
 
@@ -1111,7 +1111,7 @@ describe("setImages", () => {
       expect(mockMap.addImage.mock.calls.map((call) => call[0])).toEqual(["remote-icon", "base64-icon", "svg-icon"]);
 
       const map = window.Spillgebees.Map.maps.get(mapElement)!;
-      expect(window.Spillgebees.Map.imageRegistrations.get(map)?.get("svg-icon")?.sdf).toBe(true);
+      expect(window.Spillgebees.Map.imageRegistrations.get(map)?.get("svg-icon")?.isSdf).toBe(true);
     } finally {
       globalThis.Image = originalImage;
       globalThis.OffscreenCanvas = originalOffscreenCanvas;
@@ -1146,12 +1146,12 @@ describe("setImages", () => {
 
       await setImages(mapElement, [
         {
-          name: "reload-icon",
+          id: "reload-icon",
           url: "https://example.com/reload.png",
           width: 16,
           height: 16,
           pixelRatio: 1,
-          sdf: false,
+          isSdf: false,
         },
       ]);
       mockMap.addImage.mockClear();
@@ -1209,22 +1209,22 @@ describe("setImages", () => {
       // act
       const firstSync = setImages(mapElement, [
         {
-          name: "race-icon",
+          id: "race-icon",
           url: "https://example.com/race-1.png",
           width: 24,
           height: 24,
           pixelRatio: 1,
-          sdf: false,
+          isSdf: false,
         },
       ]);
       const secondSync = setImages(mapElement, [
         {
-          name: "race-icon",
+          id: "race-icon",
           url: "https://example.com/race-2.png",
           width: 24,
           height: 24,
           pixelRatio: 1,
-          sdf: false,
+          isSdf: false,
         },
       ]);
 
@@ -1271,12 +1271,12 @@ describe("setImages", () => {
       // act
       const firstSync = setImages(mapElement, [
         {
-          name: "stale-icon",
+          id: "stale-icon",
           url: "https://example.com/stale.png",
           width: 24,
           height: 24,
           pixelRatio: 1,
-          sdf: false,
+          isSdf: false,
         },
       ]);
       const secondSync = setImages(mapElement, []);

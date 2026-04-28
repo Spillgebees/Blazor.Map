@@ -4,7 +4,6 @@ using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Expressions;
 using Spillgebees.Blazor.Map.Models.Popups;
-using Spillgebees.Blazor.Map.Models.TrackedData;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 using Spillgebees.Blazor.Map.Utilities;
 
@@ -161,27 +160,27 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
     private int _hoverGeneration;
     private int _popupOperationGeneration;
     private TrackedPopupState? _activePopup;
-    private TrackedDataCallbacks<TItem> _callbacks = new();
+    private TrackedEntityCallbacks<TItem> _callbacks = new();
 
     [CascadingParameter]
     private MapSectionContext? SectionContext { get; set; }
 
     [Parameter]
-    public TrackedDataLayer<TItem>? Layer { get; set; }
+    public TrackedEntityLayerDefinition<TItem>? Layer { get; set; }
 
     private string SourceId { get; set; } = string.Empty;
 
     private IReadOnlyList<TItem> Items { get; set; } = [];
 
-    private TrackedDataIdOptions<TItem> IdOptions { get; set; } = null!;
+    private TrackedEntityIdOptions<TItem> IdOptions { get; set; } = null!;
 
-    private TrackedDataSymbolOptions<TItem> Symbol { get; set; } = null!;
+    private TrackedEntitySymbolOptions<TItem> Symbol { get; set; } = null!;
 
-    private IReadOnlyList<TrackedDataDecorationOptions<TItem>> Decorations { get; set; } = [];
+    private IReadOnlyList<TrackedEntityDecorationOptions<TItem>> Decorations { get; set; } = [];
 
-    private TrackedDataClusterOptions Cluster { get; set; } = new();
+    private TrackedEntityClusterOptions Cluster { get; set; } = new();
 
-    private TrackedDataInteractionOptions<TItem> Interaction { get; set; } = new();
+    private TrackedEntityInteractionOptions<TItem> Interaction { get; set; } = new();
 
     private AnimationOptions? Animation { get; set; }
 
@@ -280,7 +279,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
 
         if (Layer is null)
         {
-            throw new InvalidOperationException("Tracked data layer must be provided.");
+            throw new InvalidOperationException("Tracked entity layer must be provided.");
         }
 
         SourceId = Layer.Id;
@@ -302,13 +301,13 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
 
         if (string.IsNullOrWhiteSpace(SourceId))
         {
-            throw new InvalidOperationException("Tracked data source ID must not be empty.");
+            throw new InvalidOperationException("Tracked entity source ID must not be empty.");
         }
 
         ArgumentNullException.ThrowIfNull(IdOptions);
         ArgumentNullException.ThrowIfNull(Symbol);
 
-        _entities = TrackedDataEntityMaterializer.Materialize(Items, IdOptions, Symbol, Decorations);
+        _entities = TrackedEntityMaterializer.Materialize(Items, IdOptions, Symbol, Decorations);
 
         var nextPrimaryProjection = BuildPrimaryProjection(_entities);
         var nextDecorationProjection = BuildDecorationProjection(_entities);
@@ -349,12 +348,12 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
             Expr.Eq(TrackedEntityFeatureProperties.DecorationId, decorationLayer.Decoration.Id)
         );
 
-    internal string GetDecorationLayerId(TrackedDataDecorationOptions<TItem> decoration, string? anchor) =>
+    internal string GetDecorationLayerId(TrackedEntityDecorationOptions<TItem> decoration, string? anchor) =>
         anchor is null ? $"{SourceId}-{decoration.Id}" : $"{SourceId}-{decoration.Id}-{anchor}";
 
     internal static string GetResolvedAnchor(string? anchor) => string.IsNullOrWhiteSpace(anchor) ? "center" : anchor;
 
-    internal static StyleValue<double[]> GetDecorationTextOffsetValue(TrackedDataDecorationOptions<TItem> decoration)
+    internal static StyleValue<double[]> GetDecorationTextOffsetValue(TrackedEntityDecorationOptions<TItem> decoration)
     {
         if (decoration.Offset is null)
         {
@@ -377,7 +376,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
     {
         if (Map is null)
         {
-            throw new InvalidOperationException("Tracked data cluster zoom requires a parent map.");
+            throw new InvalidOperationException("Tracked entity cluster zoom requires a parent map.");
         }
 
         var clusterId = clusterEvent.Properties?.GetProperty("cluster_id").GetInt32() ?? 0;
@@ -824,7 +823,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
     );
 
     internal sealed record DecorationLayerDefinition(
-        TrackedDataDecorationOptions<TItem> Decoration,
+        TrackedEntityDecorationOptions<TItem> Decoration,
         string? Anchor,
         string LayerId,
         string? IconTextFit,

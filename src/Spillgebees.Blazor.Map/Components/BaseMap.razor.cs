@@ -10,7 +10,7 @@ using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Layers;
-using Spillgebees.Blazor.Map.Models.TrackedData;
+using Spillgebees.Blazor.Map.Models.TrackedEntities;
 using Spillgebees.Blazor.Map.Runtime.Scene;
 using Spillgebees.Blazor.Map.Utilities;
 
@@ -86,7 +86,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// Declarative map images registered and replayed automatically across map lifecycle events.
     /// </summary>
     [Parameter]
-    public List<MapImageDefinition> Images { get; set; } = [];
+    public List<MapImage> Images { get; set; } = [];
 
     /// <summary>
     /// The width of the map. If not set, the map will take the full width of its container.
@@ -156,7 +156,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     protected List<Circle> InternalCircles { get; set; } = [];
     protected List<Polyline> InternalPolylines { get; set; } = [];
     protected List<TileOverlay> InternalOverlays { get; set; } = [];
-    protected List<MapImageDefinition> InternalImages { get; set; } = [];
+    protected List<MapImage> InternalImages { get; set; } = [];
 
     protected string InternalContainerClass =>
         new CssBuilder()
@@ -807,7 +807,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         await MapJs.SetImagesAsync(JsRuntime, Logger.Value, MapReference, InternalImages);
     }
 
-    private async Task SyncImagesAsync(IReadOnlyList<MapImageDefinition> desiredImages)
+    private async Task SyncImagesAsync(IReadOnlyList<MapImage> desiredImages)
     {
         if (!ShouldSyncImages(desiredImages))
         {
@@ -818,7 +818,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         await MapJs.SetImagesAsync(JsRuntime, Logger.Value, MapReference, InternalImages);
     }
 
-    private bool ShouldSyncImages(IReadOnlyList<MapImageDefinition> desiredImages)
+    private bool ShouldSyncImages(IReadOnlyList<MapImage> desiredImages)
     {
         if (InternalImages.Count != desiredImages.Count)
         {
@@ -836,7 +836,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         return false;
     }
 
-    private IReadOnlyList<MapImageDefinition> GetDesiredImages()
+    private IReadOnlyList<MapImage> GetDesiredImages()
     {
         return [.. Images];
     }

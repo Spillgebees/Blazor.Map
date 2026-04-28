@@ -1,7 +1,6 @@
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Legends;
-using Spillgebees.Blazor.Map.Models.TrackedData;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 namespace Spillgebees.Blazor.Map.Docs.Samples.TrainTracking;
@@ -30,20 +29,20 @@ public static class TrainTrackingPresentation
 
 // hover and selection use feature-state, labels stay screen-facing, and supplementary labels stay hidden while clustered";
 
-    public static MapLegendDefinition OverlayLegendDefinition { get; } =
+    public static MapLegend OverlayLegendDefinition { get; } =
         new(
             [
-                new MapLegendSectionDefinition(
+                new MapLegendSection(
                     "Map layers",
                     [
-                        new MapLegendItemDefinition(
+                        new MapLegendItem(
                             "3d-buildings",
                             "3D Buildings",
                             "Extruded building footprints.",
                             IsVisibleByDefault: true,
                             IsToggleable: true
                         ),
-                        new MapLegendItemDefinition(
+                        new MapLegendItem(
                             "trains",
                             "Trains",
                             "Live tracked train icons, labels, and clusters.",
@@ -52,15 +51,15 @@ public static class TrainTrackingPresentation
                         ),
                     ]
                 ),
-                new MapLegendSectionDefinition(
+                new MapLegendSection(
                     "Railway overlay",
                     [
-                        new MapLegendItemDefinition(
+                        new MapLegendItem(
                             "tracks",
                             "Tracks & tunnels",
                             "Rail lines, service tracks, tunnels, and railway areas.",
                             [
-                                new MapLegendTargetDefinition(
+                                new MapLegendTarget(
                                     OverlayStyleId,
                                     [
                                         "railway-line-rail",
@@ -81,12 +80,12 @@ public static class TrainTrackingPresentation
                             true,
                             IsToggleable: true
                         ),
-                        new MapLegendItemDefinition(
+                        new MapLegendItem(
                             "tram",
                             "Tram & metro",
                             "Tram lines, stops, subway entrances, and crossings.",
                             [
-                                new MapLegendTargetDefinition(
+                                new MapLegendTarget(
                                     OverlayStyleId,
                                     [
                                         "tram-line-fill",
@@ -101,12 +100,12 @@ public static class TrainTrackingPresentation
                             false,
                             IsToggleable: true
                         ),
-                        new MapLegendItemDefinition(
+                        new MapLegendItem(
                             "stations",
                             "Stations & borders",
                             "Railway stations, border crossings, and labels.",
                             [
-                                new MapLegendTargetDefinition(
+                                new MapLegendTarget(
                                     OverlayStyleId,
                                     [
                                         "railway-stations-circle",
@@ -119,12 +118,12 @@ public static class TrainTrackingPresentation
                             true,
                             IsToggleable: true
                         ),
-                        new MapLegendItemDefinition(
+                        new MapLegendItem(
                             "platforms",
                             "Platforms",
                             "Platform areas, 3D extrusions, and labels.",
                             [
-                                new MapLegendTargetDefinition(
+                                new MapLegendTarget(
                                     OverlayStyleId,
                                     [
                                         "railway-platforms-fill",
@@ -138,12 +137,12 @@ public static class TrainTrackingPresentation
                             true,
                             IsToggleable: true
                         ),
-                        new MapLegendItemDefinition(
+                        new MapLegendItem(
                             "routes",
                             "Routes",
                             "Named railway routes with color-coded lines.",
                             [
-                                new MapLegendTargetDefinition(
+                                new MapLegendTarget(
                                     OverlayStyleId,
                                     ["railway-routes-casing", "railway-routes", "railway-routes-label"]
                                 ),
@@ -151,12 +150,12 @@ public static class TrainTrackingPresentation
                             true,
                             IsToggleable: true
                         ),
-                        new MapLegendItemDefinition(
+                        new MapLegendItem(
                             "lifecycle",
                             "Lifecycle",
                             "Construction, proposed, disused, and preserved railways.",
                             [
-                                new MapLegendTargetDefinition(
+                                new MapLegendTarget(
                                     OverlayStyleId,
                                     [
                                         "railway-lifecycle-construction",
@@ -171,12 +170,12 @@ public static class TrainTrackingPresentation
                             true,
                             IsToggleable: true
                         ),
-                        new MapLegendItemDefinition(
+                        new MapLegendItem(
                             "infrastructure",
                             "Infrastructure",
                             "Signals, switches, crossings, and track furniture.",
                             [
-                                new MapLegendTargetDefinition(
+                                new MapLegendTarget(
                                     OverlayStyleId,
                                     [
                                         "railway-switches",
@@ -223,7 +222,7 @@ public static class TrainTrackingPresentation
 
     public static AnimationOptions TrainAnimation { get; } = new(Duration: 2000, Easing: AnimationEasing.EaseInOut);
 
-    public static TrackedDataClusterOptions TrackedTrainClusterOptions { get; } =
+    public static TrackedEntityClusterOptions TrackedTrainClusterOptions { get; } =
         new(
             Enabled: true,
             Radius: 64,

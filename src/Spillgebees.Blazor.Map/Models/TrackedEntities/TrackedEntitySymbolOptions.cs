@@ -1,13 +1,13 @@
 using Spillgebees.Blazor.Map.Models.Popups;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
-namespace Spillgebees.Blazor.Map.Models.TrackedData;
+namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 /// <summary>
-/// Primary symbol selectors for high-level tracked data items, including optional popup configuration.
+/// Primary symbol selectors for high-level tracked entity items, including optional popup configuration.
 /// </summary>
 /// <typeparam name="TItem">The raw app model type.</typeparam>
-public sealed record TrackedDataSymbolOptions<TItem>(
+public sealed record TrackedEntitySymbolOptions<TItem>(
     Func<TItem, Coordinate> PositionSelector,
     Func<TItem, string> IconImageSelector,
     Func<TItem, double?>? SizeSelector = null,

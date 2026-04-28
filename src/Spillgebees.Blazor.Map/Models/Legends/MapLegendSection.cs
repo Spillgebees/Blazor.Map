@@ -7,9 +7,9 @@ namespace Spillgebees.Blazor.Map.Models.Legends;
 /// <param name="Items">Items rendered inside the section.</param>
 /// <param name="Description">Optional helper text displayed below the section title.</param>
 /// <param name="ClassName">Optional additional CSS class for the section container.</param>
-public sealed record MapLegendSectionDefinition(
+public sealed record MapLegendSection(
     string Title,
-    IReadOnlyList<MapLegendItemDefinition> Items,
+    IReadOnlyList<MapLegendItem> Items,
     string? Description = null,
     string? ClassName = null
 );

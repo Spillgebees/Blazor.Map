@@ -24,14 +24,7 @@ import {
 } from "./features/shapes";
 import type { ControlPosition, IContentMapControl, ILegendMapControl, IMapControl } from "./interfaces/controls";
 import type { ICircle, IMarker, IPolyline } from "./interfaces/features";
-import type {
-  ICoordinate,
-  IFitBoundsOptions,
-  IMapImageDefinition,
-  IMapOptions,
-  IMapStyle,
-  ITileOverlay,
-} from "./interfaces/map";
+import type { ICoordinate, IFitBoundsOptions, IMapImage, IMapOptions, IMapStyle, ITileOverlay } from "./interfaces/map";
 import type {
   ComposedStyleLayerRegistration,
   CustomControlRegistration,
@@ -574,7 +567,7 @@ function recomposeControls(mapElement: HTMLElement, controlsPayload: IMapControl
   window.Spillgebees.Map.controls.set(map, controls);
 }
 
-function hasImageChanged(previous: RegisteredMapImage | undefined, next: IMapImageDefinition): boolean {
+function hasImageChanged(previous: RegisteredMapImage | undefined, next: IMapImage): boolean {
   if (!previous) {
     return true;
   }
@@ -584,28 +577,28 @@ function hasImageChanged(previous: RegisteredMapImage | undefined, next: IMapIma
     previous.width !== next.width ||
     previous.height !== next.height ||
     previous.pixelRatio !== next.pixelRatio ||
-    previous.sdf !== next.sdf
+    previous.isSdf !== next.isSdf
   );
 }
 
 async function addImageRegistration(
   mapElement: HTMLElement,
-  definition: IMapImageDefinition,
+  definition: IMapImage,
   shouldAbort: () => boolean,
 ): Promise<void> {
   await addImage(
     mapElement,
-    definition.name,
+    definition.id,
     definition.url,
     definition.width,
     definition.height,
     definition.pixelRatio,
-    definition.sdf,
+    definition.isSdf,
     shouldAbort,
   );
 }
 
-export async function setImages(mapElement: HTMLElement, images: IMapImageDefinition[]): Promise<void> {
+export async function setImages(mapElement: HTMLElement, images: IMapImage[]): Promise<void> {
   const map = window.Spillgebees.Map.maps.get(mapElement);
   if (!map) {
     return;
@@ -615,28 +608,28 @@ export async function setImages(mapElement: HTMLElement, images: IMapImageDefini
   window.Spillgebees.Map.imageSyncVersion.set(map, currentVersion);
 
   const imageStore = getRegisteredImageStore(map);
-  const nextByName = new Map<string, IMapImageDefinition>();
+  const nextById = new Map<string, IMapImage>();
   for (const image of images) {
-    nextByName.set(image.name, image);
+    nextById.set(image.id, image);
   }
 
-  for (const existingName of Array.from(imageStore.keys())) {
-    if (!nextByName.has(existingName)) {
-      if (map.hasImage(existingName)) {
-        map.removeImage(existingName);
+  for (const existingId of Array.from(imageStore.keys())) {
+    if (!nextById.has(existingId)) {
+      if (map.hasImage(existingId)) {
+        map.removeImage(existingId);
       }
 
-      imageStore.delete(existingName);
+      imageStore.delete(existingId);
     }
   }
 
   for (const image of images) {
-    const previous = imageStore.get(image.name);
+    const previous = imageStore.get(image.id);
     const changed = hasImageChanged(previous, image);
-    const missingAtRuntime = !map.hasImage(image.name);
+    const missingAtRuntime = !map.hasImage(image.id);
 
     if (changed && !missingAtRuntime) {
-      map.removeImage(image.name);
+      map.removeImage(image.id);
     }
 
     if (changed || missingAtRuntime) {
@@ -648,18 +641,18 @@ export async function setImages(mapElement: HTMLElement, images: IMapImageDefini
 
     const latestVersion = window.Spillgebees.Map.imageSyncVersion.get(map);
     if (latestVersion !== currentVersion) {
-      imageStore.delete(image.name);
+      imageStore.delete(image.id);
       return;
     }
 
     if (changed || missingAtRuntime) {
-      imageStore.set(image.name, {
-        name: image.name,
+      imageStore.set(image.id, {
+        id: image.id,
         url: image.url,
         width: image.width,
         height: image.height,
         pixelRatio: image.pixelRatio,
-        sdf: image.sdf,
+        isSdf: image.isSdf,
       });
     }
   }

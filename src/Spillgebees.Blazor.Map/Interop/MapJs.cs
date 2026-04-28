@@ -117,7 +117,7 @@ internal static class MapJs
         IJSRuntime jsRuntime,
         ILogger logger,
         ElementReference mapReference,
-        List<MapImageDefinition> images
+        List<MapImage> images
     ) =>
         jsRuntime.SafeInvokeVoidAsync(
             logger,
@@ -499,15 +499,15 @@ internal static class MapJs
             tileOverlay.ReferrerPolicy,
         };
 
-    private static object ToJsModel(MapImageDefinition mapImageDefinition) =>
+    private static object ToJsModel(MapImage mapImage) =>
         new
         {
-            mapImageDefinition.Name,
-            mapImageDefinition.Url,
-            mapImageDefinition.Width,
-            mapImageDefinition.Height,
-            mapImageDefinition.PixelRatio,
-            mapImageDefinition.Sdf,
+            mapImage.Id,
+            mapImage.Url,
+            mapImage.Width,
+            mapImage.Height,
+            mapImage.PixelRatio,
+            mapImage.IsSdf,
         };
 
     private static object? ToJsModel(FitBoundsOptions? fitBoundsOptions) =>

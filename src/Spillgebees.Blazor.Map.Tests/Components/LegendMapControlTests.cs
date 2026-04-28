@@ -352,10 +352,10 @@ public class LegendMapControlTests : BunitContext
     {
         // arrange
         MapLegendVisibilityChangedEventArgs? callbackArgs = null;
-        var definition = new MapLegendDefinition([
-            new MapLegendSectionDefinition(
+        var definition = new MapLegend([
+            new MapLegendSection(
                 "Test section",
-                [new MapLegendItemDefinition("no-target-toggle", "Toggle me", IsToggleable: true)]
+                [new MapLegendItem("no-target-toggle", "Toggle me", IsToggleable: true)]
             ),
         ]);
         var cut = Render<ComponentHost>(parameters =>
@@ -393,11 +393,8 @@ public class LegendMapControlTests : BunitContext
     public void Should_not_render_toggle_for_non_toggleable_item()
     {
         // arrange & act
-        var definition = new MapLegendDefinition([
-            new MapLegendSectionDefinition(
-                "Test section",
-                [new MapLegendItemDefinition("static-item", "Static label")]
-            ),
+        var definition = new MapLegend([
+            new MapLegendSection("Test section", [new MapLegendItem("static-item", "Static label")]),
         ]);
         var cut = Render<ComponentHost>(parameters =>
             parameters.Add(p => p.Controls, [CreateControl("legend-control", content: CreateContent(definition))])
@@ -507,23 +504,23 @@ public class LegendMapControlTests : BunitContext
         );
 
     private static LegendContentOptions CreateContent(
-        MapLegendDefinition definition,
+        MapLegend definition,
         RenderFragment<MapLegendItemTemplateContext>? itemTemplate = null,
         EventCallback<MapLegendVisibilityChangedEventArgs> onItemVisibilityChanged = default
     ) => new(definition, itemTemplate, onItemVisibilityChanged);
 
-    private static MapLegendDefinition CreateDefinition() =>
+    private static MapLegend CreateDefinition() =>
         new(
             Sections:
             [
-                new MapLegendSectionDefinition(
+                new MapLegendSection(
                     "Operational layers",
                     [
-                        new MapLegendItemDefinition(
+                        new MapLegendItem(
                             "stations",
                             "Stations",
                             "Passenger stops and station labels.",
-                            [new MapLegendTargetDefinition("overlay-style", ["stations-circle", "stations-label"])],
+                            [new MapLegendTarget("overlay-style", ["stations-circle", "stations-label"])],
                             true,
                             IsToggleable: true
                         ),
@@ -532,19 +529,19 @@ public class LegendMapControlTests : BunitContext
             ]
         );
 
-    private static MapLegendDefinition CreateUpdatedDefinition() =>
+    private static MapLegend CreateUpdatedDefinition() =>
         new(
             Sections:
             [
-                new MapLegendSectionDefinition(
+                new MapLegendSection(
                     "Operational layers",
                     [
-                        new MapLegendItemDefinition(
+                        new MapLegendItem(
                             "stations",
                             "Stations",
                             "Passenger stops and station labels.",
                             [
-                                new MapLegendTargetDefinition(
+                                new MapLegendTarget(
                                     "overlay-style",
                                     ["stations-circle", "stations-label", "stations-hover"]
                                 ),

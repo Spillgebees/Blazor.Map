@@ -1,11 +1,11 @@
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
-namespace Spillgebees.Blazor.Map.Models.TrackedData;
+namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 /// <summary>
-/// Cluster options for high-level tracked data sources.
+/// Cluster options for high-level tracked entity sources.
 /// </summary>
-public sealed record TrackedDataClusterOptions(
+public sealed record TrackedEntityClusterOptions(
     bool Enabled = false,
     int Radius = 50,
     int? MaxZoom = null,

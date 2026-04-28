@@ -5,4 +5,4 @@ namespace Spillgebees.Blazor.Map.Models.Legends;
 /// </summary>
 /// <param name="Item">The toggled legend item.</param>
 /// <param name="Selected">The new selection value.</param>
-public sealed record MapLegendVisibilityChangedEventArgs(MapLegendItemDefinition Item, bool Selected);
+public sealed record MapLegendVisibilityChangedEventArgs(MapLegendItem Item, bool Selected);
