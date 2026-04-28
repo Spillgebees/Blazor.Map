@@ -246,6 +246,7 @@ describe("addCircles", () => {
     const storage = createEmptyFeatureStorage();
     const popup: IPopupOptions = {
       content: "<p>Hello</p>",
+      contentMode: "rawHtml",
       trigger: "click",
       anchor: "auto",
       offset: null,
@@ -531,6 +532,7 @@ describe("addPolylines", () => {
     const storage = createEmptyFeatureStorage();
     const popup: IPopupOptions = {
       content: "<p>Route info</p>",
+      contentMode: "rawHtml",
       trigger: "hover",
       anchor: "top",
       offset: { x: 0, y: -10 },

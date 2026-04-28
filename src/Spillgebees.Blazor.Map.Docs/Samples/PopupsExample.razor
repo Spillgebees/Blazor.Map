@@ -5,7 +5,14 @@
     <MapControls>
         <MapNavigationControl />
     </MapControls>
+    <MapOverlays>
+        <MapPopup Id="component-popup" Position="@(new Coordinate(49.6160, 6.1250))">
+            <button type="button" class="sample-btn" @onclick="IncrementClicks">Blazor popup clicks: @_clicks</button>
+        </MapPopup>
+    </MapOverlays>
 </SgbMap>
+
+<p><strong>Raw HTML warning:</strong> use <code>PopupOptions.FromRawHtml</code> only with trusted or sanitized HTML.</p>
 
 @code {
     private readonly MapOptions _mapOptions = new(
@@ -19,29 +26,36 @@
             "marker-click",
             new Coordinate(49.6000, 6.1100),
             Title: "Click popup",
-            Popup: new PopupOptions(
-                "<strong>Click popup</strong><br>Click the marker to open this popup.",
-                Trigger: PopupTrigger.Click
+            Popup: PopupOptions.FromText(
+                "Safe text default: <strong>markup displays as text</strong>",
+                PopupTrigger.Click
             )
         ),
         new(
             "marker-hover",
             new Coordinate(49.6117, 6.1319),
             Title: "Hover popup",
-            Popup: new PopupOptions(
+            Popup: PopupOptions.FromRawHtml(
                 "<strong>Hover popup</strong><br>Hover over the marker to open this popup.",
-                Trigger: PopupTrigger.Hover
+                PopupTrigger.Hover
             )
         ),
         new(
             "marker-permanent",
             new Coordinate(49.6230, 6.1500),
             Title: "Permanent popup",
-            Popup: new PopupOptions(
+            Popup: PopupOptions.FromRawHtml(
                 "<strong>Permanent popup</strong><br>This popup is always visible.",
-                Trigger: PopupTrigger.Permanent,
-                CloseButton: false
+                PopupTrigger.Permanent,
+                closeButton: false
             )
         )
     ];
+
+    private int _clicks;
+
+    private void IncrementClicks()
+    {
+        _clicks++;
+    }
 }

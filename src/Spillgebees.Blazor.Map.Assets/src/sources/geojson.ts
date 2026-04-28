@@ -1,5 +1,6 @@
 import type { DotNet } from "@microsoft/dotnet-js-interop";
 import { type GeoJSONSource, type Map as MapLibreMap, Popup } from "maplibre-gl";
+import type { IPopupOptions } from "../interfaces/features";
 import type { ICoordinate } from "../interfaces/map";
 import type { RegisteredMapLayer, VisibilityGroupRegistration } from "../interfaces/spillgebees";
 import { buildLayerPlan } from "../ordering";
@@ -518,38 +519,125 @@ export async function addImage(
 
 // One active popup per map — calling showPopup replaces the previous one
 const activePopups = new WeakMap<MapLibreMap, InstanceType<typeof Popup>>();
+interface ComponentPopupRegistration {
+  popup: InstanceType<typeof Popup>;
+  placeholder: HTMLElement;
+  content: HTMLElement;
+  suppressCloseCallback: boolean;
+}
 
-export function showPopup(
-  mapElement: HTMLElement,
-  position: ICoordinate,
-  html: string,
-  options?: {
-    anchor?: string;
-    offset?: { x: number; y: number };
-    closeButton?: boolean;
-    maxWidth?: string;
-    className?: string;
-  } | null,
-): void {
-  const map = window.Spillgebees.Map.maps.get(mapElement);
-  if (!map) return;
+const componentPopups = new WeakMap<MapLibreMap, Map<string, ComponentPopupRegistration>>();
 
-  // Close previous
-  activePopups.get(map)?.remove();
+function setPopupContent(popup: InstanceType<typeof Popup>, options: IPopupOptions): void {
+  if (options.contentMode === "rawHtml") {
+    popup.setHTML(options.content);
+  } else {
+    popup.setText(options.content);
+  }
+}
 
-  const popup = new Popup({
+function createPopupOptions(options?: IPopupOptions | null): ConstructorParameters<typeof Popup>[0] {
+  return {
     closeButton: options?.closeButton ?? true,
     maxWidth: options?.maxWidth ?? "300px",
     className: options?.className ?? undefined,
     anchor:
       options?.anchor !== "auto" ? (options?.anchor as "top" | "bottom" | "left" | "right" | undefined) : undefined,
     offset: options?.offset ? [options.offset.x, options.offset.y] : undefined,
-  })
-    .setLngLat([position.longitude, position.latitude])
-    .setHTML(html)
-    .addTo(map);
+  };
+}
+
+function getComponentPopupStore(map: MapLibreMap): Map<string, ComponentPopupRegistration> {
+  const existing = componentPopups.get(map);
+  if (existing) {
+    return existing;
+  }
+
+  const created = new Map<string, ComponentPopupRegistration>();
+  componentPopups.set(map, created);
+  return created;
+}
+
+function detachPopupDomContent(
+  store: Map<string, ComponentPopupRegistration>,
+  popupId: string,
+  registration: ComponentPopupRegistration,
+): void {
+  registration.placeholder.appendChild(registration.content);
+  store.delete(popupId);
+}
+
+export function showPopup(mapElement: HTMLElement, position: ICoordinate, options: IPopupOptions): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) return;
+
+  // Close previous
+  activePopups.get(map)?.remove();
+
+  const popup = new Popup(createPopupOptions(options)).setLngLat([position.longitude, position.latitude]);
+  setPopupContent(popup, options);
+  popup.addTo(map);
 
   activePopups.set(map, popup);
+}
+
+export function setPopupDomContent(
+  mapElement: HTMLElement,
+  popupId: string,
+  position: ICoordinate,
+  options: IPopupOptions,
+  placeholder: HTMLElement,
+  content: HTMLElement,
+  dotNetRef: DotNet.DotNetObject,
+): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) return;
+
+  const store = getComponentPopupStore(map);
+  const existing = store.get(popupId);
+  if (existing) {
+    existing.suppressCloseCallback = true;
+    existing.popup.remove();
+    detachPopupDomContent(store, popupId, existing);
+  }
+
+  const registration = {
+    popup: new Popup(createPopupOptions(options))
+      .setLngLat([position.longitude, position.latitude])
+      .setDOMContent(content),
+    placeholder,
+    content,
+    suppressCloseCallback: false,
+  };
+
+  registration.popup.on("close", () => {
+    if (registration.suppressCloseCallback || store.get(popupId) !== registration) {
+      return;
+    }
+
+    detachPopupDomContent(store, popupId, registration);
+
+    // biome-ignore lint/security/noSecrets: .NET interop method name, not a secret
+    dotNetRef.invokeMethodAsync("OnPopupClosedAsync").catch(() => undefined);
+  });
+
+  registration.popup.addTo(map);
+  store.set(popupId, registration);
+}
+
+export function removePopupDomContent(mapElement: HTMLElement, popupId: string): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) return;
+
+  const store = componentPopups.get(map);
+  const registration = store?.get(popupId);
+  if (!registration) {
+    return;
+  }
+
+  registration.suppressCloseCallback = true;
+  registration.popup.remove();
+  detachPopupDomContent(store, popupId, registration);
 }
 
 export function closePopup(mapElement: HTMLElement): void {

@@ -677,7 +677,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
             return;
         }
 
-        await Map.ShowPopupAsync(position, popup.Content, popup);
+        await Map.ShowPopupAsync(position, popup);
     }
 
     protected virtual Task OnBeforeShowPopupAsync()

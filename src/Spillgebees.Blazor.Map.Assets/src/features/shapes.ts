@@ -208,10 +208,15 @@ function showShapePopup(map: MapLibreMap, lngLat: LngLatLike, options: IPopupOpt
     className: options.className ?? undefined,
     anchor: options.anchor !== "auto" ? options.anchor : "bottom",
     offset: options.offset ? [options.offset.x, options.offset.y] : undefined,
-  })
-    .setLngLat(lngLat)
-    .setHTML(options.content)
-    .addTo(map);
+  }).setLngLat(lngLat);
+
+  if (options.contentMode === "rawHtml") {
+    popup.setHTML(options.content);
+  } else {
+    popup.setText(options.content);
+  }
+
+  popup.addTo(map);
 
   if (options.trigger === "hover") {
     activeHoverPopups.set(map, popup);

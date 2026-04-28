@@ -1,0 +1,254 @@
+@implements IAsyncDisposable
+@using Microsoft.JSInterop
+@using Spillgebees.Blazor.Map.Models
+@using Spillgebees.Blazor.Map.Models.Popups
+
+<div style="display:none" @ref="_placeholderReference">
+    <div @ref="_contentReference">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    private ElementReference _placeholderReference;
+    private ElementReference _contentReference;
+    private string _resolvedId = string.Empty;
+    private string? _registeredId;
+    private bool _contentRegistered;
+    private PopupContentSnapshot? _lastSnapshot;
+    private DotNetObjectReference<MapPopup>? _dotNetReference;
+    private Task? _pendingReadyRegistrationTask;
+    private CancellationTokenSource? _pendingReadyRegistrationCancellation;
+    private bool _isDisposed;
+
+    [CascadingParameter]
+    private BaseMap? Map { get; set; }
+
+    [CascadingParameter]
+    private MapSectionContext? SectionContext { get; set; }
+
+    [Parameter]
+    public string? Id { get; set; }
+
+    [Parameter, EditorRequired]
+    public Coordinate Position { get; set; }
+
+    [Parameter]
+    public bool Open { get; set; } = true;
+
+    [Parameter]
+    public EventCallback<bool> OpenChanged { get; set; }
+
+    [Parameter]
+    public PopupOptions? Options { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    protected override void OnInitialized()
+    {
+        _resolvedId = string.IsNullOrWhiteSpace(Id) ? $"popup-{Guid.NewGuid():N}" : Id;
+    }
+
+    protected override void OnParametersSet()
+    {
+        ValidatePlacement();
+        ValidateParameters();
+
+        if (!string.IsNullOrWhiteSpace(Id))
+        {
+            _resolvedId = Id;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_isDisposed || Map is null)
+        {
+            return;
+        }
+
+        if (Open)
+        {
+            if (!Map.RuntimeIsReady)
+            {
+                QueueRegistrationWhenMapIsReady(Map);
+                return;
+            }
+
+            await RegisterOpenPopupAsync();
+            return;
+        }
+
+        if (_contentRegistered)
+        {
+            await RemovePopupContentAsync();
+        }
+    }
+
+    private void QueueRegistrationWhenMapIsReady(BaseMap map)
+    {
+        if (_pendingReadyRegistrationTask is { IsCompleted: false })
+        {
+            return;
+        }
+
+        _pendingReadyRegistrationCancellation?.Dispose();
+        _pendingReadyRegistrationCancellation = new CancellationTokenSource();
+        _pendingReadyRegistrationTask = RegisterWhenMapIsReadyAsync(map, _pendingReadyRegistrationCancellation.Token);
+    }
+
+    private async Task RegisterWhenMapIsReadyAsync(BaseMap map, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var mapReady = await map.WhenReadyAsync();
+
+            if (!mapReady || cancellationToken.IsCancellationRequested || _isDisposed || Map != map || !Open)
+            {
+                return;
+            }
+
+            await InvokeAsync(async () =>
+            {
+                if (!cancellationToken.IsCancellationRequested && !_isDisposed)
+                {
+                    await RegisterOpenPopupAsync();
+                }
+            });
+        }
+        catch (Exception exception)
+        {
+            await DispatchExceptionAsync(exception);
+        }
+        finally
+        {
+            _pendingReadyRegistrationTask = null;
+            _pendingReadyRegistrationCancellation?.Dispose();
+            _pendingReadyRegistrationCancellation = null;
+        }
+    }
+
+    private async Task RegisterOpenPopupAsync()
+    {
+        if (_isDisposed || Map is null || !Open)
+        {
+            return;
+        }
+
+        var options = Options ?? PopupOptions.FromText(string.Empty);
+        var snapshot = new PopupContentSnapshot(_resolvedId, Position, options, ChildContent);
+
+        if (_contentRegistered && _registeredId == _resolvedId && snapshot == _lastSnapshot)
+        {
+            return;
+        }
+
+        if (_contentRegistered && _registeredId is not null && _registeredId != _resolvedId)
+        {
+            await RemovePopupContentAsync(_registeredId);
+        }
+
+        _dotNetReference ??= DotNetObjectReference.Create(this);
+        await Spillgebees.Blazor.Map.Interop.MapJs.SetPopupContentAsync(
+            Map.Runtime,
+            Map.RuntimeLogger,
+            Map.MapReference,
+            _resolvedId,
+            Position,
+            options,
+            _placeholderReference,
+            _contentReference,
+            _dotNetReference
+        );
+        _contentRegistered = true;
+        _registeredId = _resolvedId;
+        _lastSnapshot = snapshot;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        _isDisposed = true;
+        _pendingReadyRegistrationCancellation?.Cancel();
+        _pendingReadyRegistrationCancellation?.Dispose();
+        _pendingReadyRegistrationCancellation = null;
+        await RemovePopupContentAsync();
+        _dotNetReference?.Dispose();
+    }
+
+    [JSInvokable]
+    public async Task OnPopupClosedAsync()
+    {
+        if (_isDisposed || !Open)
+        {
+            return;
+        }
+
+        _contentRegistered = false;
+        _registeredId = null;
+        _lastSnapshot = null;
+
+        await OpenChanged.InvokeAsync(false);
+    }
+
+    private async ValueTask RemovePopupContentAsync()
+    {
+        if (Map is null || !_contentRegistered)
+        {
+            return;
+        }
+
+        await RemovePopupContentAsync(_registeredId ?? _resolvedId);
+    }
+
+    private async ValueTask RemovePopupContentAsync(string popupId)
+    {
+        if (Map is null)
+        {
+            return;
+        }
+
+        await Spillgebees.Blazor.Map.Interop.MapJs.RemovePopupContentAsync(
+            Map.Runtime,
+            Map.RuntimeLogger,
+            Map.MapReference,
+            popupId
+        );
+        _contentRegistered = false;
+        _registeredId = null;
+        _lastSnapshot = null;
+    }
+
+    private void ValidatePlacement()
+    {
+        if (Map is null)
+        {
+            throw new InvalidOperationException("MapPopup must be placed inside SgbMap.");
+        }
+
+        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
+        {
+            throw new InvalidOperationException("MapPopup must be placed inside MapOverlays.");
+        }
+    }
+
+    private void ValidateParameters()
+    {
+        if (Position is null)
+        {
+            throw new InvalidOperationException("MapPopup requires Position.");
+        }
+    }
+
+    private sealed record PopupContentSnapshot(
+        string Id,
+        Coordinate Position,
+        PopupOptions Options,
+        RenderFragment? ChildContent
+    );
+}

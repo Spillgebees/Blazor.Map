@@ -63,7 +63,7 @@ public class TrackedEntityLayerMapApiTests : BunitContext
     {
         // arrange
         var cut = Render<MapTrackedEntityHarness>(parameters =>
-            parameters.Add(p => p.PopupSelector, vehicle => new PopupOptions(vehicle.Id, PopupTrigger.Hover))
+            parameters.Add(p => p.PopupSelector, vehicle => PopupOptions.FromText(vehicle.Id, PopupTrigger.Hover))
         );
         await cut.Instance.Map.OnMapInitializedAsync();
         var hitArea = GetPrimaryHitArea(cut);
@@ -79,6 +79,65 @@ public class TrackedEntityLayerMapApiTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_preserve_text_content_mode_when_opening_tracked_entity_popup(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        cancellationToken.ThrowIfCancellationRequested();
+        var cut = Render<MapTrackedEntityHarness>(parameters =>
+            parameters.Add(p => p.PopupSelector, vehicle => PopupOptions.FromText(vehicle.Id, PopupTrigger.Hover))
+        );
+        await cut.Instance.Map.OnMapInitializedAsync();
+        var hitArea = GetPrimaryHitArea(cut);
+
+        // act
+        await cut.InvokeAsync(() => hitArea.OnMouseEnter.InvokeAsync(CreateItemFeatureEvent("vehicle-1")));
+
+        // assert
+        JSInterop.Invocations[ShowPopupIdentifier].Should().HaveCount(1);
+        var options = JSInterop
+            .Invocations[ShowPopupIdentifier][0]
+            .Arguments[2]
+            .Should()
+            .BeOfType<PopupOptions>()
+            .Subject;
+        options.Content.Should().Be("vehicle-1");
+        options.ContentMode.Should().Be(PopupContentMode.Text);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_preserve_raw_html_content_mode_when_opening_tracked_entity_popup(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        cancellationToken.ThrowIfCancellationRequested();
+        var cut = Render<MapTrackedEntityHarness>(parameters =>
+            parameters.Add(
+                p => p.PopupSelector,
+                vehicle => PopupOptions.FromRawHtml($"<strong>{vehicle.Id}</strong>", PopupTrigger.Hover)
+            )
+        );
+        await cut.Instance.Map.OnMapInitializedAsync();
+        var hitArea = GetPrimaryHitArea(cut);
+
+        // act
+        await cut.InvokeAsync(() => hitArea.OnMouseEnter.InvokeAsync(CreateItemFeatureEvent("vehicle-1")));
+
+        // assert
+        JSInterop.Invocations[ShowPopupIdentifier].Should().HaveCount(1);
+        var options = JSInterop
+            .Invocations[ShowPopupIdentifier][0]
+            .Arguments[2]
+            .Should()
+            .BeOfType<PopupOptions>()
+            .Subject;
+        options.Content.Should().Be("<strong>vehicle-1</strong>");
+        options.ContentMode.Should().Be(PopupContentMode.RawHtml);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
     public async Task Should_not_show_stale_popup_when_hover_leave_happens_before_popup_open_completes(
         CancellationToken cancellationToken
     )
@@ -89,7 +148,7 @@ public class TrackedEntityLayerMapApiTests : BunitContext
 
         var cut = Render<MapTrackedEntityHarness>(parameters =>
             parameters
-                .Add(p => p.PopupSelector, vehicle => new PopupOptions(vehicle.Id, PopupTrigger.Hover))
+                .Add(p => p.PopupSelector, vehicle => PopupOptions.FromText(vehicle.Id, PopupTrigger.Hover))
                 .Add(
                     p => p.BeforeShowPopupAsync,
                     () =>
@@ -137,7 +196,7 @@ public class TrackedEntityLayerMapApiTests : BunitContext
                         new TestVehicle("vehicle-2", new Coordinate(49.7, 6.2), "vehicle-icon"),
                     ]
                 )
-                .Add(p => p.PopupSelector, vehicle => new PopupOptions(vehicle.Id, PopupTrigger.Hover))
+                .Add(p => p.PopupSelector, vehicle => PopupOptions.FromText(vehicle.Id, PopupTrigger.Hover))
                 .Add(
                     p => p.BeforeShowPopupAsync,
                     () =>
@@ -160,7 +219,14 @@ public class TrackedEntityLayerMapApiTests : BunitContext
 
         // assert
         JSInterop.Invocations[ShowPopupIdentifier].Should().HaveCount(1);
-        JSInterop.Invocations[ShowPopupIdentifier][0].Arguments[2].Should().Be("vehicle-2");
+        var options = JSInterop
+            .Invocations[ShowPopupIdentifier][0]
+            .Arguments[2]
+            .Should()
+            .BeOfType<PopupOptions>()
+            .Subject;
+        options.Content.Should().Be("vehicle-2");
+        options.ContentMode.Should().Be(PopupContentMode.Text);
     }
 
     [Test, Timeout(TestTimeoutMs)]

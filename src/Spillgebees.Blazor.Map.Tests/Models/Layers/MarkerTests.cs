@@ -61,7 +61,7 @@ public class MarkerTests
     {
         // arrange
         var icon = new MarkerIcon("https://example.com/icon.png");
-        var popup = new PopupOptions("Hello");
+        var popup = PopupOptions.FromText("Hello");
 
         // act
         var marker = new Marker(

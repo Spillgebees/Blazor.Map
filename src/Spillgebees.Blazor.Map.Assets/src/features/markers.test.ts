@@ -174,6 +174,7 @@ describe("addMarkers", () => {
     const storage = createEmptyFeatureStorage();
     const popup: IPopupOptions = {
       content: "<p>Hello</p>",
+      contentMode: "rawHtml",
       trigger: "click",
       anchor: "auto",
       offset: null,
@@ -195,12 +196,38 @@ describe("addMarkers", () => {
     expect(popupConstructorArgs.maxWidth).toBe("300px");
   });
 
+  it("should use setText for text popup content", () => {
+    // arrange
+    const { map } = setupMapAndGetInstance();
+    const storage = createEmptyFeatureStorage();
+    const popup: IPopupOptions = {
+      content: "<p>Hello</p>",
+      contentMode: "text",
+      trigger: "click",
+      anchor: "auto",
+      offset: null,
+      closeButton: true,
+      maxWidth: null,
+      className: null,
+    };
+    const marker = createDefaultMarker({ popup });
+
+    // act
+    addMarkers(map as unknown as Parameters<typeof addMarkers>[0], [marker], storage);
+
+    // assert
+    const popupInstance = getMockPopupConstructor().mock.results[0]?.value;
+    expect(popupInstance.setText).toHaveBeenCalledWith("<p>Hello</p>");
+    expect(popupInstance.setHTML).not.toHaveBeenCalled();
+  });
+
   it("should create marker with hover popup (mouseenter/mouseleave listeners)", () => {
     // arrange
     const { map } = setupMapAndGetInstance();
     const storage = createEmptyFeatureStorage();
     const popup: IPopupOptions = {
       content: "<p>Hover info</p>",
+      contentMode: "rawHtml",
       trigger: "hover",
       anchor: "auto",
       offset: null,
@@ -232,6 +259,7 @@ describe("addMarkers", () => {
     const storage = createEmptyFeatureStorage();
     const popup: IPopupOptions = {
       content: "<p>Label</p>",
+      contentMode: "rawHtml",
       trigger: "permanent",
       anchor: "top",
       offset: null,
@@ -352,6 +380,7 @@ describe("addMarkers", () => {
     const storage = createEmptyFeatureStorage();
     const popup: IPopupOptions = {
       content: "<p>Anchored</p>",
+      contentMode: "rawHtml",
       trigger: "click",
       anchor: "bottom",
       offset: null,
@@ -375,6 +404,7 @@ describe("addMarkers", () => {
     const storage = createEmptyFeatureStorage();
     const popup: IPopupOptions = {
       content: "<p>Offset</p>",
+      contentMode: "rawHtml",
       trigger: "click",
       anchor: "auto",
       offset: { x: 10, y: 20 },
@@ -451,6 +481,7 @@ describe("removeMarkers", () => {
     const storage = createEmptyFeatureStorage();
     const popup: IPopupOptions = {
       content: "<p>Hello</p>",
+      contentMode: "rawHtml",
       trigger: "click",
       anchor: "auto",
       offset: null,
@@ -500,6 +531,7 @@ describe("removeMarkers", () => {
     const storage = createEmptyFeatureStorage();
     const popup: IPopupOptions = {
       content: "<p>Hover</p>",
+      contentMode: "rawHtml",
       trigger: "hover",
       anchor: "auto",
       offset: null,

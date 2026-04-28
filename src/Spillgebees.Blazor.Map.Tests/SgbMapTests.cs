@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components.Rendering;
 using Spillgebees.Blazor.Map.Components;
 using Spillgebees.Blazor.Map.Components.Layers;
 using Spillgebees.Blazor.Map.Models;
+using Spillgebees.Blazor.Map.Models.Popups;
 
 namespace Spillgebees.Blazor.Map.Tests;
 
@@ -23,6 +24,9 @@ public class SgbMapTests : BunitContext
         "Spillgebees.Map.mapFunctions.setTrackedEntityFeatureState";
     private const string AddMapSourceIdentifier = "Spillgebees.Map.mapFunctions.addMapSource";
     private const string AddMapLayerIdentifier = "Spillgebees.Map.mapFunctions.addMapLayer";
+    private const string ShowPopupIdentifier = "Spillgebees.Map.mapFunctions.showPopup";
+    private const string SetPopupContentIdentifier = "Spillgebees.Map.mapFunctions.setPopupContent";
+    private const string RemovePopupContentIdentifier = "Spillgebees.Map.mapFunctions.removePopupContent";
 
     /// <summary>
     /// Timeout in milliseconds for tests to prevent hanging.
@@ -48,6 +52,49 @@ public class SgbMapTests : BunitContext
         JSInterop.SetupVoid(SetTrackedEntityFeatureStateIdentifier);
         JSInterop.SetupVoid(AddMapSourceIdentifier);
         JSInterop.SetupVoid(AddMapLayerIdentifier);
+        JSInterop.SetupVoid(ShowPopupIdentifier);
+        JSInterop.SetupVoid(SetPopupContentIdentifier);
+        JSInterop.SetupVoid(RemovePopupContentIdentifier);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_show_safe_text_popup_by_default(CancellationToken cancellationToken)
+    {
+        // arrange
+        var cut = Render<SgbMap>();
+
+        // act
+        await cut.Instance.ShowPopupAsync(new Coordinate(49.61, 6.13), "<strong>safe</strong>");
+
+        // assert
+        var options = JSInterop
+            .Invocations[ShowPopupIdentifier][0]
+            .Arguments[2]
+            .Should()
+            .BeOfType<PopupOptions>()
+            .Subject;
+        options.Content.Should().Be("<strong>safe</strong>");
+        options.ContentMode.Should().Be(PopupContentMode.Text);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_show_raw_html_popup_when_requested(CancellationToken cancellationToken)
+    {
+        // arrange
+        var cut = Render<SgbMap>();
+
+        // act
+        await cut.Instance.ShowRawHtmlPopupAsync(new Coordinate(49.61, 6.13), "<strong>raw</strong>");
+
+        // assert
+        var options = JSInterop
+            .Invocations[ShowPopupIdentifier][0]
+            .Arguments[2]
+            .Should()
+            .BeOfType<PopupOptions>()
+            .Subject;
+        options.Content.Should().Be("<strong>raw</strong>");
+        options.ContentMode.Should().Be(PopupContentMode.RawHtml);
     }
 
     [Test, Timeout(TestTimeoutMs)]
