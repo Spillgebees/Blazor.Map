@@ -170,6 +170,15 @@
   }
 }
 
+// generic Blazor-rendered custom control
+.sgb-map-custom-control {
+  color: var(--sgb-map-ctrl-text);
+
+  .sgb-map-ctrl-group {
+    @extend %sgb-ctrl-group-base;
+  }
+}
+
 // legend control
 .sgb-map-legend {
   --sgb-map-legend-max-width: 320px;

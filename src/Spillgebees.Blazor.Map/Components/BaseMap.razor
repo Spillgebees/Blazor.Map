@@ -5,19 +5,21 @@
 @code {
     protected virtual RenderFragment Render
         => @<CascadingValue Value="this">
-                <div id="@ContainerId"
-                     class="@InternalContainerClass"
-                     style="@InternalContainerStyle"
-                     @ref="@MapReference">
-                </div>
-                 @foreach (var legendControl in Controls.OfType<LegendMapControl>())
-                 {
-                     <MapLegendControlHost Control="@legendControl" />
-                 }
-                 @foreach (var trackedDataLayer in TrackedDataLayers)
-                 {
-                     @RenderTrackedDataLayer(trackedDataLayer)
-                 }
-                 @ChildContent
+                <CascadingValue Value="ControlRegistry">
+                    <div id="@ContainerId"
+                         class="@InternalContainerClass"
+                         style="@InternalContainerStyle"
+                         @ref="@MapReference">
+                    </div>
+                    @foreach (var legendControl in Controls.OfType<LegendMapControl>())
+                    {
+                        <MapLegendControlHost Control="@legendControl" />
+                    }
+                    @foreach (var trackedDataLayer in TrackedDataLayers)
+                    {
+                        @RenderTrackedDataLayer(trackedDataLayer)
+                    }
+                    @ChildContent
+                </CascadingValue>
              </CascadingValue>;
 }

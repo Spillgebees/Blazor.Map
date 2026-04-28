@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Configuration;
 using Spillgebees.Blazor.Map.Components;
 using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Legends;
 using Spillgebees.Blazor.Map.Models.TrackedData;
@@ -22,7 +21,6 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private string? _selectedTrainId;
     private readonly List<TrainSampleState> _trains = [];
     private readonly List<MapImageDefinition> _images;
-    private IReadOnlyList<MapControl> _controls = [];
     private RenderFragment<MapLegendItemTemplateContext>? _overlayLegendItemTemplate;
     private EventCallback<MapLegendVisibilityChangedEventArgs> _legendItemVisibilityChangedCallback;
 

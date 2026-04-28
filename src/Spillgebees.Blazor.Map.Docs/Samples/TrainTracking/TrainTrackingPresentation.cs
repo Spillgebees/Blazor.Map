@@ -14,11 +14,15 @@ public static class TrainTrackingPresentation
     public const string DefaultOverlayStyleUrl = "traintracking/style.json";
     public const string CodeSnippet =
         @"<SgbMap MapOptions=""@_mapOptions""
-         Controls=""@_controls""
          TrackedDataLayers=""@_trackedDataLayers""
          OnMoveEnd=""@HandleMapViewChangedAsync""
          OnZoomEnd=""@HandleMapViewChangedAsync"">
-  </SgbMap>
+     <MapNavigationControl />
+     <MapLegendControl Id=""overlay-legend""
+                        Position=""@ControlPosition.TopLeft""
+                       Title=""Legend""
+                        Definition=""@TrainTrackingPresentation.OverlayLegendDefinition"" />
+   </SgbMap>
 
 // hover and selection use feature-state, labels stay screen-facing, and supplementary labels stay hidden while clustered";
 

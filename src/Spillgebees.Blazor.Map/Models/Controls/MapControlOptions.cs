@@ -122,19 +122,9 @@ public sealed record ContentMapControl(
     string ControlId,
     bool Enabled = true,
     ControlPosition Position = ControlPosition.TopRight,
-    int Order = 500
+    int Order = 500,
+    string? ClassName = null
 ) : MapControl(ControlId, Position, Order, Enabled)
 {
     public string Kind => "content";
-}
-
-/// <summary>
-/// Shared control presets.
-/// </summary>
-public static class MapControls
-{
-    /// <summary>
-    /// Default controls with navigation enabled.
-    /// </summary>
-    public static IReadOnlyList<MapControl> Default { get; } = [new NavigationMapControl()];
 }

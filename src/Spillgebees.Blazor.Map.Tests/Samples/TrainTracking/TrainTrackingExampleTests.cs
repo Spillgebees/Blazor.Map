@@ -437,15 +437,13 @@ public class TrainTrackingExampleTests : BunitContext
     {
         // arrange & act
         var cut = Render<TrainTrackingExample>();
-        var map = cut.FindComponent<SgbMap>().Instance;
 
         // assert
-        var legendControl = map
-            .Controls.OfType<LegendMapControl>()
+        var legendControl = cut.FindComponents<MapLegendControl>()
             .Should()
-            .ContainSingle(control => control.ControlId == "overlay-legend")
+            .ContainSingle(component => component.Instance.Id == "overlay-legend")
             .Subject;
-        legendControl.Position.Should().Be(ControlPosition.TopLeft);
+        legendControl.Instance.Position.Should().Be(ControlPosition.TopLeft);
     }
 
     [Test]

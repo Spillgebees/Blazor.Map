@@ -16,6 +16,7 @@ public class LegendMapControlTests : BunitContext
     private const string DisposeMapIdentifier = "Spillgebees.Map.mapFunctions.disposeMap";
     private const string ResizeIdentifier = "Spillgebees.Map.mapFunctions.resize";
     private const string ApplySceneMutationsIdentifier = "Spillgebees.Map.mapFunctions.applySceneMutations";
+    private const string SetControlsIdentifier = "Spillgebees.Map.mapFunctions.setControls";
     private const string SetControlContentIdentifier = "Spillgebees.Map.mapFunctions.setControlContent";
     private const string RemoveControlContentIdentifier = "Spillgebees.Map.mapFunctions.removeControlContent";
     private const string HasStyleLayerIdentifier = "Spillgebees.Map.mapFunctions.hasStyleLayer";
@@ -29,6 +30,7 @@ public class LegendMapControlTests : BunitContext
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
         JSInterop.SetupVoid(ApplySceneMutationsIdentifier);
+        JSInterop.SetupVoid(SetControlsIdentifier);
         JSInterop.SetupVoid(SetControlContentIdentifier);
         JSInterop.SetupVoid(RemoveControlContentIdentifier);
         JSInterop.Setup<bool>(HasStyleLayerIdentifier).SetResult(true);
@@ -217,6 +219,60 @@ public class LegendMapControlTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_update_legend_visibility_group_when_descriptor_changes(CancellationToken cancellationToken)
+    {
+        // arrange
+        var definition = CreateDefinition();
+        var cut = Render<SgbMap>(parameters =>
+            parameters.AddChildContent<MapLegendControl>(control =>
+                control.Add(c => c.Id, "legend-component").Add(c => c.Definition, definition)
+            )
+        );
+        cancellationToken.ThrowIfCancellationRequested();
+        await cut.Instance.OnMapInitializedAsync();
+        cut.WaitForAssertion(() =>
+            JSInterop.Invocations[ApplySceneMutationsIdentifier].Count.Should().BeGreaterThan(0)
+        );
+        var initialBatchCount = JSInterop.Invocations[ApplySceneMutationsIdentifier].Count;
+
+        // act
+        cut.Render(parameters =>
+            parameters.AddChildContent<MapLegendControl>(control =>
+                control.Add(c => c.Id, "legend-component").Add(c => c.Definition, definition)
+            )
+        );
+
+        // assert
+        JSInterop.Invocations[ApplySceneMutationsIdentifier].Count.Should().Be(initialBatchCount);
+
+        // act
+        cut.Render(parameters =>
+            parameters.AddChildContent<MapLegendControl>(control =>
+                control.Add(c => c.Id, "legend-component").Add(c => c.Definition, CreateUpdatedDefinition())
+            )
+        );
+
+        // assert
+        cut.WaitForAssertion(() =>
+            JSInterop.Invocations[ApplySceneMutationsIdentifier].Count.Should().BeGreaterThan(initialBatchCount)
+        );
+        var updatedBatch = GetLatestSceneMutationBatch();
+        var mutation = updatedBatch
+            .Mutations.Should()
+            .ContainSingle(m =>
+                m.Kind == "setVisibilityGroup"
+                && string.Equals(GetMutationProperty<string>(m, "GroupId"), "legend:stations", StringComparison.Ordinal)
+            )
+            .Subject;
+        var targets = GetMutationProperty<IReadOnlyList<MapVisibilityGroupTargetDescriptor>>(
+            mutation,
+            "VisibilityTargets"
+        );
+        targets.Should().NotBeNull();
+        targets![0].LayerIds.Should().Equal("stations-circle", "stations-label", "stations-hover");
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
     public async Task Should_allow_custom_item_templates_to_toggle_item_visibility(CancellationToken cancellationToken)
     {
         // arrange
@@ -352,6 +408,91 @@ public class LegendMapControlTests : BunitContext
         cut.FindAll("input[data-testid='map-legend-toggle-static-item']").Should().BeEmpty();
     }
 
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_register_legend_component_with_the_map_shell(CancellationToken cancellationToken)
+    {
+        // arrange
+        var cut = Render<SgbMap>(parameters =>
+            parameters.AddChildContent<MapLegendControl>(control =>
+                control
+                    .Add(c => c.Id, "legend-component")
+                    .Add(c => c.Definition, CreateDefinition())
+                    .Add(c => c.Title, "Legend")
+                    .Add(c => c.Collapsible, true)
+            )
+        );
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // act
+        await cut.Instance.OnMapInitializedAsync();
+
+        // assert
+        cut.Markup.Should().Contain("Operational layers");
+        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(SetControlContentIdentifier));
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_remove_legend_component_content_when_disposed(CancellationToken cancellationToken)
+    {
+        // arrange
+        var showLegend = true;
+        var cut = Render<ConditionalLegendHost>(parameters => parameters.Add(p => p.ShowLegend, showLegend));
+        var map = cut.FindComponent<SgbMap>().Instance;
+        cancellationToken.ThrowIfCancellationRequested();
+        await map.OnMapInitializedAsync();
+
+        // act
+        showLegend = false;
+        cut.Render(parameters => parameters.Add(p => p.ShowLegend, showLegend));
+
+        // assert
+        cut.WaitForAssertion(() => JSInterop.VerifyInvoke(RemoveControlContentIdentifier));
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_remove_pending_legend_component_content_when_disposed(CancellationToken cancellationToken)
+    {
+        // arrange
+        var showLegend = true;
+        var pendingControlId = "previous-legend-component";
+        var cut = Render<ConditionalLegendHost>(parameters => parameters.Add(p => p.ShowLegend, showLegend));
+        var map = cut.FindComponent<SgbMap>().Instance;
+        cancellationToken.ThrowIfCancellationRequested();
+        await map.OnMapInitializedAsync();
+        AddPendingRemovalId(cut.FindComponent<MapLegendControl>().Instance, pendingControlId);
+
+        // act
+        showLegend = false;
+        cut.Render(parameters => parameters.Add(p => p.ShowLegend, showLegend));
+
+        // assert
+        cut.WaitForAssertion(() =>
+            JSInterop
+                .Invocations[RemoveControlContentIdentifier]
+                .Any(invocation =>
+                    string.Equals(invocation.Arguments[1]?.ToString(), pendingControlId, StringComparison.Ordinal)
+                )
+                .Should()
+                .BeTrue()
+        );
+    }
+
+    [Test]
+    public void Should_not_sync_legend_component_when_disposed_before_map_ready()
+    {
+        // arrange
+        var showLegend = true;
+        var cut = Render<ConditionalLegendHost>(parameters => parameters.Add(p => p.ShowLegend, showLegend));
+
+        // act
+        showLegend = false;
+        cut.Render(parameters => parameters.Add(p => p.ShowLegend, showLegend));
+
+        // assert
+        JSInterop.Invocations[RemoveControlContentIdentifier].Count.Should().Be(0);
+        JSInterop.Invocations[SetControlsIdentifier].Count.Should().Be(0);
+    }
+
     private static LegendMapControl CreateControl(
         string controlId,
         MapControlPlacement? placement = null,
@@ -391,6 +532,31 @@ public class LegendMapControlTests : BunitContext
             ]
         );
 
+    private static MapLegendDefinition CreateUpdatedDefinition() =>
+        new(
+            Sections:
+            [
+                new MapLegendSectionDefinition(
+                    "Operational layers",
+                    [
+                        new MapLegendItemDefinition(
+                            "stations",
+                            "Stations",
+                            "Passenger stops and station labels.",
+                            [
+                                new MapLegendTargetDefinition(
+                                    "overlay-style",
+                                    ["stations-circle", "stations-label", "stations-hover"]
+                                ),
+                            ],
+                            true,
+                            IsToggleable: true
+                        ),
+                    ]
+                ),
+            ]
+        );
+
     public sealed class ComponentHost : ComponentBase
     {
         [Parameter, EditorRequired]
@@ -401,6 +567,39 @@ public class LegendMapControlTests : BunitContext
             // arrange
             builder.OpenComponent<SgbMap>(0);
             builder.AddAttribute(1, nameof(SgbMap.Controls), Controls);
+            builder.CloseComponent();
+
+            // act
+
+            // assert
+        }
+    }
+
+    public sealed class ConditionalLegendHost : ComponentBase
+    {
+        [Parameter]
+        public bool ShowLegend { get; set; }
+
+        protected override void BuildRenderTree(RenderTreeBuilder builder)
+        {
+            // arrange
+            builder.OpenComponent<SgbMap>(0);
+            builder.AddAttribute(
+                1,
+                nameof(SgbMap.ChildContent),
+                (RenderFragment)(
+                    childBuilder =>
+                    {
+                        if (ShowLegend)
+                        {
+                            childBuilder.OpenComponent<MapLegendControl>(0);
+                            childBuilder.AddAttribute(1, nameof(MapLegendControl.Id), "legend-component");
+                            childBuilder.AddAttribute(2, nameof(MapLegendControl.Definition), CreateDefinition());
+                            childBuilder.CloseComponent();
+                        }
+                    }
+                )
+            );
             builder.CloseComponent();
 
             // act
@@ -425,5 +624,17 @@ public class LegendMapControlTests : BunitContext
         }
 
         return (T?)property.GetValue(mutation);
+    }
+
+    private static void AddPendingRemovalId(object component, string controlId)
+    {
+        var field = component
+            .GetType()
+            .GetField(
+                "_pendingRemovalIds",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
+            );
+        var pendingRemovalIds = field!.GetValue(component).Should().BeAssignableTo<ICollection<string>>().Subject;
+        pendingRemovalIds.Add(controlId);
     }
 }

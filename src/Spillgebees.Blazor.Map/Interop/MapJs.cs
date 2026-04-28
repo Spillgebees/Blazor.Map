@@ -434,6 +434,7 @@ internal static class MapJs
                 content.Enabled,
                 content.Position,
                 content.Order,
+                content.ClassName,
             },
             _ => throw new InvalidOperationException($"Unsupported map control type '{control.GetType().Name}'."),
         };

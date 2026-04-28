@@ -5,14 +5,13 @@
 </div>
 
 <SgbMap MapOptions="@_mapOptions"
-        Controls="@_controls"
         Height="400px"
-        Width="100%" />
+        Width="100%">
+    <MapNavigationControl />
+</SgbMap>
 
 @code {
     private string _activeStyle = "liberty";
-
-    private readonly IReadOnlyList<MapControl> _controls = [new NavigationMapControl()];
 
     private MapOptions _mapOptions = new(
         Center: new Coordinate(49.75, 6.10),
