@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Spillgebees.Blazor.Map.Models.Expressions;
+using Spillgebees.Blazor.Map.Models.Options;
 
 namespace Spillgebees.Blazor.Map.Components.Layers;
 
@@ -22,7 +23,7 @@ public class SymbolLayer : LayerBase
     [Parameter]
     public string[]? TextFont { get; set; }
 
-    /// <summary>The text anchor position ("center", "left", "right", "top", "bottom", etc.).</summary>
+    /// <summary>The text anchor position. Values are defined by <see cref="SymbolAnchor"/>.</summary>
     [Parameter]
     public SymbolAnchor? TextAnchor { get; set; }
 
@@ -34,15 +35,15 @@ public class SymbolLayer : LayerBase
     [Parameter]
     public StyleValue<double>? TextRotate { get; set; }
 
-    /// <summary>The alignment of text when the map is pitched ("map", "viewport", or "auto").</summary>
+    /// <summary>The alignment of text when the map is pitched. Values are defined by <see cref="MapAlignment"/>.</summary>
     [Parameter]
     public MapAlignment? TextPitchAlignment { get; set; }
 
-    /// <summary>The alignment of text when the map is rotated ("map", "viewport", or "auto").</summary>
+    /// <summary>The alignment of text when the map is rotated. Values are defined by <see cref="MapAlignment"/>.</summary>
     [Parameter]
     public MapAlignment? TextRotationAlignment { get; set; }
 
-    /// <summary>The text transform ("none", "uppercase", "lowercase").</summary>
+    /// <summary>The text transform. Values are defined by <see cref="TextTransform"/>.</summary>
     [Parameter]
     public TextTransform? TextTransform { get; set; }
 
@@ -90,7 +91,7 @@ public class SymbolLayer : LayerBase
     [Parameter]
     public StyleValue<double[]>? IconOffset { get; set; }
 
-    /// <summary>The icon anchor position ("center", "left", "right", "top", "bottom", etc.). Accepts a literal string or a data-driven expression.</summary>
+    /// <summary>The icon anchor position. Values are defined by <see cref="SymbolAnchor"/>.</summary>
     [Parameter]
     public StyleValue<SymbolAnchor>? IconAnchor { get; set; }
 
@@ -98,7 +99,7 @@ public class SymbolLayer : LayerBase
     [Parameter]
     public bool IconAllowOverlap { get; set; }
 
-    /// <summary>Scales the icon to fit the text ("none", "width", "height", "both").</summary>
+    /// <summary>Scales the icon to fit the text. Values are defined by <see cref="IconTextFit"/>.</summary>
     [Parameter]
     public IconTextFit? IconTextFit { get; set; }
 
@@ -107,8 +108,8 @@ public class SymbolLayer : LayerBase
     public double[]? IconTextFitPadding { get; set; }
 
     /// <summary>
-    /// The alignment of the icon when the map is rotated ("map", "viewport", or "auto").
-    /// When set to "map", the icon rotates with the map. Default is "auto".
+    /// The alignment of the icon when the map is rotated. Values are defined by <see cref="MapAlignment"/>.
+    /// When set to <see cref="MapAlignment.Map"/>, the icon rotates with the map. Default is <see cref="MapAlignment.Auto"/>.
     /// </summary>
     [Parameter]
     public MapAlignment? RotationAlignment { get; set; }
@@ -125,7 +126,7 @@ public class SymbolLayer : LayerBase
 
     // Symbol layout
 
-    /// <summary>The symbol placement strategy ("point", "line", "line-center").</summary>
+    /// <summary>The symbol placement strategy. Values are defined by <see cref="SymbolPlacement"/>.</summary>
     [Parameter]
     public SymbolPlacement? Placement { get; set; }
 

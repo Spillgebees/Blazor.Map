@@ -1,5 +1,5 @@
-using System.Reflection;
 using System.Text.Json.Serialization;
+using Spillgebees.Blazor.Map.Models.Options;
 
 namespace Spillgebees.Blazor.Map.Models.Expressions;
 
@@ -39,16 +39,10 @@ public readonly struct StyleValue<T>
 
         if (Literal is Enum enumValue)
         {
-            return GetEnumJsonName(enumValue);
+            return EnumJsonName.Get(enumValue);
         }
 
         return Literal;
-    }
-
-    private static string GetEnumJsonName(Enum value)
-    {
-        var member = value.GetType().GetMember(value.ToString()).Single();
-        return member.GetCustomAttribute<JsonStringEnumMemberNameAttribute>()?.Name ?? value.ToString();
     }
 
     /// <summary>

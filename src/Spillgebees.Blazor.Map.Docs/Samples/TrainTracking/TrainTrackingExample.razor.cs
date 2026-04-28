@@ -5,6 +5,7 @@ using Spillgebees.Blazor.Map.Components.Layers;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Legends;
+using Spillgebees.Blazor.Map.Models.Options;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 namespace Spillgebees.Blazor.Map.Docs.Samples.TrainTracking;

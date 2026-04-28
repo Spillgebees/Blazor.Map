@@ -1,7 +1,7 @@
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 
-namespace Spillgebees.Blazor.Map.Components.Layers;
+namespace Spillgebees.Blazor.Map.Models.Options;
 
 [JsonConverter(typeof(JsonStringEnumConverter<SymbolAnchor>))]
 public enum SymbolAnchor
@@ -157,81 +157,19 @@ public enum LineJoin
 
 public static class LayerOptionEnumExtensions
 {
-    public static string ToJsonName(this SymbolAnchor value) =>
-        value switch
-        {
-            SymbolAnchor.Center => "center",
-            SymbolAnchor.Left => "left",
-            SymbolAnchor.Right => "right",
-            SymbolAnchor.Top => "top",
-            SymbolAnchor.Bottom => "bottom",
-            SymbolAnchor.TopLeft => "top-left",
-            SymbolAnchor.TopRight => "top-right",
-            SymbolAnchor.BottomLeft => "bottom-left",
-            SymbolAnchor.BottomRight => "bottom-right",
-            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null),
-        };
+    public static string ToJsonName(this SymbolAnchor value) => EnumJsonName.Get(value);
 
-    public static string ToJsonName(this MapAlignment value) =>
-        value switch
-        {
-            MapAlignment.Map => "map",
-            MapAlignment.Viewport => "viewport",
-            MapAlignment.Auto => "auto",
-            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null),
-        };
+    public static string ToJsonName(this MapAlignment value) => EnumJsonName.Get(value);
 
-    public static string ToJsonName(this CirclePitchAlignment value) =>
-        value switch
-        {
-            CirclePitchAlignment.Map => "map",
-            CirclePitchAlignment.Viewport => "viewport",
-            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null),
-        };
+    public static string ToJsonName(this CirclePitchAlignment value) => EnumJsonName.Get(value);
 
-    public static string ToJsonName(this TextTransform value) =>
-        value switch
-        {
-            TextTransform.None => "none",
-            TextTransform.Uppercase => "uppercase",
-            TextTransform.Lowercase => "lowercase",
-            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null),
-        };
+    public static string ToJsonName(this TextTransform value) => EnumJsonName.Get(value);
 
-    public static string ToJsonName(this IconTextFit value) =>
-        value switch
-        {
-            IconTextFit.None => "none",
-            IconTextFit.Width => "width",
-            IconTextFit.Height => "height",
-            IconTextFit.Both => "both",
-            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null),
-        };
+    public static string ToJsonName(this IconTextFit value) => EnumJsonName.Get(value);
 
-    public static string ToJsonName(this SymbolPlacement value) =>
-        value switch
-        {
-            SymbolPlacement.Point => "point",
-            SymbolPlacement.Line => "line",
-            SymbolPlacement.LineCenter => "line-center",
-            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null),
-        };
+    public static string ToJsonName(this SymbolPlacement value) => EnumJsonName.Get(value);
 
-    public static string ToJsonName(this LineCap value) =>
-        value switch
-        {
-            LineCap.Butt => "butt",
-            LineCap.Round => "round",
-            LineCap.Square => "square",
-            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null),
-        };
+    public static string ToJsonName(this LineCap value) => EnumJsonName.Get(value);
 
-    public static string ToJsonName(this LineJoin value) =>
-        value switch
-        {
-            LineJoin.Bevel => "bevel",
-            LineJoin.Round => "round",
-            LineJoin.Miter => "miter",
-            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null),
-        };
+    public static string ToJsonName(this LineJoin value) => EnumJsonName.Get(value);
 }

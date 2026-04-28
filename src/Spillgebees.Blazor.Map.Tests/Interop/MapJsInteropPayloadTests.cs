@@ -6,6 +6,7 @@ using Spillgebees.Blazor.Map.Components.Layers;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Layers;
+using Spillgebees.Blazor.Map.Models.Options;
 
 namespace Spillgebees.Blazor.Map.Tests.Interop;
 

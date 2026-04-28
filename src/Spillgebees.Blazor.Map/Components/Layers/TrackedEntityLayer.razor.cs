@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Expressions;
+using Spillgebees.Blazor.Map.Models.Options;
 using Spillgebees.Blazor.Map.Models.Popups;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 using Spillgebees.Blazor.Map.Utilities;

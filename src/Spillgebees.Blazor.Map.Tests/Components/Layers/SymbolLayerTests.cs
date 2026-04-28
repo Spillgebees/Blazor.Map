@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using Spillgebees.Blazor.Map.Components.Layers;
 using Spillgebees.Blazor.Map.Models.Expressions;
+using Spillgebees.Blazor.Map.Models.Options;
 
 namespace Spillgebees.Blazor.Map.Tests.Components.Layers;
 

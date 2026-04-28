@@ -6,6 +6,7 @@ using Spillgebees.Blazor.Map.Components;
 using Spillgebees.Blazor.Map.Components.Layers;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Events;
+using Spillgebees.Blazor.Map.Models.Options;
 using Spillgebees.Blazor.Map.Models.Popups;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
