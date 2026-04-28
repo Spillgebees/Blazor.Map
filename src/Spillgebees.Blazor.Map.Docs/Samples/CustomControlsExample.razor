@@ -79,6 +79,7 @@
     ];
 
     private SgbMap? _map;
+    private object? _networkData;
     private int _nextStationIndex;
     private string? _focusedStationName;
 
@@ -90,11 +91,12 @@
 
     private string FocusText => $"Focus station: {FocusLabel}";
 
-    private object NetworkData => new
-    {
-        type = "FeatureCollection",
-        features = CreateNetworkFeatures(),
-    };
+    private object NetworkData =>
+        _networkData ??= new
+        {
+            type = "FeatureCollection",
+            features = CreateNetworkFeatures(),
+        };
 
     private readonly MapLegendDefinition _legendDefinition =
         new(

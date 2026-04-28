@@ -6,15 +6,10 @@ using Spillgebees.Blazor.Map.Models.Popups;
 
 namespace Spillgebees.Blazor.Map.Components;
 
-public sealed class MapPolyline : ComponentBase, IAsyncDisposable
+public sealed class MapPolyline : MapOverlayComponentBase
 {
-    private readonly string _ownerId = Guid.NewGuid().ToString("N");
-
-    [CascadingParameter]
-    private BaseMap? Map { get; set; }
-
-    [CascadingParameter]
-    private MapSectionContext? SectionContext { get; set; }
+    private IReadOnlyList<Coordinate>? _cachedCoordinatesSource;
+    private ImmutableList<Coordinate> _cachedCoordinates = [];
 
     [Parameter, EditorRequired]
     public string Id { get; set; } = string.Empty;
@@ -31,28 +26,22 @@ public sealed class MapPolyline : ComponentBase, IAsyncDisposable
     [Parameter]
     public PopupOptions? Popup { get; set; }
 
-    protected override async Task OnParametersSetAsync()
+    protected override ValueTask SetOverlayFeaturesAsync()
     {
-        ValidatePlacement();
-        await Map!.SetOverlayPolylinesAsync(
-            _ownerId,
-            [new Polyline(Id, Coordinates.ToImmutableList(), Color, Width, Popup: Popup)]
+        return Map!.SetOverlayPolylinesAsync(
+            OwnerId,
+            [new Polyline(Id, GetCoordinateSnapshot(), Color, Width, Popup: Popup)]
         );
     }
 
-    public async ValueTask DisposeAsync()
+    private ImmutableList<Coordinate> GetCoordinateSnapshot()
     {
-        if (Map is not null)
+        if (!ReferenceEquals(_cachedCoordinatesSource, Coordinates) || !_cachedCoordinates.SequenceEqual(Coordinates))
         {
-            await Map.RemoveOverlayFeaturesAsync(_ownerId);
+            _cachedCoordinatesSource = Coordinates;
+            _cachedCoordinates = Coordinates.ToImmutableList();
         }
-    }
 
-    private void ValidatePlacement()
-    {
-        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
-        {
-            throw new InvalidOperationException("MapPolyline must be placed inside MapOverlays.");
-        }
+        return _cachedCoordinates;
     }
 }

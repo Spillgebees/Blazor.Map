@@ -48,26 +48,22 @@ public class PublicApiCleanupTests
     public void Should_expose_tracked_entity_layer_component()
     {
         // arrange
-        var assembly = typeof(SgbMap).Assembly;
+        var trackedEntityLayerType = GetTrackedEntityLayerType();
 
         // act
-        var trackedEntityLayerType = assembly.GetType("Spillgebees.Blazor.Map.Components.Layers.TrackedEntityLayer`1");
+        var publicPropertyNames = trackedEntityLayerType
+            .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+            .Select(property => property.Name);
 
         // assert
-        trackedEntityLayerType.Should().NotBeNull();
-        trackedEntityLayerType!
-            .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
-            .Select(property => property.Name)
-            .Should()
-            .BeEquivalentTo(["Layer"]);
+        publicPropertyNames.Should().BeEquivalentTo(["Layer"]);
     }
 
     [Test]
     public void Should_not_expose_legacy_tracked_entity_layer_parameter_surface()
     {
         // arrange
-        var assembly = typeof(SgbMap).Assembly;
-        var trackedEntityLayerType = assembly.GetType("Spillgebees.Blazor.Map.Components.Layers.TrackedEntityLayer`1");
+        var trackedEntityLayerType = GetTrackedEntityLayerType();
         var legacyPropertyNames = new[]
         {
             "SourceId",
@@ -91,9 +87,7 @@ public class PublicApiCleanupTests
         };
 
         // act
-        trackedEntityLayerType.Should().NotBeNull();
-
-        var publicPropertyNames = trackedEntityLayerType!
+        var publicPropertyNames = trackedEntityLayerType
             .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
             .Select(property => property.Name)
             .ToHashSet(StringComparer.Ordinal);
@@ -103,5 +97,14 @@ public class PublicApiCleanupTests
         {
             publicPropertyNames.Should().NotContain(legacyPropertyName);
         }
+    }
+
+    private static Type GetTrackedEntityLayerType()
+    {
+        var assembly = typeof(SgbMap).Assembly;
+        var trackedEntityLayerType = assembly.GetType("Spillgebees.Blazor.Map.Components.Layers.TrackedEntityLayer`1");
+
+        trackedEntityLayerType.Should().NotBeNull();
+        return trackedEntityLayerType!;
     }
 }

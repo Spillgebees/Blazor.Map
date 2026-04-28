@@ -4,7 +4,9 @@ namespace Spillgebees.Blazor.Map.Components;
 
 public abstract class MapSectionBase : ComponentBase
 {
-    private MapSectionContext SectionContext => new(SectionKind);
+    private MapSectionContext? _sectionContext;
+
+    private MapSectionContext SectionContext => _sectionContext ??= new MapSectionContext(SectionKind);
 
     [CascadingParameter]
     private MapRootContext? RootContext { get; set; }

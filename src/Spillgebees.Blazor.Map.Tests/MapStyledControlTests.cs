@@ -36,6 +36,7 @@ public class MapStyledControlTests : BunitContext
                     .Add(c => c.Id, "refresh-control")
                     .Add(c => c.Position, ControlPosition.TopLeft)
                     .Add(c => c.Label, "Refresh map")
+                    .Add(c => c.Text, "Refresh")
                     .Add(c => c.OnClick, EventCallback.Factory.Create<MouseEventArgs>(this, () => clickCount++))
             )
         );
@@ -61,6 +62,7 @@ public class MapStyledControlTests : BunitContext
                 control
                     .Add(c => c.Id, "layer-toggle")
                     .Add(c => c.Label, "Toggle stations")
+                    .Add(c => c.Text, "Stations")
                     .Add(c => c.Pressed, true)
                     .Add(c => c.PressedChanged, EventCallback.Factory.Create<bool>(this, value => changedValue = value))
             )
@@ -100,5 +102,59 @@ public class MapStyledControlTests : BunitContext
         cut.Find("button.sgb-map-control-button-with-icon-text").Should().NotBeNull();
         cut.Markup.Should().Contain("sgb-map-control-icon");
         cut.Markup.Should().Contain("sgb-map-control-text");
+    }
+
+    [Test]
+    public void Should_throw_when_button_label_is_empty()
+    {
+        // arrange
+        var action = () => Render<MapControlButton>(parameters => parameters.Add(p => p.Text, "Refresh"));
+
+        // act & assert
+        action.Should().Throw<InvalidOperationException>().WithMessage("A non-empty Label is required.");
+    }
+
+    [Test]
+    public void Should_throw_when_button_has_no_visible_icon_or_text()
+    {
+        // arrange
+        var action = () => Render<MapControlButton>(parameters => parameters.Add(p => p.Label, "Refresh"));
+
+        // act & assert
+        action
+            .Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("MapControlButton requires non-empty Text or Icon.");
+    }
+
+    [Test]
+    public void Should_throw_when_toggle_button_pressed_state_has_no_visible_content()
+    {
+        // arrange
+        var action = () =>
+            Render<MapControlToggleButton>(parameters =>
+                parameters.Add(p => p.Label, "Toggle stations").Add(p => p.Pressed, true).Add(p => p.OffText, "Show")
+            );
+
+        // act & assert
+        action
+            .Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("MapControlToggleButton requires visible content for the current pressed state.");
+    }
+
+    [Test]
+    public void Should_render_toggle_control_without_redundant_wrapper_aria_label()
+    {
+        // arrange & act
+        var cut = Render<SgbMap>(parameters =>
+            parameters.AddChildContent<MapToggleControl>(control =>
+                control.Add(c => c.Id, "layer-toggle").Add(c => c.Label, "Toggle stations").Add(c => c.Text, "Stations")
+            )
+        );
+
+        // assert
+        cut.Find(".sgb-map-toggle-control").HasAttribute("aria-label").Should().BeFalse();
+        cut.Find("button.sgb-map-toggle-control-button").GetAttribute("aria-label").Should().Be("Toggle stations");
     }
 }

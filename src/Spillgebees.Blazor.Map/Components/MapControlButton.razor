@@ -56,6 +56,19 @@
         }
     );
 
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrWhiteSpace(Label))
+        {
+            throw new InvalidOperationException("A non-empty Label is required.");
+        }
+
+        if (Icon is null && string.IsNullOrWhiteSpace(Text))
+        {
+            throw new InvalidOperationException("MapControlButton requires non-empty Text or Icon.");
+        }
+    }
+
     private string GetLayoutClass()
     {
         if (Icon is not null && !string.IsNullOrWhiteSpace(Text))

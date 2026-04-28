@@ -76,6 +76,21 @@
         }
     );
 
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrWhiteSpace(Label))
+        {
+            throw new InvalidOperationException("A non-empty Label is required.");
+        }
+
+        if (CurrentIcon is null && string.IsNullOrWhiteSpace(DisplayText))
+        {
+            throw new InvalidOperationException(
+                "MapControlToggleButton requires visible content for the current pressed state."
+            );
+        }
+    }
+
     private async Task ToggleAsync()
     {
         if (Disabled)

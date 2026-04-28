@@ -118,9 +118,14 @@
       padding: 0.3rem 0.55rem;
     }
 
-    .sgb-map-control-button-primary,
+    .sgb-map-control-button-primary {
+      color: var(--sgb-map-ctrl-link);
+    }
+
     .sgb-map-control-button-pressed {
       color: var(--sgb-map-ctrl-link);
+      background: color-mix(in srgb, var(--sgb-map-ctrl-link) 14%, var(--sgb-map-ctrl-bg));
+      box-shadow: inset 3px 0 0 var(--sgb-map-ctrl-link);
     }
 
     .sgb-map-control-icon {

@@ -38,7 +38,7 @@ public sealed class MapCircles<TItem> : ComponentBase, IAsyncDisposable
         ValidatePlacement();
         ValidateSelectors();
 
-        var circles = Items.Select(CreateCircle).ToArray();
+        var circles = (Items ?? []).Select(CreateCircle).ToArray();
         await Map!.SetOverlayCirclesAsync(_ownerId, circles);
     }
 

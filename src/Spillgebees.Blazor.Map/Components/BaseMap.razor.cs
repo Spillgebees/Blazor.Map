@@ -655,8 +655,8 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     internal async ValueTask RemoveOverlayFeaturesAsync(string ownerId)
     {
         var changed = _registeredOverlayMarkers.Remove(ownerId);
-        changed = _registeredOverlayCircles.Remove(ownerId) || changed;
-        changed = _registeredOverlayPolylines.Remove(ownerId) || changed;
+        changed |= _registeredOverlayCircles.Remove(ownerId);
+        changed |= _registeredOverlayPolylines.Remove(ownerId);
         if (changed && IsInitialized)
         {
             await SyncFeaturesAsync();

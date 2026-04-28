@@ -39,6 +39,7 @@ public class MapBatchOverlayTests : BunitContext
             )
         );
         await cut.Instance.OnMapInitializedAsync();
+        var initialSyncCount = JSInterop.Invocations[SyncFeaturesIdentifier].Count;
 
         // act
         cut.Render(parameters =>
@@ -54,7 +55,29 @@ public class MapBatchOverlayTests : BunitContext
         );
 
         // assert
-        JSInterop.VerifyInvoke(SyncFeaturesIdentifier);
+        JSInterop.Invocations[SyncFeaturesIdentifier].Count.Should().BeGreaterThan(initialSyncCount);
+    }
+
+    [Test]
+    public async Task Should_sync_circles_with_empty_items_when_items_is_null()
+    {
+        // arrange
+        var cut = Render<SgbMap>(parameters =>
+            parameters.AddChildContent<MapOverlays>(overlays =>
+                overlays.AddChildContent<MapCircles<Station>>(circles =>
+                    circles
+                        .Add(c => c.Items, null!)
+                        .Add(c => c.IdSelector, station => station.Id)
+                        .Add(c => c.PositionSelector, station => station.Position)
+                )
+            )
+        );
+
+        // act
+        await cut.Instance.OnMapInitializedAsync();
+
+        // assert
+        JSInterop.VerifyInvoke(CreateMapIdentifier);
     }
 
     [Test]

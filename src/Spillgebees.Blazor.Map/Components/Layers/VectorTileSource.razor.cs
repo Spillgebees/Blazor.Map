@@ -49,6 +49,9 @@ public partial class VectorTileSource : ComponentBase, IMapSource, IAsyncDisposa
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
+    /// <summary>
+    /// Allows this source to be declared outside <see cref="MapSources" /> when advanced composition owns placement.
+    /// </summary>
     [Parameter]
     public bool AllowOutsideMapSources { get; set; }
 
