@@ -21,6 +21,9 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
     [CascadingParameter]
     public BaseMap? Map { get; set; }
 
+    [CascadingParameter]
+    private MapSectionContext? SectionContext { get; set; }
+
     /// <summary>
     /// A unique identifier for this source.
     /// </summary>
@@ -38,6 +41,9 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
     /// </summary>
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public bool AllowOutsideMapSources { get; set; }
 
     [Parameter]
     public string? Stack { get; set; }
@@ -137,6 +143,15 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
 
     /// <inheritdoc/>
     public MapLayerOrderOptions OrderOptions => new(Stack, BeforeStack, AfterStack);
+
+    /// <inheritdoc/>
+    protected override void OnParametersSet()
+    {
+        if (!AllowOutsideMapSources && SectionContext?.Kind is not MapContentSectionKind.Sources)
+        {
+            throw new InvalidOperationException("GeoJsonSource must be placed inside MapSources.");
+        }
+    }
 
     /// <inheritdoc/>
     public async Task RegisterLayerAsync(LayerBase layer)

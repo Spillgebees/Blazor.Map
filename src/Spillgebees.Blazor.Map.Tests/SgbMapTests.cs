@@ -373,8 +373,9 @@ public class SgbMapTests : BunitContext
                     {
                         builder.OpenComponent<GeoJsonSource>(0);
                         builder.AddAttribute(1, nameof(GeoJsonSource.Id), "ordered-source");
+                        builder.AddAttribute(2, nameof(GeoJsonSource.AllowOutsideMapSources), true);
                         builder.AddAttribute(
-                            2,
+                            3,
                             nameof(GeoJsonSource.Data),
                             new Dictionary<string, object?>
                             {
@@ -383,7 +384,7 @@ public class SgbMapTests : BunitContext
                             }
                         );
                         builder.AddAttribute(
-                            3,
+                            4,
                             nameof(GeoJsonSource.ChildContent),
                             (RenderFragment)(
                                 sourceBuilder =>
@@ -504,13 +505,14 @@ public class SgbMapTests : BunitContext
                     mapBuilder =>
                     {
                         mapBuilder.OpenComponent<TestGeoJsonSource>(0);
+                        mapBuilder.AddAttribute(1, nameof(TestGeoJsonSource.AllowOutsideMapSources), true);
                         mapBuilder.AddAttribute(
-                            1,
+                            2,
                             nameof(TestGeoJsonSource.OnInitializedFlagChanged),
                             EventCallback.Factory.Create<bool>(this, value => SourceReady = value)
                         );
                         mapBuilder.AddAttribute(
-                            2,
+                            3,
                             "ChildContent",
                             (RenderFragment)(
                                 sourceBuilder =>
@@ -620,8 +622,9 @@ public class SgbMapTests : BunitContext
                     {
                         mapBuilder.OpenComponent<GeoJsonSource>(0);
                         mapBuilder.AddAttribute(1, nameof(GeoJsonSource.Id), "toggle-source");
+                        mapBuilder.AddAttribute(2, nameof(GeoJsonSource.AllowOutsideMapSources), true);
                         mapBuilder.AddAttribute(
-                            2,
+                            3,
                             nameof(GeoJsonSource.Data),
                             new Dictionary<string, object?>
                             {
@@ -630,7 +633,7 @@ public class SgbMapTests : BunitContext
                             }
                         );
                         mapBuilder.AddAttribute(
-                            3,
+                            4,
                             nameof(GeoJsonSource.ChildContent),
                             (RenderFragment)(
                                 sourceBuilder =>

@@ -15,6 +15,9 @@ public abstract class MapControlComponentBase : ComponentBase, IAsyncDisposable
     [CascadingParameter]
     private MapControlRegistryContext? Registry { get; set; }
 
+    [CascadingParameter]
+    private MapSectionContext? SectionContext { get; set; }
+
     [Parameter]
     public string Id { get; set; } = string.Empty;
 
@@ -33,6 +36,11 @@ public abstract class MapControlComponentBase : ComponentBase, IAsyncDisposable
         if (Registry is null)
         {
             throw new InvalidOperationException($"{GetType().Name} must be placed inside a map.");
+        }
+
+        if (SectionContext?.Kind is not MapContentSectionKind.Controls)
+        {
+            throw new InvalidOperationException($"{GetType().Name} must be placed inside MapControls.");
         }
 
         if (string.IsNullOrWhiteSpace(Id))

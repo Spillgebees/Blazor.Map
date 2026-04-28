@@ -188,8 +188,9 @@ public class MapSceneInteropCompatibilityTests : BunitContext
                     {
                         mapBuilder.OpenComponent<GeoJsonSource>(0);
                         mapBuilder.AddAttribute(1, "Id", "source-1");
+                        mapBuilder.AddAttribute(2, nameof(GeoJsonSource.AllowOutsideMapSources), true);
                         mapBuilder.AddAttribute(
-                            2,
+                            3,
                             "Data",
                             new Dictionary<string, object?>
                             {
@@ -198,7 +199,7 @@ public class MapSceneInteropCompatibilityTests : BunitContext
                             }
                         );
                         mapBuilder.AddAttribute(
-                            3,
+                            4,
                             "ChildContent",
                             (RenderFragment)(
                                 sourceBuilder =>
@@ -277,9 +278,10 @@ public class MapSceneInteropCompatibilityTests : BunitContext
                     {
                         mapBuilder.OpenComponent<GeoJsonSource>(0);
                         mapBuilder.AddAttribute(1, "Id", "source-1");
-                        mapBuilder.AddAttribute(2, "Data", _data);
+                        mapBuilder.AddAttribute(2, nameof(GeoJsonSource.AllowOutsideMapSources), true);
+                        mapBuilder.AddAttribute(3, "Data", _data);
                         mapBuilder.AddAttribute(
-                            3,
+                            4,
                             "ChildContent",
                             (RenderFragment)(
                                 sourceBuilder =>
@@ -320,8 +322,9 @@ public class MapSceneInteropCompatibilityTests : BunitContext
                     {
                         mapBuilder.OpenComponent<GeoJsonSource>(0);
                         mapBuilder.AddAttribute(1, "Id", "source-1");
+                        mapBuilder.AddAttribute(2, nameof(GeoJsonSource.AllowOutsideMapSources), true);
                         mapBuilder.AddAttribute(
-                            2,
+                            3,
                             "Data",
                             new Dictionary<string, object?>
                             {
@@ -330,7 +333,7 @@ public class MapSceneInteropCompatibilityTests : BunitContext
                             }
                         );
                         mapBuilder.AddAttribute(
-                            3,
+                            4,
                             "ChildContent",
                             (RenderFragment)(
                                 sourceBuilder =>
@@ -381,8 +384,9 @@ public class MapSceneInteropCompatibilityTests : BunitContext
                         mapBuilder.OpenComponent<GeoJsonSource>(0);
                         mapBuilder.AddAttribute(1, "Id", "source-1");
                         mapBuilder.AddAttribute(2, "Stack", _stack);
+                        mapBuilder.AddAttribute(3, nameof(GeoJsonSource.AllowOutsideMapSources), true);
                         mapBuilder.AddAttribute(
-                            3,
+                            4,
                             "Data",
                             new Dictionary<string, object?>
                             {
@@ -391,7 +395,7 @@ public class MapSceneInteropCompatibilityTests : BunitContext
                             }
                         );
                         mapBuilder.AddAttribute(
-                            4,
+                            5,
                             "ChildContent",
                             (RenderFragment)(
                                 sourceBuilder =>
@@ -432,6 +436,7 @@ public class MapSceneInteropCompatibilityTests : BunitContext
                         mapBuilder.AddAttribute(1, "Id", "vector-source");
                         mapBuilder.AddAttribute(2, "Url", "https://example.com/tiles.json");
                         mapBuilder.AddAttribute(3, "ReferrerPolicy", ReferrerPolicy.StrictOriginWhenCrossOrigin);
+                        mapBuilder.AddAttribute(4, nameof(VectorTileSource.AllowOutsideMapSources), true);
                         mapBuilder.CloseComponent();
                     }
                 )

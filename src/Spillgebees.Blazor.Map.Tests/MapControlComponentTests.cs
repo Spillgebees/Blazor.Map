@@ -24,7 +24,9 @@ public class MapControlComponentTests : BunitContext
     {
         // arrange & act
         var cut = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapNavigationControl>(control => control.Add(c => c.Id, "navigation-tools"))
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<MapNavigationControl>(control => control.Add(c => c.Id, "navigation-tools"))
+            )
         );
 
         // assert
@@ -36,13 +38,15 @@ public class MapControlComponentTests : BunitContext
     {
         // arrange
         var cut = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapNavigationControl>(control =>
-                control
-                    .Add(c => c.Id, "navigation-tools")
-                    .Add(c => c.Position, ControlPosition.TopLeft)
-                    .Add(c => c.Order, 10)
-                    .Add(c => c.ShowCompass, false)
-                    .Add(c => c.ShowZoom, true)
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<MapNavigationControl>(control =>
+                    control
+                        .Add(c => c.Id, "navigation-tools")
+                        .Add(c => c.Position, ControlPosition.TopLeft)
+                        .Add(c => c.Order, 10)
+                        .Add(c => c.ShowCompass, false)
+                        .Add(c => c.ShowZoom, true)
+                )
             )
         );
 
@@ -60,8 +64,10 @@ public class MapControlComponentTests : BunitContext
         // arrange
         var showZoom = true;
         var cut = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapNavigationControl>(control =>
-                control.Add(c => c.Id, "navigation-tools").Add(c => c.ShowZoom, showZoom)
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<MapNavigationControl>(control =>
+                    control.Add(c => c.Id, "navigation-tools").Add(c => c.ShowZoom, showZoom)
+                )
             )
         );
         await cut.Instance.OnMapInitializedAsync();
@@ -69,8 +75,10 @@ public class MapControlComponentTests : BunitContext
         // act
         showZoom = false;
         cut.Render(parameters =>
-            parameters.AddChildContent<MapNavigationControl>(control =>
-                control.Add(c => c.Id, "navigation-tools").Add(c => c.ShowZoom, showZoom)
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<MapNavigationControl>(control =>
+                    control.Add(c => c.Id, "navigation-tools").Add(c => c.ShowZoom, showZoom)
+                )
             )
         );
 
@@ -124,7 +132,9 @@ public class MapControlComponentTests : BunitContext
             Render<SgbMap>(parameters =>
                 parameters
                     .Add(p => p.Controls, [new NavigationMapControl("navigation-tools")])
-                    .AddChildContent<MapScaleControl>(control => control.Add(c => c.Id, "navigation-tools"))
+                    .AddChildContent<MapControls>(controls =>
+                        controls.AddChildContent<MapScaleControl>(control => control.Add(c => c.Id, "navigation-tools"))
+                    )
             );
 
         // act & assert
@@ -148,12 +158,23 @@ public class MapControlComponentTests : BunitContext
                 (RenderFragment)(
                     childBuilder =>
                     {
-                        if (ShowControl)
-                        {
-                            childBuilder.OpenComponent<MapScaleControl>(0);
-                            childBuilder.AddAttribute(1, nameof(MapScaleControl.Id), "scale-tools");
-                            childBuilder.CloseComponent();
-                        }
+                        childBuilder.OpenComponent<MapControls>(0);
+                        childBuilder.AddAttribute(
+                            1,
+                            nameof(MapControls.ChildContent),
+                            (RenderFragment)(
+                                controlsBuilder =>
+                                {
+                                    if (ShowControl)
+                                    {
+                                        controlsBuilder.OpenComponent<MapScaleControl>(0);
+                                        controlsBuilder.AddAttribute(1, nameof(MapScaleControl.Id), "scale-tools");
+                                        controlsBuilder.CloseComponent();
+                                    }
+                                }
+                            )
+                        );
+                        childBuilder.CloseComponent();
                     }
                 )
             );

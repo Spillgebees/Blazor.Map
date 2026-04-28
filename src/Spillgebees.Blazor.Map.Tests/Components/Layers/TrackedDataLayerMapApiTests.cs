@@ -25,7 +25,7 @@ public class TrackedDataLayerMapApiTests : BunitContext
     private const string ShowPopupIdentifier = "Spillgebees.Map.mapFunctions.showPopup";
     private const string ClosePopupIdentifier = "Spillgebees.Map.mapFunctions.closePopup";
     private static readonly TimeSpan HoverLeaveWait =
-        TrackedDataSource<object>.HoverLeaveDebounce + TimeSpan.FromMilliseconds(50);
+        TrackedEntityLayer<object>.HoverLeaveDebounce + TimeSpan.FromMilliseconds(50);
 
     public TrackedDataLayerMapApiTests()
     {
@@ -46,13 +46,13 @@ public class TrackedDataLayerMapApiTests : BunitContext
     }
 
     [Test]
-    public void Should_render_tracked_data_layers_from_map_level_parameter()
+    public void Should_render_tracked_entity_layer_from_map_overlays_section()
     {
         // arrange
         var cut = Render<MapTrackedDataHarness>();
 
         // act
-        var renderedSources = cut.FindComponents<TrackedDataSource<TestVehicle>>();
+        var renderedSources = cut.FindComponents<TrackedEntityLayer<TestVehicle>>();
 
         // assert
         renderedSources.Should().HaveCount(1);
@@ -442,8 +442,34 @@ public class TrackedDataLayerMapApiTests : BunitContext
             );
 
             builder.OpenComponent<SgbMap>(0);
-            builder.AddAttribute(1, nameof(SgbMap.TrackedDataLayers), new ITrackedDataLayer[] { layer });
-            builder.AddComponentReferenceCapture(2, value => Map = (SgbMap)value);
+            builder.AddAttribute(
+                2,
+                nameof(SgbMap.ChildContent),
+                (RenderFragment)(
+                    mapBuilder =>
+                    {
+                        mapBuilder.OpenComponent<MapOverlays>(0);
+                        mapBuilder.AddAttribute(
+                            1,
+                            nameof(MapOverlays.ChildContent),
+                            (RenderFragment)(
+                                overlayBuilder =>
+                                {
+                                    overlayBuilder.OpenComponent<TrackedEntityLayer<TestVehicle>>(0);
+                                    overlayBuilder.AddAttribute(
+                                        1,
+                                        nameof(TrackedEntityLayer<TestVehicle>.Layer),
+                                        layer
+                                    );
+                                    overlayBuilder.CloseComponent();
+                                }
+                            )
+                        );
+                        mapBuilder.CloseComponent();
+                    }
+                )
+            );
+            builder.AddComponentReferenceCapture(3, value => Map = (SgbMap)value);
             builder.CloseComponent();
         }
     }

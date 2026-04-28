@@ -5,6 +5,7 @@
 
 <GeoJsonSource Id="@SourceId"
                @ref="_primarySource"
+               AllowOutsideMapSources="true"
                Data="@_primaryData"
                Stack="@Stack"
                BeforeStack="@BeforeStack"
@@ -90,6 +91,7 @@
 @if (HasDecorations)
 {
     <GeoJsonSource Id="@DecorationSourceId"
+                   AllowOutsideMapSources="true"
                    Data="@_decorationData"
                    Stack="@Stack"
                    BeforeStack="@BeforeStack"

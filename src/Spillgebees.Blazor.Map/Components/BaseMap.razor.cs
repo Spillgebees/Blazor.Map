@@ -89,12 +89,6 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     public List<MapImageDefinition> Images { get; set; } = [];
 
     /// <summary>
-    /// Map-level tracked data layer definitions.
-    /// </summary>
-    [Parameter]
-    public IReadOnlyList<ITrackedDataLayer> TrackedDataLayers { get; set; } = [];
-
-    /// <summary>
     /// The width of the map. If not set, the map will take the full width of its container.
     /// </summary>
     [Parameter]
@@ -188,6 +182,11 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     private readonly TaskCompletionSource<bool> _readyTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly List<RegisteredControl> _registeredControls = [];
+    private readonly Dictionary<string, IReadOnlyList<Marker>> _registeredOverlayMarkers = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IReadOnlyList<Circle>> _registeredOverlayCircles = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IReadOnlyList<Polyline>> _registeredOverlayPolylines = new(
+        StringComparer.Ordinal
+    );
 
     /// <summary>
     /// Returns a task that completes when the map has been initialized and is ready
@@ -582,9 +581,9 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         InternalControls = GetDesiredControls();
         ValidateControlIds(InternalControls);
         InternalTheme = Theme;
-        InternalMarkers = [.. Markers];
-        InternalCircles = [.. Circles];
-        InternalPolylines = [.. Polylines];
+        InternalMarkers = GetDesiredMarkers();
+        InternalCircles = GetDesiredCircles();
+        InternalPolylines = GetDesiredPolylines();
         InternalOverlays = [.. Overlays];
         InternalImages = [.. GetDesiredImages()];
 
@@ -606,9 +605,12 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     private async Task SyncFeaturesAsync()
     {
-        var markerDiff = FeatureDiffer.Diff(InternalMarkers, Markers, static m => m.Id);
-        var circleDiff = FeatureDiffer.Diff(InternalCircles, Circles, static c => c.Id);
-        var polylineDiff = FeatureDiffer.Diff(InternalPolylines, Polylines, static p => p.Id);
+        var desiredMarkers = GetDesiredMarkers();
+        var desiredCircles = GetDesiredCircles();
+        var desiredPolylines = GetDesiredPolylines();
+        var markerDiff = FeatureDiffer.Diff(InternalMarkers, desiredMarkers, static m => m.Id);
+        var circleDiff = FeatureDiffer.Diff(InternalCircles, desiredCircles, static c => c.Id);
+        var polylineDiff = FeatureDiffer.Diff(InternalPolylines, desiredPolylines, static p => p.Id);
 
         if (!markerDiff.HasChanges && !circleDiff.HasChanges && !polylineDiff.HasChanges)
         {
@@ -618,10 +620,57 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         await MapJs.SyncFeaturesAsync(JsRuntime, Logger.Value, MapReference, markerDiff, circleDiff, polylineDiff);
 
         // snapshot new state
-        InternalMarkers = [.. Markers];
-        InternalCircles = [.. Circles];
-        InternalPolylines = [.. Polylines];
+        InternalMarkers = desiredMarkers;
+        InternalCircles = desiredCircles;
+        InternalPolylines = desiredPolylines;
     }
+
+    internal async ValueTask SetOverlayMarkersAsync(string ownerId, IReadOnlyList<Marker> markers)
+    {
+        _registeredOverlayMarkers[ownerId] = markers;
+        if (IsInitialized)
+        {
+            await SyncFeaturesAsync();
+        }
+    }
+
+    internal async ValueTask SetOverlayCirclesAsync(string ownerId, IReadOnlyList<Circle> circles)
+    {
+        _registeredOverlayCircles[ownerId] = circles;
+        if (IsInitialized)
+        {
+            await SyncFeaturesAsync();
+        }
+    }
+
+    internal async ValueTask SetOverlayPolylinesAsync(string ownerId, IReadOnlyList<Polyline> polylines)
+    {
+        _registeredOverlayPolylines[ownerId] = polylines;
+        if (IsInitialized)
+        {
+            await SyncFeaturesAsync();
+        }
+    }
+
+    internal async ValueTask RemoveOverlayFeaturesAsync(string ownerId)
+    {
+        var changed = _registeredOverlayMarkers.Remove(ownerId);
+        changed = _registeredOverlayCircles.Remove(ownerId) || changed;
+        changed = _registeredOverlayPolylines.Remove(ownerId) || changed;
+        if (changed && IsInitialized)
+        {
+            await SyncFeaturesAsync();
+        }
+    }
+
+    private List<Marker> GetDesiredMarkers() =>
+        [.. Markers, .. _registeredOverlayMarkers.Values.SelectMany(markers => markers)];
+
+    private List<Circle> GetDesiredCircles() =>
+        [.. Circles, .. _registeredOverlayCircles.Values.SelectMany(circles => circles)];
+
+    private List<Polyline> GetDesiredPolylines() =>
+        [.. Polylines, .. _registeredOverlayPolylines.Values.SelectMany(polylines => polylines)];
 
     private ValueTask SetOverlaysAsync() =>
         MapJs.SetOverlaysAsync(JsRuntime, Logger.Value, MapReference, InternalOverlays);
@@ -791,25 +840,4 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     {
         return [.. Images];
     }
-
-    private static RenderFragment RenderTrackedDataLayer(ITrackedDataLayer trackedDataLayer) =>
-        trackedDataLayer switch
-        {
-            TrackedDataLayer<object> objectLayer => builder =>
-            {
-                builder.OpenComponent<TrackedDataSource<object>>(0);
-                builder.AddAttribute(1, nameof(TrackedDataSource<object>.Layer), objectLayer);
-                builder.CloseComponent();
-            },
-            _ => BuildGenericTrackedDataSource(trackedDataLayer),
-        };
-
-    private static RenderFragment BuildGenericTrackedDataSource(ITrackedDataLayer trackedDataLayer) =>
-        builder =>
-        {
-            var componentType = typeof(TrackedDataSource<>).MakeGenericType(trackedDataLayer.ItemType);
-            builder.OpenComponent(0, componentType);
-            builder.AddAttribute(1, nameof(TrackedDataSource<object>.Layer), trackedDataLayer);
-            builder.CloseComponent();
-        };
 }

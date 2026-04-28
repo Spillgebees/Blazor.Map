@@ -27,6 +27,9 @@ public partial class VectorTileSource : ComponentBase, IMapSource, IAsyncDisposa
     [CascadingParameter]
     public BaseMap? Map { get; set; }
 
+    [CascadingParameter]
+    private MapSectionContext? SectionContext { get; set; }
+
     /// <summary>
     /// A unique identifier for this source.
     /// </summary>
@@ -45,6 +48,17 @@ public partial class VectorTileSource : ComponentBase, IMapSource, IAsyncDisposa
     /// </summary>
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public bool AllowOutsideMapSources { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (!AllowOutsideMapSources && SectionContext?.Kind is not MapContentSectionKind.Sources)
+        {
+            throw new InvalidOperationException("VectorTileSource must be placed inside MapSources.");
+        }
+    }
 
     [Parameter]
     public string? Stack { get; set; }
