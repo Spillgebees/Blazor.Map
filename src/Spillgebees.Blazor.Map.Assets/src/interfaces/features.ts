@@ -45,6 +45,7 @@ export interface IPolyline {
 
 export interface IPopupOptions {
   content: string;
+  contentMode: "text" | "rawHtml";
   trigger: "click" | "hover" | "permanent";
   anchor: "auto" | "top" | "bottom" | "left" | "right";
   offset: IPoint | null;

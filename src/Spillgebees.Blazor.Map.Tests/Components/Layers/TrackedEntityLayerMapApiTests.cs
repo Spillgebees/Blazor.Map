@@ -63,7 +63,7 @@ public class TrackedEntityLayerMapApiTests : BunitContext
     {
         // arrange
         var cut = Render<MapTrackedEntityHarness>(parameters =>
-            parameters.Add(p => p.PopupSelector, vehicle => new PopupOptions(vehicle.Id, PopupTrigger.Hover))
+            parameters.Add(p => p.PopupSelector, vehicle => PopupOptions.FromText(vehicle.Id, PopupTrigger.Hover))
         );
         await cut.Instance.Map.OnMapInitializedAsync();
         var hitArea = GetPrimaryHitArea(cut);
@@ -89,7 +89,7 @@ public class TrackedEntityLayerMapApiTests : BunitContext
 
         var cut = Render<MapTrackedEntityHarness>(parameters =>
             parameters
-                .Add(p => p.PopupSelector, vehicle => new PopupOptions(vehicle.Id, PopupTrigger.Hover))
+                .Add(p => p.PopupSelector, vehicle => PopupOptions.FromText(vehicle.Id, PopupTrigger.Hover))
                 .Add(
                     p => p.BeforeShowPopupAsync,
                     () =>
@@ -137,7 +137,7 @@ public class TrackedEntityLayerMapApiTests : BunitContext
                         new TestVehicle("vehicle-2", new Coordinate(49.7, 6.2), "vehicle-icon"),
                     ]
                 )
-                .Add(p => p.PopupSelector, vehicle => new PopupOptions(vehicle.Id, PopupTrigger.Hover))
+                .Add(p => p.PopupSelector, vehicle => PopupOptions.FromText(vehicle.Id, PopupTrigger.Hover))
                 .Add(
                     p => p.BeforeShowPopupAsync,
                     () =>
@@ -160,7 +160,14 @@ public class TrackedEntityLayerMapApiTests : BunitContext
 
         // assert
         JSInterop.Invocations[ShowPopupIdentifier].Should().HaveCount(1);
-        JSInterop.Invocations[ShowPopupIdentifier][0].Arguments[2].Should().Be("vehicle-2");
+        var options = JSInterop
+            .Invocations[ShowPopupIdentifier][0]
+            .Arguments[2]
+            .Should()
+            .BeOfType<PopupOptions>()
+            .Subject;
+        options.Content.Should().Be("vehicle-2");
+        options.ContentMode.Should().Be(PopupContentMode.Text);
     }
 
     [Test, Timeout(TestTimeoutMs)]

@@ -5,6 +5,7 @@ import {
   fireMapEvent,
   getLatestMockMapInstance,
   getMockMapSources,
+  getMockPopupConstructor,
   resetMockMapState,
 } from "../../test/maplibreMock";
 import { resetWindowGlobals } from "../../test/windowSetup";
@@ -24,6 +25,204 @@ import {
   unregisterLayerEvents,
   wireLayerEvents,
 } from "./geojson";
+
+describe("popup content", () => {
+  beforeEach(() => {
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+  });
+
+  it("should use setText for programmatic text popup content", () => {
+    // arrange
+    const mapElement = setupMapElement();
+
+    // act
+    window.Spillgebees.Map.mapFunctions.showPopup(
+      mapElement,
+      { latitude: 1, longitude: 2 },
+      {
+        content: "<strong>safe</strong>",
+        contentMode: "text",
+        trigger: "click",
+        anchor: "auto",
+        offset: null,
+        closeButton: true,
+        maxWidth: null,
+        className: null,
+      },
+    );
+
+    // assert
+    const popup = getMockPopupConstructor().mock.results[0]?.value;
+    expect(popup.setText).toHaveBeenCalledWith("<strong>safe</strong>");
+    expect(popup.setHTML).not.toHaveBeenCalled();
+  });
+
+  it("should move DOM content into popup and return it on remove", () => {
+    // arrange
+    const mapElement = setupMapElement();
+    const placeholder = document.createElement("div");
+    const content = document.createElement("button");
+    const dotNetHelper = createMockDotNetHelper();
+    placeholder.appendChild(content);
+
+    // act
+    window.Spillgebees.Map.mapFunctions.setPopupContent(
+      mapElement,
+      "popup-1",
+      { latitude: 1, longitude: 2 },
+      {
+        content: "",
+        contentMode: "text",
+        trigger: "click",
+        anchor: "auto",
+        offset: null,
+        closeButton: true,
+        maxWidth: null,
+        className: null,
+      },
+      placeholder,
+      content,
+      dotNetHelper,
+    );
+    window.Spillgebees.Map.mapFunctions.removePopupContent(mapElement, "popup-1");
+
+    // assert
+    const popup = getMockPopupConstructor().mock.results[0]?.value;
+    expect(popup.setDOMContent).toHaveBeenCalledWith(content);
+    expect(placeholder.contains(content)).toBe(true);
+  });
+
+  it("should notify .NET when user closes DOM content popup", () => {
+    // arrange
+    const mapElement = setupMapElement();
+    const placeholder = document.createElement("div");
+    const content = document.createElement("button");
+    const dotNetHelper = createMockDotNetHelper();
+
+    // act
+    window.Spillgebees.Map.mapFunctions.setPopupContent(
+      mapElement,
+      "popup-1",
+      { latitude: 1, longitude: 2 },
+      {
+        content: "",
+        contentMode: "text",
+        trigger: "click",
+        anchor: "auto",
+        offset: null,
+        closeButton: true,
+        maxWidth: null,
+        className: null,
+      },
+      placeholder,
+      content,
+      dotNetHelper,
+    );
+    const popup = getMockPopupConstructor().mock.results[0]?.value;
+    const closeCallback = popup.on.mock.calls[0]?.[1] as (() => void) | undefined;
+    closeCallback?.();
+
+    // assert
+    // biome-ignore lint/security/noSecrets: .NET interop method name, not a secret
+    expect(dotNetHelper.invokeMethodAsync).toHaveBeenCalledWith("OnPopupClosedAsync");
+  });
+
+  it("should return DOM content and delete registration when user closes DOM content popup", () => {
+    // arrange
+    const mapElement = setupMapElement();
+    const placeholder = document.createElement("div");
+    const content = document.createElement("button");
+    const dotNetHelper = createMockDotNetHelper();
+
+    window.Spillgebees.Map.mapFunctions.setPopupContent(
+      mapElement,
+      "popup-1",
+      { latitude: 1, longitude: 2 },
+      {
+        content: "",
+        contentMode: "text",
+        trigger: "click",
+        anchor: "auto",
+        offset: null,
+        closeButton: true,
+        maxWidth: null,
+        className: null,
+      },
+      placeholder,
+      content,
+      dotNetHelper,
+    );
+    const firstPopup = getMockPopupConstructor().mock.results[0]?.value;
+    const closeCallback = firstPopup.on.mock.calls[0]?.[1] as (() => void) | undefined;
+
+    // act
+    closeCallback?.();
+
+    // assert
+    expect(placeholder.contains(content)).toBe(true);
+
+    // act
+    window.Spillgebees.Map.mapFunctions.setPopupContent(
+      mapElement,
+      "popup-1",
+      { latitude: 1, longitude: 2 },
+      {
+        content: "",
+        contentMode: "text",
+        trigger: "click",
+        anchor: "auto",
+        offset: null,
+        closeButton: true,
+        maxWidth: null,
+        className: null,
+      },
+      placeholder,
+      content,
+      dotNetHelper,
+    );
+
+    // assert
+    expect(firstPopup.remove).not.toHaveBeenCalled();
+    expect(getMockPopupConstructor()).toHaveBeenCalledTimes(2);
+  });
+
+  it("should not notify .NET when DOM content popup is removed by code", () => {
+    // arrange
+    const mapElement = setupMapElement();
+    const placeholder = document.createElement("div");
+    const content = document.createElement("button");
+    const dotNetHelper = createMockDotNetHelper();
+
+    // act
+    window.Spillgebees.Map.mapFunctions.setPopupContent(
+      mapElement,
+      "popup-1",
+      { latitude: 1, longitude: 2 },
+      {
+        content: "",
+        contentMode: "text",
+        trigger: "click",
+        anchor: "auto",
+        offset: null,
+        closeButton: true,
+        maxWidth: null,
+        className: null,
+      },
+      placeholder,
+      content,
+      dotNetHelper,
+    );
+    window.Spillgebees.Map.mapFunctions.removePopupContent(mapElement, "popup-1");
+    const popup = getMockPopupConstructor().mock.results[0]?.value;
+    const closeCallback = popup.on.mock.calls[0]?.[1] as (() => void) | undefined;
+    closeCallback?.();
+
+    // assert
+    expect(dotNetHelper.invokeMethodAsync).not.toHaveBeenCalled();
+  });
+});
 
 function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions {
   return {

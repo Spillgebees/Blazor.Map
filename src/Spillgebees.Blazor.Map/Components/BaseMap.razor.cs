@@ -10,6 +10,7 @@ using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Layers;
+using Spillgebees.Blazor.Map.Models.Popups;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 using Spillgebees.Blazor.Map.Runtime.Scene;
 using Spillgebees.Blazor.Map.Utilities;
@@ -306,30 +307,44 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         MapJs.SetStyleLayerVisibilityAsync(JsRuntime, Logger.Value, MapReference, styleId, layerId, visible);
 
     /// <summary>
-    /// Shows a popup at the specified coordinate with HTML content.
+    /// Shows a popup at the specified coordinate with safe text content.
     /// Only one programmatic popup is shown at a time — calling this again replaces the previous one.
     /// </summary>
     /// <param name="position">The geographic position for the popup.</param>
-    /// <param name="html">The HTML content to display.</param>
+    /// <param name="text">The text content to display.</param>
     /// <param name="options">Optional popup configuration.</param>
-    public async ValueTask ShowPopupAsync(Coordinate position, string html, Models.Popups.PopupOptions? options = null)
+    public ValueTask ShowPopupAsync(Coordinate position, string text, PopupOptions? options = null)
     {
-        await JsRuntime.InvokeVoidAsync(
-            "Spillgebees.Map.mapFunctions.showPopup",
-            MapReference,
-            position,
-            html,
-            options
-        );
+        var popupOptions = (options ?? PopupOptions.FromText(text)) with
+        {
+            Content = text,
+            ContentMode = PopupContentMode.Text,
+        };
+
+        return MapJs.ShowPopupAsync(JsRuntime, Logger.Value, MapReference, position, popupOptions);
     }
 
     /// <summary>
-    /// Closes any programmatic popup currently shown via <see cref="ShowPopupAsync"/>.
+    /// Shows a popup at the specified coordinate with raw HTML content. Validate and sanitize caller-provided HTML first.
     /// </summary>
-    public async ValueTask ClosePopupAsync()
+    public ValueTask ShowRawHtmlPopupAsync(Coordinate position, string html, PopupOptions? options = null)
     {
-        await JsRuntime.InvokeVoidAsync("Spillgebees.Map.mapFunctions.closePopup", MapReference);
+        var popupOptions = (options ?? PopupOptions.FromRawHtml(html)) with
+        {
+            Content = html,
+            ContentMode = PopupContentMode.RawHtml,
+        };
+
+        return MapJs.ShowPopupAsync(JsRuntime, Logger.Value, MapReference, position, popupOptions);
     }
+
+    internal ValueTask ShowPopupAsync(Coordinate position, PopupOptions options) =>
+        MapJs.ShowPopupAsync(JsRuntime, Logger.Value, MapReference, position, options);
+
+    /// <summary>
+    /// Closes any programmatic popup currently shown by popup APIs.
+    /// </summary>
+    public ValueTask ClosePopupAsync() => MapJs.ClosePopupAsync(JsRuntime, Logger.Value, MapReference);
 
     /// <summary>
     /// Sets the feature state for a specific feature in a source.

@@ -5,6 +5,7 @@ using Spillgebees.Blazor.Map.Components;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Layers;
+using Spillgebees.Blazor.Map.Models.Popups;
 using Spillgebees.Blazor.Map.Runtime.Scene;
 using Spillgebees.Blazor.Map.Utilities;
 
@@ -167,6 +168,47 @@ internal static class MapJs
         ElementReference mapReference,
         string controlId
     ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.removeControlContent", mapReference, controlId);
+
+    internal static ValueTask ShowPopupAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        Coordinate position,
+        PopupOptions options
+    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.showPopup", mapReference, position, options);
+
+    internal static ValueTask ClosePopupAsync(IJSRuntime jsRuntime, ILogger logger, ElementReference mapReference) =>
+        jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.closePopup", mapReference);
+
+    internal static ValueTask SetPopupContentAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        string popupId,
+        Coordinate position,
+        PopupOptions options,
+        ElementReference placeholderReference,
+        ElementReference contentReference,
+        DotNetObjectReference<MapPopup> dotNetReference
+    ) =>
+        jsRuntime.SafeInvokeVoidAsync(
+            logger,
+            $"{JsNamespace}.setPopupContent",
+            mapReference,
+            popupId,
+            position,
+            options,
+            placeholderReference,
+            contentReference,
+            dotNetReference
+        );
+
+    internal static ValueTask RemovePopupContentAsync(
+        IJSRuntime jsRuntime,
+        ILogger logger,
+        ElementReference mapReference,
+        string popupId
+    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.removePopupContent", mapReference, popupId);
 
     /// <summary>
     /// Updates map options (style, pitch, bearing, terrain, projection).

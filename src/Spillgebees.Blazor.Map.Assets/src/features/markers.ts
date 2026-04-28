@@ -47,7 +47,11 @@ function createPopup(options: IPopupOptions): MapLibrePopup {
   }
 
   const popup = new MapLibrePopup(popupOptions);
-  popup.setHTML(options.content);
+  if (options.contentMode === "rawHtml") {
+    popup.setHTML(options.content);
+  } else {
+    popup.setText(options.content);
+  }
 
   return popup;
 }
