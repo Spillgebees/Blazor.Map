@@ -40,6 +40,22 @@ public class MapCustomControlTests : BunitContext
         cut.Markup.Should().Contain("sgb-map-custom-control-placeholder");
     }
 
+    [Test]
+    public void Should_expose_button_group_label_with_group_semantics()
+    {
+        // arrange & act
+        var cut = Render<SgbMap>(parameters =>
+            parameters.AddChildContent<MapControlButtonGroup>(control =>
+                control.Add(c => c.Id, "station-tools").Add(c => c.Label, "Station tools").AddChildContent("Focus")
+            )
+        );
+
+        // assert
+        var group = cut.Find(".sgb-map-control-button-group");
+        group.GetAttribute("role").Should().Be("group");
+        group.GetAttribute("aria-label").Should().Be("Station tools");
+    }
+
     [Test, Timeout(TestTimeoutMs)]
     public async Task Should_register_content_control_and_sync_element_references_after_map_ready(
         CancellationToken cancellationToken

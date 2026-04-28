@@ -14,37 +14,31 @@
         <MapCenterControl Position="ControlPosition.TopLeft" Order="5" />
         <MapScaleControl Position="ControlPosition.BottomLeft" Order="5" />
 
-        <MapCustomControl Id="station-focus"
+        <MapActionControl Id="station-focus"
                           Position="ControlPosition.TopLeft"
-                          Order="15">
-            <div class="sgb-map-ctrl-group docs-station-focus" aria-label="Station focus">
-                <button type="button"
-                        class="docs-station-focus-button"
-                        aria-label="Focus @NextStation.Name"
-                        title="Focus @NextStation.Name"
-                        @onclick="FocusNextStationAsync">
-                    <svg class="docs-station-focus-icon"
-                         viewBox="0 0 24 24"
-                         aria-hidden="true"
-                         focusable="false">
-                        <path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2" />
-                        <circle cx="12"
-                                cy="10"
-                                r="2"
-                                fill="currentColor" />
-                    </svg>
-                    <span class="docs-station-focus-copy">
-                        <span class="docs-station-focus-kicker">Focus station</span>
-                        <span class="docs-station-focus-label">@FocusLabel</span>
-                    </span>
-                </button>
-            </div>
-        </MapCustomControl>
+                          Order="15"
+                          Label="@FocusActionLabel"
+                          Title="@FocusActionLabel"
+                          Text="@FocusText"
+                          OnClick="FocusNextStationAsync">
+            <Icon>
+                <svg class="docs-station-focus-icon"
+                     viewBox="0 0 24 24"
+                     aria-hidden="true"
+                     focusable="false">
+                    <path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2" />
+                    <circle cx="12"
+                            cy="10"
+                            r="2"
+                            fill="currentColor" />
+                </svg>
+            </Icon>
+        </MapActionControl>
 
         <MapLegendControl Id="network-legend"
                           Position="ControlPosition.TopRight"
@@ -91,6 +85,10 @@
     private StationFeature NextStation => _stations[_nextStationIndex];
 
     private string FocusLabel => _focusedStationName is null ? NextStation.Name : $"Focused {_focusedStationName}";
+
+    private string FocusActionLabel => $"Focus {NextStation.Name}";
+
+    private string FocusText => $"Focus station: {FocusLabel}";
 
     private object NetworkData => new
     {

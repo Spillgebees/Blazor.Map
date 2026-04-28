@@ -1,0 +1,9 @@
+@namespace Spillgebees.Blazor.Map.Components
+
+<div @ref="_placeholderReference" class="sgb-map-custom-control-placeholder" hidden>
+    <div id="@_contentId" @ref="_contentReference" class="sgb-map-custom-control-content" hidden>
+        <div class="@GroupClass" role="group" aria-label="@Label">
+            @ChildContent
+        </div>
+    </div>
+</div>

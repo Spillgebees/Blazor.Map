@@ -24,7 +24,7 @@ public class CustomControlsExampleTests : BunitContext
         var cut = Render<CustomControlsExample>();
 
         // act
-        var focusButton = cut.Find("button.docs-station-focus-button");
+        var focusButton = cut.Find("button.sgb-map-action-control-button");
 
         // assert
         cut.FindComponents<MapGeolocateControl>().Should().BeEmpty();
@@ -32,7 +32,8 @@ public class CustomControlsExampleTests : BunitContext
         cut.Markup.Should().Contain("Focus station");
         cut.Markup.Should().Contain("Central Station");
         focusButton.GetAttribute("aria-label").Should().Be("Focus Central Station");
-        focusButton.ParentElement!.ClassList.Should().Contain("sgb-map-ctrl-group");
+        cut.FindComponents<MapActionControl>().Should().HaveCount(1);
+        focusButton.ParentElement!.ClassList.Should().NotContain("sgb-map-ctrl-group");
 
         var icon = focusButton.QuerySelector("svg.docs-station-focus-icon");
         icon.Should().NotBeNull();
@@ -50,11 +51,11 @@ public class CustomControlsExampleTests : BunitContext
         CountFeatures(source.Instance.Data).Should().Be(4);
 
         // act
-        cut.Find("button.docs-station-focus-button").Click();
+        cut.Find("button.sgb-map-action-control-button").Click();
 
         // assert
         cut.Markup.Should().Contain("Focused Central Station");
-        cut.Find("button.docs-station-focus-button").GetAttribute("aria-label").Should().Be("Focus North Station");
+        cut.Find("button.sgb-map-action-control-button").GetAttribute("aria-label").Should().Be("Focus North Station");
         CountFeatures(source.Instance.Data).Should().Be(4);
         JSInterop.VerifyInvoke(FlyToIdentifier);
 
