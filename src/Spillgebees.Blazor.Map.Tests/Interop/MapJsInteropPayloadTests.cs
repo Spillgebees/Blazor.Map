@@ -1,5 +1,8 @@
+using System.Text.Json;
 using AwesomeAssertions;
+using Microsoft.AspNetCore.Components;
 using Spillgebees.Blazor.Map.Components;
+using Spillgebees.Blazor.Map.Components.Layers;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Layers;
@@ -250,6 +253,53 @@ public class MapJsInteropPayloadTests : BunitContext
         var coordinates = GetRequiredPropertyValue(updatedPolylinePayload!, "Coordinates");
         coordinates.Should().BeOfType<Coordinate[]>();
         ((Coordinate[])coordinates).Should().HaveCount(2);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    [Arguments(MapAlignment.Map, "map")]
+    [Arguments(MapAlignment.Viewport, "viewport")]
+    [Arguments(MapAlignment.Auto, "auto")]
+    public void Should_wire_map_marker_alignment_values_as_maplibre_strings(
+        MapAlignment alignment,
+        string expectedValue,
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange & act
+        Render<SgbMap>(parameters =>
+            parameters.Add(
+                p => p.ChildContent,
+                mapBuilder =>
+                {
+                    mapBuilder.OpenComponent<MapOverlays>(0);
+                    mapBuilder.AddAttribute(
+                        1,
+                        nameof(MapOverlays.ChildContent),
+                        (RenderFragment)(
+                            overlayBuilder =>
+                            {
+                                overlayBuilder.OpenComponent<MapMarker>(0);
+                                overlayBuilder.AddAttribute(1, nameof(MapMarker.Id), "marker-1");
+                                overlayBuilder.AddAttribute(2, nameof(MapMarker.Position), new Coordinate(49.61, 6.13));
+                                overlayBuilder.AddAttribute(3, nameof(MapMarker.RotationAlignment), alignment);
+                                overlayBuilder.AddAttribute(4, nameof(MapMarker.PitchAlignment), alignment);
+                                overlayBuilder.CloseComponent();
+                            }
+                        )
+                    );
+                    mapBuilder.CloseComponent();
+                }
+            )
+        );
+
+        // assert
+        var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
+        var markerPayloads = invocation.Arguments[6].Should().BeAssignableTo<IReadOnlyList<Marker>>().Subject;
+        markerPayloads.Should().HaveCount(1);
+        var json = JsonSerializer.Serialize(markerPayloads[0]);
+
+        json.Should().Contain($"\"RotationAlignment\":\"{expectedValue}\"");
+        json.Should().Contain($"\"PitchAlignment\":\"{expectedValue}\"");
     }
 
     private static object GetRequiredPropertyValue(object source, string propertyName)

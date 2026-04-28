@@ -1,3 +1,5 @@
+using Spillgebees.Blazor.Map.Components.Layers;
+
 namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 /// <summary>
@@ -29,7 +31,7 @@ public static class TrackedEntityGeoJsonBuilder
         properties[TrackedEntityFeatureProperties.IconImage] = entity.Symbol.IconImage;
         properties[TrackedEntityFeatureProperties.IconSize] = entity.Symbol.Size;
         properties[TrackedEntityFeatureProperties.IconRotation] = entity.Symbol.Rotation;
-        properties[TrackedEntityFeatureProperties.Anchor] = entity.Symbol.Anchor;
+        properties[TrackedEntityFeatureProperties.Anchor] = entity.Symbol.Anchor?.ToJsonName();
         properties[TrackedEntityFeatureProperties.Offset] = ToOffsetArray(entity.Symbol.Offset);
 
         return BuildPointFeature(entity.Id, entity.Position, properties);
@@ -50,7 +52,7 @@ public static class TrackedEntityGeoJsonBuilder
             properties[TrackedEntityFeatureProperties.DecorationId] = decoration.Id;
             properties[TrackedEntityFeatureProperties.Text] = decoration.Text;
             properties[TrackedEntityFeatureProperties.IconImage] = decoration.IconImage;
-            properties[TrackedEntityFeatureProperties.Anchor] = decoration.Anchor;
+            properties[TrackedEntityFeatureProperties.Anchor] = decoration.Anchor?.ToJsonName();
             properties[TrackedEntityFeatureProperties.Offset] = ToOffsetArray(decoration.Offset);
             properties[TrackedEntityFeatureProperties.Color] = decoration.Color ?? entity.Color;
             properties[TrackedEntityFeatureProperties.IconSize] = decoration.IconSize;

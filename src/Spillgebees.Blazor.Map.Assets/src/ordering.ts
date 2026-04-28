@@ -8,7 +8,7 @@ type OrderedNode = {
 
 type LayerPlan = {
   layerId: string;
-  beforeId: string | null;
+  beforeLayerId: string | null;
 };
 
 export function resolveLayerOrder(layers: RegisteredMapLayer[], styleLayerIds: string[]): string[] {
@@ -30,15 +30,15 @@ export function buildLayerPlan(layers: RegisteredMapLayer[], styleLayerIds: stri
   }
 
   for (const layer of layers) {
-    const effectiveBeforeId = layer.imperativeBeforeId ?? layer.beforeId;
-    if (!effectiveBeforeId) {
+    const effectiveBeforeLayerId = layer.imperativeBeforeLayerId ?? layer.beforeLayerId;
+    if (!effectiveBeforeLayerId) {
       continue;
     }
 
-    const isKnownCustom = layers.some((candidate) => candidate.layerId === effectiveBeforeId);
-    const isKnownNative = styleLayerIds.includes(effectiveBeforeId);
+    const isKnownCustom = layers.some((candidate) => candidate.layerId === effectiveBeforeLayerId);
+    const isKnownNative = styleLayerIds.includes(effectiveBeforeLayerId);
     if (!isKnownCustom && !isKnownNative) {
-      opaqueAnchors.set(layer.layerId, effectiveBeforeId);
+      opaqueAnchors.set(layer.layerId, effectiveBeforeLayerId);
     }
   }
 
@@ -51,7 +51,7 @@ export function buildLayerPlan(layers: RegisteredMapLayer[], styleLayerIds: stri
 
       return {
         layerId: layer.layerId,
-        beforeId: opaqueAnchors.get(layer.layerId) ?? fullOrder[layerIndex + 1]?.id ?? null,
+        beforeLayerId: opaqueAnchors.get(layer.layerId) ?? fullOrder[layerIndex + 1]?.id ?? null,
       };
     })
     .sort((left, right) => {
@@ -67,7 +67,7 @@ function resolveFullOrder(layers: RegisteredMapLayer[], styleLayerIds: string[])
   const adjacency = new Map<string, Set<string>>();
   const indegree = new Map<string, number>();
   const layersById = new Map(layers.map((layer) => [layer.layerId, layer]));
-  const stacks = new Map<string, RegisteredMapLayer[]>();
+  const layerGroups = new Map<string, RegisteredMapLayer[]>();
 
   function ensureNode(node: OrderedNode): void {
     if (nodes.has(node.id)) {
@@ -112,47 +112,47 @@ function resolveFullOrder(layers: RegisteredMapLayer[], styleLayerIds: string[])
       kind: "custom",
     });
 
-    const stack = layer.ordering.stack;
-    if (!stack) {
+    const layerGroup = layer.ordering.layerGroup;
+    if (!layerGroup) {
       continue;
     }
 
-    const stackLayers = stacks.get(stack) ?? [];
-    stackLayers.push(layer);
-    stacks.set(stack, stackLayers);
+    const groupedLayers = layerGroups.get(layerGroup) ?? [];
+    groupedLayers.push(layer);
+    layerGroups.set(layerGroup, groupedLayers);
   }
 
-  for (const stackLayers of stacks.values()) {
-    stackLayers.sort((left, right) => left.ordering.declarationOrder - right.ordering.declarationOrder);
+  for (const groupedLayers of layerGroups.values()) {
+    groupedLayers.sort((left, right) => left.ordering.declarationOrder - right.ordering.declarationOrder);
 
-    for (let index = 1; index < stackLayers.length; index++) {
-      addEdge(stackLayers[index - 1].layerId, stackLayers[index].layerId);
+    for (let index = 1; index < groupedLayers.length; index++) {
+      addEdge(groupedLayers[index - 1].layerId, groupedLayers[index].layerId);
     }
   }
 
   for (const layer of layers) {
-    const effectiveBeforeId = layer.imperativeBeforeId ?? layer.beforeId;
-    const respectsStackAnchors = effectiveBeforeId == null;
+    const effectiveBeforeLayerId = layer.imperativeBeforeLayerId ?? layer.beforeLayerId;
+    const respectsLayerGroupAnchors = effectiveBeforeLayerId == null;
 
-    if (respectsStackAnchors && layer.ordering.beforeStack) {
-      const targetStackLayers = stacks.get(layer.ordering.beforeStack);
-      if (targetStackLayers && targetStackLayers.length > 0) {
-        for (const target of targetStackLayers) {
+    if (respectsLayerGroupAnchors && layer.ordering.beforeLayerGroup) {
+      const targetGroupedLayers = layerGroups.get(layer.ordering.beforeLayerGroup);
+      if (targetGroupedLayers && targetGroupedLayers.length > 0) {
+        for (const target of targetGroupedLayers) {
           addEdge(layer.layerId, target.layerId);
         }
       }
     }
 
-    if (respectsStackAnchors && layer.ordering.afterStack) {
-      const targetStackLayers = stacks.get(layer.ordering.afterStack);
-      if (targetStackLayers && targetStackLayers.length > 0) {
-        for (const target of targetStackLayers) {
+    if (respectsLayerGroupAnchors && layer.ordering.afterLayerGroup) {
+      const targetGroupedLayers = layerGroups.get(layer.ordering.afterLayerGroup);
+      if (targetGroupedLayers && targetGroupedLayers.length > 0) {
+        for (const target of targetGroupedLayers) {
           addEdge(target.layerId, layer.layerId);
         }
       }
     }
 
-    if (effectiveBeforeId === undefined || effectiveBeforeId === null) {
+    if (effectiveBeforeLayerId === undefined || effectiveBeforeLayerId === null) {
       const lastNativeLayerId = nativeLayerIds.at(-1);
       if (lastNativeLayerId) {
         addEdge(lastNativeLayerId, layer.layerId);
@@ -161,23 +161,23 @@ function resolveFullOrder(layers: RegisteredMapLayer[], styleLayerIds: string[])
       continue;
     }
 
-    if (layersById.has(effectiveBeforeId)) {
-      addEdge(layer.layerId, effectiveBeforeId);
+    if (layersById.has(effectiveBeforeLayerId)) {
+      addEdge(layer.layerId, effectiveBeforeLayerId);
       continue;
     }
 
-    if (!nativeLayerIdSet.has(effectiveBeforeId)) {
+    if (!nativeLayerIdSet.has(effectiveBeforeLayerId)) {
       continue;
     }
 
-    const nativeIndex = nativeLayerIds.indexOf(effectiveBeforeId);
+    const nativeIndex = nativeLayerIds.indexOf(effectiveBeforeLayerId);
     const previousNativeLayerId = nativeIndex > 0 ? nativeLayerIds[nativeIndex - 1] : null;
 
     if (previousNativeLayerId) {
       addEdge(previousNativeLayerId, layer.layerId);
     }
 
-    addEdge(layer.layerId, effectiveBeforeId);
+    addEdge(layer.layerId, effectiveBeforeLayerId);
   }
 
   const queue = Array.from(nodes.values())

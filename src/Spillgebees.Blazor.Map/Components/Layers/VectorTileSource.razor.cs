@@ -8,14 +8,14 @@ namespace Spillgebees.Blazor.Map.Components.Layers;
 /// <summary>
 /// A vector tile source component that loads tiles from a TileJSON URL.
 /// Place <see cref="LayerBase"/>-derived components as children to create layers
-/// that reference this source. Each child layer must specify a <see cref="LayerBase.SourceLayer"/>
+/// that reference this source. Each child layer must specify a <see cref="LayerBase.SourceLayerId"/>
 /// to select which sub-layer of the vector tiles to render.
 /// </summary>
 /// <example>
 /// <code>
 /// &lt;VectorTileSource Id="railway" Url="https://server.com/railway-tiles"&gt;
-///     &lt;LineLayer Id="tracks" SourceLayer="railway_lines" Color="#555" Width="2" /&gt;
-///     &lt;CircleLayer Id="stations" SourceLayer="stops" Radius="5" Color="#333" /&gt;
+///     &lt;LineLayer Id="tracks" SourceLayerId="railway_lines" Color="#555" Width="2" /&gt;
+///     &lt;CircleLayer Id="stations" SourceLayerId="stops" Radius="5" Color="#333" /&gt;
 /// &lt;/VectorTileSource&gt;
 /// </code>
 /// </example>
@@ -64,13 +64,13 @@ public partial class VectorTileSource : ComponentBase, IMapSource, IAsyncDisposa
     }
 
     [Parameter]
-    public string? Stack { get; set; }
+    public string? LayerGroup { get; set; }
 
     [Parameter]
-    public string? BeforeStack { get; set; }
+    public string? BeforeLayerGroup { get; set; }
 
     [Parameter]
-    public string? AfterStack { get; set; }
+    public string? AfterLayerGroup { get; set; }
 
     /// <summary>
     /// Attribution text for the source. Overrides attribution from TileJSON if set.
@@ -102,7 +102,7 @@ public partial class VectorTileSource : ComponentBase, IMapSource, IAsyncDisposa
     private MapLayerOrderOptions _previousOrderOptions = MapLayerOrderOptions.Empty;
 
     /// <inheritdoc/>
-    public MapLayerOrderOptions OrderOptions => new(Stack, BeforeStack, AfterStack);
+    public MapLayerOrderOptions OrderOptions => new(LayerGroup, BeforeLayerGroup, AfterLayerGroup);
 
     /// <inheritdoc/>
     public async Task RegisterLayerAsync(LayerBase layer)
@@ -160,7 +160,7 @@ public partial class VectorTileSource : ComponentBase, IMapSource, IAsyncDisposa
                     _pendingLayers.Select(layer => new MapLayerDescriptor(
                         layer.Id,
                         layer.BuildLayerSpec(),
-                        layer.BeforeId,
+                        layer.BeforeLayerId,
                         layer.GetLayerOrderRegistration()
                     ))
                 );
@@ -188,7 +188,7 @@ public partial class VectorTileSource : ComponentBase, IMapSource, IAsyncDisposa
             _registeredLayers.Select(layer => new MapLayerDescriptor(
                 layer.Id,
                 layer.BuildLayerSpec(),
-                layer.BeforeId,
+                layer.BeforeLayerId,
                 layer.GetLayerOrderRegistration()
             ))
         );
@@ -231,7 +231,12 @@ public partial class VectorTileSource : ComponentBase, IMapSource, IAsyncDisposa
     private async Task AddLayerToMapAsync(LayerBase layer)
     {
         await Map!.SceneRegistry.RegisterLayerAsync(
-            new MapLayerDescriptor(layer.Id, layer.BuildLayerSpec(), layer.BeforeId, layer.GetLayerOrderRegistration())
+            new MapLayerDescriptor(
+                layer.Id,
+                layer.BuildLayerSpec(),
+                layer.BeforeLayerId,
+                layer.GetLayerOrderRegistration()
+            )
         );
         await layer.NotifyLayerAddedAsync();
     }

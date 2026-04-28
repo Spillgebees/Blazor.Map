@@ -20,7 +20,7 @@ public sealed record TrackedEntityVisualOptions<TItem>(
     StyleValue<double>? PrimaryIconOpacity,
     int MaxZoom = TrackedEntityVisualDefaults.DefaultMaxZoom,
     string? Attribution = null,
-    string? Stack = null,
-    string? BeforeStack = null,
-    string? AfterStack = null
+    string? LayerGroup = null,
+    string? BeforeLayerGroup = null,
+    string? AfterLayerGroup = null
 ) { }

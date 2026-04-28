@@ -272,7 +272,7 @@ describe("addMapLayer", () => {
     expect(mockMap.addLayer).toHaveBeenCalledWith(layerSpec, undefined);
   });
 
-  it("should pass beforeId when provided", () => {
+  it("should pass beforeLayerId when provided", () => {
     // arrange
     const mapElement = setupMapElement();
     const mockMap = getLatestMockMapInstance()!;
@@ -306,15 +306,15 @@ describe("addMapLayer", () => {
     // act
     addMapLayer(mapElement, { id: "train-labels", type: "symbol", source: "test-source" }, "road-label", {
       declarationOrder: 1,
-      stack: "labels",
-      beforeStack: null,
-      afterStack: null,
+      layerGroup: "labels",
+      beforeLayerGroup: null,
+      afterLayerGroup: null,
     });
     addMapLayer(mapElement, { id: "train-icons", type: "symbol", source: "test-source" }, null, {
       declarationOrder: 2,
-      stack: "trains",
-      beforeStack: null,
-      afterStack: null,
+      layerGroup: "trains",
+      beforeLayerGroup: null,
+      afterLayerGroup: null,
     });
     reconcileLayerOrdering(mockMap);
 
@@ -323,7 +323,7 @@ describe("addMapLayer", () => {
     expect(mockMap.moveLayer).toHaveBeenCalledWith("train-icons", undefined);
   });
 
-  it("should add a chained custom stack from an empty map without referencing missing successors", () => {
+  it("should add a chained custom layerGroup from an empty map without referencing missing successors", () => {
     // arrange
     const mapElement = setupMapElement();
     const mockMap = getLatestMockMapInstance()!;
@@ -332,22 +332,22 @@ describe("addMapLayer", () => {
     const existingLayers = new Set<string>();
     mockMap.getStyle.mockReturnValue({ layers: [] });
     mockMap.getLayer.mockImplementation((id: string) => (existingLayers.has(id) ? {} : undefined));
-    mockMap.addLayer.mockImplementation((layer: { id?: string }, beforeId?: string) => {
-      if (beforeId && !existingLayers.has(beforeId)) {
-        throw new Error(`Unknown beforeId: ${beforeId}`);
+    mockMap.addLayer.mockImplementation((layer: { id?: string }, beforeLayerId?: string) => {
+      if (beforeLayerId && !existingLayers.has(beforeLayerId)) {
+        throw new Error(`Unknown beforeLayerId: ${beforeLayerId}`);
       }
 
       if (layer.id) {
         existingLayers.add(layer.id);
       }
     });
-    mockMap.moveLayer.mockImplementation((layerId: string, beforeId?: string) => {
+    mockMap.moveLayer.mockImplementation((layerId: string, beforeLayerId?: string) => {
       if (!existingLayers.has(layerId)) {
         throw new Error(`Unknown layer: ${layerId}`);
       }
 
-      if (beforeId && !existingLayers.has(beforeId)) {
-        throw new Error(`Unknown beforeId: ${beforeId}`);
+      if (beforeLayerId && !existingLayers.has(beforeLayerId)) {
+        throw new Error(`Unknown beforeLayerId: ${beforeLayerId}`);
       }
     });
 
@@ -355,21 +355,21 @@ describe("addMapLayer", () => {
     const act = () => {
       addMapLayer(mapElement, { id: "layer-a", type: "line", source: "test-source" }, null, {
         declarationOrder: 1,
-        stack: "stack-a",
-        beforeStack: null,
-        afterStack: null,
+        layerGroup: "layerGroup-a",
+        beforeLayerGroup: null,
+        afterLayerGroup: null,
       });
       addMapLayer(mapElement, { id: "layer-b", type: "line", source: "test-source" }, null, {
         declarationOrder: 2,
-        stack: "stack-b",
-        beforeStack: null,
-        afterStack: "stack-a",
+        layerGroup: "layerGroup-b",
+        beforeLayerGroup: null,
+        afterLayerGroup: "layerGroup-a",
       });
       addMapLayer(mapElement, { id: "layer-c", type: "line", source: "test-source" }, null, {
         declarationOrder: 3,
-        stack: "stack-c",
-        beforeStack: null,
-        afterStack: "stack-b",
+        layerGroup: "layerGroup-c",
+        beforeLayerGroup: null,
+        afterLayerGroup: "layerGroup-b",
       });
       reconcileLayerOrdering(mockMap);
     };
@@ -390,36 +390,36 @@ describe("addMapLayer", () => {
     const existingLayers = new Set<string>();
     mockMap.getStyle.mockReturnValue({ layers: [] });
     mockMap.getLayer.mockImplementation((id: string) => (existingLayers.has(id) ? {} : undefined));
-    mockMap.addLayer.mockImplementation((layer: { id?: string }, beforeId?: string) => {
-      if (beforeId && !existingLayers.has(beforeId)) {
-        throw new Error(`Unknown beforeId: ${beforeId}`);
+    mockMap.addLayer.mockImplementation((layer: { id?: string }, beforeLayerId?: string) => {
+      if (beforeLayerId && !existingLayers.has(beforeLayerId)) {
+        throw new Error(`Unknown beforeLayerId: ${beforeLayerId}`);
       }
 
       if (layer.id) {
         existingLayers.add(layer.id);
       }
     });
-    mockMap.moveLayer.mockImplementation((layerId: string, beforeId?: string) => {
+    mockMap.moveLayer.mockImplementation((layerId: string, beforeLayerId?: string) => {
       if (!existingLayers.has(layerId)) {
         throw new Error(`Unknown layer: ${layerId}`);
       }
 
-      if (beforeId && !existingLayers.has(beforeId)) {
-        throw new Error(`Unknown beforeId: ${beforeId}`);
+      if (beforeLayerId && !existingLayers.has(beforeLayerId)) {
+        throw new Error(`Unknown beforeLayerId: ${beforeLayerId}`);
       }
     });
 
     addMapLayer(mapElement, { id: "layer-a", type: "line", source: "test-source" }, null, {
       declarationOrder: 1,
-      stack: "stack-a",
-      beforeStack: null,
-      afterStack: null,
+      layerGroup: "layerGroup-a",
+      beforeLayerGroup: null,
+      afterLayerGroup: null,
     });
     addMapLayer(mapElement, { id: "layer-c", type: "line", source: "test-source" }, null, {
       declarationOrder: 3,
-      stack: "stack-c",
-      beforeStack: null,
-      afterStack: "stack-b",
+      layerGroup: "layerGroup-c",
+      beforeLayerGroup: null,
+      afterLayerGroup: "layerGroup-b",
     });
     mockMap.addLayer.mockClear();
     mockMap.moveLayer.mockClear();
@@ -428,9 +428,9 @@ describe("addMapLayer", () => {
     const act = () => {
       addMapLayer(mapElement, { id: "layer-b", type: "line", source: "test-source" }, null, {
         declarationOrder: 2,
-        stack: "stack-b",
-        beforeStack: null,
-        afterStack: "stack-a",
+        layerGroup: "layerGroup-b",
+        beforeLayerGroup: null,
+        afterLayerGroup: "layerGroup-a",
       });
       reconcileLayerOrdering(mockMap);
     };
@@ -533,7 +533,7 @@ describe("moveMapLayer", () => {
 
     const map = window.Spillgebees.Map.maps.get(mapElement)!;
     const registration = window.Spillgebees.Map.layerSpecs.get(map)?.get("tracked-layer");
-    expect(registration?.imperativeBeforeId).toBe("background-layer");
+    expect(registration?.imperativeBeforeLayerId).toBe("background-layer");
   });
 
   it("should fall back to direct map movement for unregistered native layers", () => {

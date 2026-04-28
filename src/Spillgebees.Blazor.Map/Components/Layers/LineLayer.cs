@@ -38,11 +38,11 @@ public class LineLayer : LayerBase
 
     /// <summary>The cap style for line endpoints ("butt", "round", "square").</summary>
     [Parameter]
-    public string? Cap { get; set; }
+    public LineCap? Cap { get; set; }
 
     /// <summary>The join style for line corners ("bevel", "round", "miter").</summary>
     [Parameter]
-    public string? Join { get; set; }
+    public LineJoin? Join { get; set; }
 
     internal override string _layerType => "line";
 
@@ -59,5 +59,5 @@ public class LineLayer : LayerBase
         };
 
     internal override Dictionary<string, object?> GetLayoutProperties() =>
-        new() { ["line-cap"] = Cap, ["line-join"] = Join };
+        new() { ["line-cap"] = Cap?.ToJsonName(), ["line-join"] = Join?.ToJsonName() };
 }

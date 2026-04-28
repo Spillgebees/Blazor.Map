@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json.Serialization;
 
 namespace Spillgebees.Blazor.Map.Models.Expressions;
@@ -24,7 +25,31 @@ public readonly struct StyleValue<T>
     /// Use this when storing in <c>Dictionary&lt;string, object?&gt;</c> to avoid
     /// boxed struct serialization issues with <c>System.Text.Json</c>.
     /// </summary>
-    internal object? ToSerializable() => IsExpression ? Expression : (object?)Literal;
+    internal object? ToSerializable()
+    {
+        if (IsExpression)
+        {
+            return Expression;
+        }
+
+        if (Literal is null)
+        {
+            return null;
+        }
+
+        if (Literal is Enum enumValue)
+        {
+            return GetEnumJsonName(enumValue);
+        }
+
+        return Literal;
+    }
+
+    private static string GetEnumJsonName(Enum value)
+    {
+        var member = value.GetType().GetMember(value.ToString()).Single();
+        return member.GetCustomAttribute<JsonStringEnumMemberNameAttribute>()?.Name ?? value.ToString();
+    }
 
     /// <summary>
     /// Implicitly convert a literal value to a <see cref="StyleValue{T}"/>.

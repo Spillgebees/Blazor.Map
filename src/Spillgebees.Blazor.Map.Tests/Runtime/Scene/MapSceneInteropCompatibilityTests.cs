@@ -105,7 +105,7 @@ public class MapSceneInteropCompatibilityTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public async Task Should_refresh_inherited_ordering_and_reconcile_once_when_source_stack_changes(
+    public async Task Should_refresh_inherited_ordering_and_reconcile_once_when_source_layer_group_changes(
         CancellationToken cancellationToken
     )
     {
@@ -137,7 +137,7 @@ public class MapSceneInteropCompatibilityTests : BunitContext
             .Mutations.Where(mutation => mutation.Kind == "addLayer")
             .Select(mutation => mutation.Ordering)
             .Should()
-            .AllSatisfy(ordering => ordering!.Stack.Should().Be("updated-stack"));
+            .AllSatisfy(ordering => ordering!.LayerGroup.Should().Be("updated-group"));
 
         JSInterop.VerifyNotInvoke(MoveMapLayerIdentifier);
     }
@@ -340,13 +340,13 @@ public class MapSceneInteropCompatibilityTests : BunitContext
                                 {
                                     sourceBuilder.OpenComponent<LineLayer>(0);
                                     sourceBuilder.AddAttribute(1, "Id", "layer-a");
-                                    sourceBuilder.AddAttribute(2, "Stack", "a");
+                                    sourceBuilder.AddAttribute(2, "LayerGroup", "a");
                                     sourceBuilder.CloseComponent();
 
                                     sourceBuilder.OpenComponent<LineLayer>(3);
                                     sourceBuilder.AddAttribute(4, "Id", "layer-b");
-                                    sourceBuilder.AddAttribute(5, "Stack", "b");
-                                    sourceBuilder.AddAttribute(6, "AfterStack", "a");
+                                    sourceBuilder.AddAttribute(5, "LayerGroup", "b");
+                                    sourceBuilder.AddAttribute(6, "AfterLayerGroup", "a");
                                     sourceBuilder.CloseComponent();
                                 }
                             )
@@ -362,13 +362,13 @@ public class MapSceneInteropCompatibilityTests : BunitContext
 
     public sealed class SceneOrderingUpdateHarness : ComponentBase
     {
-        private string _stack = "initial-stack";
+        private string _layerGroup = "initial-group";
 
         public SgbMap Map { get; private set; } = null!;
 
         public void UpdateSourceOrdering()
         {
-            _stack = "updated-stack";
+            _layerGroup = "updated-group";
             StateHasChanged();
         }
 
@@ -383,7 +383,7 @@ public class MapSceneInteropCompatibilityTests : BunitContext
                     {
                         mapBuilder.OpenComponent<GeoJsonSource>(0);
                         mapBuilder.AddAttribute(1, "Id", "source-1");
-                        mapBuilder.AddAttribute(2, "Stack", _stack);
+                        mapBuilder.AddAttribute(2, "LayerGroup", _layerGroup);
                         mapBuilder.AddAttribute(3, nameof(GeoJsonSource.AllowOutsideMapSources), true);
                         mapBuilder.AddAttribute(
                             4,

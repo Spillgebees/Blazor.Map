@@ -24,7 +24,7 @@ public class SymbolLayer : LayerBase
 
     /// <summary>The text anchor position ("center", "left", "right", "top", "bottom", etc.).</summary>
     [Parameter]
-    public string? TextAnchor { get; set; }
+    public SymbolAnchor? TextAnchor { get; set; }
 
     /// <summary>The text offset from the anchor position in ems [x, y].</summary>
     [Parameter]
@@ -36,15 +36,15 @@ public class SymbolLayer : LayerBase
 
     /// <summary>The alignment of text when the map is pitched ("map", "viewport", or "auto").</summary>
     [Parameter]
-    public string? TextPitchAlignment { get; set; }
+    public MapAlignment? TextPitchAlignment { get; set; }
 
     /// <summary>The alignment of text when the map is rotated ("map", "viewport", or "auto").</summary>
     [Parameter]
-    public string? TextRotationAlignment { get; set; }
+    public MapAlignment? TextRotationAlignment { get; set; }
 
     /// <summary>The text transform ("none", "uppercase", "lowercase").</summary>
     [Parameter]
-    public string? TextTransform { get; set; }
+    public TextTransform? TextTransform { get; set; }
 
     /// <summary>Maximum text width in ems before wrapping. Default is 10.</summary>
     [Parameter]
@@ -92,7 +92,7 @@ public class SymbolLayer : LayerBase
 
     /// <summary>The icon anchor position ("center", "left", "right", "top", "bottom", etc.). Accepts a literal string or a data-driven expression.</summary>
     [Parameter]
-    public StyleValue<string>? IconAnchor { get; set; }
+    public StyleValue<SymbolAnchor>? IconAnchor { get; set; }
 
     /// <summary>Whether icons can overlap other symbols.</summary>
     [Parameter]
@@ -100,7 +100,7 @@ public class SymbolLayer : LayerBase
 
     /// <summary>Scales the icon to fit the text ("none", "width", "height", "both").</summary>
     [Parameter]
-    public string? IconTextFit { get; set; }
+    public IconTextFit? IconTextFit { get; set; }
 
     /// <summary>Padding around the text when icon-text-fit is active [top, right, bottom, left].</summary>
     [Parameter]
@@ -111,7 +111,7 @@ public class SymbolLayer : LayerBase
     /// When set to "map", the icon rotates with the map. Default is "auto".
     /// </summary>
     [Parameter]
-    public string? RotationAlignment { get; set; }
+    public MapAlignment? RotationAlignment { get; set; }
 
     // Icon paint
 
@@ -127,7 +127,7 @@ public class SymbolLayer : LayerBase
 
     /// <summary>The symbol placement strategy ("point", "line", "line-center").</summary>
     [Parameter]
-    public string? Placement { get; set; }
+    public SymbolPlacement? Placement { get; set; }
 
     /// <summary>The distance between symbol instances along a line in pixels.</summary>
     [Parameter]
@@ -156,12 +156,12 @@ public class SymbolLayer : LayerBase
             ["text-field"] = TextField?.ToSerializable(),
             ["text-size"] = TextSize?.ToSerializable(),
             ["text-font"] = TextFont,
-            ["text-anchor"] = TextAnchor,
+            ["text-anchor"] = TextAnchor?.ToJsonName(),
             ["text-offset"] = TextOffset?.ToSerializable(),
             ["text-rotate"] = TextRotate?.ToSerializable(),
-            ["text-pitch-alignment"] = TextPitchAlignment,
-            ["text-rotation-alignment"] = TextRotationAlignment,
-            ["text-transform"] = TextTransform,
+            ["text-pitch-alignment"] = TextPitchAlignment?.ToJsonName(),
+            ["text-rotation-alignment"] = TextRotationAlignment?.ToJsonName(),
+            ["text-transform"] = TextTransform?.ToJsonName(),
             ["text-max-width"] = TextMaxWidth,
             ["text-allow-overlap"] = TextAllowOverlap ? (object)true : null,
             ["icon-image"] = IconImage?.ToSerializable(),
@@ -170,10 +170,10 @@ public class SymbolLayer : LayerBase
             ["icon-offset"] = IconOffset?.ToSerializable(),
             ["icon-anchor"] = IconAnchor?.ToSerializable(),
             ["icon-allow-overlap"] = IconAllowOverlap ? (object)true : null,
-            ["icon-text-fit"] = IconTextFit,
+            ["icon-text-fit"] = IconTextFit?.ToJsonName(),
             ["icon-text-fit-padding"] = IconTextFitPadding,
-            ["icon-rotation-alignment"] = RotationAlignment,
-            ["symbol-placement"] = Placement,
+            ["icon-rotation-alignment"] = RotationAlignment?.ToJsonName(),
+            ["symbol-placement"] = Placement?.ToJsonName(),
             ["symbol-spacing"] = Spacing,
             ["symbol-sort-key"] = SymbolSortKey?.ToSerializable(),
         };

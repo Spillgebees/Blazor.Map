@@ -192,11 +192,11 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
 
     private string? Attribution { get; set; }
 
-    private string? Stack { get; set; }
+    private string? LayerGroup { get; set; }
 
-    private string? BeforeStack { get; set; }
+    private string? BeforeLayerGroup { get; set; }
 
-    private string? AfterStack { get; set; }
+    private string? AfterLayerGroup { get; set; }
 
     [CascadingParameter]
     private BaseMap? Map { get; set; }
@@ -213,7 +213,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
 
     internal string PrimaryLayerId => $"{SourceId}-symbols";
 
-    internal string? PrimaryAfterStack => Cluster.Enabled ? ClusterCountLayerId : null;
+    internal string? PrimaryAfterLayerGroup => Cluster.Enabled ? ClusterCountLayerId : null;
 
     private bool HasDecorations => _entities.Any(e => e.Decorations.Count > 0);
 
@@ -254,7 +254,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
 
     internal static StyleValue<double[]> PrimaryIconOffsetValue => _primaryIconOffset;
 
-    internal static StyleValue<string> PrimaryIconAnchorValue => _primaryIconAnchor;
+    internal static StyleValue<SymbolAnchor> PrimaryIconAnchorValue => _primaryIconAnchor;
 
     internal static StyleValue<double> DecorationTextSizeValue => _decorationTextSize;
 
@@ -294,9 +294,9 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
         PrimaryIconOpacity = Layer.Visual.PrimaryIconOpacity;
         MaxZoom = Layer.Visual.MaxZoom;
         Attribution = Layer.Visual.Attribution;
-        Stack = Layer.Visual.Stack;
-        BeforeStack = Layer.Visual.BeforeStack;
-        AfterStack = Layer.Visual.AfterStack;
+        LayerGroup = Layer.Visual.LayerGroup;
+        BeforeLayerGroup = Layer.Visual.BeforeLayerGroup;
+        AfterLayerGroup = Layer.Visual.AfterLayerGroup;
         _callbacks = Layer.Callbacks;
 
         if (string.IsNullOrWhiteSpace(SourceId))
@@ -348,10 +348,10 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
             Expr.Eq(TrackedEntityFeatureProperties.DecorationId, decorationLayer.Decoration.Id)
         );
 
-    internal string GetDecorationLayerId(TrackedEntityDecorationOptions<TItem> decoration, string? anchor) =>
-        anchor is null ? $"{SourceId}-{decoration.Id}" : $"{SourceId}-{decoration.Id}-{anchor}";
+    internal string GetDecorationLayerId(TrackedEntityDecorationOptions<TItem> decoration, SymbolAnchor? anchor) =>
+        anchor is null ? $"{SourceId}-{decoration.Id}" : $"{SourceId}-{decoration.Id}-{anchor.Value.ToJsonName()}";
 
-    internal static string GetResolvedAnchor(string? anchor) => string.IsNullOrWhiteSpace(anchor) ? "center" : anchor;
+    internal static SymbolAnchor GetResolvedAnchor(SymbolAnchor? anchor) => anchor ?? SymbolAnchor.Center;
 
     internal static StyleValue<double[]> GetDecorationTextOffsetValue(TrackedEntityDecorationOptions<TItem> decoration)
     {
@@ -824,9 +824,9 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
 
     internal sealed record DecorationLayerDefinition(
         TrackedEntityDecorationOptions<TItem> Decoration,
-        string? Anchor,
+        SymbolAnchor? Anchor,
         string LayerId,
-        string? IconTextFit,
+        IconTextFit? IconTextFit,
         double[]? IconTextFitPadding,
         string[]? TextFont,
         bool HasIcon

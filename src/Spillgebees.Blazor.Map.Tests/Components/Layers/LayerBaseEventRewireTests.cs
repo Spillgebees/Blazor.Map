@@ -277,7 +277,7 @@ public class LayerBaseEventRewireTests : BunitContext
                                 {
                                     sourceBuilder.OpenComponent<SymbolLayer>(0);
                                     sourceBuilder.AddAttribute(1, "Id", "layer-1");
-                                    sourceBuilder.AddAttribute(2, "SourceLayer", "transportation");
+                                    sourceBuilder.AddAttribute(2, "SourceLayerId", "transportation");
                                     sourceBuilder.AddAttribute(
                                         3,
                                         "TextField",

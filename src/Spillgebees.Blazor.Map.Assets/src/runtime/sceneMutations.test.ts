@@ -84,12 +84,12 @@ describe.sequential("applySceneMutations", () => {
             type: "symbol",
             source: "scene-source",
           },
-          beforeId: null,
+          beforeLayerId: null,
           ordering: {
             declarationOrder: 1,
-            stack: null,
-            beforeStack: null,
-            afterStack: null,
+            layerGroup: null,
+            beforeLayerGroup: null,
+            afterLayerGroup: null,
           },
         },
         {
@@ -182,12 +182,12 @@ describe.sequential("applySceneMutations", () => {
             type: "symbol",
             source: "legacy-source",
           },
-          beforeId: null,
+          beforeLayerId: null,
           ordering: {
             declarationOrder: 1,
-            stack: null,
-            beforeStack: null,
-            afterStack: null,
+            layerGroup: null,
+            beforeLayerGroup: null,
+            afterLayerGroup: null,
           },
         },
       ],
@@ -262,36 +262,36 @@ describe.sequential("applySceneMutations", () => {
           kind: "addLayer",
           layerId: "layer-a",
           layerSpec: { id: "layer-a", type: "line", source: "ordered-source" },
-          beforeId: null,
+          beforeLayerId: null,
           ordering: {
             declarationOrder: 1,
-            stack: "stack-a",
-            beforeStack: null,
-            afterStack: null,
+            layerGroup: "layerGroup-a",
+            beforeLayerGroup: null,
+            afterLayerGroup: null,
           },
         },
         {
           kind: "addLayer",
           layerId: "layer-b",
           layerSpec: { id: "layer-b", type: "line", source: "ordered-source" },
-          beforeId: null,
+          beforeLayerId: null,
           ordering: {
             declarationOrder: 2,
-            stack: "stack-b",
-            beforeStack: null,
-            afterStack: "stack-a",
+            layerGroup: "layerGroup-b",
+            beforeLayerGroup: null,
+            afterLayerGroup: "layerGroup-a",
           },
         },
         {
           kind: "addLayer",
           layerId: "layer-c",
           layerSpec: { id: "layer-c", type: "line", source: "ordered-source" },
-          beforeId: null,
+          beforeLayerId: null,
           ordering: {
             declarationOrder: 3,
-            stack: "stack-c",
-            beforeStack: null,
-            afterStack: "stack-b",
+            layerGroup: "layerGroup-c",
+            beforeLayerGroup: null,
+            afterLayerGroup: "layerGroup-b",
           },
         },
       ],
@@ -302,22 +302,22 @@ describe.sequential("applySceneMutations", () => {
     mockMap.getSource.mockImplementation((id: string) => (id === "ordered-source" ? undefined : null));
     mockMap.getStyle.mockReturnValue({ layers: [] });
     mockMap.getLayer.mockImplementation((id: string) => (existingLayers.has(id) ? {} : undefined));
-    mockMap.addLayer.mockImplementation((layer: { id?: string }, beforeId?: string) => {
-      if (beforeId && !existingLayers.has(beforeId)) {
-        throw new Error(`Unknown beforeId: ${beforeId}`);
+    mockMap.addLayer.mockImplementation((layer: { id?: string }, beforeLayerId?: string) => {
+      if (beforeLayerId && !existingLayers.has(beforeLayerId)) {
+        throw new Error(`Unknown beforeLayerId: ${beforeLayerId}`);
       }
 
       if (layer.id) {
         existingLayers.add(layer.id);
       }
     });
-    mockMap.moveLayer.mockImplementation((layerId: string, beforeId?: string) => {
+    mockMap.moveLayer.mockImplementation((layerId: string, beforeLayerId?: string) => {
       if (!existingLayers.has(layerId)) {
         throw new Error(`Unknown layer: ${layerId}`);
       }
 
-      if (beforeId && !existingLayers.has(beforeId)) {
-        throw new Error(`Unknown beforeId: ${beforeId}`);
+      if (beforeLayerId && !existingLayers.has(beforeLayerId)) {
+        throw new Error(`Unknown beforeLayerId: ${beforeLayerId}`);
       }
     });
     mockMap.addSource.mockClear();
@@ -384,12 +384,12 @@ describe.sequential("applySceneMutations", () => {
           kind: "addLayer",
           layerId: "visibility-layer",
           layerSpec: { id: "visibility-layer", type: "line", source: "visibility-source" },
-          beforeId: null,
+          beforeLayerId: null,
           ordering: {
             declarationOrder: 1,
-            stack: "visibility",
-            beforeStack: null,
-            afterStack: null,
+            layerGroup: "visibility",
+            beforeLayerGroup: null,
+            afterLayerGroup: null,
           },
         },
         {
@@ -434,8 +434,8 @@ describe.sequential("applySceneMutations", () => {
     // assert
     expect(
       mockMap.addLayer.mock.calls.some(
-        ([layer, beforeId]) =>
-          beforeId === undefined &&
+        ([layer, beforeLayerId]) =>
+          beforeLayerId === undefined &&
           layer &&
           typeof layer === "object" &&
           "id" in layer &&
@@ -493,24 +493,24 @@ describe.sequential("applySceneMutations", () => {
           kind: "addLayer",
           layerId: "layer-a",
           layerSpec: { id: "layer-a", type: "line", source: "ordered-source" },
-          beforeId: null,
+          beforeLayerId: null,
           ordering: {
             declarationOrder: 1,
-            stack: "stack-a",
-            beforeStack: null,
-            afterStack: null,
+            layerGroup: "layerGroup-a",
+            beforeLayerGroup: null,
+            afterLayerGroup: null,
           },
         },
         {
           kind: "addLayer",
           layerId: "layer-b",
           layerSpec: { id: "layer-b", type: "line", source: "ordered-source" },
-          beforeId: null,
+          beforeLayerId: null,
           ordering: {
             declarationOrder: 2,
-            stack: "stack-b",
-            beforeStack: null,
-            afterStack: "stack-a",
+            layerGroup: "layerGroup-b",
+            beforeLayerGroup: null,
+            afterLayerGroup: "layerGroup-a",
           },
         },
       ],
@@ -521,22 +521,22 @@ describe.sequential("applySceneMutations", () => {
     mockMap.getSource.mockImplementation((id: string) => (id === "ordered-source" ? undefined : null));
     mockMap.getStyle.mockReturnValue({ layers: [] });
     mockMap.getLayer.mockImplementation((id: string) => (existingLayers.has(id) ? {} : undefined));
-    mockMap.addLayer.mockImplementation((layer: { id?: string }, beforeId?: string) => {
-      if (beforeId && !existingLayers.has(beforeId)) {
-        throw new Error(`Unknown beforeId: ${beforeId}`);
+    mockMap.addLayer.mockImplementation((layer: { id?: string }, beforeLayerId?: string) => {
+      if (beforeLayerId && !existingLayers.has(beforeLayerId)) {
+        throw new Error(`Unknown beforeLayerId: ${beforeLayerId}`);
       }
 
       if (layer.id) {
         existingLayers.add(layer.id);
       }
     });
-    mockMap.moveLayer.mockImplementation((layerId: string, beforeId?: string) => {
+    mockMap.moveLayer.mockImplementation((layerId: string, beforeLayerId?: string) => {
       if (!existingLayers.has(layerId)) {
         throw new Error(`Unknown layer: ${layerId}`);
       }
 
-      if (beforeId && !existingLayers.has(beforeId)) {
-        throw new Error(`Unknown beforeId: ${beforeId}`);
+      if (beforeLayerId && !existingLayers.has(beforeLayerId)) {
+        throw new Error(`Unknown beforeLayerId: ${beforeLayerId}`);
       }
     });
     mockMap.addSource.mockClear();

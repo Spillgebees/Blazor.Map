@@ -345,6 +345,42 @@ public class TrackedEntityLayerMapApiTests : BunitContext
             );
     }
 
+    [Test]
+    public void Should_serialize_tracked_entity_decoration_symbol_enums_in_layer_spec()
+    {
+        // arrange
+        var cut = Render<MapTrackedEntityHarness>(parameters =>
+            parameters.Add(
+                p => p.Decorations,
+                [
+                    new TrackedEntityDecorationOptions<TestVehicle>(
+                        "badge",
+                        TextSelector: _ => "badge",
+                        IconImageSelector: _ => "badge-icon",
+                        Anchor: SymbolAnchor.TopRight,
+                        IconTextFit: IconTextFit.Width,
+                        IconTextFitPadding: [2, 4, 2, 4]
+                    ),
+                ]
+            )
+        );
+
+        var decorationLayer = cut.FindComponents<SymbolLayer>()
+            .Single(layer => layer.Instance.Id == "tracked-data-badge-top-right")
+            .Instance;
+
+        // act
+        var decorationLayerSpec = GetLayerSpec(decorationLayer);
+
+        // assert
+        GetLayoutValue(decorationLayerSpec, "text-anchor").Should().Be("top-right");
+        GetLayoutValue(decorationLayerSpec, "icon-anchor").Should().Be("top-right");
+        GetLayoutValue(decorationLayerSpec, "icon-text-fit").Should().Be("width");
+        GetLayoutValue(decorationLayerSpec, "icon-text-fit-padding")
+            .Should()
+            .BeEquivalentTo(new[] { 2.0, 4.0, 2.0, 4.0 });
+    }
+
     private static CircleLayer GetPrimaryHitArea(IRenderedComponent<MapTrackedEntityHarness> cut) =>
         cut.FindComponents<CircleLayer>().Single(layer => layer.Instance.Id == "tracked-data-hit-area").Instance;
 
@@ -375,6 +411,14 @@ public class TrackedEntityLayerMapApiTests : BunitContext
     {
         var paint = layerSpec["paint"].Should().BeAssignableTo<IReadOnlyDictionary<string, object?>>().Subject;
         var found = paint.TryGetValue(propertyName, out var value);
+        found.Should().BeTrue();
+        return value;
+    }
+
+    private static object? GetLayoutValue(IReadOnlyDictionary<string, object?> layerSpec, string propertyName)
+    {
+        var layout = layerSpec["layout"].Should().BeAssignableTo<IReadOnlyDictionary<string, object?>>().Subject;
+        var found = layout.TryGetValue(propertyName, out var value);
         found.Should().BeTrue();
         return value;
     }

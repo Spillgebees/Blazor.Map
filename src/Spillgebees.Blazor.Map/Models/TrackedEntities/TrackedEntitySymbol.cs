@@ -1,3 +1,5 @@
+using Spillgebees.Blazor.Map.Components.Layers;
+
 namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 /// <summary>
@@ -12,7 +14,7 @@ public sealed record TrackedEntitySymbol
         string iconImage,
         double? size = null,
         double? rotation = null,
-        string? anchor = null,
+        SymbolAnchor? anchor = null,
         Point? offset = null
     )
     {
@@ -46,7 +48,7 @@ public sealed record TrackedEntitySymbol
     /// <summary>
     /// Optional MapLibre-style symbol anchor.
     /// </summary>
-    public string? Anchor { get; }
+    public SymbolAnchor? Anchor { get; }
 
     /// <summary>
     /// Optional icon offset in pixels.

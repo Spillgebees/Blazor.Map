@@ -46,13 +46,13 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
     public bool AllowOutsideMapSources { get; set; }
 
     [Parameter]
-    public string? Stack { get; set; }
+    public string? LayerGroup { get; set; }
 
     [Parameter]
-    public string? BeforeStack { get; set; }
+    public string? BeforeLayerGroup { get; set; }
 
     [Parameter]
-    public string? AfterStack { get; set; }
+    public string? AfterLayerGroup { get; set; }
 
     // Clustering
 
@@ -142,7 +142,7 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
     private MapLayerOrderOptions _previousOrderOptions = MapLayerOrderOptions.Empty;
 
     /// <inheritdoc/>
-    public MapLayerOrderOptions OrderOptions => new(Stack, BeforeStack, AfterStack);
+    public MapLayerOrderOptions OrderOptions => new(LayerGroup, BeforeLayerGroup, AfterLayerGroup);
 
     /// <inheritdoc/>
     protected override void OnParametersSet()
@@ -211,7 +211,7 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
                     _pendingLayers.Select(layer => new MapLayerDescriptor(
                         layer.Id,
                         layer.BuildLayerSpec(),
-                        layer.BeforeId,
+                        layer.BeforeLayerId,
                         layer.GetLayerOrderRegistration()
                     ))
                 );
@@ -243,7 +243,7 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
                 _registeredLayers.Select(layer => new MapLayerDescriptor(
                     layer.Id,
                     layer.BuildLayerSpec(),
-                    layer.BeforeId,
+                    layer.BeforeLayerId,
                     layer.GetLayerOrderRegistration()
                 ))
             );
@@ -309,7 +309,12 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
     private async Task AddLayerToMapAsync(LayerBase layer)
     {
         await Map!.SceneRegistry.RegisterLayerAsync(
-            new MapLayerDescriptor(layer.Id, layer.BuildLayerSpec(), layer.BeforeId, layer.GetLayerOrderRegistration())
+            new MapLayerDescriptor(
+                layer.Id,
+                layer.BuildLayerSpec(),
+                layer.BeforeLayerId,
+                layer.GetLayerOrderRegistration()
+            )
         );
         await layer.NotifyLayerAddedAsync();
     }

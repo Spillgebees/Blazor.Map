@@ -31,7 +31,7 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
     public string? SourceId { get; set; }
 
     [Parameter]
-    public string? SourceLayer { get; set; }
+    public string? SourceLayerId { get; set; }
 
     [Parameter]
     public object? Filter { get; set; }
@@ -43,16 +43,16 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
     public int? MaxZoom { get; set; }
 
     [Parameter]
-    public string? BeforeId { get; set; }
+    public string? BeforeLayerId { get; set; }
 
     [Parameter]
-    public string? Stack { get; set; }
+    public string? LayerGroup { get; set; }
 
     [Parameter]
-    public string? BeforeStack { get; set; }
+    public string? BeforeLayerGroup { get; set; }
 
     [Parameter]
-    public string? AfterStack { get; set; }
+    public string? AfterLayerGroup { get; set; }
 
     [Parameter]
     public bool Visible { get; set; } = true;
@@ -80,15 +80,15 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
     private EventCallback<LayerFeatureEventArgs> _previousOnMouseEnter;
     private EventCallback _previousOnMouseLeave;
     private bool _eventsRequireWire;
-    private string? _previousBeforeId;
-    private string? _previousStack;
-    private string? _previousBeforeStack;
-    private string? _previousAfterStack;
+    private string? _previousBeforeLayerId;
+    private string? _previousLayerGroup;
+    private string? _previousBeforeLayerGroup;
+    private string? _previousAfterLayerGroup;
 
     private string? _resolvedSourceId => SourceId ?? Source?.Id;
     private BaseMap? _resolvedMap => Source?.Map ?? Map;
     private bool _hasEvents => OnClick.HasDelegate || OnMouseEnter.HasDelegate || OnMouseLeave.HasDelegate;
-    internal MapLayerOrderOptions _orderOptions => new(Stack, BeforeStack, AfterStack);
+    internal MapLayerOrderOptions _orderOptions => new(LayerGroup, BeforeLayerGroup, AfterLayerGroup);
 
     internal abstract string _layerType { get; }
     internal abstract Dictionary<string, object?> GetPaintProperties();
@@ -103,9 +103,9 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
             ["source"] = _resolvedSourceId,
         };
 
-        if (SourceLayer is not null)
+        if (SourceLayerId is not null)
         {
-            spec["source-layer"] = SourceLayer;
+            spec["source-layer"] = SourceLayerId;
         }
 
         if (Filter is not null)
@@ -164,7 +164,7 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
             }
 
             await Map.SceneRegistry.RegisterLayerAsync(
-                new MapLayerDescriptor(Id, BuildLayerSpec(), BeforeId, GetLayerOrderRegistration())
+                new MapLayerDescriptor(Id, BuildLayerSpec(), BeforeLayerId, GetLayerOrderRegistration())
             );
         }
 
@@ -209,10 +209,10 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
         _previousOnClick = OnClick;
         _previousOnMouseEnter = OnMouseEnter;
         _previousOnMouseLeave = OnMouseLeave;
-        _previousBeforeId = BeforeId;
-        _previousStack = Stack;
-        _previousBeforeStack = BeforeStack;
-        _previousAfterStack = AfterStack;
+        _previousBeforeLayerId = BeforeLayerId;
+        _previousLayerGroup = LayerGroup;
+        _previousBeforeLayerGroup = BeforeLayerGroup;
+        _previousAfterLayerGroup = AfterLayerGroup;
     }
 
     internal LayerOrderRegistration GetLayerOrderRegistration()
@@ -320,10 +320,10 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
     private async Task DiffAndApplyOrderingAsync()
     {
         if (
-            _previousBeforeId == BeforeId
-            && _previousStack == Stack
-            && _previousBeforeStack == BeforeStack
-            && _previousAfterStack == AfterStack
+            _previousBeforeLayerId == BeforeLayerId
+            && _previousLayerGroup == LayerGroup
+            && _previousBeforeLayerGroup == BeforeLayerGroup
+            && _previousAfterLayerGroup == AfterLayerGroup
         )
         {
             return;
@@ -336,13 +336,13 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
         }
 
         await map.SceneRegistry.RegisterLayerAsync(
-            new MapLayerDescriptor(Id, BuildLayerSpec(), BeforeId, GetLayerOrderRegistration())
+            new MapLayerDescriptor(Id, BuildLayerSpec(), BeforeLayerId, GetLayerOrderRegistration())
         );
 
-        _previousBeforeId = BeforeId;
-        _previousStack = Stack;
-        _previousBeforeStack = BeforeStack;
-        _previousAfterStack = AfterStack;
+        _previousBeforeLayerId = BeforeLayerId;
+        _previousLayerGroup = LayerGroup;
+        _previousBeforeLayerGroup = BeforeLayerGroup;
+        _previousAfterLayerGroup = AfterLayerGroup;
     }
 
     private static bool ValuesEqual(object? a, object? b)

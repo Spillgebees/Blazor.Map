@@ -67,13 +67,13 @@ export function applySceneMutations(mapElement: HTMLElement, batch: SceneMutatio
         );
         break;
       case "addLayer":
-        addMapLayer(mapElement, mutation.layerSpec, mutation.beforeId, mutation.ordering);
+        addMapLayer(mapElement, mutation.layerSpec, mutation.beforeLayerId, mutation.ordering);
         break;
       case "removeLayer":
         removeMapLayer(mapElement, mutation.layerId);
         break;
       case "moveLayer":
-        moveMapLayer(mapElement, mutation.layerId, mutation.beforeId);
+        moveMapLayer(mapElement, mutation.layerId, mutation.beforeLayerId);
         break;
       case "setPaintProperty":
         setPaintProperty(mapElement, mutation.layerId, mutation.propertyName, mutation.propertyValue);
@@ -123,8 +123,8 @@ export function replaySceneRegistrations(mapElement: HTMLElement, options?: Scen
     addMapSource(mapElement, sourceId, sourceSpec);
   }
 
-  for (const { layerSpec, beforeId, ordering } of getSceneLayerStore(map).values()) {
-    addMapLayer(mapElement, layerSpec, beforeId, ordering);
+  for (const { layerSpec, beforeLayerId, ordering } of getSceneLayerStore(map).values()) {
+    addMapLayer(mapElement, layerSpec, beforeLayerId, ordering);
   }
 
   reconcileLayerOrdering(map);
