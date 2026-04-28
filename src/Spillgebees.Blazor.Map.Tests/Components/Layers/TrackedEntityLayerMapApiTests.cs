@@ -79,6 +79,65 @@ public class TrackedEntityLayerMapApiTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_preserve_text_content_mode_when_opening_tracked_entity_popup(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        cancellationToken.ThrowIfCancellationRequested();
+        var cut = Render<MapTrackedEntityHarness>(parameters =>
+            parameters.Add(p => p.PopupSelector, vehicle => PopupOptions.FromText(vehicle.Id, PopupTrigger.Hover))
+        );
+        await cut.Instance.Map.OnMapInitializedAsync();
+        var hitArea = GetPrimaryHitArea(cut);
+
+        // act
+        await cut.InvokeAsync(() => hitArea.OnMouseEnter.InvokeAsync(CreateItemFeatureEvent("vehicle-1")));
+
+        // assert
+        JSInterop.Invocations[ShowPopupIdentifier].Should().HaveCount(1);
+        var options = JSInterop
+            .Invocations[ShowPopupIdentifier][0]
+            .Arguments[2]
+            .Should()
+            .BeOfType<PopupOptions>()
+            .Subject;
+        options.Content.Should().Be("vehicle-1");
+        options.ContentMode.Should().Be(PopupContentMode.Text);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_preserve_raw_html_content_mode_when_opening_tracked_entity_popup(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        cancellationToken.ThrowIfCancellationRequested();
+        var cut = Render<MapTrackedEntityHarness>(parameters =>
+            parameters.Add(
+                p => p.PopupSelector,
+                vehicle => PopupOptions.FromRawHtml($"<strong>{vehicle.Id}</strong>", PopupTrigger.Hover)
+            )
+        );
+        await cut.Instance.Map.OnMapInitializedAsync();
+        var hitArea = GetPrimaryHitArea(cut);
+
+        // act
+        await cut.InvokeAsync(() => hitArea.OnMouseEnter.InvokeAsync(CreateItemFeatureEvent("vehicle-1")));
+
+        // assert
+        JSInterop.Invocations[ShowPopupIdentifier].Should().HaveCount(1);
+        var options = JSInterop
+            .Invocations[ShowPopupIdentifier][0]
+            .Arguments[2]
+            .Should()
+            .BeOfType<PopupOptions>()
+            .Subject;
+        options.Content.Should().Be("<strong>vehicle-1</strong>");
+        options.ContentMode.Should().Be(PopupContentMode.RawHtml);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
     public async Task Should_not_show_stale_popup_when_hover_leave_happens_before_popup_open_completes(
         CancellationToken cancellationToken
     )

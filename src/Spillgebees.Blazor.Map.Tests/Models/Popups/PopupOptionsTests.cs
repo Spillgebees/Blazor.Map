@@ -29,7 +29,20 @@ public class PopupOptionsTests
     }
 
     [Test]
-    public void Should_serialize_content_mode_for_javascript()
+    public void Should_serialize_text_content_mode_for_javascript()
+    {
+        // arrange
+        var options = PopupOptions.FromText("<strong>safe</strong>");
+
+        // act
+        var json = JsonSerializer.Serialize(options, JsonSerializerOptions.Web);
+
+        // assert
+        json.Should().Contain("\"contentMode\":\"text\"");
+    }
+
+    [Test]
+    public void Should_serialize_raw_html_content_mode_for_javascript()
     {
         // arrange
         var options = PopupOptions.FromRawHtml("<strong>raw</strong>");

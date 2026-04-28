@@ -17,6 +17,9 @@
     private bool _contentRegistered;
     private PopupContentSnapshot? _lastSnapshot;
     private DotNetObjectReference<MapPopup>? _dotNetReference;
+    private Task? _pendingReadyRegistrationTask;
+    private CancellationTokenSource? _pendingReadyRegistrationCancellation;
+    private bool _isDisposed;
 
     [CascadingParameter]
     private BaseMap? Map { get; set; }
@@ -60,41 +63,20 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (Map is null)
+        if (_isDisposed || Map is null)
         {
             return;
         }
 
         if (Open)
         {
-            var options = Options ?? PopupOptions.FromText(string.Empty);
-            var snapshot = new PopupContentSnapshot(_resolvedId, Position, options, ChildContent);
-
-            if (_contentRegistered && _registeredId == _resolvedId && snapshot == _lastSnapshot)
+            if (!Map.RuntimeIsReady)
             {
+                QueueRegistrationWhenMapIsReady(Map);
                 return;
             }
 
-            if (_contentRegistered && _registeredId is not null && _registeredId != _resolvedId)
-            {
-                await RemovePopupContentAsync(_registeredId);
-            }
-
-            _dotNetReference ??= DotNetObjectReference.Create(this);
-            await Spillgebees.Blazor.Map.Interop.MapJs.SetPopupContentAsync(
-                Map.Runtime,
-                Map.RuntimeLogger,
-                Map.MapReference,
-                _resolvedId,
-                Position,
-                options,
-                _placeholderReference,
-                _contentReference,
-                _dotNetReference
-            );
-            _contentRegistered = true;
-            _registeredId = _resolvedId;
-            _lastSnapshot = snapshot;
+            await RegisterOpenPopupAsync();
             return;
         }
 
@@ -104,8 +86,97 @@
         }
     }
 
+    private void QueueRegistrationWhenMapIsReady(BaseMap map)
+    {
+        if (_pendingReadyRegistrationTask is { IsCompleted: false })
+        {
+            return;
+        }
+
+        _pendingReadyRegistrationCancellation?.Dispose();
+        _pendingReadyRegistrationCancellation = new CancellationTokenSource();
+        _pendingReadyRegistrationTask = RegisterWhenMapIsReadyAsync(map, _pendingReadyRegistrationCancellation.Token);
+    }
+
+    private async Task RegisterWhenMapIsReadyAsync(BaseMap map, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var mapReady = await map.WhenReadyAsync();
+
+            if (!mapReady || cancellationToken.IsCancellationRequested || _isDisposed || Map != map || !Open)
+            {
+                return;
+            }
+
+            await InvokeAsync(async () =>
+            {
+                if (!cancellationToken.IsCancellationRequested && !_isDisposed)
+                {
+                    await RegisterOpenPopupAsync();
+                }
+            });
+        }
+        catch (Exception exception)
+        {
+            await DispatchExceptionAsync(exception);
+        }
+        finally
+        {
+            _pendingReadyRegistrationTask = null;
+            _pendingReadyRegistrationCancellation?.Dispose();
+            _pendingReadyRegistrationCancellation = null;
+        }
+    }
+
+    private async Task RegisterOpenPopupAsync()
+    {
+        if (_isDisposed || Map is null || !Open)
+        {
+            return;
+        }
+
+        var options = Options ?? PopupOptions.FromText(string.Empty);
+        var snapshot = new PopupContentSnapshot(_resolvedId, Position, options, ChildContent);
+
+        if (_contentRegistered && _registeredId == _resolvedId && snapshot == _lastSnapshot)
+        {
+            return;
+        }
+
+        if (_contentRegistered && _registeredId is not null && _registeredId != _resolvedId)
+        {
+            await RemovePopupContentAsync(_registeredId);
+        }
+
+        _dotNetReference ??= DotNetObjectReference.Create(this);
+        await Spillgebees.Blazor.Map.Interop.MapJs.SetPopupContentAsync(
+            Map.Runtime,
+            Map.RuntimeLogger,
+            Map.MapReference,
+            _resolvedId,
+            Position,
+            options,
+            _placeholderReference,
+            _contentReference,
+            _dotNetReference
+        );
+        _contentRegistered = true;
+        _registeredId = _resolvedId;
+        _lastSnapshot = snapshot;
+    }
+
     public async ValueTask DisposeAsync()
     {
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        _isDisposed = true;
+        _pendingReadyRegistrationCancellation?.Cancel();
+        _pendingReadyRegistrationCancellation?.Dispose();
+        _pendingReadyRegistrationCancellation = null;
         await RemovePopupContentAsync();
         _dotNetReference?.Dispose();
     }
@@ -113,7 +184,7 @@
     [JSInvokable]
     public async Task OnPopupClosedAsync()
     {
-        if (!Open)
+        if (_isDisposed || !Open)
         {
             return;
         }
