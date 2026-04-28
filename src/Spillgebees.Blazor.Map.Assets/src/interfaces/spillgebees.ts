@@ -2,7 +2,7 @@ import type { DotNet } from "@microsoft/dotnet-js-interop";
 import type { IControl, Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
 import type { FeatureStorage } from "../types/feature-storage";
 import type { IMapControl } from "./controls";
-import type { IMapImageDefinition, IMapOptions, ITileOverlay, ReferrerPolicy } from "./map";
+import type { IMapImage, IMapOptions, ITileOverlay, ReferrerPolicy } from "./map";
 
 export interface RegisteredMapSource {
   sourceId: string;
@@ -23,12 +23,12 @@ export interface RegisteredMapLayer {
 }
 
 export interface RegisteredMapImage {
-  name: string;
+  id: string;
   url: string;
   width: number;
   height: number;
   pixelRatio: number;
-  sdf: boolean;
+  isSdf: boolean;
 }
 
 export interface VisibilityGroupTargetRegistration {
@@ -94,5 +94,5 @@ export interface SpillgebeesMapNamespace {
 }
 
 export interface SpillgebeesMapFunctions {
-  setImages: (mapElement: HTMLElement, images: IMapImageDefinition[]) => Promise<void>;
+  setImages: (mapElement: HTMLElement, images: IMapImage[]) => Promise<void>;
 }

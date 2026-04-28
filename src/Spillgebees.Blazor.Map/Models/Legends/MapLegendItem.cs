@@ -10,11 +10,11 @@ namespace Spillgebees.Blazor.Map.Models.Legends;
 /// <param name="IsVisibleByDefault">Default visibility state for targeted layers.</param>
 /// <param name="IsToggleable">Whether this legend item can toggle target visibility.</param>
 /// <param name="ClassName">Optional additional CSS class for the item container.</param>
-public sealed record MapLegendItemDefinition(
+public sealed record MapLegendItem(
     string Id,
     string Label,
     string? Description = null,
-    IReadOnlyList<MapLegendTargetDefinition>? Targets = null,
+    IReadOnlyList<MapLegendTarget>? Targets = null,
     bool IsVisibleByDefault = true,
     bool IsToggleable = false,
     string? ClassName = null

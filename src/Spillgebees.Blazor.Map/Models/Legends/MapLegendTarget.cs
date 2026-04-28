@@ -3,12 +3,12 @@ namespace Spillgebees.Blazor.Map.Models.Legends;
 /// <summary>
 /// Defines a set of style layers targeted by a legend item.
 /// </summary>
-public sealed record MapLegendTargetDefinition
+public sealed record MapLegendTarget
 {
     /// <summary>
     /// Initializes a new legend target definition.
     /// </summary>
-    public MapLegendTargetDefinition(string styleId, IReadOnlyList<string> layerIds)
+    public MapLegendTarget(string styleId, IReadOnlyList<string> layerIds)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(styleId);
 

@@ -3,7 +3,7 @@ using Spillgebees.Blazor.Map.Models;
 
 namespace Spillgebees.Blazor.Map.Tests.Models;
 
-public class MapImageDefinitionTests
+public class MapImageTests
 {
     [Test]
     [Arguments(double.NaN)]
@@ -16,7 +16,7 @@ public class MapImageDefinitionTests
         // arrange
 
         // act
-        var act = () => _ = new MapImageDefinition("train", "https://example.com/train.png", 24, 24, pixelRatio);
+        var act = () => _ = new MapImage("train", "https://example.com/train.png", 24, 24, pixelRatio);
 
         // assert
         act.Should().Throw<ArgumentOutOfRangeException>().Which.ParamName.Should().Be("pixelRatio");
@@ -28,7 +28,7 @@ public class MapImageDefinitionTests
         // arrange
 
         // act
-        var definition = new MapImageDefinition("train", "https://example.com/train.png", 24, 24, 1.5);
+        var definition = new MapImage("train", "https://example.com/train.png", 24, 24, 1.5);
 
         // assert
         definition.PixelRatio.Should().Be(1.5);

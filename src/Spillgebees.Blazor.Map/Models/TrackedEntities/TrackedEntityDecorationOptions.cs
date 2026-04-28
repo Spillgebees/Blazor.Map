@@ -1,12 +1,12 @@
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
-namespace Spillgebees.Blazor.Map.Models.TrackedData;
+namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 /// <summary>
-/// Decoration selectors for high-level tracked data items.
+/// Decoration selectors for high-level tracked entity items.
 /// </summary>
 /// <typeparam name="TItem">The raw app model type.</typeparam>
-public sealed record TrackedDataDecorationOptions<TItem>(
+public sealed record TrackedEntityDecorationOptions<TItem>(
     string Id,
     Func<TItem, string?>? TextSelector = null,
     Func<TItem, string?>? IconImageSelector = null,

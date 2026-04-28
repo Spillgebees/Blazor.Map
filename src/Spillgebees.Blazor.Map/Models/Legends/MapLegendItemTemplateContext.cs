@@ -9,8 +9,4 @@ namespace Spillgebees.Blazor.Map.Models.Legends;
 /// Callback invoked by templates to set the selection state for this specific item.
 /// Pass <see langword="true"/> to mark the item selected, <see langword="false"/> to clear selection.
 /// </param>
-public sealed record MapLegendItemTemplateContext(
-    MapLegendItemDefinition Item,
-    bool Selected,
-    Func<bool, Task> SetSelectedAsync
-);
+public sealed record MapLegendItemTemplateContext(MapLegendItem Item, bool Selected, Func<bool, Task> SetSelectedAsync);

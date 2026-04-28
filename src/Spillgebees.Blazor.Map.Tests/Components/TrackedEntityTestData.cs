@@ -1,33 +1,33 @@
 using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.TrackedData;
+using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 namespace Spillgebees.Blazor.Map.Tests.Components;
 
 internal static class TrackedEntityTestData
 {
-    public static TrackedDataLayer<Vehicle> CreateLayer()
+    public static TrackedEntityLayerDefinition<Vehicle> CreateLayer()
     {
         // arrange
         var vehicles = new[] { new Vehicle("vehicle-1", new Coordinate(49.6, 6.1), "train") };
 
         // act
-        var layer = new TrackedDataLayer<Vehicle>(
+        var layer = new TrackedEntityLayerDefinition<Vehicle>(
             Id: "vehicles",
             Items: vehicles,
-            IdOptions: new TrackedDataIdOptions<Vehicle>(vehicle => vehicle.Id),
-            Visual: new TrackedDataVisualOptions<Vehicle>(
-                Symbol: new TrackedDataSymbolOptions<Vehicle>(
+            IdOptions: new TrackedEntityIdOptions<Vehicle>(vehicle => vehicle.Id),
+            Visual: new TrackedEntityVisualOptions<Vehicle>(
+                Symbol: new TrackedEntitySymbolOptions<Vehicle>(
                     vehicle => vehicle.Position,
                     vehicle => vehicle.IconImage
                 ),
                 Decorations: [],
-                Cluster: new TrackedDataClusterOptions(),
+                Cluster: new TrackedEntityClusterOptions(),
                 Animation: null,
                 Visible: true,
                 PrimaryIconOpacity: null
             ),
-            Behavior: new TrackedDataBehaviorOptions<Vehicle>(),
-            Callbacks: new TrackedDataCallbacks<Vehicle>()
+            Behavior: new TrackedEntityBehaviorOptions<Vehicle>(),
+            Callbacks: new TrackedEntityCallbacks<Vehicle>()
         );
 
         // assert

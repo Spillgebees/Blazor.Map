@@ -7,12 +7,11 @@ using Spillgebees.Blazor.Map.Components.Layers;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Popups;
-using Spillgebees.Blazor.Map.Models.TrackedData;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 namespace Spillgebees.Blazor.Map.Tests.Components.Layers;
 
-public class TrackedDataLayerMapApiTests : BunitContext
+public class TrackedEntityLayerMapApiTests : BunitContext
 {
     private const int TestTimeoutMs = 5000;
     private const string CreateMapIdentifier = "Spillgebees.Map.mapFunctions.createMap";
@@ -27,7 +26,7 @@ public class TrackedDataLayerMapApiTests : BunitContext
     private static readonly TimeSpan HoverLeaveWait =
         TrackedEntityLayer<object>.HoverLeaveDebounce + TimeSpan.FromMilliseconds(50);
 
-    public TrackedDataLayerMapApiTests()
+    public TrackedEntityLayerMapApiTests()
     {
         // arrange
         JSInterop.Mode = JSRuntimeMode.Loose;
@@ -49,7 +48,7 @@ public class TrackedDataLayerMapApiTests : BunitContext
     public void Should_render_tracked_entity_layer_from_map_overlays_section()
     {
         // arrange
-        var cut = Render<MapTrackedDataHarness>();
+        var cut = Render<MapTrackedEntityHarness>();
 
         // act
         var renderedSources = cut.FindComponents<TrackedEntityLayer<TestVehicle>>();
@@ -62,7 +61,7 @@ public class TrackedDataLayerMapApiTests : BunitContext
     public async Task Should_open_hover_popup_and_close_after_hover_leave_debounce(CancellationToken cancellationToken)
     {
         // arrange
-        var cut = Render<MapTrackedDataHarness>(parameters =>
+        var cut = Render<MapTrackedEntityHarness>(parameters =>
             parameters.Add(p => p.PopupSelector, vehicle => new PopupOptions(vehicle.Id, PopupTrigger.Hover))
         );
         await cut.Instance.Map.OnMapInitializedAsync();
@@ -87,7 +86,7 @@ public class TrackedDataLayerMapApiTests : BunitContext
         var popupOpenStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var popupOpenGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        var cut = Render<MapTrackedDataHarness>(parameters =>
+        var cut = Render<MapTrackedEntityHarness>(parameters =>
             parameters
                 .Add(p => p.PopupSelector, vehicle => new PopupOptions(vehicle.Id, PopupTrigger.Hover))
                 .Add(
@@ -128,7 +127,7 @@ public class TrackedDataLayerMapApiTests : BunitContext
         var firstPopupGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var openAttemptCount = 0;
 
-        var cut = Render<MapTrackedDataHarness>(parameters =>
+        var cut = Render<MapTrackedEntityHarness>(parameters =>
             parameters
                 .Add(
                     p => p.Items,
@@ -167,7 +166,7 @@ public class TrackedDataLayerMapApiTests : BunitContext
     public async Task Should_zoom_to_dissolve_when_cluster_layer_is_clicked(CancellationToken cancellationToken)
     {
         // arrange
-        var cut = Render<MapTrackedDataHarness>(parameters => parameters.Add(p => p.EnableCluster, true));
+        var cut = Render<MapTrackedEntityHarness>(parameters => parameters.Add(p => p.EnableCluster, true));
         await cut.Instance.Map.OnMapInitializedAsync();
         var clusterCount = cut.FindComponents<SymbolLayer>()
             .Single(layer => layer.Instance.Id == "tracked-data-cluster-count")
@@ -185,7 +184,7 @@ public class TrackedDataLayerMapApiTests : BunitContext
     public async Task Should_apply_and_diff_hover_and_selected_feature_state(CancellationToken cancellationToken)
     {
         // arrange
-        var cut = Render<MapTrackedDataHarness>(parameters =>
+        var cut = Render<MapTrackedEntityHarness>(parameters =>
             parameters.Add(
                 p => p.Items,
                 [
@@ -231,7 +230,7 @@ public class TrackedDataLayerMapApiTests : BunitContext
     )
     {
         // arrange
-        var cut = Render<MapTrackedDataHarness>(parameters =>
+        var cut = Render<MapTrackedEntityHarness>(parameters =>
             parameters.Add(
                 p => p.Items,
                 [
@@ -273,11 +272,11 @@ public class TrackedDataLayerMapApiTests : BunitContext
     public void Should_generate_decoration_selected_display_mode_expression_with_selected_feature_state()
     {
         // arrange
-        var cut = Render<MapTrackedDataHarness>(parameters =>
+        var cut = Render<MapTrackedEntityHarness>(parameters =>
             parameters.Add(
                 p => p.Decorations,
                 [
-                    new TrackedDataDecorationOptions<TestVehicle>(
+                    new TrackedEntityDecorationOptions<TestVehicle>(
                         "selected-label",
                         TextSelector: _ => "x",
                         DisplayMode: TrackedEntityDecorationDisplayMode.Selected
@@ -346,7 +345,7 @@ public class TrackedDataLayerMapApiTests : BunitContext
             );
     }
 
-    private static CircleLayer GetPrimaryHitArea(IRenderedComponent<MapTrackedDataHarness> cut) =>
+    private static CircleLayer GetPrimaryHitArea(IRenderedComponent<MapTrackedEntityHarness> cut) =>
         cut.FindComponents<CircleLayer>().Single(layer => layer.Instance.Id == "tracked-data-hit-area").Instance;
 
     private static LayerFeatureEventArgs CreateItemFeatureEvent(string entityId, string? decorationId = null)
@@ -380,7 +379,7 @@ public class TrackedDataLayerMapApiTests : BunitContext
         return value;
     }
 
-    public sealed class MapTrackedDataHarness : ComponentBase
+    public sealed class MapTrackedEntityHarness : ComponentBase
     {
         [Parameter]
         public IReadOnlyList<TestVehicle> Items { get; set; } =
@@ -396,8 +395,8 @@ public class TrackedDataLayerMapApiTests : BunitContext
         public Func<Task>? BeforeShowPopupAsync { get; set; }
 
         [Parameter]
-        public IReadOnlyList<TrackedDataDecorationOptions<TestVehicle>> Decorations { get; set; } =
-        [new TrackedDataDecorationOptions<TestVehicle>("label", TextSelector: _ => "label")];
+        public IReadOnlyList<TrackedEntityDecorationOptions<TestVehicle>> Decorations { get; set; } =
+        [new TrackedEntityDecorationOptions<TestVehicle>("label", TextSelector: _ => "label")];
 
         public SgbMap Map { get; private set; } = null!;
 
@@ -409,31 +408,31 @@ public class TrackedDataLayerMapApiTests : BunitContext
 
         protected override void BuildRenderTree(RenderTreeBuilder builder)
         {
-            var layer = new TrackedDataLayer<TestVehicle>(
+            var layer = new TrackedEntityLayerDefinition<TestVehicle>(
                 Id: "tracked-data",
                 Items: Items,
-                IdOptions: new TrackedDataIdOptions<TestVehicle>(vehicle => vehicle.Id),
-                Visual: new TrackedDataVisualOptions<TestVehicle>(
-                    Symbol: new TrackedDataSymbolOptions<TestVehicle>(
+                IdOptions: new TrackedEntityIdOptions<TestVehicle>(vehicle => vehicle.Id),
+                Visual: new TrackedEntityVisualOptions<TestVehicle>(
+                    Symbol: new TrackedEntitySymbolOptions<TestVehicle>(
                         vehicle => vehicle.Position,
                         vehicle => vehicle.IconImage,
                         PopupSelector: PopupSelector
                     ),
                     Decorations: Decorations,
                     Cluster: EnableCluster
-                        ? new TrackedDataClusterOptions(Enabled: true, MinPoints: 1)
-                        : new TrackedDataClusterOptions(),
+                        ? new TrackedEntityClusterOptions(Enabled: true, MinPoints: 1)
+                        : new TrackedEntityClusterOptions(),
                     Animation: null,
                     Visible: true,
                     PrimaryIconOpacity: null
                 ),
-                Behavior: new TrackedDataBehaviorOptions<TestVehicle>(
-                    new TrackedDataInteractionOptions<TestVehicle>(
+                Behavior: new TrackedEntityBehaviorOptions<TestVehicle>(
+                    new TrackedEntityInteractionOptions<TestVehicle>(
                         IsHovered: vehicle => vehicle.IsHovered,
                         IsSelected: vehicle => vehicle.IsSelected
                     )
                 ),
-                Callbacks: new TrackedDataCallbacks<TestVehicle>(
+                Callbacks: new TrackedEntityCallbacks<TestVehicle>(
                     OnItemClick: null,
                     OnItemMouseEnter: null,
                     OnItemMouseLeave: null,

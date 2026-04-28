@@ -12,7 +12,6 @@ using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Expressions;
 using Spillgebees.Blazor.Map.Models.Legends;
-using Spillgebees.Blazor.Map.Models.TrackedData;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 namespace Spillgebees.Blazor.Map.Tests.Samples.TrainTracking;
@@ -601,14 +600,14 @@ public class TrainTrackingExampleTests : BunitContext
                     Id = "3d-buildings",
                     Label = "3D Buildings",
                     IsToggleable = true,
-                    Targets = (IReadOnlyList<MapLegendTargetDefinition>?)null,
+                    Targets = (IReadOnlyList<MapLegendTarget>?)null,
                 },
                 new
                 {
                     Id = "trains",
                     Label = "Trains",
                     IsToggleable = true,
-                    Targets = (IReadOnlyList<MapLegendTargetDefinition>?)null,
+                    Targets = (IReadOnlyList<MapLegendTarget>?)null,
                 },
             ]);
     }
@@ -908,7 +907,9 @@ public class TrainTrackingExampleTests : BunitContext
         string? decorationId = null
     ) => new(entity, new LayerFeatureEventArgs("train-source-symbols", entity.Position, null), decorationId);
 
-    private static TrackedDataLayer<TrainSampleState> ResolveTrackedLayer(IRenderedComponent<TrainTrackingExample> cut)
+    private static TrackedEntityLayerDefinition<TrainSampleState> ResolveTrackedLayer(
+        IRenderedComponent<TrainTrackingExample> cut
+    )
     {
         var trackedLayer = cut.FindComponent<TrackedEntityLayer<TrainSampleState>>().Instance.Layer!;
         return trackedLayer;
@@ -920,7 +921,7 @@ public class TrainTrackingExampleTests : BunitContext
     )
     {
         var trackedLayer = ResolveTrackedLayer(cut);
-        var entities = TrackedDataEntityMaterializer.Materialize(
+        var entities = TrackedEntityMaterializer.Materialize(
             trackedLayer.Items,
             trackedLayer.IdOptions,
             trackedLayer.Visual.Symbol,

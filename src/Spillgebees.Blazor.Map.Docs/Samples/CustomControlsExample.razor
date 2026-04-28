@@ -98,28 +98,28 @@
             features = CreateNetworkFeatures(),
         };
 
-    private readonly MapLegendDefinition _legendDefinition =
+    private readonly MapLegend _legendDefinition =
         new(
             [
-                new MapLegendSectionDefinition(
+                new MapLegendSection(
                     "Transit",
                     [
-                        new MapLegendItemDefinition(
+                        new MapLegendItem(
                             Id: "metro-lines",
                             Label: "Metro lines",
                             Targets:
                             [
-                                new MapLegendTargetDefinition(styleId: "sgb-liberty", layerIds: ["metro-line"]),
+                                new MapLegendTarget(styleId: "sgb-liberty", layerIds: ["metro-line"]),
                             ],
                             IsVisibleByDefault: true,
                             IsToggleable: true
                         ),
-                        new MapLegendItemDefinition(
+                        new MapLegendItem(
                             Id: "stations",
                             Label: "Stations",
                             Targets:
                             [
-                                new MapLegendTargetDefinition(styleId: "sgb-liberty", layerIds: ["station-layer"]),
+                                new MapLegendTarget(styleId: "sgb-liberty", layerIds: ["station-layer"]),
                             ],
                             IsVisibleByDefault: true,
                             IsToggleable: true

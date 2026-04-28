@@ -27,9 +27,9 @@ public class BaseMapImagesLifecycleTests : BunitContext
     public async Task Should_register_images_when_map_becomes_ready(CancellationToken cancellationToken)
     {
         // arrange
-        var images = new List<MapImageDefinition>
+        var images = new List<MapImage>
         {
-            new("train-red", "data:image/svg+xml,%3Csvg%3E%3C/svg%3E", 28, 28, sdf: true),
+            new("train-red", "data:image/svg+xml,%3Csvg%3E%3C/svg%3E", 28, 28, isSdf: true),
         };
         var cut = Render<SgbMap>(parameters => parameters.Add(p => p.Images, images));
 
@@ -46,10 +46,7 @@ public class BaseMapImagesLifecycleTests : BunitContext
     )
     {
         // arrange
-        var initialImages = new List<MapImageDefinition>
-        {
-            new("train-red", "data:image/svg+xml,%3Csvg%3E%3C/svg%3E", 28, 28),
-        };
+        var initialImages = new List<MapImage> { new("train-red", "data:image/svg+xml,%3Csvg%3E%3C/svg%3E", 28, 28) };
         var cut = Render<SgbMap>(parameters => parameters.Add(p => p.Images, initialImages));
         await cut.Instance.OnMapInitializedAsync();
         var initialSetImagesCallCount = JSInterop.Invocations[SetImagesIdentifier].Count;
@@ -58,7 +55,7 @@ public class BaseMapImagesLifecycleTests : BunitContext
         cut.Render(parameters =>
             parameters.Add(
                 p => p.Images,
-                new List<MapImageDefinition>
+                new List<MapImage>
                 {
                     new("train-blue", "data:image/svg+xml,%3Csvg%3E%3Crect/%3E%3C/svg%3E", 32, 32, pixelRatio: 2),
                 }
@@ -74,10 +71,10 @@ public class BaseMapImagesLifecycleTests : BunitContext
 
         var firstImagePayload = imagesPayload.GetValue(0);
         firstImagePayload.Should().NotBeNull();
-        GetRequiredPropertyValue(firstImagePayload!, "Name").Should().Be("train-blue");
+        GetRequiredPropertyValue(firstImagePayload!, "Id").Should().Be("train-blue");
         GetRequiredPropertyValue(firstImagePayload!, "PixelRatio").Should().Be(2d);
-        GetRequiredPropertyValue(firstImagePayload!, "Sdf").Should().BeOfType<bool>();
-        ((bool)GetRequiredPropertyValue(firstImagePayload!, "Sdf")).Should().BeFalse();
+        GetRequiredPropertyValue(firstImagePayload!, "IsSdf").Should().BeOfType<bool>();
+        ((bool)GetRequiredPropertyValue(firstImagePayload!, "IsSdf")).Should().BeFalse();
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -87,10 +84,7 @@ public class BaseMapImagesLifecycleTests : BunitContext
         var cut = Render<SgbMap>(parameters =>
             parameters.Add(
                 p => p.Images,
-                new List<MapImageDefinition>
-                {
-                    new("train-red", "data:image/svg+xml,%3Csvg%3E%3C/svg%3E", 28, 28, sdf: true),
-                }
+                new List<MapImage> { new("train-red", "data:image/svg+xml,%3Csvg%3E%3C/svg%3E", 28, 28, isSdf: true) }
             )
         );
         await cut.Instance.OnMapInitializedAsync();
