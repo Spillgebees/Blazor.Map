@@ -83,7 +83,7 @@ public static class TrainSampleSimulation
                         new TrackedEntityDecoration(
                             "service",
                             text: train.ServiceNumber,
-                            offset: new Point(1.3, -0.3),
+                            offset: new PixelPoint(1.3, -0.3),
                             anchor: SymbolAnchor.Left,
                             color: "#1e293b",
                             textSize: 11,
@@ -93,7 +93,7 @@ public static class TrainSampleSimulation
                         new TrackedEntityDecoration(
                             "route",
                             text: train.Route,
-                            offset: new Point(1.8, 1.2),
+                            offset: new PixelPoint(1.8, 1.2),
                             anchor: SymbolAnchor.Left,
                             displayMode: TrackedEntityDecorationDisplayMode.Hover,
                             color: "#64748b",
@@ -104,7 +104,7 @@ public static class TrainSampleSimulation
                         new TrackedEntityDecoration(
                             "operator",
                             text: train.Operator,
-                            offset: new Point(-1.3, 0.0),
+                            offset: new PixelPoint(-1.3, 0.0),
                             anchor: SymbolAnchor.Right,
                             displayMode: TrackedEntityDecorationDisplayMode.Selected,
                             color: train.Color,

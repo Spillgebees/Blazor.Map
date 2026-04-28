@@ -3,7 +3,7 @@ export interface ICoordinate {
   longitude: number;
 }
 
-export interface IPoint {
+export interface IPixelPoint {
   x: number;
   y: number;
 }
@@ -80,9 +80,9 @@ export interface ITileOverlay {
 
 export interface IFitBoundsOptions {
   featureIds: string[];
-  padding: IPoint | null;
-  topLeftPadding: IPoint | null;
-  bottomRightPadding: IPoint | null;
+  padding: IPixelPoint | null;
+  topLeftPadding: IPixelPoint | null;
+  bottomRightPadding: IPixelPoint | null;
 }
 
 export interface IMapImage {

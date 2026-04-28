@@ -66,7 +66,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
         new(
             "service",
             TextSelector: train => train.ServiceNumber,
-            Offset: new Point(13.3, -3.3),
+            Offset: new PixelPoint(13.3, -3.3),
             Anchor: SymbolAnchor.Left,
             DisplayMode: TrackedEntityDecorationDisplayMode.Always,
             ColorSelector: _ => "#0f172a",
@@ -79,7 +79,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
         new(
             "route",
             TextSelector: train => train.Route.Replace(">", "\u203A"),
-            Offset: new Point(20, 7.5),
+            Offset: new PixelPoint(20, 7.5),
             Anchor: SymbolAnchor.Left,
             DisplayMode: TrackedEntityDecorationDisplayMode.HoverOrSelected,
             ColorSelector: _ => "#94a3b8",
@@ -92,7 +92,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
         new(
             "operator",
             TextSelector: train => train.Operator,
-            Offset: new Point(-16, -4),
+            Offset: new PixelPoint(-16, -4),
             Anchor: SymbolAnchor.Right,
             DisplayMode: TrackedEntityDecorationDisplayMode.HoverOrSelected,
             ColorSelector: train => train.Color,

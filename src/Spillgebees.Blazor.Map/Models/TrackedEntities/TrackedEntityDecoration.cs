@@ -14,7 +14,7 @@ public sealed record TrackedEntityDecoration
         string id,
         string? text = null,
         string? iconImage = null,
-        Point? offset = null,
+        PixelPoint? offset = null,
         SymbolAnchor? anchor = null,
         TrackedEntityDecorationDisplayMode displayMode = TrackedEntityDecorationDisplayMode.Always,
         string? color = null,
@@ -66,7 +66,7 @@ public sealed record TrackedEntityDecoration
     /// <summary>
     /// Optional relative offset.
     /// </summary>
-    public Point? Offset { get; }
+    public PixelPoint? Offset { get; }
 
     /// <summary>
     /// Optional MapLibre-style anchor.

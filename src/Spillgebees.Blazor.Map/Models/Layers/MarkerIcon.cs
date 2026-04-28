@@ -9,4 +9,4 @@ namespace Spillgebees.Blazor.Map.Models.Layers;
 /// The coordinates of the "tip" of the icon relative to its top-left corner (x, y).
 /// Default is <see langword="null"/> (centered).
 /// </param>
-public record MarkerIcon(string Url, Point? Size = null, Point? Anchor = null);
+public record MarkerIcon(string Url, PixelPoint? Size = null, PixelPoint? Anchor = null);

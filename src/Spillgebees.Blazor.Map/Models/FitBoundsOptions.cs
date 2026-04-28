@@ -1,5 +1,3 @@
-using System.Collections.Immutable;
-
 namespace Spillgebees.Blazor.Map.Models;
 
 /// <summary>
@@ -10,8 +8,8 @@ namespace Spillgebees.Blazor.Map.Models;
 /// <param name="TopLeftPadding">Padding to add from the top left.</param>
 /// <param name="BottomRightPadding">Padding to add from the bottom right.</param>
 public record FitBoundsOptions(
-    ImmutableList<string> FeatureIds,
-    Point? Padding = null,
-    Point? TopLeftPadding = null,
-    Point? BottomRightPadding = null
+    IReadOnlyList<string> FeatureIds,
+    PixelPoint? Padding = null,
+    PixelPoint? TopLeftPadding = null,
+    PixelPoint? BottomRightPadding = null
 );

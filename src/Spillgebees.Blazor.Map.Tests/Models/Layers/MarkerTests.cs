@@ -34,7 +34,11 @@ public class MarkerTests
     public void Should_create_marker_with_custom_icon()
     {
         // arrange
-        var icon = new MarkerIcon("https://example.com/icon.png", Size: new Point(25, 41), Anchor: new Point(12, 41));
+        var icon = new MarkerIcon(
+            "https://example.com/icon.png",
+            Size: new PixelPoint(25, 41),
+            Anchor: new PixelPoint(12, 41)
+        );
 
         // act
         var marker = new Marker("test-id", new Coordinate(49.6, 6.1), "Test Title", Icon: icon);
@@ -42,8 +46,8 @@ public class MarkerTests
         // assert
         marker.Icon.Should().NotBeNull();
         marker.Icon!.Url.Should().Be("https://example.com/icon.png");
-        marker.Icon.Size.Should().Be(new Point(25, 41));
-        marker.Icon.Anchor.Should().Be(new Point(12, 41));
+        marker.Icon.Size.Should().Be(new PixelPoint(25, 41));
+        marker.Icon.Anchor.Should().Be(new PixelPoint(12, 41));
     }
 
     [Test]

@@ -46,7 +46,7 @@ namespace Spillgebees.Blazor.Map.Models;
 /// </param>
 public record MapOptions(
     Coordinate Center,
-    int Zoom = 0,
+    double Zoom = 0,
     MapStyle? Style = null,
     IReadOnlyList<MapStyle>? Styles = null,
     string? ComposedGlyphsUrl = null,
@@ -56,8 +56,8 @@ public record MapOptions(
     bool Terrain = false,
     double TerrainExaggeration = 1.0,
     FitBoundsOptions? FitBoundsOptions = null,
-    int? MinZoom = null,
-    int? MaxZoom = null,
+    double? MinZoom = null,
+    double? MaxZoom = null,
     MapBounds? MaxBounds = null,
     bool Interactive = true,
     bool CooperativeGestures = false,

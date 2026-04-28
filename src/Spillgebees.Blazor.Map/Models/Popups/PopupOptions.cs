@@ -16,7 +16,7 @@ public record PopupOptions(
     PopupContentMode ContentMode,
     PopupTrigger Trigger = PopupTrigger.Click,
     PopupAnchor Anchor = PopupAnchor.Auto,
-    Point? Offset = null,
+    PixelPoint? Offset = null,
     bool CloseButton = true,
     string? MaxWidth = null,
     string? ClassName = null
@@ -29,7 +29,7 @@ public record PopupOptions(
         string content,
         PopupTrigger trigger = PopupTrigger.Click,
         PopupAnchor anchor = PopupAnchor.Auto,
-        Point? offset = null,
+        PixelPoint? offset = null,
         bool closeButton = true,
         string? maxWidth = null,
         string? className = null
@@ -42,7 +42,7 @@ public record PopupOptions(
         string content,
         PopupTrigger trigger = PopupTrigger.Click,
         PopupAnchor anchor = PopupAnchor.Auto,
-        Point? offset = null,
+        PixelPoint? offset = null,
         bool closeButton = true,
         string? maxWidth = null,
         string? className = null
