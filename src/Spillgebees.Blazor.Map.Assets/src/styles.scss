@@ -21,6 +21,7 @@
   --sgb-map-ctrl-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.06);
   --sgb-map-ctrl-btn-size: 30px;
   --sgb-map-ctrl-icon-size: 18px;
+  --sgb-map-ctrl-btn-gap: 8px;
 
   // attribution info icon (dark icon for light backgrounds)
   --sgb-map-attrib-icon: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 20 20' fill-rule='evenodd'%3E%3Cpath d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E");
@@ -75,6 +76,76 @@
 .sgb-map-container {
   .sgb-map-ctrl-group {
     @extend %sgb-ctrl-group-base;
+  }
+
+  .sgb-map-control-button-group {
+    @extend %sgb-ctrl-group-base;
+    display: inline-flex;
+    flex-direction: column;
+
+    .sgb-map-control-button {
+      gap: var(--sgb-map-ctrl-btn-gap);
+      min-width: var(--sgb-map-ctrl-btn-size);
+      width: auto;
+      max-width: 18rem;
+      white-space: nowrap;
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+    }
+
+    .sgb-map-control-button-icon-only {
+      width: var(--sgb-map-ctrl-btn-size);
+      min-width: var(--sgb-map-ctrl-btn-size);
+      padding: 0;
+    }
+
+    .sgb-map-control-button-with-icon-text,
+    .sgb-map-control-button-text-only {
+      justify-content: flex-start;
+      min-width: 7.5rem;
+      height: auto;
+      min-height: var(--sgb-map-ctrl-btn-size);
+      padding: 0.45rem 0.65rem;
+      text-align: left;
+    }
+
+    .sgb-map-control-button-small.sgb-map-control-button-with-icon-text,
+    .sgb-map-control-button-small.sgb-map-control-button-text-only {
+      min-height: 26px;
+      padding: 0.3rem 0.55rem;
+    }
+
+    .sgb-map-control-button-primary {
+      color: var(--sgb-map-ctrl-link);
+    }
+
+    .sgb-map-control-button-pressed {
+      color: var(--sgb-map-ctrl-link);
+      background: color-mix(in srgb, var(--sgb-map-ctrl-link) 14%, var(--sgb-map-ctrl-bg));
+      box-shadow: inset 3px 0 0 var(--sgb-map-ctrl-link);
+    }
+
+    .sgb-map-control-icon {
+      display: inline-flex;
+      flex: 0 0 var(--sgb-map-ctrl-icon-size);
+      width: var(--sgb-map-ctrl-icon-size);
+      height: var(--sgb-map-ctrl-icon-size);
+      align-items: center;
+      justify-content: center;
+
+      svg {
+        width: var(--sgb-map-ctrl-icon-size);
+        height: var(--sgb-map-ctrl-icon-size);
+      }
+    }
+
+    .sgb-map-control-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
 
   .maplibregl-ctrl-group {

@@ -69,11 +69,10 @@ public class TrainTrackingExampleTests : BunitContext
     {
         // arrange & act
         var cut = Render<TrainTrackingExample>();
-        var map = cut.FindComponent<SgbMap>().Instance;
-        var trackedLayer = map.TrackedDataLayers.OfType<TrackedDataLayer<TrainSampleState>>().Single();
+        var trackedLayer = ResolveTrackedLayer(cut);
 
         // assert
-        map.TrackedDataLayers.Should().HaveCount(1);
+        cut.FindComponents<TrackedEntityLayer<TrainSampleState>>().Should().HaveCount(1);
         cut.FindComponents<GeoJsonSource>()
             .Select(source => source.Instance.Id)
             .Should()
@@ -911,8 +910,7 @@ public class TrainTrackingExampleTests : BunitContext
 
     private static TrackedDataLayer<TrainSampleState> ResolveTrackedLayer(IRenderedComponent<TrainTrackingExample> cut)
     {
-        var map = cut.FindComponent<SgbMap>().Instance;
-        var trackedLayer = map.TrackedDataLayers.OfType<TrackedDataLayer<TrainSampleState>>().Single();
+        var trackedLayer = cut.FindComponent<TrackedEntityLayer<TrainSampleState>>().Instance.Layer!;
         return trackedLayer;
     }
 

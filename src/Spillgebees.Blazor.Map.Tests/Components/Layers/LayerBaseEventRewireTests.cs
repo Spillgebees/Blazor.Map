@@ -156,8 +156,9 @@ public class LayerBaseEventRewireTests : BunitContext
                     {
                         mapBuilder.OpenComponent<GeoJsonSource>(0);
                         mapBuilder.AddAttribute(1, "Id", "source-1");
+                        mapBuilder.AddAttribute(2, nameof(GeoJsonSource.AllowOutsideMapSources), true);
                         mapBuilder.AddAttribute(
-                            2,
+                            3,
                             "Data",
                             new Dictionary<string, object?>
                             {
@@ -166,7 +167,7 @@ public class LayerBaseEventRewireTests : BunitContext
                             }
                         );
                         mapBuilder.AddAttribute(
-                            3,
+                            4,
                             "ChildContent",
                             (RenderFragment)(
                                 sourceBuilder =>
@@ -207,8 +208,9 @@ public class LayerBaseEventRewireTests : BunitContext
                     {
                         mapBuilder.OpenComponent<GeoJsonSource>(0);
                         mapBuilder.AddAttribute(1, "Id", "source-1");
+                        mapBuilder.AddAttribute(2, nameof(GeoJsonSource.AllowOutsideMapSources), true);
                         mapBuilder.AddAttribute(
-                            2,
+                            3,
                             "Data",
                             new Dictionary<string, object?>
                             {
@@ -217,7 +219,7 @@ public class LayerBaseEventRewireTests : BunitContext
                             }
                         );
                         mapBuilder.AddAttribute(
-                            3,
+                            4,
                             "ChildContent",
                             (RenderFragment)(
                                 sourceBuilder =>
@@ -266,8 +268,9 @@ public class LayerBaseEventRewireTests : BunitContext
                         mapBuilder.OpenComponent<VectorTileSource>(0);
                         mapBuilder.AddAttribute(1, "Id", "source-1");
                         mapBuilder.AddAttribute(2, "Url", "mapbox://example.tileset");
+                        mapBuilder.AddAttribute(3, nameof(VectorTileSource.AllowOutsideMapSources), true);
                         mapBuilder.AddAttribute(
-                            3,
+                            4,
                             "ChildContent",
                             (RenderFragment)(
                                 sourceBuilder =>

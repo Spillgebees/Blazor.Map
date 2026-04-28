@@ -1,0 +1,86 @@
+@namespace Spillgebees.Blazor.Map.Components
+@using Spillgebees.Blazor.Map.Models.Controls
+
+<button type="button"
+        class="@ButtonClass"
+        aria-label="@Label"
+        title="@Title"
+        disabled="@Disabled"
+        @onclick="OnClick">
+    @if (Icon is not null)
+    {
+        <span class="sgb-map-control-icon" aria-hidden="true">
+            @Icon
+        </span>
+    }
+    @if (!string.IsNullOrWhiteSpace(Text))
+    {
+        <span class="sgb-map-control-text">@Text</span>
+    }
+</button>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Title { get; set; }
+
+    [Parameter]
+    public string? Text { get; set; }
+
+    [Parameter]
+    public RenderFragment? Icon { get; set; }
+
+    [Parameter]
+    public MapControlButtonVariant Variant { get; set; } = MapControlButtonVariant.Neutral;
+
+    [Parameter]
+    public MapControlButtonSize Size { get; set; } = MapControlButtonSize.Medium;
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    private string ButtonClass => string.Join(
+        " ",
+        new[]
+        {
+            "sgb-map-control-button",
+            "sgb-map-control-group-button",
+            GetLayoutClass(),
+            $"sgb-map-control-button-{Variant.ToString().ToLowerInvariant()}",
+            $"sgb-map-control-button-{Size.ToString().ToLowerInvariant()}",
+        }
+    );
+
+    protected override void OnParametersSet()
+    {
+        if (string.IsNullOrWhiteSpace(Label))
+        {
+            throw new InvalidOperationException("A non-empty Label is required.");
+        }
+
+        if (Icon is null && string.IsNullOrWhiteSpace(Text))
+        {
+            throw new InvalidOperationException("MapControlButton requires non-empty Text or Icon.");
+        }
+    }
+
+    private string GetLayoutClass()
+    {
+        if (Icon is not null && !string.IsNullOrWhiteSpace(Text))
+        {
+            return "sgb-map-control-button-with-icon-text";
+        }
+
+        if (Icon is not null)
+        {
+            return "sgb-map-control-button-icon-only";
+        }
+
+        return "sgb-map-control-button-text-only";
+    }
+}

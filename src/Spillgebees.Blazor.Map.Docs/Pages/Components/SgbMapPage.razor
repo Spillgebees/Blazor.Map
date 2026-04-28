@@ -8,10 +8,14 @@
 <OnThisPage />
 
 <h1>SgbMap</h1>
-<p>The main map component. Renders an interactive MapLibre GL JS map with configurable styles, controls, markers, shapes, and popups.</p>
+<p>The main map component. Renders an interactive MapLibre GL JS map with configurable styles, structured child sections, controls, sources, overlays, and popups.</p>
+
+<h2 id="canonical_structure">// canonical_structure</h2>
+<p>Use three child content sections for component markup. Put controls in <code>MapControls</code>, MapLibre data sources in <code>MapSources</code>, and app overlays in <code>MapOverlays</code>. Sections make ownership clear and produce placement errors when components are nested in the wrong place.</p>
+<CodeBlock Language="razor" Files="@_canonicalStructure" />
 
 <h2 id="basic_usage">// basic_usage</h2>
-<p>Provide a center coordinate and zoom level. The default style is OpenFreeMap Liberty, a clean vector style that requires no API key. Add controls with subcomponents such as <code>MapNavigationControl</code>, <code>MapScaleControl</code>, and <code>MapLegendControl</code>. <code>FitBoundsOptions</code> auto-fits the viewport to a set of feature IDs.</p>
+<p>Provide a center coordinate and zoom level. The default style is OpenFreeMap Liberty, a clean vector style that requires no API key. Add controls inside <code>MapControls</code> with subcomponents such as <code>MapNavigationControl</code>, <code>MapScaleControl</code>, and <code>MapLegendControl</code>. <code>FitBoundsOptions</code> auto-fits the viewport to a set of feature IDs.</p>
 <ExampleView TComponent="BasicMapExample">
     <BasicMapExample />
 </ExampleView>
@@ -23,8 +27,44 @@
 </ExampleView>
 
 <h2 id="custom_controls">// custom_controls</h2>
-<p>Use control subcomponents inside <code>SgbMap</code> for built-in controls, custom controls, and legends. Available built-ins are <code>MapNavigationControl</code>, <code>MapScaleControl</code>, <code>MapFullscreenControl</code>, <code>MapGeolocateControl</code>, <code>MapTerrainControl</code>, and <code>MapCenterControl</code>.</p>
-<p>Use <code>MapCustomControl</code> when the UI belongs in Razor. Blazor renders the content and handles events such as <code>@@onclick</code> and <code>@@bind</code>. JavaScript only creates the MapLibre control shell, places it, orders it, and removes it. Custom controls can render inline SVG buttons, image icons, grouped buttons, stateful toggles, and full panels.</p>
+<p>Use control subcomponents inside <code>MapControls</code> for built-in controls, styled custom controls, and legends. Available built-ins are <code>MapNavigationControl</code>, <code>MapScaleControl</code>, <code>MapFullscreenControl</code>, <code>MapGeolocateControl</code>, <code>MapTerrainControl</code>, and <code>MapCenterControl</code>.</p>
+<p>Use first-class styled controls for common custom UI. <code>MapActionControl</code> renders one action button with library chrome. <code>MapToggleControl</code> renders one stateful button with <code>aria-pressed</code> and <code>PressedChanged</code>. <code>MapControlButtonGroup</code> hosts related <code>MapControlButton</code> and <code>MapControlToggleButton</code> children with the same chrome.</p>
+<table>
+    <thead>
+        <tr>
+            <th>Need</th>
+            <th>Use</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Single command button</td>
+            <td><code>MapActionControl</code></td>
+        </tr>
+        <tr>
+            <td>Single pressed or unpressed state</td>
+            <td><code>MapToggleControl</code></td>
+        </tr>
+        <tr>
+            <td>Related action and toggle buttons</td>
+            <td><code>MapControlButtonGroup</code> with button children</td>
+        </tr>
+        <tr>
+            <td>Legend and layer visibility</td>
+            <td><code>MapLegendControl</code></td>
+        </tr>
+        <tr>
+            <td>Panel or status content</td>
+            <td>Future <code>MapPanelControl</code> or <code>MapStatusControl</code></td>
+        </tr>
+        <tr>
+            <td>Fully custom markup</td>
+            <td><code>MapCustomControl</code> escape hatch</td>
+        </tr>
+    </tbody>
+</table>
+<CodeBlock Language="razor" Files="@_customControlExamples" />
+<p>Use <code>MapCustomControl</code> only when the UI needs custom markup that the styled primitives do not cover. Blazor still renders the content and handles events such as <code>@@onclick</code> and <code>@@bind</code>. JavaScript creates the MapLibre control shell, places it, orders it, and removes it.</p>
 <p>Use <code>MapLegendControl</code> for component-first legends with collapsible chrome, item templates, visibility groups, and visibility callbacks. Component controls are explicit: maps render no controls by default. The record-backed <code>Controls</code> API remains available for advanced composition, but component markup is the preferred authoring model.</p>
 <p>Ordering is deterministic per map corner: controls are sorted by <code>Order</code> ascending, then declaration order, then <code>ControlId</code> as a stable tie-breaker. Keep each control <code>Id</code> unique.</p>
 <ExampleView TComponent="CustomControlsExample">
@@ -55,6 +95,11 @@
     <CirclesAndPolylinesExample />
 </ExampleView>
 
+<h2 id="entity_and_list_overlays">// entity_and_list_overlays</h2>
+<p>Use <code>TrackedEntityLayer</code> for moving, interactive entities that need stable IDs, feature-state driven hover or selection, popups, decorations, clustering, and diffed updates. Use <code>GeoJsonSource</code> for static or externally supplied GeoJSON where you want to define MapLibre layers directly.</p>
+<p>Use batch overlay components for app lists such as stations and tracks. They live in <code>MapOverlays</code> and adapt your items with selectors.</p>
+<CodeBlock Language="razor" Files="@_overlaySections" />
+
 <h2 id="popups">// popups</h2>
 <p>Three trigger modes: click, hover, and permanent. Attach a <code>PopupOptions</code> record to any <code>Marker</code> or <code>Circle</code> via its <code>Popup</code> property. Set <code>CloseButton: false</code> on permanent popups for a cleaner look.</p>
 <ExampleView TComponent="PopupsExample">
@@ -66,3 +111,82 @@
 <ExampleView TComponent="WmsTileLayerExample">
     <WmsTileLayerExample />
 </ExampleView>
+
+@code {
+    private static readonly Dictionary<string, string> _canonicalStructure = new()
+    {
+        ["SgbMapSections.razor"] = """
+            <SgbMap MapOptions="@_mapOptions" ContainerClass="rail-map">
+                <MapControls>
+                    <MapNavigationControl Id="navigation" />
+                    <MapLegendControl Id="legend" Definition="@_legend" />
+                </MapControls>
+
+                <MapSources>
+                    <GeoJsonSource Id="railway" Data="@_railwayGeoJson">
+                        <LineLayer Id="tracks" Color="#475569" Width="2" />
+                    </GeoJsonSource>
+                </MapSources>
+
+                <MapOverlays>
+                    <TrackedEntityLayer TItem="Train" Layer="@_trainLayer" />
+                    <MapMarkers TItem="Station"
+                                Items="@_stations"
+                                IdSelector="station => station.Id"
+                                PositionSelector="station => station.Position"
+                                TitleSelector="station => station.Name" />
+                </MapOverlays>
+            </SgbMap>
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _overlaySections = new()
+    {
+        ["MapOverlays.razor"] = """
+            <MapOverlays>
+                <TrackedEntityLayer TItem="Train" Layer="@_trainLayer" />
+
+                <MapMarkers TItem="Station"
+                            Items="@_stations"
+                            IdSelector="station => station.Id"
+                            PositionSelector="station => station.Position"
+                            TitleSelector="station => station.Name" />
+
+                <MapPolylines TItem="Track"
+                              Items="@_tracks"
+                              IdSelector="track => track.Id"
+                              CoordinatesSelector="track => track.Coordinates"
+                              ColorSelector="track => track.Color"
+                              WidthSelector="track => 2.0" />
+            </MapOverlays>
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _customControlExamples = new()
+    {
+        ["MapActionControl.razor"] = """
+            <MapActionControl Id="focus-station"
+                              Position="ControlPosition.TopLeft"
+                              Label="Focus station"
+                              Text="Central Station"
+                              OnClick="FocusStationAsync" />
+            """,
+        ["MapToggleControl.razor"] = """
+            <MapToggleControl Id="station-labels"
+                              Position="ControlPosition.TopLeft"
+                              Label="Toggle station labels"
+                              Text="Labels"
+                              Pressed="@_labelsVisible"
+                              PressedChanged="value => _labelsVisible = value" />
+            """,
+        ["MapControlButtonGroup.razor"] = """
+            <MapControlButtonGroup Id="map-tools" Label="Map tools">
+                <MapControlButton Label="Zoom to network" Text="Network" OnClick="ZoomToNetworkAsync" />
+                <MapControlToggleButton Label="Show alerts"
+                                        Text="Alerts"
+                                        Pressed="@_alertsVisible"
+                                        PressedChanged="value => _alertsVisible = value" />
+            </MapControlButtonGroup>
+            """,
+    };
+}

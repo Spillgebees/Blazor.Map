@@ -11,10 +11,10 @@ using Spillgebees.Blazor.Map.Utilities;
 namespace Spillgebees.Blazor.Map.Components.Layers;
 
 /// <summary>
-/// High-level declarative tracked data source for rendering moving entities on a map.
+/// High-level declarative tracked entity layer for rendering moving entities on a map.
 /// </summary>
 /// <typeparam name="TItem">The raw app model type.</typeparam>
-public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
+public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
 {
     internal static readonly TimeSpan HoverLeaveDebounce = TimeSpan.FromMilliseconds(300);
     private static readonly object[] _clusterFilter = Expr.Has("point_count");
@@ -163,6 +163,9 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
     private TrackedPopupState? _activePopup;
     private TrackedDataCallbacks<TItem> _callbacks = new();
 
+    [CascadingParameter]
+    private MapSectionContext? SectionContext { get; set; }
+
     [Parameter]
     public TrackedDataLayer<TItem>? Layer { get; set; }
 
@@ -197,7 +200,7 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
     private string? AfterStack { get; set; }
 
     [CascadingParameter]
-    public BaseMap? Map { get; set; }
+    private BaseMap? Map { get; set; }
 
     internal string ClusterHitAreaLayerId => $"{SourceId}-cluster-hit-area";
 
@@ -270,6 +273,11 @@ public partial class TrackedDataSource<TItem> : ComponentBase, IAsyncDisposable
 
     protected override void OnParametersSet()
     {
+        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
+        {
+            throw new InvalidOperationException("TrackedEntityLayer must be placed inside MapOverlays.");
+        }
+
         if (Layer is null)
         {
             throw new InvalidOperationException("Tracked data layer must be provided.");

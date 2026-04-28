@@ -103,7 +103,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
         ),
     ];
 
-    private IReadOnlyList<ITrackedDataLayer> _trackedDataLayers = [];
+    private TrackedDataLayer<TrainSampleState>? _trackedEntityLayer;
 
     public TrainTrackingExample()
     {
@@ -292,24 +292,21 @@ public partial class TrainTrackingExample : IAsyncDisposable
 
     private void RebuildTrackedLayers()
     {
-        _trackedDataLayers =
-        [
-            new TrackedDataLayer<TrainSampleState>(
-                Id: "train-source",
-                Items: _trains,
-                IdOptions: _trainId,
-                Visual: new TrackedDataVisualOptions<TrainSampleState>(
-                    Symbol: _trainSymbol,
-                    Decorations: _trainDecorations,
-                    Cluster: _trainClusterOptions,
-                    Animation: _trainAnimation,
-                    Visible: _visibility.ShowTrains,
-                    PrimaryIconOpacity: _trainIconOpacityExpr
-                ),
-                Behavior: _trainBehavior,
-                Callbacks: _trainCallbacks
+        _trackedEntityLayer = new TrackedDataLayer<TrainSampleState>(
+            Id: "train-source",
+            Items: _trains,
+            IdOptions: _trainId,
+            Visual: new TrackedDataVisualOptions<TrainSampleState>(
+                Symbol: _trainSymbol,
+                Decorations: _trainDecorations,
+                Cluster: _trainClusterOptions,
+                Animation: _trainAnimation,
+                Visible: _visibility.ShowTrains,
+                PrimaryIconOpacity: _trainIconOpacityExpr
             ),
-        ];
+            Behavior: _trainBehavior,
+            Callbacks: _trainCallbacks
+        );
     }
 
     public async ValueTask DisposeAsync()

@@ -6,77 +6,62 @@
 
 <SgbMap MapOptions="@_mapOptions"
         Height="450px"
-        Width="100%">
-    <MapNavigationControl Position="ControlPosition.TopRight" Order="10" />
-    <MapFullscreenControl Position="ControlPosition.TopRight" Order="20" />
-    <MapGeolocateControl Position="ControlPosition.TopRight" Order="30" TrackUser="true" />
-    <MapTerrainControl Position="ControlPosition.TopRight" Order="40" />
-    <MapCenterControl Position="ControlPosition.TopLeft" Order="5" />
-    <MapScaleControl Position="ControlPosition.BottomLeft" Order="5" />
+        Width="100%"
+        @ref="_map">
+    <MapControls>
+        <MapNavigationControl Position="ControlPosition.TopRight" Order="10" />
+        <MapFullscreenControl Position="ControlPosition.TopRight" Order="20" />
+        <MapCenterControl Position="ControlPosition.TopLeft" Order="5" />
+        <MapScaleControl Position="ControlPosition.BottomLeft" Order="5" />
 
-    <MapCustomControl Id="refresh-map" Position="ControlPosition.TopLeft" Order="10" Class="docs-map-button-control">
-            <div class="sgb-map-ctrl-group">
-                <button type="button" title="Refresh map data" @onclick="RefreshData">
-                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M17.7 6.3A8 8 0 1 0 20 12h-2a6 6 0 1 1-1.76-4.24L13 11h8V3l-3.3 3.3Z'/%3E%3C/svg%3E"
-                         width="18"
-                         height="18"
-                         alt="" />
-                    <span class="visually-hidden">Refresh map data</span>
-                </button>
-            </div>
-    </MapCustomControl>
+        <MapActionControl Id="station-focus"
+                          Position="ControlPosition.TopLeft"
+                          Order="15"
+                          Label="@FocusActionLabel"
+                          Title="@FocusActionLabel"
+                          Text="@FocusText"
+                          OnClick="FocusNextStationAsync">
+            <Icon>
+                <svg class="docs-station-focus-icon"
+                     viewBox="0 0 24 24"
+                     aria-hidden="true"
+                     focusable="false">
+                    <path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2" />
+                    <circle cx="12"
+                            cy="10"
+                            r="2"
+                            fill="currentColor" />
+                </svg>
+            </Icon>
+        </MapActionControl>
 
-    <MapCustomControl Id="network-mode" Position="ControlPosition.TopLeft" Order="20" Class="docs-map-button-control">
-            <div class="sgb-map-ctrl-group">
-                <button type="button" title="Network mode" @onclick="ToggleNetworkMode">
-                    <svg width="18" height="18" viewBox="0 0 24 24" role="img" aria-label="Network mode">
-                        <path fill="currentColor" d="M12 3 3 8l9 5 9-5-9-5Zm0 7.7L7.1 8 12 5.3 16.9 8 12 10.7ZM5 10.2l7 3.9 7-3.9v2.3l-7 3.9-7-3.9v-2.3Zm0 4 7 3.9 7-3.9v2.3l-7 3.9-7-3.9v-2.3Z" />
-                    </svg>
-                </button>
-            </div>
-    </MapCustomControl>
+        <MapLegendControl Id="network-legend"
+                          Position="ControlPosition.TopRight"
+                          Order="50"
+                          Title="Network layers"
+                          Collapsible="true"
+                          InitiallyOpen="true"
+                          Definition="@_legendDefinition" />
+    </MapControls>
 
-    <MapCustomControl Id="view-tools" Position="ControlPosition.TopLeft" Order="30" Class="docs-map-button-control">
-            <div class="sgb-map-ctrl-group">
-                <button type="button" title="Zoom to network" @onclick="ZoomToNetwork">⌖</button>
-                <button type="button" title="Show details" @onclick="ToggleDetails">i</button>
-            </div>
-    </MapCustomControl>
-
-    <MapCustomControl Id="live-toggle" Position="ControlPosition.BottomLeft" Order="10" Class="docs-map-toggle-control">
-            <label class="docs-map-toggle">
-                <input type="checkbox" @bind="_liveUpdatesEnabled" />
-                <span>Live updates</span>
-            </label>
-    </MapCustomControl>
-
-    <MapCustomControl Id="network-panel" Position="ControlPosition.BottomRight" Order="10" Class="docs-map-panel-control">
-            <section class="docs-map-panel">
-                <strong>Network summary</strong>
-                <p>@_statusMessage</p>
-                <p>Mode: @(_networkModeEnabled ? "network" : "standard")</p>
-            </section>
-    </MapCustomControl>
-
-    <MapLegendControl Id="network-legend"
-                      Position="ControlPosition.TopRight"
-                      Order="50"
-                      Title="Network layers"
-                      Collapsible="true"
-                      InitiallyOpen="true"
-                      Definition="@_legendDefinition" />
-
-    <GeoJsonSource Id="network"
-                   Data="@_networkData">
-        <LineLayer Id="metro-line"
-                   Color="@("#2563eb")"
-                   Width="4" />
-        <CircleLayer Id="station-layer"
-                     Color="@("#f97316")"
-                     Radius="5"
-                     StrokeColor="@("#ffffff")"
-                     StrokeWidth="2" />
-    </GeoJsonSource>
+    <MapSources>
+        <GeoJsonSource Id="network"
+                       Data="@NetworkData">
+            <LineLayer Id="metro-line"
+                       Color="@("#2563eb")"
+                       Width="4" />
+            <CircleLayer Id="station-layer"
+                         Color="@("#f97316")"
+                         Radius="5"
+                         StrokeColor="@("#ffffff")"
+                         StrokeWidth="2" />
+        </GeoJsonSource>
+    </MapSources>
 </SgbMap>
 
 @code {
@@ -86,10 +71,32 @@
         Zoom: 12
     );
 
-    private bool _liveUpdatesEnabled = true;
-    private bool _networkModeEnabled;
-    private bool _detailsVisible;
-    private string _statusMessage = "Ready";
+    private readonly StationFeature[] _stations =
+    [
+        new("Central Station", [6.1319, 49.6117]),
+        new("North Station", [6.1600, 49.6200]),
+        new("West Station", [6.0950, 49.6030]),
+    ];
+
+    private SgbMap? _map;
+    private object? _networkData;
+    private int _nextStationIndex;
+    private string? _focusedStationName;
+
+    private StationFeature NextStation => _stations[_nextStationIndex];
+
+    private string FocusLabel => _focusedStationName is null ? NextStation.Name : $"Focused {_focusedStationName}";
+
+    private string FocusActionLabel => $"Focus {NextStation.Name}";
+
+    private string FocusText => $"Focus station: {FocusLabel}";
+
+    private object NetworkData =>
+        _networkData ??= new
+        {
+            type = "FeatureCollection",
+            features = CreateNetworkFeatures(),
+        };
 
     private readonly MapLegendDefinition _legendDefinition =
         new(
@@ -102,9 +109,7 @@
                             Label: "Metro lines",
                             Targets:
                             [
-                                new MapLegendTargetDefinition(
-                                    styleId: "sgb-liberty",
-                                    layerIds: ["metro-line"])
+                                new MapLegendTargetDefinition(styleId: "sgb-liberty", layerIds: ["metro-line"]),
                             ],
                             IsVisibleByDefault: true,
                             IsToggleable: true
@@ -114,26 +119,24 @@
                             Label: "Stations",
                             Targets:
                             [
-                                new MapLegendTargetDefinition(
-                                    styleId: "sgb-liberty",
-                                    layerIds: ["station-layer"])
+                                new MapLegendTargetDefinition(styleId: "sgb-liberty", layerIds: ["station-layer"]),
                             ],
                             IsVisibleByDefault: true,
                             IsToggleable: true
-                        )
-                    ])
+                        ),
+                    ]
+                ),
             ]
         );
 
-    private static readonly object _networkData = new
+    private object[] CreateNetworkFeatures()
     {
-        type = "FeatureCollection",
-        features = new object[]
+        var features = new List<object>
         {
             new
             {
                 type = "Feature",
-                properties = new { name = "Line A" },
+                properties = new { name = "Line A", kind = "line" },
                 geometry = new
                 {
                     type = "LineString",
@@ -145,48 +148,39 @@
                     },
                 },
             },
-            new
+        };
+
+        features.AddRange(_stations.Select(CreateStationFeature));
+
+        return [.. features];
+    }
+
+    private static object CreateStationFeature(StationFeature station) =>
+        new
+        {
+            type = "Feature",
+            properties = new { name = station.Name, kind = "station" },
+            geometry = new
             {
-                type = "Feature",
-                properties = new { name = "Central Station" },
-                geometry = new
-                {
-                    type = "Point",
-                    coordinates = new[] { 6.1319, 49.6117 },
-                },
+                type = "Point",
+                coordinates = station.Coordinates,
             },
-            new
-            {
-                type = "Feature",
-                properties = new { name = "North Station" },
-                geometry = new
-                {
-                    type = "Point",
-                    coordinates = new[] { 6.1600, 49.6200 },
-                },
-            },
-        },
-    };
+        };
 
-    private void RefreshData()
+    private async Task FocusNextStationAsync()
     {
-        _statusMessage = "Data refreshed from Blazor state";
+        var station = NextStation;
+        _focusedStationName = station.Name;
+        _nextStationIndex = (_nextStationIndex + 1) % _stations.Length;
+
+        if (_map is not null)
+        {
+            await _map.FlyToAsync(station.ToCoordinate(), zoom: 14);
+        }
     }
 
-    private void ToggleNetworkMode()
+    private sealed record StationFeature(string Name, double[] Coordinates)
     {
-        _networkModeEnabled = !_networkModeEnabled;
-        _statusMessage = _networkModeEnabled ? "Network mode enabled" : "Network mode disabled";
-    }
-
-    private void ZoomToNetwork()
-    {
-        _statusMessage = "Zoom action handled by Blazor";
-    }
-
-    private void ToggleDetails()
-    {
-        _detailsVisible = !_detailsVisible;
-        _statusMessage = _detailsVisible ? "Details visible" : "Details hidden";
+        public Coordinate ToCoordinate() => new(Coordinates[1], Coordinates[0]);
     }
 }

@@ -259,20 +259,21 @@
     <SgbMap @ref="_map"
             MapOptions="@_mapOptions"
             Images="@_images"
-            TrackedDataLayers="@_trackedDataLayers"
             Theme="@GlobalTheme"
             Height="600px"
             Width="100%">
-        <MapNavigationControl />
-        <MapLegendControl Id="overlay-legend"
-                          Position="ControlPosition.TopLeft"
-                          Order="500"
-                          Title="Legend"
-                          Collapsible="true"
-                          InitiallyOpen="true"
-                          Definition="TrainTrackingPresentation.OverlayLegendDefinition"
-                          ItemTemplate="_overlayLegendItemTemplate"
-                          OnItemVisibilityChanged="_legendItemVisibilityChangedCallback" />
+        <MapControls>
+            <MapNavigationControl />
+            <MapLegendControl Id="overlay-legend"
+                              Position="ControlPosition.TopLeft"
+                              Order="500"
+                              Title="Legend"
+                              Collapsible="true"
+                              InitiallyOpen="true"
+                              Definition="TrainTrackingPresentation.OverlayLegendDefinition"
+                              ItemTemplate="_overlayLegendItemTemplate"
+                              OnItemVisibilityChanged="_legendItemVisibilityChangedCallback" />
+        </MapControls>
         <FillExtrusionLayer Id="sgb-buildings-3d"
                             SourceId="openmaptiles"
                             SourceLayer="building"
@@ -282,6 +283,12 @@
                             Base="@(Expr.Get("render_min_height"))"
                             MinZoom="14"
                             Visible="@_visibility.ShowBuildings" />
+        <MapOverlays>
+            @if (_trackedEntityLayer is not null)
+            {
+                <TrackedEntityLayer TItem="TrainSampleState" Layer="_trackedEntityLayer" />
+            }
+        </MapOverlays>
 
     </SgbMap>
 </div>
