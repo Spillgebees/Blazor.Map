@@ -210,7 +210,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// <param name="zoom">Optional target zoom level.</param>
     /// <param name="bearing">Optional target bearing (rotation) in degrees.</param>
     /// <param name="pitch">Optional target pitch (tilt) in degrees.</param>
-    public ValueTask FlyToAsync(Coordinate center, int? zoom = null, double? bearing = null, double? pitch = null) =>
+    public ValueTask FlyToAsync(Coordinate center, double? zoom = null, double? bearing = null, double? pitch = null) =>
         MapJs.FlyToAsync(JsRuntime, Logger.Value, MapReference, center, zoom, bearing, pitch);
 
     /// <summary>
@@ -256,8 +256,10 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// <summary>
     /// Queries rendered features at a screen point.
     /// </summary>
-    public ValueTask<List<object>> QueryRenderedFeaturesAsync(Point point, IReadOnlyList<string>? layerIds = null) =>
-        MapJs.QueryRenderedFeaturesAsync(JsRuntime, Logger.Value, MapReference, point, layerIds);
+    public ValueTask<List<object>> QueryRenderedFeaturesAsync(
+        PixelPoint point,
+        IReadOnlyList<string>? layerIds = null
+    ) => MapJs.QueryRenderedFeaturesAsync(JsRuntime, Logger.Value, MapReference, point, layerIds);
 
     /// <summary>
     /// Moves an existing layer relative to another layer.

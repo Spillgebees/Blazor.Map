@@ -14,7 +14,7 @@ public sealed record TrackedEntitySymbolOptions<TItem>(
     Func<TItem, double?>? SizeSelector = null,
     Func<TItem, double?>? RotationSelector = null,
     Func<TItem, SymbolAnchor?>? AnchorSelector = null,
-    Func<TItem, Point?>? OffsetSelector = null,
+    Func<TItem, PixelPoint?>? OffsetSelector = null,
     Func<TItem, string?>? ColorSelector = null,
     Func<TItem, TrackedEntityHoverIntent?>? HoverSelector = null,
     Func<TItem, double?>? RenderOrderSelector = null,
@@ -32,7 +32,7 @@ public sealed record TrackedEntitySymbolOptions<TItem>(
 
     public SymbolAnchor? GetAnchor(TItem item) => AnchorSelector?.Invoke(item);
 
-    public Point? GetOffset(TItem item) => OffsetSelector?.Invoke(item);
+    public PixelPoint? GetOffset(TItem item) => OffsetSelector?.Invoke(item);
 
     public string? GetColor(TItem item) => ColorSelector?.Invoke(item);
 

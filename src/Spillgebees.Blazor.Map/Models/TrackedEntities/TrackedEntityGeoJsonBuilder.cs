@@ -119,5 +119,5 @@ public static class TrackedEntityGeoJsonBuilder
             ["properties"] = properties.Where(kv => kv.Value is not null).ToDictionary(kv => kv.Key, kv => kv.Value),
         };
 
-    private static double[]? ToOffsetArray(Point? offset) => offset is null ? null : [offset.X, offset.Y];
+    private static double[]? ToOffsetArray(PixelPoint? offset) => offset is null ? null : [offset.X, offset.Y];
 }

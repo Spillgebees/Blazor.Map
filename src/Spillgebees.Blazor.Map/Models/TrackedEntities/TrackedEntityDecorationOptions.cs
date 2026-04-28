@@ -11,7 +11,7 @@ public sealed record TrackedEntityDecorationOptions<TItem>(
     string Id,
     Func<TItem, string?>? TextSelector = null,
     Func<TItem, string?>? IconImageSelector = null,
-    Point? Offset = null,
+    PixelPoint? Offset = null,
     SymbolAnchor? Anchor = null,
     TrackedEntityDecorationDisplayMode DisplayMode = TrackedEntityDecorationDisplayMode.Always,
     Func<TItem, string?>? ColorSelector = null,

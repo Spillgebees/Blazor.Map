@@ -15,7 +15,7 @@ public sealed record TrackedEntitySymbol
         double? size = null,
         double? rotation = null,
         SymbolAnchor? anchor = null,
-        Point? offset = null
+        PixelPoint? offset = null
     )
     {
         if (string.IsNullOrWhiteSpace(iconImage))
@@ -53,5 +53,5 @@ public sealed record TrackedEntitySymbol
     /// <summary>
     /// Optional icon offset in pixels.
     /// </summary>
-    public Point? Offset { get; }
+    public PixelPoint? Offset { get; }
 }

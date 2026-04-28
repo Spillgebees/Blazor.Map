@@ -14,6 +14,7 @@ public class MapJsInteropPayloadTests : BunitContext
 {
     private const string CreateMapIdentifier = "Spillgebees.Map.mapFunctions.createMap";
     private const string DisposeMapIdentifier = "Spillgebees.Map.mapFunctions.disposeMap";
+    private const string FlyToIdentifier = "Spillgebees.Map.mapFunctions.flyTo";
     private const string ResizeIdentifier = "Spillgebees.Map.mapFunctions.resize";
     private const string SyncFeaturesIdentifier = "Spillgebees.Map.mapFunctions.syncFeatures";
     private const int TestTimeoutMs = 5000;
@@ -24,8 +25,23 @@ public class MapJsInteropPayloadTests : BunitContext
 
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
+        JSInterop.SetupVoid(FlyToIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
         JSInterop.SetupVoid(SyncFeaturesIdentifier);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_send_fractional_zoom_when_flying_to_map_location(CancellationToken cancellationToken)
+    {
+        // arrange
+        var cut = Render<SgbMap>();
+
+        // act
+        await cut.Instance.FlyToAsync(new Coordinate(49.61, 6.13), zoom: 12.5);
+
+        // assert
+        var invocation = JSInterop.Invocations[FlyToIdentifier].Single();
+        invocation.Arguments[2].Should().Be(12.5);
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -37,7 +53,7 @@ public class MapJsInteropPayloadTests : BunitContext
                 p => p.MapOptions,
                 new MapOptions(
                     new Coordinate(49.61, 6.13),
-                    FitBoundsOptions: new FitBoundsOptions(["route-1", "route-2"], Padding: new Point(20, 30))
+                    FitBoundsOptions: new FitBoundsOptions(["route-1", "route-2"], Padding: new PixelPoint(20, 30))
                 )
             )
         );

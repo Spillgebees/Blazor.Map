@@ -1,4 +1,4 @@
-import type { ICoordinate, IPoint } from "./map";
+import type { ICoordinate, IPixelPoint } from "./map";
 
 export interface IMarker {
   id: string;
@@ -18,8 +18,8 @@ export interface IMarker {
 
 export interface IMarkerIcon {
   url: string;
-  size: IPoint | null;
-  anchor: IPoint | null;
+  size: IPixelPoint | null;
+  anchor: IPixelPoint | null;
 }
 
 export interface ICircle {
@@ -48,7 +48,7 @@ export interface IPopupOptions {
   contentMode: "text" | "rawHtml";
   trigger: "click" | "hover" | "permanent";
   anchor: "auto" | "top" | "bottom" | "left" | "right";
-  offset: IPoint | null;
+  offset: IPixelPoint | null;
   closeButton: boolean;
   maxWidth: string | null;
   className: string | null;

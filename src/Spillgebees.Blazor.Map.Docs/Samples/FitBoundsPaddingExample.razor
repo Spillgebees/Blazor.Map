@@ -21,7 +21,7 @@
         Zoom: 9,
         FitBoundsOptions: new FitBoundsOptions(
             FeatureIds: ["marker-lux-city", "marker-esch", "marker-diekirch", "marker-echternach"],
-            Padding: new Point(60, 60))
+            Padding: new PixelPoint(60, 60))
     );
 
     private readonly List<Marker> _markers =
@@ -39,7 +39,7 @@
         {
             FitBoundsOptions = new FitBoundsOptions(
                 FeatureIds: ["marker-lux-city", "marker-esch", "marker-diekirch", "marker-echternach"],
-                Padding: new Point(60, 60))
+                Padding: new PixelPoint(60, 60))
         };
     }
 
@@ -50,8 +50,8 @@
         {
             FitBoundsOptions = new FitBoundsOptions(
                 FeatureIds: ["marker-lux-city", "marker-esch", "marker-diekirch", "marker-echternach"],
-                TopLeftPadding: new Point(200, 40),
-                BottomRightPadding: new Point(40, 40))
+                TopLeftPadding: new PixelPoint(200, 40),
+                BottomRightPadding: new PixelPoint(40, 40))
         };
     }
 }

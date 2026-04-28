@@ -24,14 +24,14 @@ public class MarkerIconTests
         // arrange & act
         var icon = new MarkerIcon(
             Url: "https://example.com/icon.png",
-            Size: new Point(25, 41),
-            Anchor: new Point(12, 41)
+            Size: new PixelPoint(25, 41),
+            Anchor: new PixelPoint(12, 41)
         );
 
         // assert
         icon.Url.Should().Be("https://example.com/icon.png");
-        icon.Size.Should().Be(new Point(25, 41));
-        icon.Anchor.Should().Be(new Point(12, 41));
+        icon.Size.Should().Be(new PixelPoint(25, 41));
+        icon.Anchor.Should().Be(new PixelPoint(12, 41));
     }
 
     [Test]
@@ -49,8 +49,16 @@ public class MarkerIconTests
     public void Should_support_value_equality_for_icons_with_all_properties()
     {
         // arrange
-        var icon1 = new MarkerIcon("https://example.com/icon.png", Size: new Point(25, 41), Anchor: new Point(12, 41));
-        var icon2 = new MarkerIcon("https://example.com/icon.png", Size: new Point(25, 41), Anchor: new Point(12, 41));
+        var icon1 = new MarkerIcon(
+            "https://example.com/icon.png",
+            Size: new PixelPoint(25, 41),
+            Anchor: new PixelPoint(12, 41)
+        );
+        var icon2 = new MarkerIcon(
+            "https://example.com/icon.png",
+            Size: new PixelPoint(25, 41),
+            Anchor: new PixelPoint(12, 41)
+        );
 
         // act & assert
         icon1.Should().Be(icon2);
@@ -60,8 +68,8 @@ public class MarkerIconTests
     public void Should_not_be_equal_when_size_values_differ()
     {
         // arrange
-        var icon1 = new MarkerIcon("https://example.com/icon.png", Size: new Point(25, 41));
-        var icon2 = new MarkerIcon("https://example.com/icon.png", Size: new Point(32, 32));
+        var icon1 = new MarkerIcon("https://example.com/icon.png", Size: new PixelPoint(25, 41));
+        var icon2 = new MarkerIcon("https://example.com/icon.png", Size: new PixelPoint(32, 32));
 
         // act & assert
         icon1.Should().NotBe(icon2);
@@ -71,8 +79,8 @@ public class MarkerIconTests
     public void Should_not_be_equal_when_anchor_values_differ()
     {
         // arrange
-        var icon1 = new MarkerIcon("https://example.com/icon.png", Anchor: new Point(12, 41));
-        var icon2 = new MarkerIcon("https://example.com/icon.png", Anchor: new Point(0, 0));
+        var icon1 = new MarkerIcon("https://example.com/icon.png", Anchor: new PixelPoint(12, 41));
+        var icon2 = new MarkerIcon("https://example.com/icon.png", Anchor: new PixelPoint(0, 0));
 
         // act & assert
         icon1.Should().NotBe(icon2);

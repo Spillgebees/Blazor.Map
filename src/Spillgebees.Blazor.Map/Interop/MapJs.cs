@@ -248,7 +248,7 @@ internal static class MapJs
         ILogger logger,
         ElementReference mapReference,
         Coordinate center,
-        int? zoom,
+        double? zoom,
         double? bearing,
         double? pitch
     ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.flyTo", mapReference, center, zoom, bearing, pitch);
@@ -296,7 +296,7 @@ internal static class MapJs
         IJSRuntime jsRuntime,
         ILogger logger,
         ElementReference mapReference,
-        Point point,
+        PixelPoint point,
         IReadOnlyList<string>? layerIds = null
     ) =>
         jsRuntime.SafeInvokeAsync<List<object>>(

@@ -209,7 +209,7 @@ public class SgbMapTests : BunitContext
         var cut = Render<SgbMap>();
 
         // act
-        await cut.Instance.QueryRenderedFeaturesAsync(new Point(10, 20), ["tracked-primary"]);
+        await cut.Instance.QueryRenderedFeaturesAsync(new PixelPoint(10, 20), ["tracked-primary"]);
 
         // assert
         JSInterop.VerifyInvoke(QueryRenderedFeaturesIdentifier);

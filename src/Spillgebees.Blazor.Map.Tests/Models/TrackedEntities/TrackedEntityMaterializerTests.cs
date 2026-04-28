@@ -42,7 +42,7 @@ public class TrackedEntityMaterializerTests
                 new TrackedEntityDecorationOptions<TestVehicle>(
                     "label",
                     TextSelector: vehicle => vehicle.Label,
-                    Offset: new Point(0, -18),
+                    Offset: new PixelPoint(0, -18),
                     Anchor: SymbolAnchor.Top,
                     DisplayMode: TrackedEntityDecorationDisplayMode.Hover,
                     TextSizeSelector: _ => 14

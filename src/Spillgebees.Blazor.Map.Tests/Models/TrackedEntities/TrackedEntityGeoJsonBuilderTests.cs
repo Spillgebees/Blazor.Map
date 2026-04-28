@@ -19,7 +19,7 @@ public class TrackedEntityGeoJsonBuilderTests
                 "#ff3344",
                 new TrackedEntityHoverIntent(1.3, true),
                 25,
-                [new TrackedEntityDecoration("route", text: "Luxembourg - Trier", offset: new Point(0, 1.4))],
+                [new TrackedEntityDecoration("route", text: "Luxembourg - Trier", offset: new PixelPoint(0, 1.4))],
                 "express",
                 new Dictionary<string, object?> { ["service"] = "RE 1" }
             ),

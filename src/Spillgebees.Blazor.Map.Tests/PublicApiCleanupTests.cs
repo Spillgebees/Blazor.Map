@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using Spillgebees.Blazor.Map.Components;
+using Spillgebees.Blazor.Map.Models;
 
 namespace Spillgebees.Blazor.Map.Tests;
 
@@ -171,6 +172,51 @@ public class PublicApiCleanupTests
 
         // assert
         trackedDataLayersProperty.Should().BeNull();
+    }
+
+    [Test]
+    public void Should_expose_pixel_point_without_legacy_point_type()
+    {
+        // arrange
+        var assembly = typeof(SgbMap).Assembly;
+
+        // act
+        var pixelPointType = assembly.GetType("Spillgebees.Blazor.Map.Models.PixelPoint");
+        var pointType = assembly.GetType("Spillgebees.Blazor.Map.Models.Point");
+
+        // assert
+        pixelPointType.Should().Be(typeof(PixelPoint));
+        pointType.Should().BeNull();
+    }
+
+    [Test]
+    public void Should_expose_fractional_zoom_option_types()
+    {
+        // arrange
+        var mapOptionsType = typeof(MapOptions);
+
+        // act
+        var zoomType = mapOptionsType.GetProperty(nameof(MapOptions.Zoom))?.PropertyType;
+        var minZoomType = mapOptionsType.GetProperty(nameof(MapOptions.MinZoom))?.PropertyType;
+        var maxZoomType = mapOptionsType.GetProperty(nameof(MapOptions.MaxZoom))?.PropertyType;
+
+        // assert
+        zoomType.Should().Be(typeof(double));
+        minZoomType.Should().Be(typeof(double?));
+        maxZoomType.Should().Be(typeof(double?));
+    }
+
+    [Test]
+    public void Should_expose_fit_bounds_feature_ids_as_read_only_list()
+    {
+        // arrange
+        var fitBoundsOptionsType = typeof(FitBoundsOptions);
+
+        // act
+        var featureIdsType = fitBoundsOptionsType.GetProperty(nameof(FitBoundsOptions.FeatureIds))?.PropertyType;
+
+        // assert
+        featureIdsType.Should().Be(typeof(IReadOnlyList<string>));
     }
 
     [Test]
