@@ -747,12 +747,12 @@ public class TrainTrackingExampleTests : BunitContext
             .Instance;
 
         // assert
-        clusterHitArea.Stack.Should().Be("train-source-cluster-hit-area");
-        clusterHitArea.AfterStack.Should().BeNull();
-        clusters.AfterStack.Should().Be("train-source-cluster-hit-area");
-        clusterCount.AfterStack.Should().Be("train-source-clusters");
-        trainIcons.AfterStack.Should().Be("train-source-cluster-count");
-        trainService.AfterStack.Should().Be("train-source-hit-area");
+        clusterHitArea.LayerGroup.Should().Be("train-source-cluster-hit-area");
+        clusterHitArea.AfterLayerGroup.Should().BeNull();
+        clusters.AfterLayerGroup.Should().Be("train-source-cluster-hit-area");
+        clusterCount.AfterLayerGroup.Should().Be("train-source-clusters");
+        trainIcons.AfterLayerGroup.Should().Be("train-source-cluster-count");
+        trainService.AfterLayerGroup.Should().Be("train-source-hit-area");
     }
 
     [Test]

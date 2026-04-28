@@ -1,3 +1,5 @@
+using Spillgebees.Blazor.Map.Models.Options;
+
 namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 /// <summary>
@@ -13,7 +15,7 @@ public sealed record TrackedEntityDecoration
         string? text = null,
         string? iconImage = null,
         Point? offset = null,
-        string? anchor = null,
+        SymbolAnchor? anchor = null,
         TrackedEntityDecorationDisplayMode displayMode = TrackedEntityDecorationDisplayMode.Always,
         string? color = null,
         double? textSize = null,
@@ -69,7 +71,7 @@ public sealed record TrackedEntityDecoration
     /// <summary>
     /// Optional MapLibre-style anchor.
     /// </summary>
-    public string? Anchor { get; }
+    public SymbolAnchor? Anchor { get; }
 
     /// <summary>
     /// Display intent for the decoration.

@@ -1,4 +1,5 @@
 using Spillgebees.Blazor.Map.Models;
+using Spillgebees.Blazor.Map.Models.Options;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 namespace Spillgebees.Blazor.Map.Docs.Samples.TrainTracking;
@@ -83,7 +84,7 @@ public static class TrainSampleSimulation
                             "service",
                             text: train.ServiceNumber,
                             offset: new Point(1.3, -0.3),
-                            anchor: "left",
+                            anchor: SymbolAnchor.Left,
                             color: "#1e293b",
                             textSize: 11,
                             rotation: bearing,
@@ -93,7 +94,7 @@ public static class TrainSampleSimulation
                             "route",
                             text: train.Route,
                             offset: new Point(1.8, 1.2),
-                            anchor: "left",
+                            anchor: SymbolAnchor.Left,
                             displayMode: TrackedEntityDecorationDisplayMode.Hover,
                             color: "#64748b",
                             textSize: 9,
@@ -104,7 +105,7 @@ public static class TrainSampleSimulation
                             "operator",
                             text: train.Operator,
                             offset: new Point(-1.3, 0.0),
-                            anchor: "right",
+                            anchor: SymbolAnchor.Right,
                             displayMode: TrackedEntityDecorationDisplayMode.Selected,
                             color: train.Color,
                             textSize: 8,

@@ -218,14 +218,14 @@ internal sealed class MapSceneRegistry
         _layers[layerId] = layer with { LayerSpec = layerSpec };
     }
 
-    internal void SetLayerBeforeId(string layerId, string? beforeId)
+    internal void SetLayerBeforeLayerId(string layerId, string? beforeLayerId)
     {
         if (!_layers.TryGetValue(layerId, out var layer))
         {
             return;
         }
 
-        _layers[layerId] = layer with { BeforeId = beforeId };
+        _layers[layerId] = layer with { BeforeLayerId = beforeLayerId };
     }
 
     internal void SetLayerEvents(LayerEventDescriptor descriptor)

@@ -1,5 +1,7 @@
 using AwesomeAssertions;
+using Spillgebees.Blazor.Map.Components.Layers;
 using Spillgebees.Blazor.Map.Models;
+using Spillgebees.Blazor.Map.Models.Options;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 namespace Spillgebees.Blazor.Map.Tests.Models.TrackedEntities;
@@ -41,7 +43,7 @@ public class TrackedEntityMaterializerTests
                     "label",
                     TextSelector: vehicle => vehicle.Label,
                     Offset: new Point(0, -18),
-                    Anchor: "top",
+                    Anchor: SymbolAnchor.Top,
                     DisplayMode: TrackedEntityDecorationDisplayMode.Hover,
                     TextSizeSelector: _ => 14
                 ),

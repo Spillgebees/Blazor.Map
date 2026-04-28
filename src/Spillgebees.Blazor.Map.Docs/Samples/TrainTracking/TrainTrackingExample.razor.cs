@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Configuration;
 using Spillgebees.Blazor.Map.Components;
+using Spillgebees.Blazor.Map.Components.Layers;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Legends;
+using Spillgebees.Blazor.Map.Models.Options;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 namespace Spillgebees.Blazor.Map.Docs.Samples.TrainTracking;
@@ -65,7 +67,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
             "service",
             TextSelector: train => train.ServiceNumber,
             Offset: new Point(13.3, -3.3),
-            Anchor: "left",
+            Anchor: SymbolAnchor.Left,
             DisplayMode: TrackedEntityDecorationDisplayMode.Always,
             ColorSelector: _ => "#0f172a",
             TextSizeSelector: _ => 12,
@@ -78,7 +80,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
             "route",
             TextSelector: train => train.Route.Replace(">", "\u203A"),
             Offset: new Point(20, 7.5),
-            Anchor: "left",
+            Anchor: SymbolAnchor.Left,
             DisplayMode: TrackedEntityDecorationDisplayMode.HoverOrSelected,
             ColorSelector: _ => "#94a3b8",
             TextSizeSelector: _ => 8,
@@ -91,7 +93,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
             "operator",
             TextSelector: train => train.Operator,
             Offset: new Point(-16, -4),
-            Anchor: "right",
+            Anchor: SymbolAnchor.Right,
             DisplayMode: TrackedEntityDecorationDisplayMode.HoverOrSelected,
             ColorSelector: train => train.Color,
             TextSizeSelector: _ => 10,

@@ -14,45 +14,45 @@ function createRegisteredLayer(
       type: "line",
       source: "test-source",
     },
-    beforeId: null,
-    imperativeBeforeId: undefined,
+    beforeLayerId: null,
+    imperativeBeforeLayerId: undefined,
     ordering: {
       declarationOrder,
-      stack: null,
-      beforeStack: null,
-      afterStack: null,
+      layerGroup: null,
+      beforeLayerGroup: null,
+      afterLayerGroup: null,
     },
     ...overrides,
   };
 }
 
 describe("resolveLayerOrder", () => {
-  it("should keep declaration order stable while honoring stack relationships and native anchors", () => {
+  it("should keep declaration order stable while honoring layerGroup relationships and native anchors", () => {
     // arrange
     const layers: RegisteredMapLayer[] = [
       createRegisteredLayer("stations", 2, {
         ordering: {
           declarationOrder: 2,
-          stack: "stations",
-          beforeStack: null,
-          afterStack: null,
+          layerGroup: "stations",
+          beforeLayerGroup: null,
+          afterLayerGroup: null,
         },
       }),
       createRegisteredLayer("clusters", 3, {
         ordering: {
           declarationOrder: 3,
-          stack: "trains",
-          beforeStack: null,
-          afterStack: "stations",
+          layerGroup: "trains",
+          beforeLayerGroup: null,
+          afterLayerGroup: "stations",
         },
       }),
       createRegisteredLayer("labels", 4, {
-        beforeId: "poi-label",
+        beforeLayerId: "poi-label",
         ordering: {
           declarationOrder: 4,
-          stack: "train-labels",
-          beforeStack: null,
-          afterStack: "trains",
+          layerGroup: "train-labels",
+          beforeLayerGroup: null,
+          afterLayerGroup: "trains",
         },
       }),
     ];
@@ -65,23 +65,23 @@ describe("resolveLayerOrder", () => {
     expect(resolved).toEqual(["labels", "stations", "clusters"]);
   });
 
-  it("should reject cyclic stack declarations with a clear error", () => {
+  it("should reject cyclic layerGroup declarations with a clear error", () => {
     // arrange
     const layers: RegisteredMapLayer[] = [
       createRegisteredLayer("a", 1, {
         ordering: {
           declarationOrder: 1,
-          stack: "a",
-          beforeStack: null,
-          afterStack: "b",
+          layerGroup: "a",
+          beforeLayerGroup: null,
+          afterLayerGroup: "b",
         },
       }),
       createRegisteredLayer("b", 2, {
         ordering: {
           declarationOrder: 2,
-          stack: "b",
-          beforeStack: null,
-          afterStack: "a",
+          layerGroup: "b",
+          beforeLayerGroup: null,
+          afterLayerGroup: "a",
         },
       }),
     ];
@@ -93,24 +93,24 @@ describe("resolveLayerOrder", () => {
     expect(act).toThrowError(/cyclic/i);
   });
 
-  it("should let beforeId anchor take precedence over conflicting stack placement", () => {
+  it("should let beforeLayerId anchor take precedence over conflicting layerGroup placement", () => {
     // arrange
     const layers: RegisteredMapLayer[] = [
       createRegisteredLayer("labels", 1, {
-        beforeId: "road-label",
+        beforeLayerId: "road-label",
         ordering: {
           declarationOrder: 1,
-          stack: "labels",
-          beforeStack: null,
-          afterStack: "trains",
+          layerGroup: "labels",
+          beforeLayerGroup: null,
+          afterLayerGroup: "trains",
         },
       }),
       createRegisteredLayer("trains", 2, {
         ordering: {
           declarationOrder: 2,
-          stack: "trains",
-          beforeStack: null,
-          afterStack: null,
+          layerGroup: "trains",
+          beforeLayerGroup: null,
+          afterLayerGroup: null,
         },
       }),
     ];
@@ -122,25 +122,25 @@ describe("resolveLayerOrder", () => {
     expect(resolved).toEqual(["labels", "trains"]);
   });
 
-  it("should support mixing native anchors with custom beforeId dependencies", () => {
+  it("should support mixing native anchors with custom beforeLayerId dependencies", () => {
     // arrange
     const layers: RegisteredMapLayer[] = [
       createRegisteredLayer("labels", 1, {
-        beforeId: "road-label",
+        beforeLayerId: "road-label",
         ordering: {
           declarationOrder: 1,
-          stack: "labels",
-          beforeStack: null,
-          afterStack: null,
+          layerGroup: "labels",
+          beforeLayerGroup: null,
+          afterLayerGroup: null,
         },
       }),
       createRegisteredLayer("halo", 2, {
-        beforeId: "labels",
+        beforeLayerId: "labels",
         ordering: {
           declarationOrder: 2,
-          stack: "halo",
-          beforeStack: null,
-          afterStack: null,
+          layerGroup: "halo",
+          beforeLayerGroup: null,
+          afterLayerGroup: null,
         },
       }),
     ];
@@ -152,47 +152,47 @@ describe("resolveLayerOrder", () => {
     expect(resolved).toEqual(["halo", "labels"]);
   });
 
-  it("should build a stable successor chain for a train-like stack fixture", () => {
+  it("should build a stable successor chain for a train-like layerGroup fixture", () => {
     // arrange
     const layers: RegisteredMapLayer[] = [
       createRegisteredLayer("station-labels", 1, {
         ordering: {
           declarationOrder: 1,
-          stack: "station-labels",
-          beforeStack: null,
-          afterStack: null,
+          layerGroup: "station-labels",
+          beforeLayerGroup: null,
+          afterLayerGroup: null,
         },
       }),
       createRegisteredLayer("train-cluster-hit-area", 2, {
         ordering: {
           declarationOrder: 2,
-          stack: "train-cluster-hit-area",
-          beforeStack: null,
-          afterStack: "station-labels",
+          layerGroup: "train-cluster-hit-area",
+          beforeLayerGroup: null,
+          afterLayerGroup: "station-labels",
         },
       }),
       createRegisteredLayer("train-clusters", 3, {
         ordering: {
           declarationOrder: 3,
-          stack: "train-clusters",
-          beforeStack: null,
-          afterStack: "train-cluster-hit-area",
+          layerGroup: "train-clusters",
+          beforeLayerGroup: null,
+          afterLayerGroup: "train-cluster-hit-area",
         },
       }),
       createRegisteredLayer("train-cluster-count", 4, {
         ordering: {
           declarationOrder: 4,
-          stack: "train-cluster-count",
-          beforeStack: null,
-          afterStack: "train-clusters",
+          layerGroup: "train-cluster-count",
+          beforeLayerGroup: null,
+          afterLayerGroup: "train-clusters",
         },
       }),
       createRegisteredLayer("train-icons", 5, {
         ordering: {
           declarationOrder: 5,
-          stack: "train-icons",
-          beforeStack: null,
-          afterStack: "train-cluster-count",
+          layerGroup: "train-icons",
+          beforeLayerGroup: null,
+          afterLayerGroup: "train-cluster-count",
         },
       }),
     ];
@@ -202,11 +202,11 @@ describe("resolveLayerOrder", () => {
 
     // assert
     expect(plan).toEqual([
-      { layerId: "station-labels", beforeId: "train-cluster-hit-area" },
-      { layerId: "train-cluster-hit-area", beforeId: "train-clusters" },
-      { layerId: "train-clusters", beforeId: "train-cluster-count" },
-      { layerId: "train-cluster-count", beforeId: "train-icons" },
-      { layerId: "train-icons", beforeId: null },
+      { layerId: "station-labels", beforeLayerId: "train-cluster-hit-area" },
+      { layerId: "train-cluster-hit-area", beforeLayerId: "train-clusters" },
+      { layerId: "train-clusters", beforeLayerId: "train-cluster-count" },
+      { layerId: "train-cluster-count", beforeLayerId: "train-icons" },
+      { layerId: "train-icons", beforeLayerId: null },
     ]);
   });
 });

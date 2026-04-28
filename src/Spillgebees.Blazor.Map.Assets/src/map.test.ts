@@ -1525,9 +1525,9 @@ describe("setMapOptions", () => {
     window.Spillgebees.Map.mapFunctions.addMapSource(mapElement, "rehydrated-source", sourceSpec);
     window.Spillgebees.Map.mapFunctions.addMapLayer(mapElement, layerSpec, null, {
       declarationOrder: 1,
-      stack: null,
-      beforeStack: null,
-      afterStack: null,
+      layerGroup: null,
+      beforeLayerGroup: null,
+      afterLayerGroup: null,
     });
 
     const mockMap = getLatestMockMapInstance()!;
@@ -1586,9 +1586,9 @@ describe("setMapOptions", () => {
     window.Spillgebees.Map.mapFunctions.addMapSource(mapElement, "interactive-source", sourceSpec);
     window.Spillgebees.Map.mapFunctions.addMapLayer(mapElement, layerSpec, null, {
       declarationOrder: 1,
-      stack: null,
-      beforeStack: null,
-      afterStack: null,
+      layerGroup: null,
+      beforeLayerGroup: null,
+      afterLayerGroup: null,
     });
     window.Spillgebees.Map.mapFunctions.wireLayerEvents(
       mapElement,
@@ -1637,7 +1637,7 @@ describe("setMapOptions", () => {
     expect(mockMap.on).toHaveBeenCalledWith("mouseleave", "interactive-layer", expect.any(Function));
   });
 
-  it("should rehydrate a multi-layer custom chain after style reload without missing beforeId targets", () => {
+  it("should rehydrate a multi-layer custom chain after style reload without missing beforeLayerId targets", () => {
     // arrange
     const mapElement = document.createElement("div");
     const dotNetHelper = createMockDotNetHelper();
@@ -1667,9 +1667,9 @@ describe("setMapOptions", () => {
       null,
       {
         declarationOrder: 1,
-        stack: "stack-a",
-        beforeStack: null,
-        afterStack: null,
+        layerGroup: "layerGroup-a",
+        beforeLayerGroup: null,
+        afterLayerGroup: null,
       },
     );
     window.Spillgebees.Map.mapFunctions.addMapLayer(
@@ -1678,9 +1678,9 @@ describe("setMapOptions", () => {
       null,
       {
         declarationOrder: 2,
-        stack: "stack-b",
-        beforeStack: null,
-        afterStack: "stack-a",
+        layerGroup: "layerGroup-b",
+        beforeLayerGroup: null,
+        afterLayerGroup: "layerGroup-a",
       },
     );
     window.Spillgebees.Map.mapFunctions.addMapLayer(
@@ -1689,9 +1689,9 @@ describe("setMapOptions", () => {
       null,
       {
         declarationOrder: 3,
-        stack: "stack-c",
-        beforeStack: null,
-        afterStack: "stack-b",
+        layerGroup: "layerGroup-c",
+        beforeLayerGroup: null,
+        afterLayerGroup: "layerGroup-b",
       },
     );
 
@@ -1700,22 +1700,22 @@ describe("setMapOptions", () => {
     mockMap.getSource.mockImplementation((id: string) => (id === "rehydrated-source" ? undefined : null));
     mockMap.getStyle.mockReturnValue({ layers: [] });
     mockMap.getLayer.mockImplementation((id: string) => (existingLayers.has(id) ? {} : undefined));
-    mockMap.addLayer.mockImplementation((layer: { id?: string }, beforeId?: string) => {
-      if (beforeId && !existingLayers.has(beforeId)) {
-        throw new Error(`Unknown beforeId: ${beforeId}`);
+    mockMap.addLayer.mockImplementation((layer: { id?: string }, beforeLayerId?: string) => {
+      if (beforeLayerId && !existingLayers.has(beforeLayerId)) {
+        throw new Error(`Unknown beforeLayerId: ${beforeLayerId}`);
       }
 
       if (layer.id) {
         existingLayers.add(layer.id);
       }
     });
-    mockMap.moveLayer.mockImplementation((layerId: string, beforeId?: string) => {
+    mockMap.moveLayer.mockImplementation((layerId: string, beforeLayerId?: string) => {
       if (!existingLayers.has(layerId)) {
         throw new Error(`Unknown layer: ${layerId}`);
       }
 
-      if (beforeId && !existingLayers.has(beforeId)) {
-        throw new Error(`Unknown beforeId: ${beforeId}`);
+      if (beforeLayerId && !existingLayers.has(beforeLayerId)) {
+        throw new Error(`Unknown beforeLayerId: ${beforeLayerId}`);
       }
     });
     mockMap.addSource.mockClear();
@@ -2068,12 +2068,12 @@ describe("setMapOptions", () => {
             type: "line",
             source: "visibility-source",
           },
-          beforeId: null,
+          beforeLayerId: null,
           ordering: {
             declarationOrder: 1,
-            stack: null,
-            beforeStack: null,
-            afterStack: null,
+            layerGroup: null,
+            beforeLayerGroup: null,
+            afterLayerGroup: null,
           },
         },
         {

@@ -148,12 +148,12 @@ export function setSourceData(mapElement: HTMLElement, sourceId: string, data: u
 export function addMapLayer(
   mapElement: HTMLElement,
   layerSpec: Record<string, unknown>,
-  beforeId: string | null,
+  beforeLayerId: string | null,
   ordering?: {
     declarationOrder: number;
-    stack: string | null;
-    beforeStack: string | null;
-    afterStack: string | null;
+    layerGroup: string | null;
+    beforeLayerGroup: string | null;
+    afterLayerGroup: string | null;
   },
 ): void {
   const map = window.Spillgebees.Map.maps.get(mapElement);
@@ -164,14 +164,14 @@ export function addMapLayer(
   layerStore.set(layerSpec.id as string, {
     layerId: layerSpec.id as string,
     layerSpec: structuredClone(layerSpec),
-    beforeId,
-    imperativeBeforeId: existing?.imperativeBeforeId,
+    beforeLayerId,
+    imperativeBeforeLayerId: existing?.imperativeBeforeLayerId,
     ordering: ordering ??
       existing?.ordering ?? {
         declarationOrder: Number.MAX_SAFE_INTEGER,
-        stack: null,
-        beforeStack: null,
-        afterStack: null,
+        layerGroup: null,
+        beforeLayerGroup: null,
+        afterLayerGroup: null,
       },
   });
 
@@ -193,7 +193,7 @@ export function removeMapLayer(mapElement: HTMLElement, layerId: string): void {
   }
 }
 
-export function moveMapLayer(mapElement: HTMLElement, layerId: string, beforeId: string | null): void {
+export function moveMapLayer(mapElement: HTMLElement, layerId: string, beforeLayerId: string | null): void {
   const map = window.Spillgebees.Map.maps.get(mapElement);
   if (!map) {
     return;
@@ -202,13 +202,13 @@ export function moveMapLayer(mapElement: HTMLElement, layerId: string, beforeId:
   const registration = getSceneLayerStore(map).get(layerId);
   if (!registration) {
     if (map.getLayer(layerId)) {
-      map.moveLayer(layerId, beforeId ?? undefined);
+      map.moveLayer(layerId, beforeLayerId ?? undefined);
     }
 
     return;
   }
 
-  registration.imperativeBeforeId = beforeId;
+  registration.imperativeBeforeLayerId = beforeLayerId;
   reconcileLayerOrdering(map);
 }
 
@@ -227,11 +227,11 @@ export function reconcileLayerOrdering(map: MapLibreMap): void {
     const registration = layerStore.get(step.layerId) as RegisteredMapLayer;
     const exists = map.getLayer(step.layerId);
     if (!exists) {
-      map.addLayer(registration.layerSpec as Parameters<MapLibreMap["addLayer"]>[0], step.beforeId ?? undefined);
+      map.addLayer(registration.layerSpec as Parameters<MapLibreMap["addLayer"]>[0], step.beforeLayerId ?? undefined);
       continue;
     }
 
-    map.moveLayer(step.layerId, step.beforeId ?? undefined);
+    map.moveLayer(step.layerId, step.beforeLayerId ?? undefined);
   }
 }
 
@@ -301,7 +301,7 @@ function resolveStyleLayerId(mapElement: HTMLElement, styleId: string, layerId: 
 
 export function setPaintProperty(mapElement: HTMLElement, layerId: string, name: string, value: unknown): void {
   const map = window.Spillgebees.Map.maps.get(mapElement);
-  if (!map || !map.getLayer(layerId)) return;
+  if (!map?.getLayer(layerId)) return;
 
   const layerStore = getSceneLayerStore(map);
   const registration = layerStore?.get(layerId);
@@ -315,7 +315,7 @@ export function setPaintProperty(mapElement: HTMLElement, layerId: string, name:
 
 export function setLayoutProperty(mapElement: HTMLElement, layerId: string, name: string, value: unknown): void {
   const map = window.Spillgebees.Map.maps.get(mapElement);
-  if (!map || !map.getLayer(layerId)) return;
+  if (!map?.getLayer(layerId)) return;
 
   const layerStore = getSceneLayerStore(map);
   const registration = layerStore?.get(layerId);
@@ -329,7 +329,7 @@ export function setLayoutProperty(mapElement: HTMLElement, layerId: string, name
 
 export function setFilter(mapElement: HTMLElement, layerId: string, filter: unknown): void {
   const map = window.Spillgebees.Map.maps.get(mapElement);
-  if (!map || !map.getLayer(layerId)) return;
+  if (!map?.getLayer(layerId)) return;
 
   const layerStore = getSceneLayerStore(map);
   const registration = layerStore?.get(layerId);
@@ -342,7 +342,7 @@ export function setFilter(mapElement: HTMLElement, layerId: string, filter: unkn
 
 export function setLayerZoomRange(mapElement: HTMLElement, layerId: string, minZoom: number, maxZoom: number): void {
   const map = window.Spillgebees.Map.maps.get(mapElement);
-  if (!map || !map.getLayer(layerId)) return;
+  if (!map?.getLayer(layerId)) return;
 
   const layerStore = getSceneLayerStore(map);
   const registration = layerStore?.get(layerId);

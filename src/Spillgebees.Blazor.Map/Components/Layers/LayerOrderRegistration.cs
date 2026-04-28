@@ -2,9 +2,9 @@ namespace Spillgebees.Blazor.Map.Components.Layers;
 
 internal sealed record LayerOrderRegistration(
     int DeclarationOrder,
-    string? Stack,
-    string? BeforeStack,
-    string? AfterStack
+    string? LayerGroup,
+    string? BeforeLayerGroup,
+    string? AfterLayerGroup
 )
 {
     internal static LayerOrderRegistration Create(
@@ -14,8 +14,8 @@ internal sealed record LayerOrderRegistration(
     ) =>
         new(
             declarationOrder,
-            layerOrder.Stack ?? inheritedOrder.Stack,
-            layerOrder.BeforeStack ?? inheritedOrder.BeforeStack,
-            layerOrder.AfterStack ?? inheritedOrder.AfterStack
+            layerOrder.LayerGroup ?? inheritedOrder.LayerGroup,
+            layerOrder.BeforeLayerGroup ?? inheritedOrder.BeforeLayerGroup,
+            layerOrder.AfterLayerGroup ?? inheritedOrder.AfterLayerGroup
         );
 }

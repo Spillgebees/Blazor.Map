@@ -261,8 +261,8 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// <summary>
     /// Moves an existing layer relative to another layer.
     /// </summary>
-    public ValueTask MoveLayerAsync(string layerId, string? beforeId = null) =>
-        MapJs.MoveLayerAsync(JsRuntime, Logger.Value, MapReference, layerId, beforeId);
+    public ValueTask MoveLayerAsync(string layerId, string? beforeLayerId = null) =>
+        MapJs.MoveLayerAsync(JsRuntime, Logger.Value, MapReference, layerId, beforeLayerId);
 
     /// <summary>
     /// Sets feature-state for a tracked entity across its primary and decoration sources.
@@ -339,12 +339,12 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// <param name="sourceId">The source containing the feature.</param>
     /// <param name="featureId">The feature's ID (from the GeoJSON <c>id</c> field or <c>promoteId</c>).</param>
     /// <param name="state">A dictionary of state properties to set.</param>
-    /// <param name="sourceLayer">The source layer (required for vector tile sources).</param>
+    /// <param name="sourceLayerId">The source layer ID (required for vector tile sources).</param>
     public async ValueTask SetFeatureStateAsync(
         string sourceId,
         object featureId,
         IDictionary<string, object> state,
-        string? sourceLayer = null
+        string? sourceLayerId = null
     )
     {
         await JsRuntime.InvokeVoidAsync(
@@ -353,7 +353,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             sourceId,
             featureId,
             state,
-            sourceLayer
+            sourceLayerId
         );
     }
 
@@ -363,19 +363,19 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// <param name="sourceId">The source containing the feature.</param>
     /// <param name="featureId">The feature's ID (from the GeoJSON <c>id</c> field or <c>promoteId</c>).</param>
     /// <param name="state">A single state entry created via <see cref="Models.Expressions.FeatureStateKey{T}.Set"/>.</param>
-    /// <param name="sourceLayer">The source layer (required for vector tile sources).</param>
+    /// <param name="sourceLayerId">The source layer ID (required for vector tile sources).</param>
     public async ValueTask SetFeatureStateAsync(
         string sourceId,
         object featureId,
         KeyValuePair<string, object> state,
-        string? sourceLayer = null
+        string? sourceLayerId = null
     )
     {
         await SetFeatureStateAsync(
             sourceId,
             featureId,
             new Dictionary<string, object> { [state.Key] = state.Value },
-            sourceLayer
+            sourceLayerId
         );
     }
 

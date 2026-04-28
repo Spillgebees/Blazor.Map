@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using Spillgebees.Blazor.Map.Components.Layers;
 using Spillgebees.Blazor.Map.Models.Expressions;
+using Spillgebees.Blazor.Map.Models.Options;
 
 namespace Spillgebees.Blazor.Map.Tests.Components.Layers;
 
@@ -117,7 +118,11 @@ public class SymbolLayerTests
     public void Should_include_text_alignment_properties_in_layout_properties_when_set()
     {
         // arrange
-        var layer = new SymbolLayer { TextPitchAlignment = "viewport", TextRotationAlignment = "viewport" };
+        var layer = new SymbolLayer
+        {
+            TextPitchAlignment = MapAlignment.Viewport,
+            TextRotationAlignment = MapAlignment.Viewport,
+        };
 
         // act
         var layout = layer.GetLayoutProperties();
@@ -127,5 +132,31 @@ public class SymbolLayerTests
         layout["text-pitch-alignment"].Should().Be("viewport");
         layout.Should().ContainKey("text-rotation-alignment");
         layout["text-rotation-alignment"].Should().Be("viewport");
+    }
+
+    [Test]
+    public void Should_serialize_symbol_enum_layout_values_as_maplibre_strings()
+    {
+        // arrange
+        var layer = new SymbolLayer
+        {
+            TextAnchor = SymbolAnchor.TopLeft,
+            IconAnchor = SymbolAnchor.BottomRight,
+            TextTransform = TextTransform.Uppercase,
+            IconTextFit = IconTextFit.Both,
+            RotationAlignment = MapAlignment.Auto,
+            Placement = SymbolPlacement.LineCenter,
+        };
+
+        // act
+        var layout = layer.GetLayoutProperties();
+
+        // assert
+        layout["text-anchor"].Should().Be("top-left");
+        layout["icon-anchor"].Should().Be("bottom-right");
+        layout["text-transform"].Should().Be("uppercase");
+        layout["icon-text-fit"].Should().Be("both");
+        layout["icon-rotation-alignment"].Should().Be("auto");
+        layout["symbol-placement"].Should().Be("line-center");
     }
 }

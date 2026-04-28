@@ -270,8 +270,8 @@ internal static class MapJs
         ILogger logger,
         ElementReference mapReference,
         string layerId,
-        string? beforeId = null
-    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.moveMapLayer", mapReference, layerId, beforeId);
+        string? beforeLayerId = null
+    ) => jsRuntime.SafeInvokeVoidAsync(logger, $"{JsNamespace}.moveMapLayer", mapReference, layerId, beforeLayerId);
 
     internal static ValueTask SetStyleLayerVisibilityAsync(
         IJSRuntime jsRuntime,

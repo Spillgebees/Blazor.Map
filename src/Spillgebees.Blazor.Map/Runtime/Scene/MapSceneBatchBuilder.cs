@@ -104,10 +104,10 @@ internal sealed class MapSceneBatchBuilder
         _mutations.Add(MapSceneMutation.SetLayerZoomRange(layerId, minZoom, maxZoom));
     }
 
-    internal void MoveLayer(string layerId, string? beforeId)
+    internal void MoveLayer(string layerId, string? beforeLayerId)
     {
-        _registry.SetLayerBeforeId(layerId, beforeId);
-        _mutations.Add(MapSceneMutation.MoveLayer(layerId, beforeId));
+        _registry.SetLayerBeforeLayerId(layerId, beforeLayerId);
+        _mutations.Add(MapSceneMutation.MoveLayer(layerId, beforeLayerId));
         QueueOrderingReconcile();
     }
 

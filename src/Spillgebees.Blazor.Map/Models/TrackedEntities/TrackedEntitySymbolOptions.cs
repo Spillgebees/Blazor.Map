@@ -1,3 +1,4 @@
+using Spillgebees.Blazor.Map.Models.Options;
 using Spillgebees.Blazor.Map.Models.Popups;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
@@ -12,7 +13,7 @@ public sealed record TrackedEntitySymbolOptions<TItem>(
     Func<TItem, string> IconImageSelector,
     Func<TItem, double?>? SizeSelector = null,
     Func<TItem, double?>? RotationSelector = null,
-    Func<TItem, string?>? AnchorSelector = null,
+    Func<TItem, SymbolAnchor?>? AnchorSelector = null,
     Func<TItem, Point?>? OffsetSelector = null,
     Func<TItem, string?>? ColorSelector = null,
     Func<TItem, TrackedEntityHoverIntent?>? HoverSelector = null,
@@ -29,7 +30,7 @@ public sealed record TrackedEntitySymbolOptions<TItem>(
 
     public double? GetRotation(TItem item) => RotationSelector?.Invoke(item);
 
-    public string? GetAnchor(TItem item) => AnchorSelector?.Invoke(item);
+    public SymbolAnchor? GetAnchor(TItem item) => AnchorSelector?.Invoke(item);
 
     public Point? GetOffset(TItem item) => OffsetSelector?.Invoke(item);
 

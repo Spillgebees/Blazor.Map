@@ -1,3 +1,4 @@
+using Spillgebees.Blazor.Map.Models.Options;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
@@ -11,7 +12,7 @@ public sealed record TrackedEntityDecorationOptions<TItem>(
     Func<TItem, string?>? TextSelector = null,
     Func<TItem, string?>? IconImageSelector = null,
     Point? Offset = null,
-    string? Anchor = null,
+    SymbolAnchor? Anchor = null,
     TrackedEntityDecorationDisplayMode DisplayMode = TrackedEntityDecorationDisplayMode.Always,
     Func<TItem, string?>? ColorSelector = null,
     Func<TItem, double?>? TextSizeSelector = null,
@@ -21,7 +22,7 @@ public sealed record TrackedEntityDecorationOptions<TItem>(
     Func<TItem, string?>? HaloColorSelector = null,
     Func<TItem, double?>? HaloWidthSelector = null,
     Func<TItem, string?>? IconColorSelector = null,
-    string? IconTextFit = null,
+    IconTextFit? IconTextFit = null,
     double[]? IconTextFitPadding = null,
     string[]? TextFont = null
 )

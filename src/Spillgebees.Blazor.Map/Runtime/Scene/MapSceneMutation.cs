@@ -11,7 +11,7 @@ internal sealed record MapSceneMutation(
     string? AnimationEasing = null,
     string? LayerId = null,
     IReadOnlyDictionary<string, object?>? LayerSpec = null,
-    string? BeforeId = null,
+    string? BeforeLayerId = null,
     LayerOrderRegistration? Ordering = null,
     string? PropertyName = null,
     object? PropertyValue = null,
@@ -56,7 +56,7 @@ internal sealed record MapSceneMutation(
             "addLayer",
             LayerId: descriptor.LayerId,
             LayerSpec: descriptor.LayerSpec,
-            BeforeId: descriptor.BeforeId,
+            BeforeLayerId: descriptor.BeforeLayerId,
             Ordering: descriptor.Ordering
         );
 
@@ -74,8 +74,8 @@ internal sealed record MapSceneMutation(
     internal static MapSceneMutation SetLayerZoomRange(string layerId, int minZoom, int maxZoom) =>
         new("setLayerZoomRange", LayerId: layerId, MinZoom: minZoom, MaxZoom: maxZoom);
 
-    internal static MapSceneMutation MoveLayer(string layerId, string? beforeId) =>
-        new("moveLayer", LayerId: layerId, BeforeId: beforeId);
+    internal static MapSceneMutation MoveLayer(string layerId, string? beforeLayerId) =>
+        new("moveLayer", LayerId: layerId, BeforeLayerId: beforeLayerId);
 
     internal static MapSceneMutation WireLayerEvents(LayerEventDescriptor descriptor) =>
         new(

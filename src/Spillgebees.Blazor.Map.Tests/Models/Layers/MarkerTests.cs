@@ -1,6 +1,9 @@
+using System.Text.Json;
 using AwesomeAssertions;
+using Spillgebees.Blazor.Map.Components.Layers;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Layers;
+using Spillgebees.Blazor.Map.Models.Options;
 using Spillgebees.Blazor.Map.Models.Popups;
 
 namespace Spillgebees.Blazor.Map.Tests.Models.Layers;
@@ -90,7 +93,7 @@ public class MarkerTests
     [Test]
     public void Should_default_popup_to_null_when_not_specified()
     {
-        // arrange & act — positional construction with only required + icon
+        // arrange & act
         var marker = new Marker("id", new Coordinate(0, 0), null, Icon: new MarkerIcon("/icon.png"));
 
         // assert
@@ -117,5 +120,27 @@ public class MarkerTests
         // assert
         marker.Draggable.Should().BeTrue();
         marker.Opacity.Should().Be(0.5);
+    }
+
+    [Test]
+    [Arguments(MapAlignment.Map, "map")]
+    [Arguments(MapAlignment.Viewport, "viewport")]
+    [Arguments(MapAlignment.Auto, "auto")]
+    public void Should_serialize_alignment_values_as_maplibre_strings(MapAlignment alignment, string expectedValue)
+    {
+        // arrange
+        var marker = new Marker(
+            "test-id",
+            new Coordinate(49.6, 6.1),
+            RotationAlignment: alignment,
+            PitchAlignment: alignment
+        );
+
+        // act
+        var json = JsonSerializer.Serialize(marker);
+
+        // assert
+        json.Should().Contain($"\"RotationAlignment\":\"{expectedValue}\"");
+        json.Should().Contain($"\"PitchAlignment\":\"{expectedValue}\"");
     }
 }

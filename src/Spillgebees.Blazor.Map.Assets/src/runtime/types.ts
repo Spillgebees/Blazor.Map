@@ -29,7 +29,7 @@ export type SceneMutation =
       kind: "addLayer";
       layerId: string;
       layerSpec: Record<string, unknown>;
-      beforeId: string | null;
+      beforeLayerId: string | null;
       ordering: LayerOrdering;
     }
   | {
@@ -39,7 +39,7 @@ export type SceneMutation =
   | {
       kind: "moveLayer";
       layerId: string;
-      beforeId: string | null;
+      beforeLayerId: string | null;
     }
   | {
       kind: "setPaintProperty";

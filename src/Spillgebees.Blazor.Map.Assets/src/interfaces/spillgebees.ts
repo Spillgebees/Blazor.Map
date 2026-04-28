@@ -12,13 +12,13 @@ export interface RegisteredMapSource {
 export interface RegisteredMapLayer {
   layerId: string;
   layerSpec: Record<string, unknown>;
-  beforeId: string | null;
-  imperativeBeforeId?: string | null;
+  beforeLayerId: string | null;
+  imperativeBeforeLayerId?: string | null;
   ordering: {
     declarationOrder: number;
-    stack: string | null;
-    beforeStack: string | null;
-    afterStack: string | null;
+    layerGroup: string | null;
+    beforeLayerGroup: string | null;
+    afterLayerGroup: string | null;
   };
 }
 

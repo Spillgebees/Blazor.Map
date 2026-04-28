@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Spillgebees.Blazor.Map.Models.Expressions;
+using Spillgebees.Blazor.Map.Models.Options;
 
 namespace Spillgebees.Blazor.Map.Components.Layers;
 
@@ -34,7 +35,7 @@ public class CircleLayer : LayerBase
 
     /// <summary>The alignment of the circle when the map is pitched ("map" or "viewport").</summary>
     [Parameter]
-    public string? PitchAlignment { get; set; }
+    public CirclePitchAlignment? PitchAlignment { get; set; }
 
     internal override string _layerType => "circle";
 
@@ -47,7 +48,7 @@ public class CircleLayer : LayerBase
             ["circle-stroke-width"] = StrokeWidth?.ToSerializable(),
             ["circle-stroke-color"] = StrokeColor?.ToSerializable(),
             ["circle-stroke-opacity"] = StrokeOpacity?.ToSerializable(),
-            ["circle-pitch-alignment"] = PitchAlignment,
+            ["circle-pitch-alignment"] = PitchAlignment?.ToJsonName(),
         };
 
     internal override Dictionary<string, object?> GetLayoutProperties() => new();

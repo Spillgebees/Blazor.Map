@@ -1,3 +1,4 @@
+using Spillgebees.Blazor.Map.Models.Options;
 using Spillgebees.Blazor.Map.Models.Popups;
 
 namespace Spillgebees.Blazor.Map.Models.Layers;
@@ -36,8 +37,8 @@ public record Marker(
     string? Color = null,
     double? Scale = null,
     double? Rotation = null,
-    string? RotationAlignment = null,
-    string? PitchAlignment = null,
+    MapAlignment? RotationAlignment = null,
+    MapAlignment? PitchAlignment = null,
     bool Draggable = false,
     double? Opacity = null,
     string? ClassName = null
