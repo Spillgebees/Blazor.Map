@@ -1,3 +1,4 @@
+import type { Map as MapLibreMap } from "maplibre-gl";
 import { describe, expect, it, vi } from "vitest";
 import { createMockDotNetHelper } from "../../test/dotNetHelperMock";
 import { fireLoadEvent, fireMapEvent, getLatestMockMapInstance, resetMockMapState } from "../../test/maplibreMock";
@@ -79,6 +80,7 @@ describe.sequential("applySceneMutations", () => {
         },
         {
           kind: "addLayer",
+          layerId: "scene-layer",
           layerSpec: {
             id: "scene-layer",
             type: "symbol",
@@ -117,7 +119,7 @@ describe.sequential("applySceneMutations", () => {
     mockMap.on.mockClear();
 
     // act
-    window.Spillgebees.Map.pendingStyleReloads.add(mockMap);
+    window.Spillgebees.Map.pendingStyleReloads.add(mockMap as unknown as MapLibreMap);
     fireMapEvent("styledata");
 
     // assert
@@ -207,7 +209,7 @@ describe.sequential("applySceneMutations", () => {
     mockMap.on.mockClear();
 
     // act
-    window.Spillgebees.Map.pendingStyleReloads.add(mockMap);
+    window.Spillgebees.Map.pendingStyleReloads.add(mockMap as unknown as MapLibreMap);
     fireMapEvent("styledata");
 
     // assert
@@ -326,7 +328,7 @@ describe.sequential("applySceneMutations", () => {
 
     // act
     const act = () => {
-      window.Spillgebees.Map.pendingStyleReloads.add(mockMap);
+      window.Spillgebees.Map.pendingStyleReloads.add(mockMap as unknown as MapLibreMap);
       fireMapEvent("styledata");
     };
 
@@ -427,7 +429,7 @@ describe.sequential("applySceneMutations", () => {
     mockMap.setLayoutProperty.mockClear();
 
     // act
-    window.Spillgebees.Map.pendingStyleReloads.add(mockMap);
+    window.Spillgebees.Map.pendingStyleReloads.add(mockMap as unknown as MapLibreMap);
     fireMapEvent("styledata");
     await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -544,7 +546,7 @@ describe.sequential("applySceneMutations", () => {
     mockMap.moveLayer.mockClear();
 
     // act
-    window.Spillgebees.Map.pendingStyleReloads.add(mockMap);
+    window.Spillgebees.Map.pendingStyleReloads.add(mockMap as unknown as MapLibreMap);
     fireMapEvent("styledata");
 
     // assert
@@ -599,9 +601,10 @@ describe.sequential("applySceneMutations", () => {
     fireLoadEvent();
 
     const mockMap = getLatestMockMapInstance()!;
+    const mapLibreMap = mockMap as unknown as MapLibreMap;
     mockMap.getStyle.mockReturnValue({ layers: [] });
     mockMap.getLayer.mockImplementation((id: string) => (id === "runtime-overlay-layer" ? { id } : undefined));
-    window.Spillgebees.Map.composedStyleLayerIds.get(mockMap)?.set("overlay-style\u0000overlay-layer", {
+    window.Spillgebees.Map.composedStyleLayerIds.get(mapLibreMap)?.set("overlay-style\u0000overlay-layer", {
       styleId: "overlay-style",
       originalLayerId: "overlay-layer",
       runtimeLayerId: "runtime-overlay-layer",
@@ -620,7 +623,7 @@ describe.sequential("applySceneMutations", () => {
 
     let overlayReplayResolved = false;
     const applyOverlayStylesSpy = vi.spyOn(composition, "applyOverlayStyles").mockImplementation(async () => {
-      window.Spillgebees.Map.composedStyleLayerIds.get(mockMap)?.set("overlay-style\u0000overlay-layer", {
+      window.Spillgebees.Map.composedStyleLayerIds.get(mapLibreMap)?.set("overlay-style\u0000overlay-layer", {
         styleId: "overlay-style",
         originalLayerId: "overlay-layer",
         runtimeLayerId: "runtime-overlay-layer",
@@ -631,7 +634,7 @@ describe.sequential("applySceneMutations", () => {
     invokeMethodAsync.mockClear();
 
     // act
-    window.Spillgebees.Map.pendingStyleReloads.add(mockMap);
+    window.Spillgebees.Map.pendingStyleReloads.add(mockMap as unknown as MapLibreMap);
     fireMapEvent("styledata");
     await new Promise((resolve) => setTimeout(resolve, 0));
 

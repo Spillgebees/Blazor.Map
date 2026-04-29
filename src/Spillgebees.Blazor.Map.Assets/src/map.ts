@@ -1,5 +1,5 @@
 import type { DotNet } from "@microsoft/dotnet-js-interop";
-import type { IControl, RequestParameters, StyleSpecification } from "maplibre-gl";
+import type { IControl, ProjectionSpecification, RequestParameters, StyleSpecification } from "maplibre-gl";
 import {
   FullscreenControl,
   GeolocateControl,
@@ -247,7 +247,7 @@ function updateMapRequestContext(map: MapLibreMap, mapOptions: IMapOptions, over
 
 function isValidMapNamespace(): boolean {
   try {
-    const mapNamespace = window.Spillgebees?.Map as Record<string, unknown> | undefined;
+    const mapNamespace = window.Spillgebees?.Map as unknown as Record<string, unknown> | undefined;
     if (!mapNamespace || typeof mapNamespace !== "object") {
       return false;
     }
@@ -344,7 +344,7 @@ function initializeNamespace(): void {
     },
     maps: new Map<HTMLElement, MapLibreMap>(),
     features: new Map<MapLibreMap, FeatureStorage>(),
-    overlays: new Map<MapLibreMap, Map<string, unknown>>(),
+    overlays: new Map<MapLibreMap, Map<string, ITileOverlay>>(),
     controls: new Map<MapLibreMap, Set<IControl>>(),
     customControlRegistrations: new Map<MapLibreMap, Map<string, CustomControlRegistration>>(),
     styles: new Map<MapLibreMap, string | StyleSpecification>(),
@@ -465,9 +465,9 @@ function getOrderedRegistrations(map: MapLibreMap, controlsPayload: IMapControl[
     }
 
     const customRegistration = getCustomControlStore(map).get(controlDefinition.controlId);
-    let control = customRegistration?.control;
+    let control: IControl | null | undefined = customRegistration?.control;
     if (!control) {
-      control = createControlFromDefinition(controlDefinition);
+      control = createControlFromDefinition(map, controlDefinition);
     }
 
     if (!control) {
@@ -503,7 +503,7 @@ function getOrderedRegistrations(map: MapLibreMap, controlsPayload: IMapControl[
   return registrations;
 }
 
-function createControlFromDefinition(control: IMapControl): IControl | null {
+function createControlFromDefinition(map: MapLibreMap, control: IMapControl): IControl | null {
   switch (control.kind) {
     case "navigation":
       return new NavigationControl({
@@ -521,7 +521,15 @@ function createControlFromDefinition(control: IMapControl): IControl | null {
         trackUserLocation: control.trackUser,
       });
     case "terrain":
-      return new TerrainControl();
+      if (!map.getSource(control.sourceId)) {
+        // biome-ignore lint/suspicious/noConsole: explicit control diagnostics for terrain source mismatches
+        console.warn(
+          `[Spillgebees.Map] terrain control '${control.controlId}' ignored because source '${control.sourceId}' was not found.`,
+        );
+        return null;
+      }
+
+      return new TerrainControl({ source: control.sourceId });
     case "center":
       return new CenterControl();
     case "legend":
@@ -865,7 +873,7 @@ export function createMap(
       : undefined,
     interactive: mapOptions.interactive,
     cooperativeGestures: mapOptions.cooperativeGestures,
-    attributionControl: true,
+    attributionControl: {},
     transformRequest,
   });
 
@@ -923,7 +931,7 @@ export function createMap(
   map.on("load", () => {
     // Handle projection
     if (mapOptions.projection === "globe") {
-      map.setProjection("globe");
+      map.setProjection({ type: "globe" });
     }
 
     // Apply controls
@@ -1114,9 +1122,9 @@ export function setMapOptions(mapElement: HTMLElement, mapOptions: IMapOptions):
 
   // Handle projection (only when changed)
   // getProjection() returns undefined when the style has no explicit projection field
-  const newProjection = mapOptions.projection === "globe" ? "globe" : "mercator";
+  const newProjection: ProjectionSpecification = { type: mapOptions.projection === "globe" ? "globe" : "mercator" };
   const currentProjection = map.getProjection()?.type ?? "mercator";
-  if (currentProjection !== newProjection) {
+  if (currentProjection !== newProjection.type) {
     map.setProjection(newProjection);
   }
 
@@ -1206,7 +1214,7 @@ export function setOverlays(mapElement: HTMLElement, overlays: ITileOverlay[]): 
   const map = window.Spillgebees.Map.maps.get(mapElement);
   if (!map) return;
 
-  const existingOverlays = window.Spillgebees.Map.overlays.get(map) ?? new Map<string, unknown>();
+  const existingOverlays = window.Spillgebees.Map.overlays.get(map) ?? new Map<string, ITileOverlay>();
   const currentMapOptions = window.Spillgebees.Map.mapOptions.get(map);
   if (currentMapOptions) {
     updateMapRequestContext(map, currentMapOptions, overlays);
@@ -1315,17 +1323,14 @@ export function setControlContent(
     return;
   }
 
-  if (
-    existingRegistration &&
-    existingRegistration.kind === kind &&
-    ((existingRegistration.control instanceof LegendControl && kind === LEGEND_CONTROL_KIND) ||
-      (existingRegistration.control instanceof ContentControl && kind === CONTENT_CONTROL_KIND))
-  ) {
-    if (kind === LEGEND_CONTROL_KIND) {
-      existingRegistration.control.update(controlDefinition as ILegendMapControl);
-    } else {
-      existingRegistration.control.update(controlDefinition as IContentMapControl);
-    }
+  if (existingRegistration?.control instanceof LegendControl && kind === LEGEND_CONTROL_KIND) {
+    existingRegistration.control.update(controlDefinition as ILegendMapControl);
+    customControlStore.set(controlId, existingRegistration);
+    return;
+  }
+
+  if (existingRegistration?.control instanceof ContentControl && kind === CONTENT_CONTROL_KIND) {
+    existingRegistration.control.update(controlDefinition as IContentMapControl);
     customControlStore.set(controlId, existingRegistration);
     return;
   }

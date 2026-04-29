@@ -2,7 +2,11 @@ import type { DotNet } from "@microsoft/dotnet-js-interop";
 import { type GeoJSONSource, type Map as MapLibreMap, Popup } from "maplibre-gl";
 import type { IPopupOptions } from "../interfaces/features";
 import type { ICoordinate } from "../interfaces/map";
-import type { RegisteredMapLayer, VisibilityGroupRegistration } from "../interfaces/spillgebees";
+import type {
+  LayerEventSubscription,
+  RegisteredMapLayer,
+  VisibilityGroupRegistration,
+} from "../interfaces/spillgebees";
 import { buildLayerPlan } from "../ordering";
 import {
   getLayerEventStore,
@@ -26,11 +30,7 @@ function getLayerEventSubscriptionStore(map: MapLibreMap) {
   return getLayerEventStore(map);
 }
 
-function bindLayerEventsForMap(
-  map: MapLibreMap,
-  layerId: string,
-  subscription: NonNullable<ReturnType<typeof getLayerEventSubscriptionStore>["get"]>,
-): void {
+function bindLayerEventsForMap(map: MapLibreMap, layerId: string, subscription: LayerEventSubscription): void {
   if (!map.getLayer(layerId)) {
     return;
   }
@@ -391,12 +391,7 @@ export function wireLayerEvents(
   // biome-ignore lint/security/noSecrets: .NET interop method name
   const mouseLeaveCallback = "OnLayerMouseLeaveAsync";
 
-  const subscriptions: {
-    dotNetRef?: DotNet.DotNetObject;
-    click?: (event: { lngLat: { lat: number; lng: number }; features?: Array<{ properties?: unknown }> }) => void;
-    mouseEnter?: (event: { lngLat: { lat: number; lng: number }; features?: Array<{ properties?: unknown }> }) => void;
-    mouseLeave?: () => void;
-  } = {};
+  const subscriptions: LayerEventSubscription = {};
 
   subscriptions.dotNetRef = dotNetRef;
 
@@ -630,7 +625,11 @@ export function removePopupDomContent(mapElement: HTMLElement, popupId: string):
   if (!map) return;
 
   const store = componentPopups.get(map);
-  const registration = store?.get(popupId);
+  if (!store) {
+    return;
+  }
+
+  const registration = store.get(popupId);
   if (!registration) {
     return;
   }
@@ -660,7 +659,11 @@ export function setFeatureState(
   const map = window.Spillgebees.Map.maps.get(mapElement);
   if (!map) return;
 
-  const target: { source: string; id: unknown; sourceLayer?: string } = {
+  if (typeof featureId !== "string" && typeof featureId !== "number") {
+    return;
+  }
+
+  const target: { source: string; id: string | number; sourceLayer?: string } = {
     source: sourceId,
     id: featureId,
   };

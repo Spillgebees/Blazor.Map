@@ -1,3 +1,4 @@
+import type { Map as MapLibreMap } from "maplibre-gl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockDotNetHelper } from "../../test/dotNetHelperMock";
 import {
@@ -19,6 +20,7 @@ import {
   reconcileLayerOrdering,
   removeMapLayer,
   removeMapSource,
+  setFeatureState,
   setLayoutProperty,
   setSourceData,
   setSourceDataAnimated,
@@ -221,6 +223,64 @@ describe("popup content", () => {
 
     // assert
     expect(dotNetHelper.invokeMethodAsync).not.toHaveBeenCalled();
+  });
+});
+
+describe("feature state", () => {
+  beforeEach(() => {
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+  });
+
+  it("should set feature state for valid feature identifiers", () => {
+    // arrange
+    const mapElement = setupMapElement();
+    const map = getLatestMockMapInstance();
+
+    // act
+    setFeatureState(mapElement, "source-1", "feature-1", { selected: true }, "source-layer-1");
+
+    // assert
+    expect(map?.setFeatureState).toHaveBeenCalledWith(
+      {
+        source: "source-1",
+        id: "feature-1",
+        sourceLayer: "source-layer-1",
+      },
+      { selected: true },
+    );
+  });
+
+  it("should set feature state for numeric feature identifiers with source layer", () => {
+    // arrange
+    const mapElement = setupMapElement();
+    const map = getLatestMockMapInstance();
+
+    // act
+    setFeatureState(mapElement, "source-1", 123, { selected: true }, "source-layer-1");
+
+    // assert
+    expect(map?.setFeatureState).toHaveBeenCalledWith(
+      {
+        source: "source-1",
+        id: 123,
+        sourceLayer: "source-layer-1",
+      },
+      { selected: true },
+    );
+  });
+
+  it("should skip feature state updates for invalid feature identifiers", () => {
+    // arrange
+    const mapElement = setupMapElement();
+    const map = getLatestMockMapInstance();
+
+    // act
+    setFeatureState(mapElement, "source-1", null, { selected: true });
+
+    // assert
+    expect(map?.setFeatureState).not.toHaveBeenCalled();
   });
 });
 
@@ -465,7 +525,7 @@ describe("addMapLayer", () => {
 
     // act
     addMapLayer(mapElement, layerSpec, null);
-    reconcileLayerOrdering(mockMap);
+    reconcileLayerOrdering(mockMap as unknown as MapLibreMap);
 
     // assert
     expect(mockMap.addLayer).toHaveBeenCalledWith(layerSpec, undefined);
@@ -485,7 +545,7 @@ describe("addMapLayer", () => {
 
     // act
     addMapLayer(mapElement, layerSpec, "other-layer");
-    reconcileLayerOrdering(mockMap);
+    reconcileLayerOrdering(mockMap as unknown as MapLibreMap);
 
     // assert
     expect(mockMap.addLayer).toHaveBeenCalledWith(layerSpec, "other-layer");
@@ -515,7 +575,7 @@ describe("addMapLayer", () => {
       beforeLayerGroup: null,
       afterLayerGroup: null,
     });
-    reconcileLayerOrdering(mockMap);
+    reconcileLayerOrdering(mockMap as unknown as MapLibreMap);
 
     // assert
     expect(mockMap.moveLayer).toHaveBeenCalledWith("train-labels", "road-label");
@@ -570,7 +630,7 @@ describe("addMapLayer", () => {
         beforeLayerGroup: null,
         afterLayerGroup: "layerGroup-b",
       });
-      reconcileLayerOrdering(mockMap);
+      reconcileLayerOrdering(mockMap as unknown as MapLibreMap);
     };
 
     // assert
@@ -631,7 +691,7 @@ describe("addMapLayer", () => {
         beforeLayerGroup: null,
         afterLayerGroup: "layerGroup-a",
       });
-      reconcileLayerOrdering(mockMap);
+      reconcileLayerOrdering(mockMap as unknown as MapLibreMap);
     };
 
     // assert

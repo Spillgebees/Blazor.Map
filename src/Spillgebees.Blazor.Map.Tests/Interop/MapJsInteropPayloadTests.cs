@@ -132,6 +132,38 @@ public class MapJsInteropPayloadTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
+    public void Should_send_default_terrain_source_id_when_initializing_map(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        Render<SgbMap>(parameters =>
+            parameters.Add<IReadOnlyList<MapControl>>(p => p.Controls, [new TerrainMapControl()])
+        );
+
+        // assert
+        var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
+        var controlsPayload = invocation.Arguments[4].Should().BeOfType<object[]>().Subject;
+        var terrainPayload = controlsPayload.Single();
+
+        GetRequiredPropertyValue(terrainPayload, "SourceId").Should().Be("terrain");
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_send_custom_terrain_source_id_when_initializing_map(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        Render<SgbMap>(parameters =>
+            parameters.Add<IReadOnlyList<MapControl>>(p => p.Controls, [new TerrainMapControl(SourceId: "dem-source")])
+        );
+
+        // assert
+        var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
+        var controlsPayload = invocation.Arguments[4].Should().BeOfType<object[]>().Subject;
+        var terrainPayload = controlsPayload.Single();
+
+        GetRequiredPropertyValue(terrainPayload, "SourceId").Should().Be("dem-source");
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
     public void Should_send_map_option_lists_as_arrays_when_initializing_map(CancellationToken cancellationToken)
     {
         // arrange

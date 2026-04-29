@@ -68,9 +68,11 @@ export interface CustomControlRegistration {
   control: IControl;
 }
 
+export type SpillgebeesInteropFunction = { bivarianceHack(...args: unknown[]): unknown }["bivarianceHack"];
+
 export interface SpillgebeesMapNamespace {
   __bundleMarker: string;
-  mapFunctions: Record<string, (...args: unknown[]) => unknown>;
+  mapFunctions: Record<string, SpillgebeesInteropFunction>;
   maps: Map<HTMLElement, MapLibreMap>;
   features: Map<MapLibreMap, FeatureStorage>;
   overlays: Map<MapLibreMap, Map<string, ITileOverlay>>;

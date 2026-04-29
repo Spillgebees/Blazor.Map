@@ -92,7 +92,8 @@ public sealed record TerrainMapControl(
     string ControlId = "terrain",
     bool Enabled = true,
     ControlPosition Position = ControlPosition.TopRight,
-    int Order = 400
+    int Order = 400,
+    string SourceId = "terrain"
 ) : MapControl(ControlId, Position, Order, Enabled);
 
 /// <summary>

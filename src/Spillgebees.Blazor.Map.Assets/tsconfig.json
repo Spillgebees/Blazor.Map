@@ -4,12 +4,16 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "lib": ["ESNext", "DOM"],
+    "types": ["node"],
     "sourceMap": true,
-    "esModuleInterop": false,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
     "verbatimModuleSyntax": true,
-    "resolveJsonModule": true
-  }
+    "resolveJsonModule": true,
+    "exactOptionalPropertyTypes": false,
+    "noUncheckedIndexedAccess": false
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "test/**/*.ts", "vite.config.ts"],
+  "exclude": ["tests/**"]
 }

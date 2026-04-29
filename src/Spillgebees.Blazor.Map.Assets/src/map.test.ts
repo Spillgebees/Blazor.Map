@@ -1,3 +1,4 @@
+import type { Map as MapLibreMap } from "maplibre-gl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockDotNetHelper } from "../test/dotNetHelperMock";
 import {
@@ -9,12 +10,14 @@ import {
   getMockMarkerConstructor,
   NavigationControl,
   resetMockMapState,
+  TerrainControl,
 } from "../test/maplibreMock";
 import { resetWindowGlobals } from "../test/windowSetup";
 import { LegendControl } from "./controls/legendControl";
 import type { IMapControl } from "./interfaces/controls";
 import type { IMarker, IPolyline } from "./interfaces/features";
 import type { IFitBoundsOptions, IMapOptions, IMapStyle, ITileOverlay } from "./interfaces/map";
+import type { SpillgebeesMapNamespace } from "./interfaces/spillgebees";
 import {
   bootstrap,
   buildStyleFromOptions,
@@ -67,6 +70,14 @@ function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions 
 }
 
 type IMapControlOptions = IMapControl[];
+
+function setCorruptedSpillgebeesNamespace(namespace: unknown): void {
+  window.Spillgebees = namespace as Window["Spillgebees"];
+}
+
+function asCorruptedMapNamespace(namespace: unknown): SpillgebeesMapNamespace {
+  return namespace as SpillgebeesMapNamespace;
+}
 
 function createDefaultControlOptions(): IMapControlOptions {
   return [];
@@ -179,15 +190,15 @@ describe("bootstrap", () => {
 
   it("should force-reinitialize when mapFunctions are missing", () => {
     // arrange — simulate a stale namespace that has no callable map API
-    window.Spillgebees = {
+    setCorruptedSpillgebeesNamespace({
       Map: {
-        mapFunctions: { staleFunction: () => {} } as never,
+        mapFunctions: { staleFunction: () => {} },
         maps: new Map(),
         features: new Map(),
         overlays: new Map(),
         controls: new Map(),
       },
-    };
+    });
     const staleMapFunctions = window.Spillgebees.Map.mapFunctions;
 
     // act
@@ -220,8 +231,8 @@ describe("bootstrap", () => {
 
   it("should reinitialize when maps store is missing", () => {
     // arrange — simulate a corrupted namespace with missing stores
-    window.Spillgebees = {
-      Map: {
+    setCorruptedSpillgebeesNamespace({
+      Map: asCorruptedMapNamespace({
         mapFunctions: {
           createMap: vi.fn(),
           disposeMap: vi.fn(),
@@ -229,8 +240,8 @@ describe("bootstrap", () => {
         features: new Map(),
         overlays: new Map(),
         controls: new Map(),
-      } as never,
-    };
+      }),
+    });
 
     // act
     bootstrap();
@@ -249,9 +260,9 @@ describe("bootstrap", () => {
       },
     });
 
-    window.Spillgebees = {
-      Map: brokenMapNamespace as never,
-    };
+    setCorruptedSpillgebeesNamespace({
+      Map: asCorruptedMapNamespace(brokenMapNamespace),
+    });
 
     // act
     bootstrap();
@@ -262,9 +273,9 @@ describe("bootstrap", () => {
 
   it("should preserve other Spillgebees namespace properties", () => {
     // arrange — simulate other libraries using the Spillgebees namespace
-    window.Spillgebees = {
+    setCorruptedSpillgebeesNamespace({
       OtherLibrary: { foo: "bar" },
-    } as never;
+    });
 
     // act
     bootstrap();
@@ -276,12 +287,12 @@ describe("bootstrap", () => {
 
   it("should preserve other Spillgebees namespace siblings when map is reinitialized", () => {
     // arrange
-    window.Spillgebees = {
+    setCorruptedSpillgebeesNamespace({
       OtherLibrary: { foo: "bar" },
-      Map: {
-        mapFunctions: {} as never,
-      } as never,
-    } as never;
+      Map: asCorruptedMapNamespace({
+        mapFunctions: {},
+      }),
+    });
 
     // act
     bootstrap();
@@ -875,7 +886,7 @@ describe("createMap", () => {
         maxZoom: 18,
         interactive: false,
         cooperativeGestures: true,
-        attributionControl: true,
+        attributionControl: {},
       }),
     );
   });
@@ -990,7 +1001,7 @@ describe("createMap", () => {
 
     // assert
     const mockMap = getLatestMockMapInstance()!;
-    expect(mockMap.setProjection).toHaveBeenCalledWith("globe");
+    expect(mockMap.setProjection).toHaveBeenCalledWith({ type: "globe" });
   });
 
   it("should not set projection when projection is mercator", () => {
@@ -2012,7 +2023,8 @@ describe("setMapOptions", () => {
     expect(invokeMethodAsync).not.toHaveBeenCalledWith("OnMapStyleReloadedAsync");
 
     // act
-    completeOverlayComposition?.();
+    const finishOverlayComposition = completeOverlayComposition as (() => void) | null;
+    finishOverlayComposition?.();
     await overlayCompositionCompleted;
     await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -2297,7 +2309,7 @@ describe("setMapOptions", () => {
     setMapOptions(mapElement, createDefaultMapOptions({ projection: "globe" }));
 
     // assert — should call setProjection when projection changes
-    expect(mockMap.setProjection).toHaveBeenCalledWith("globe");
+    expect(mockMap.setProjection).toHaveBeenCalledWith({ type: "globe" });
   });
 
   it("should call jumpTo after all other state updates", () => {
@@ -2455,6 +2467,63 @@ describe("setControls", () => {
 
     // assert
     expect(mockMap.addControl).toHaveBeenCalledTimes(2);
+  });
+
+  it("should add terrain control with configured source when source exists", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, createDefaultMapOptions(), [], "light", [], [], [], []);
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getSource.mockReturnValue({ type: "raster-dem" });
+
+    // act
+    setControls(mapElement, [
+      {
+        kind: "terrain",
+        controlId: "terrain-control",
+        enabled: true,
+        position: "top-right",
+        order: 400,
+        sourceId: "dem-source",
+      },
+    ]);
+
+    // assert
+    expect(TerrainControl).toHaveBeenCalledWith({ source: "dem-source" });
+    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
+  });
+
+  it("should skip terrain control and warn when configured source is missing", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, createDefaultMapOptions(), [], "light", [], [], [], []);
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getSource.mockReturnValue(undefined);
+
+    try {
+      // act
+      setControls(mapElement, [
+        {
+          kind: "terrain",
+          controlId: "terrain-control",
+          enabled: true,
+          position: "top-right",
+          order: 400,
+          sourceId: "missing-dem-source",
+        },
+      ]);
+
+      // assert
+      expect(TerrainControl).not.toHaveBeenCalled();
+      expect(mockMap.addControl).not.toHaveBeenCalled();
+      expect(mockMap.addSource).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("missing-dem-source"));
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   it("should order controls by order then declaration then controlId", () => {
@@ -2837,6 +2906,8 @@ function createDefaultMarker(overrides?: Partial<IMarker>): IMarker {
     color: null,
     scale: null,
     rotation: null,
+    rotationAlignment: null,
+    pitchAlignment: null,
     draggable: false,
     opacity: null,
     className: null,
@@ -3647,7 +3718,7 @@ describe("advanced interop helpers", () => {
 
     const mockMap = getLatestMockMapInstance()!;
     window.Spillgebees.Map.composedStyleLayerIds.set(
-      mockMap as never,
+      mockMap as unknown as MapLibreMap,
       new Map([
         [
           "sgb-train-tracking-overlay\u0000railway-stations-circle",
@@ -3689,7 +3760,7 @@ describe("advanced interop helpers", () => {
 
     const mockMap = getLatestMockMapInstance()!;
     window.Spillgebees.Map.composedStyleLayerIds.set(
-      mockMap as never,
+      mockMap as unknown as MapLibreMap,
       new Map([
         [
           "sgb-train-tracking-overlay\u0000railway-stations-circle",

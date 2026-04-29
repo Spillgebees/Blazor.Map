@@ -178,6 +178,41 @@ describe("CenterControl", () => {
       expect(mockMap.flyTo).not.toHaveBeenCalled();
     });
 
+    it("should fall back to flyTo when fitBoundsOptions exists but global fitBounds function is missing", () => {
+      // arrange
+      resetWindowGlobals();
+      bootstrap();
+
+      window.Spillgebees.Map.mapFunctions.fitBounds =
+        undefined as unknown as typeof window.Spillgebees.Map.mapFunctions.fitBounds;
+      const fitBoundsOptions = {
+        featureIds: ["feature-1", "feature-2"],
+        padding: null,
+        topLeftPadding: null,
+        bottomRightPadding: null,
+      };
+      const mockMap = createMockMap();
+      const mapOptions = createDefaultMapOptions({
+        center: { latitude: 48.8566, longitude: 2.3522 },
+        zoom: 15,
+        fitBoundsOptions,
+      });
+      window.Spillgebees.Map.mapOptions.set(mockMap, mapOptions);
+
+      const control = new CenterControl();
+      const container = control.onAdd(mockMap);
+      const button = container.querySelector("button")!;
+
+      // act
+      button.click();
+
+      // assert
+      expect(mockMap.flyTo).toHaveBeenCalledWith({
+        center: [2.3522, 48.8566],
+        zoom: 15,
+      });
+    });
+
     it("should not throw when map reference is null", () => {
       // arrange
       const control = new CenterControl();

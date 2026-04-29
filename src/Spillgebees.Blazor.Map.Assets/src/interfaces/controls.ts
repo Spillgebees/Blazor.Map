@@ -28,6 +28,7 @@ export interface IGeolocateMapControl extends IMapControlBase {
 
 export interface ITerrainMapControl extends IMapControlBase {
   kind: "terrain";
+  sourceId: string;
 }
 
 export interface ICenterMapControl extends IMapControlBase {

@@ -157,7 +157,7 @@ describe("LegendControl", () => {
       // act
       const container = control.onAdd({
         getContainer: () => mapContainer,
-      } as MapLibreMap);
+      } as unknown as MapLibreMap);
 
       // assert
       expect(container.style.getPropertyValue("--sgb-map-legend-max-height")).toBe("456px");
@@ -186,7 +186,7 @@ describe("LegendControl", () => {
       const control = new LegendControl(createDefaultLegendOptions(), placeholder, content);
       const container = control.onAdd({
         getContainer: () => mapContainer,
-      } as MapLibreMap) as HTMLDivElement;
+      } as unknown as MapLibreMap) as HTMLDivElement;
 
       setRect(container, { top: 40, right: 308, bottom: 280, left: 68, width: 240, height: 240 });
       topRightHost.appendChild(container);
@@ -223,7 +223,7 @@ describe("LegendControl", () => {
       const control = new LegendControl(createDefaultLegendOptions(), placeholder, content);
       const container = control.onAdd({
         getContainer: () => mapContainer,
-      } as MapLibreMap) as HTMLDivElement;
+      } as unknown as MapLibreMap) as HTMLDivElement;
 
       setRect(container, { top: 76, right: 308, bottom: 256, left: 68, width: 240, height: 180 });
       topRightHost.appendChild(container);
@@ -258,7 +258,7 @@ describe("LegendControl", () => {
       const control = new LegendControl(createDefaultLegendOptions({ position: "top-left" }), placeholder, content);
       const container = control.onAdd({
         getContainer: () => mapContainer,
-      } as MapLibreMap) as HTMLDivElement;
+      } as unknown as MapLibreMap) as HTMLDivElement;
 
       setRect(container, { top: 12, right: 252, bottom: 212, left: 12, width: 240, height: 200 });
       topLeftHost.appendChild(container);
