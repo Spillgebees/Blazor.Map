@@ -10,17 +10,11 @@ public sealed class MapScaleControl : ComponentBase, IAsyncDisposable
 {
     private readonly MapControlComponentRegistration _registration = new();
 
-    public MapScaleControl()
-    {
-        Id = "scale";
-        Position = ControlPosition.BottomLeft;
-    }
+    [Parameter]
+    public string Id { get; set; } = "scale";
 
     [Parameter]
-    public string Id { get; set; } = string.Empty;
-
-    [Parameter]
-    public ControlPosition Position { get; set; } = ControlPosition.TopRight;
+    public ControlPosition Position { get; set; } = ControlPosition.BottomLeft;
 
     [Parameter]
     public int Order { get; set; } = 100;

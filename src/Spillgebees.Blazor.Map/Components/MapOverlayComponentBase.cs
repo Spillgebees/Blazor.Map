@@ -32,6 +32,11 @@ internal abstract class MapOverlayComponentBase : ComponentBase, IAsyncDisposabl
 
     private void ValidatePlacement()
     {
+        if (Map is null)
+        {
+            throw new InvalidOperationException($"{GetType().Name} must be placed inside SgbMap.");
+        }
+
         if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
         {
             throw new InvalidOperationException($"{GetType().Name} must be placed inside MapOverlays.");

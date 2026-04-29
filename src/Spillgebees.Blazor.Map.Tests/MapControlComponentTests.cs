@@ -144,6 +144,54 @@ public class MapControlComponentTests : BunitContext
             .WithMessage("Control IDs must be unique. Duplicate ID: 'navigation-tools'.");
     }
 
+    [Test]
+    public void Should_use_default_geolocate_control_values()
+    {
+        // arrange
+        var control = new MapGeolocateControl();
+
+        // act
+        var defaults = new
+        {
+            control.Id,
+            control.Position,
+            control.Order,
+            control.Enabled,
+            control.TrackUser,
+        };
+
+        // assert
+        defaults.Id.Should().Be("geolocate");
+        defaults.Position.Should().Be(ControlPosition.TopRight);
+        defaults.Order.Should().Be(300);
+        defaults.Enabled.Should().BeTrue();
+        defaults.TrackUser.Should().BeFalse();
+    }
+
+    [Test]
+    public void Should_use_default_scale_control_values()
+    {
+        // arrange
+        var control = new MapScaleControl();
+
+        // act
+        var defaults = new
+        {
+            control.Id,
+            control.Position,
+            control.Order,
+            control.Enabled,
+            control.Unit,
+        };
+
+        // assert
+        defaults.Id.Should().Be("scale");
+        defaults.Position.Should().Be(ControlPosition.BottomLeft);
+        defaults.Order.Should().Be(100);
+        defaults.Enabled.Should().BeTrue();
+        defaults.Unit.Should().Be(ScaleUnit.Metric);
+    }
+
     public sealed class ConditionalControlHost : ComponentBase
     {
         [Parameter]

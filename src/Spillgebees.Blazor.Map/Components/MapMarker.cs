@@ -9,6 +9,7 @@ namespace Spillgebees.Blazor.Map.Components;
 public sealed class MapMarker : ComponentBase, IAsyncDisposable
 {
     private readonly string _ownerId = Guid.NewGuid().ToString("N");
+    private Marker? _currentMarker;
 
     [CascadingParameter]
     private BaseMap? Map { get; set; }
@@ -39,10 +40,7 @@ public sealed class MapMarker : ComponentBase, IAsyncDisposable
 
     protected override async Task OnParametersSetAsync()
     {
-        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
-        {
-            throw new InvalidOperationException("MapMarker must be placed inside MapOverlays.");
-        }
+        ValidatePlacement();
 
         await SetOverlayFeaturesAsync();
     }
@@ -55,19 +53,37 @@ public sealed class MapMarker : ComponentBase, IAsyncDisposable
         }
     }
 
-    private ValueTask SetOverlayFeaturesAsync() =>
-        Map!.SetOverlayMarkersAsync(
-            _ownerId,
-            [
-                new Marker(
-                    Id,
-                    Position,
-                    Title,
-                    Popup,
-                    Color: Color,
-                    RotationAlignment: RotationAlignment,
-                    PitchAlignment: PitchAlignment
-                ),
-            ]
+    private ValueTask SetOverlayFeaturesAsync()
+    {
+        var marker = new Marker(
+            Id,
+            Position,
+            Title,
+            Popup,
+            Color: Color,
+            RotationAlignment: RotationAlignment,
+            PitchAlignment: PitchAlignment
         );
+
+        if (_currentMarker == marker)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        _currentMarker = marker;
+        return Map!.SetOverlayMarkersAsync(_ownerId, [marker]);
+    }
+
+    private void ValidatePlacement()
+    {
+        if (Map is null)
+        {
+            throw new InvalidOperationException("MapMarker must be placed inside SgbMap.");
+        }
+
+        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
+        {
+            throw new InvalidOperationException("MapMarker must be placed inside MapOverlays.");
+        }
+    }
 }

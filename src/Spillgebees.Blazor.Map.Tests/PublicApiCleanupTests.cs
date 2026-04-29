@@ -201,12 +201,12 @@ public class PublicApiCleanupTests
             "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityVisualDefaults",
             "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityVisualOptions`1",
             "Spillgebees.Blazor.Map.Models.WmsTileSource",
-            "Spillgebees.Blazor.Map._Imports",
         };
 
         // act
         var exportedTypeNames = typeof(SgbMap)
             .Assembly.GetExportedTypes()
+            .Where(type => type.FullName is not "Spillgebees.Blazor.Map._Imports")
             .Select(type => type.FullName)
             .Order(StringComparer.Ordinal);
 

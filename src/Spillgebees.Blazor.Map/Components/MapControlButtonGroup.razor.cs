@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Spillgebees.Blazor.Map.Models.Controls;
 
 namespace Spillgebees.Blazor.Map.Components;
 
@@ -19,8 +20,7 @@ public partial class MapControlButtonGroup : ComponentBase, IAsyncDisposable
     public string Id { get; set; } = string.Empty;
 
     [Parameter]
-    public Spillgebees.Blazor.Map.Models.Controls.ControlPosition Position { get; set; } =
-        Spillgebees.Blazor.Map.Models.Controls.ControlPosition.TopRight;
+    public ControlPosition Position { get; set; } = ControlPosition.TopRight;
 
     [Parameter]
     public int Order { get; set; } = 500;

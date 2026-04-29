@@ -10,20 +10,14 @@ public sealed class MapGeolocateControl : ComponentBase, IAsyncDisposable
 {
     private readonly MapControlComponentRegistration _registration = new();
 
-    public MapGeolocateControl()
-    {
-        Id = "geolocate";
-        Order = 300;
-    }
-
     [Parameter]
-    public string Id { get; set; } = string.Empty;
+    public string Id { get; set; } = "geolocate";
 
     [Parameter]
     public ControlPosition Position { get; set; } = ControlPosition.TopRight;
 
     [Parameter]
-    public int Order { get; set; } = 100;
+    public int Order { get; set; } = 300;
 
     [Parameter]
     public bool Enabled { get; set; } = true;

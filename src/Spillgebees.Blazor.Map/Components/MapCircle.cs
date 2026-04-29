@@ -8,6 +8,7 @@ namespace Spillgebees.Blazor.Map.Components;
 public sealed class MapCircle : ComponentBase, IAsyncDisposable
 {
     private readonly string _ownerId = Guid.NewGuid().ToString("N");
+    private Circle? _currentCircle;
 
     [CascadingParameter]
     private BaseMap? Map { get; set; }
@@ -32,10 +33,7 @@ public sealed class MapCircle : ComponentBase, IAsyncDisposable
 
     protected override async Task OnParametersSetAsync()
     {
-        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
-        {
-            throw new InvalidOperationException("MapCircle must be placed inside MapOverlays.");
-        }
+        ValidatePlacement();
 
         await SetOverlayFeaturesAsync();
     }
@@ -48,6 +46,29 @@ public sealed class MapCircle : ComponentBase, IAsyncDisposable
         }
     }
 
-    private ValueTask SetOverlayFeaturesAsync() =>
-        Map!.SetOverlayCirclesAsync(_ownerId, [new Circle(Id, Position, Radius, Color, Popup: Popup)]);
+    private ValueTask SetOverlayFeaturesAsync()
+    {
+        var circle = new Circle(Id, Position, Radius, Color, Popup: Popup);
+
+        if (_currentCircle == circle)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        _currentCircle = circle;
+        return Map!.SetOverlayCirclesAsync(_ownerId, [circle]);
+    }
+
+    private void ValidatePlacement()
+    {
+        if (Map is null)
+        {
+            throw new InvalidOperationException("MapCircle must be placed inside SgbMap.");
+        }
+
+        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
+        {
+            throw new InvalidOperationException("MapCircle must be placed inside MapOverlays.");
+        }
+    }
 }

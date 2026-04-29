@@ -11,6 +11,7 @@ public sealed class MapPolyline : ComponentBase, IAsyncDisposable
     private readonly string _ownerId = Guid.NewGuid().ToString("N");
     private IReadOnlyList<Coordinate>? _cachedCoordinatesSource;
     private ImmutableList<Coordinate> _cachedCoordinates = [];
+    private Polyline? _currentPolyline;
 
     [CascadingParameter]
     private BaseMap? Map { get; set; }
@@ -35,10 +36,7 @@ public sealed class MapPolyline : ComponentBase, IAsyncDisposable
 
     protected override async Task OnParametersSetAsync()
     {
-        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
-        {
-            throw new InvalidOperationException("MapPolyline must be placed inside MapOverlays.");
-        }
+        ValidatePlacement();
 
         await SetOverlayFeaturesAsync();
     }
@@ -53,10 +51,15 @@ public sealed class MapPolyline : ComponentBase, IAsyncDisposable
 
     private ValueTask SetOverlayFeaturesAsync()
     {
-        return Map!.SetOverlayPolylinesAsync(
-            _ownerId,
-            [new Polyline(Id, GetCoordinateSnapshot(), Color, Width, Popup: Popup)]
-        );
+        var polyline = new Polyline(Id, GetCoordinateSnapshot(), Color, Width, Popup: Popup);
+
+        if (_currentPolyline == polyline)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        _currentPolyline = polyline;
+        return Map!.SetOverlayPolylinesAsync(_ownerId, [polyline]);
     }
 
     private ImmutableList<Coordinate> GetCoordinateSnapshot()
@@ -68,5 +71,18 @@ public sealed class MapPolyline : ComponentBase, IAsyncDisposable
         }
 
         return _cachedCoordinates;
+    }
+
+    private void ValidatePlacement()
+    {
+        if (Map is null)
+        {
+            throw new InvalidOperationException("MapPolyline must be placed inside SgbMap.");
+        }
+
+        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
+        {
+            throw new InvalidOperationException("MapPolyline must be placed inside MapOverlays.");
+        }
     }
 }
