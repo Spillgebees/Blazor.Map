@@ -4,8 +4,8 @@
   <PropertyGroup>
     <Authors>Jason Rebelo Neves (igotinfected)</Authors>
     <Company>Spillgebees</Company>
-    <Description>Spillgebees.Blazor.Map is a Blazor map component powered by Leaflet.</Description>
-    <PackageTags>blazor, blazor-wasm, blazor-server, leaflet, leafletjs, map</PackageTags>
+    <Description>Spillgebees.Blazor.Map is a Blazor map component powered by MapLibre GL JS.</Description>
+    <PackageTags>blazor, blazor-wasm, blazor-server, maplibre, maplibre-gl, map</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>spillgebees.png</PackageIcon>

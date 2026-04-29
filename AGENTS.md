@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**Spillgebees.Blazor.Map** is a Blazor map component library powered by [Leaflet](https://leafletjs.com/).
+**Spillgebees.Blazor.Map** is a Blazor map component library powered by [MapLibre GL JS](https://maplibre.org/).
 It supports Blazor Server, WebAssembly, and the unified .NET 8+ web app model.
 
 ## Architecture
