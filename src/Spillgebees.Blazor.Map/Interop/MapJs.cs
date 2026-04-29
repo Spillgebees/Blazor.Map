@@ -448,6 +448,7 @@ internal static class MapJs
                 terrain.Enabled,
                 terrain.Position,
                 terrain.Order,
+                terrain.SourceId,
             },
             CenterMapControl center => new
             {

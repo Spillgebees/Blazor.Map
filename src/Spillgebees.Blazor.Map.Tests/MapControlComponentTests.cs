@@ -192,6 +192,30 @@ public class MapControlComponentTests : BunitContext
         defaults.Unit.Should().Be(ScaleUnit.Metric);
     }
 
+    [Test]
+    public void Should_use_default_terrain_control_source_id()
+    {
+        // arrange
+        var control = new MapTerrainControl();
+
+        // act
+        var defaults = new
+        {
+            control.Id,
+            control.Position,
+            control.Order,
+            control.Enabled,
+            control.SourceId,
+        };
+
+        // assert
+        defaults.Id.Should().Be("terrain");
+        defaults.Position.Should().Be(ControlPosition.TopRight);
+        defaults.Order.Should().Be(400);
+        defaults.Enabled.Should().BeTrue();
+        defaults.SourceId.Should().Be("terrain");
+    }
+
     public sealed class ConditionalControlHost : ComponentBase
     {
         [Parameter]

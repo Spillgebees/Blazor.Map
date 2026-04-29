@@ -467,7 +467,7 @@ function getOrderedRegistrations(map: MapLibreMap, controlsPayload: IMapControl[
     const customRegistration = getCustomControlStore(map).get(controlDefinition.controlId);
     let control: IControl | null | undefined = customRegistration?.control;
     if (!control) {
-      control = createControlFromDefinition(controlDefinition);
+      control = createControlFromDefinition(map, controlDefinition);
     }
 
     if (!control) {
@@ -503,7 +503,7 @@ function getOrderedRegistrations(map: MapLibreMap, controlsPayload: IMapControl[
   return registrations;
 }
 
-function createControlFromDefinition(control: IMapControl): IControl | null {
+function createControlFromDefinition(map: MapLibreMap, control: IMapControl): IControl | null {
   switch (control.kind) {
     case "navigation":
       return new NavigationControl({
@@ -521,7 +521,15 @@ function createControlFromDefinition(control: IMapControl): IControl | null {
         trackUserLocation: control.trackUser,
       });
     case "terrain":
-      return new TerrainControl({ source: "terrain" });
+      if (!map.getSource(control.sourceId)) {
+        // biome-ignore lint/suspicious/noConsole: explicit control diagnostics for terrain source mismatches
+        console.warn(
+          `[Spillgebees.Map] terrain control '${control.controlId}' ignored because source '${control.sourceId}' was not found.`,
+        );
+        return null;
+      }
+
+      return new TerrainControl({ source: control.sourceId });
     case "center":
       return new CenterControl();
     case "legend":

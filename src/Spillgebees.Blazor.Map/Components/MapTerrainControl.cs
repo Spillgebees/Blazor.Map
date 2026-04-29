@@ -28,6 +28,9 @@ public sealed class MapTerrainControl : ComponentBase, IAsyncDisposable
     [Parameter]
     public bool Enabled { get; set; } = true;
 
+    [Parameter]
+    public string SourceId { get; set; } = "terrain";
+
     [CascadingParameter]
     private MapControlRegistryContext? Registry { get; set; }
 
@@ -41,5 +44,5 @@ public sealed class MapTerrainControl : ComponentBase, IAsyncDisposable
 
     public ValueTask DisposeAsync() => _registration.DisposeAsync(Registry);
 
-    private MapControl BuildControl() => new TerrainMapControl(Id, Enabled, Position, Order);
+    private MapControl BuildControl() => new TerrainMapControl(Id, Enabled, Position, Order, SourceId);
 }

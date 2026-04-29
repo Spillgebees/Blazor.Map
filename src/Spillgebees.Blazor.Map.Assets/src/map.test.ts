@@ -10,6 +10,7 @@ import {
   getMockMarkerConstructor,
   NavigationControl,
   resetMockMapState,
+  TerrainControl,
 } from "../test/maplibreMock";
 import { resetWindowGlobals } from "../test/windowSetup";
 import { LegendControl } from "./controls/legendControl";
@@ -2466,6 +2467,63 @@ describe("setControls", () => {
 
     // assert
     expect(mockMap.addControl).toHaveBeenCalledTimes(2);
+  });
+
+  it("should add terrain control with configured source when source exists", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, createDefaultMapOptions(), [], "light", [], [], [], []);
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getSource.mockReturnValue({ type: "raster-dem" });
+
+    // act
+    setControls(mapElement, [
+      {
+        kind: "terrain",
+        controlId: "terrain-control",
+        enabled: true,
+        position: "top-right",
+        order: 400,
+        sourceId: "dem-source",
+      },
+    ]);
+
+    // assert
+    expect(TerrainControl).toHaveBeenCalledWith({ source: "dem-source" });
+    expect(mockMap.addControl).toHaveBeenCalledTimes(1);
+  });
+
+  it("should skip terrain control and warn when configured source is missing", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, createDefaultMapOptions(), [], "light", [], [], [], []);
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getSource.mockReturnValue(undefined);
+
+    try {
+      // act
+      setControls(mapElement, [
+        {
+          kind: "terrain",
+          controlId: "terrain-control",
+          enabled: true,
+          position: "top-right",
+          order: 400,
+          sourceId: "missing-dem-source",
+        },
+      ]);
+
+      // assert
+      expect(TerrainControl).not.toHaveBeenCalled();
+      expect(mockMap.addControl).not.toHaveBeenCalled();
+      expect(mockMap.addSource).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("missing-dem-source"));
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   it("should order controls by order then declaration then controlId", () => {

@@ -50,12 +50,13 @@ export class CenterControl implements IControl {
       const fitBoundsFn = window.Spillgebees?.Map?.mapFunctions?.fitBounds;
       if (typeof fitBoundsFn === "function") {
         fitBoundsFn(mapElement, mapOptions.fitBoundsOptions);
+        return;
       }
-    } else {
-      this._map.flyTo({
-        center: [mapOptions.center.longitude, mapOptions.center.latitude],
-        zoom: mapOptions.zoom,
-      });
     }
+
+    this._map.flyTo({
+      center: [mapOptions.center.longitude, mapOptions.center.latitude],
+      zoom: mapOptions.zoom,
+    });
   }
 }

@@ -252,6 +252,25 @@ describe("feature state", () => {
     );
   });
 
+  it("should set feature state for numeric feature identifiers with source layer", () => {
+    // arrange
+    const mapElement = setupMapElement();
+    const map = getLatestMockMapInstance();
+
+    // act
+    setFeatureState(mapElement, "source-1", 123, { selected: true }, "source-layer-1");
+
+    // assert
+    expect(map?.setFeatureState).toHaveBeenCalledWith(
+      {
+        source: "source-1",
+        id: 123,
+        sourceLayer: "source-layer-1",
+      },
+      { selected: true },
+    );
+  });
+
   it("should skip feature state updates for invalid feature identifiers", () => {
     // arrange
     const mapElement = setupMapElement();
