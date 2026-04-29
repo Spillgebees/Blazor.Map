@@ -8,6 +8,7 @@ namespace Spillgebees.Blazor.Map.Components;
 public sealed class MapCircle : ComponentBase, IAsyncDisposable
 {
     private readonly string _ownerId = Guid.NewGuid().ToString("N");
+    private BaseMap? _registeredMap;
     private Circle? _currentCircle;
 
     [CascadingParameter]
@@ -40,23 +41,37 @@ public sealed class MapCircle : ComponentBase, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (Map is not null)
-        {
-            await Map.RemoveOverlayFeaturesAsync(_ownerId);
-        }
+        await RemoveRegisteredOverlayFeaturesAsync();
     }
 
-    private ValueTask SetOverlayFeaturesAsync()
+    private async ValueTask SetOverlayFeaturesAsync()
     {
         var circle = new Circle(Id, Position, Radius, Color, Popup: Popup);
 
-        if (_currentCircle == circle)
+        if (ReferenceEquals(_registeredMap, Map) && _currentCircle == circle)
         {
-            return ValueTask.CompletedTask;
+            return;
+        }
+
+        if (_registeredMap is not null && !ReferenceEquals(_registeredMap, Map))
+        {
+            await RemoveRegisteredOverlayFeaturesAsync();
         }
 
         _currentCircle = circle;
-        return Map!.SetOverlayCirclesAsync(_ownerId, [circle]);
+        _registeredMap = Map;
+        await Map!.SetOverlayCirclesAsync(_ownerId, [circle]);
+    }
+
+    private async ValueTask RemoveRegisteredOverlayFeaturesAsync()
+    {
+        if (_registeredMap is not null)
+        {
+            await _registeredMap.RemoveOverlayFeaturesAsync(_ownerId);
+        }
+
+        _registeredMap = null;
+        _currentCircle = null;
     }
 
     private void ValidatePlacement()

@@ -9,6 +9,7 @@ namespace Spillgebees.Blazor.Map.Components;
 public sealed class MapMarker : ComponentBase, IAsyncDisposable
 {
     private readonly string _ownerId = Guid.NewGuid().ToString("N");
+    private BaseMap? _registeredMap;
     private Marker? _currentMarker;
 
     [CascadingParameter]
@@ -47,13 +48,10 @@ public sealed class MapMarker : ComponentBase, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (Map is not null)
-        {
-            await Map.RemoveOverlayFeaturesAsync(_ownerId);
-        }
+        await RemoveRegisteredOverlayFeaturesAsync();
     }
 
-    private ValueTask SetOverlayFeaturesAsync()
+    private async ValueTask SetOverlayFeaturesAsync()
     {
         var marker = new Marker(
             Id,
@@ -65,13 +63,30 @@ public sealed class MapMarker : ComponentBase, IAsyncDisposable
             PitchAlignment: PitchAlignment
         );
 
-        if (_currentMarker == marker)
+        if (ReferenceEquals(_registeredMap, Map) && _currentMarker == marker)
         {
-            return ValueTask.CompletedTask;
+            return;
+        }
+
+        if (_registeredMap is not null && !ReferenceEquals(_registeredMap, Map))
+        {
+            await RemoveRegisteredOverlayFeaturesAsync();
         }
 
         _currentMarker = marker;
-        return Map!.SetOverlayMarkersAsync(_ownerId, [marker]);
+        _registeredMap = Map;
+        await Map!.SetOverlayMarkersAsync(_ownerId, [marker]);
+    }
+
+    private async ValueTask RemoveRegisteredOverlayFeaturesAsync()
+    {
+        if (_registeredMap is not null)
+        {
+            await _registeredMap.RemoveOverlayFeaturesAsync(_ownerId);
+        }
+
+        _registeredMap = null;
+        _currentMarker = null;
     }
 
     private void ValidatePlacement()

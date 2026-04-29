@@ -9,6 +9,7 @@ namespace Spillgebees.Blazor.Map.Components;
 public sealed class MapPolyline : ComponentBase, IAsyncDisposable
 {
     private readonly string _ownerId = Guid.NewGuid().ToString("N");
+    private BaseMap? _registeredMap;
     private IReadOnlyList<Coordinate>? _cachedCoordinatesSource;
     private ImmutableList<Coordinate> _cachedCoordinates = [];
     private Polyline? _currentPolyline;
@@ -43,23 +44,39 @@ public sealed class MapPolyline : ComponentBase, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (Map is not null)
-        {
-            await Map.RemoveOverlayFeaturesAsync(_ownerId);
-        }
+        await RemoveRegisteredOverlayFeaturesAsync();
     }
 
-    private ValueTask SetOverlayFeaturesAsync()
+    private async ValueTask SetOverlayFeaturesAsync()
     {
         var polyline = new Polyline(Id, GetCoordinateSnapshot(), Color, Width, Popup: Popup);
 
-        if (_currentPolyline == polyline)
+        if (ReferenceEquals(_registeredMap, Map) && _currentPolyline == polyline)
         {
-            return ValueTask.CompletedTask;
+            return;
+        }
+
+        if (_registeredMap is not null && !ReferenceEquals(_registeredMap, Map))
+        {
+            await RemoveRegisteredOverlayFeaturesAsync();
         }
 
         _currentPolyline = polyline;
-        return Map!.SetOverlayPolylinesAsync(_ownerId, [polyline]);
+        _registeredMap = Map;
+        await Map!.SetOverlayPolylinesAsync(_ownerId, [polyline]);
+    }
+
+    private async ValueTask RemoveRegisteredOverlayFeaturesAsync()
+    {
+        if (_registeredMap is not null)
+        {
+            await _registeredMap.RemoveOverlayFeaturesAsync(_ownerId);
+        }
+
+        _registeredMap = null;
+        _currentPolyline = null;
+        _cachedCoordinatesSource = null;
+        _cachedCoordinates = [];
     }
 
     private ImmutableList<Coordinate> GetCoordinateSnapshot()
