@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
       sourcemap: true,
       minify: isProduction,
       target: "es2022",
-      rollupOptions: {
+      rolldownOptions: {
         output: {
           assetFileNames: (assetInfo) => {
             if (assetInfo.names?.some((name) => name.endsWith(".css"))) {

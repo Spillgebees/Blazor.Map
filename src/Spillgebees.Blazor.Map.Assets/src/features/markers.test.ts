@@ -4,6 +4,7 @@ import {
   getLatestMockMapInstance,
   getMockMarkerConstructor,
   getMockPopupConstructor,
+  type MockMapInstance,
   resetMockMapState,
 } from "../../test/maplibreMock";
 import { resetWindowGlobals } from "../../test/windowSetup";
@@ -19,6 +20,7 @@ function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions 
     center: { latitude: 51.505, longitude: -0.09 },
     zoom: 13,
     style: null,
+    styles: null,
     composedGlyphsUrl: null,
     pitch: 0,
     bearing: 0,
@@ -28,8 +30,10 @@ function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions 
     fitBoundsOptions: null,
     minZoom: null,
     maxZoom: null,
+    maxBounds: null,
     interactive: true,
     cooperativeGestures: false,
+    webFonts: null,
     ...overrides,
   };
 }
@@ -60,6 +64,8 @@ function createDefaultMarker(overrides?: Partial<IMarker>): IMarker {
 function createEmptyFeatureStorage(): FeatureStorage {
   return {
     markers: new Map(),
+    circles: new Map(),
+    polylines: new Map(),
     circleData: new Map(),
     polylineData: new Map(),
   };

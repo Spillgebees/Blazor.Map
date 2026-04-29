@@ -61,7 +61,7 @@ export function applySceneMutations(mapElement: HTMLElement, batch: SceneMutatio
         setSourceDataAnimated(
           mapElement,
           mutation.sourceId,
-          mutation.data,
+          mutation.data as GeoJSON.GeoJSON,
           mutation.animationDuration,
           mutation.animationEasing,
         );

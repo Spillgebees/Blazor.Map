@@ -22,6 +22,7 @@ function createDefaultMapOptions(): IMapOptions {
     center: { latitude: 51.505, longitude: -0.09 },
     zoom: 13,
     style: null,
+    styles: null,
     composedGlyphsUrl: null,
     pitch: 0,
     bearing: 0,
@@ -31,8 +32,10 @@ function createDefaultMapOptions(): IMapOptions {
     fitBoundsOptions: null,
     minZoom: null,
     maxZoom: null,
+    maxBounds: null,
     interactive: true,
     cooperativeGestures: false,
+    webFonts: null,
   };
 }
 
@@ -225,7 +228,7 @@ describe("addCircles", () => {
 
     // assert — the source setData should have been called
     const sources = getMockMapSources();
-    const source = sources.get("sgb-circles-source");
+    const source = sources.get("sgb-circles-source")!;
     expect(source).toBeDefined();
     expect(source.setData).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -349,7 +352,7 @@ describe("updateCircles", () => {
 
     // Source setData should have been called again
     const sources = getMockMapSources();
-    const source = sources.get("sgb-circles-source");
+    const source = sources.get("sgb-circles-source")!;
     // Called once during addCircles, once during updateCircles
     expect(source.setData).toHaveBeenCalledTimes(2);
   });
@@ -394,7 +397,7 @@ describe("removeCircles", () => {
 
     // Source setData should have been called with empty features
     const sources = getMockMapSources();
-    const source = sources.get("sgb-circles-source");
+    const source = sources.get("sgb-circles-source")!;
     expect(source.setData).toHaveBeenLastCalledWith(
       expect.objectContaining({
         type: "FeatureCollection",
@@ -575,7 +578,7 @@ describe("addPolylines", () => {
 
     // assert
     const sources = getMockMapSources();
-    const source = sources.get("sgb-polylines-source");
+    const source = sources.get("sgb-polylines-source")!;
     expect(source).toBeDefined();
     expect(source.setData).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -620,7 +623,7 @@ describe("updatePolylines", () => {
     expect(feature.properties!.width).toBe(10);
 
     const sources = getMockMapSources();
-    const source = sources.get("sgb-polylines-source");
+    const source = sources.get("sgb-polylines-source")!;
     expect(source.setData).toHaveBeenCalledTimes(2);
   });
 
@@ -663,7 +666,7 @@ describe("removePolylines", () => {
     expect(storage.polylineData.size).toBe(0);
 
     const sources = getMockMapSources();
-    const source = sources.get("sgb-polylines-source");
+    const source = sources.get("sgb-polylines-source")!;
     expect(source.setData).toHaveBeenLastCalledWith(
       expect.objectContaining({
         type: "FeatureCollection",

@@ -186,8 +186,8 @@ describe("bootstrap", () => {
         features: new Map(),
         overlays: new Map(),
         controls: new Map(),
-      },
-    };
+      } as never,
+    } as never;
     const staleMapFunctions = window.Spillgebees.Map.mapFunctions;
 
     // act
@@ -875,7 +875,7 @@ describe("createMap", () => {
         maxZoom: 18,
         interactive: false,
         cooperativeGestures: true,
-        attributionControl: true,
+        attributionControl: {},
       }),
     );
   });
@@ -990,7 +990,7 @@ describe("createMap", () => {
 
     // assert
     const mockMap = getLatestMockMapInstance()!;
-    expect(mockMap.setProjection).toHaveBeenCalledWith("globe");
+    expect(mockMap.setProjection).toHaveBeenCalledWith({ type: "globe" });
   });
 
   it("should not set projection when projection is mercator", () => {
@@ -2012,7 +2012,8 @@ describe("setMapOptions", () => {
     expect(invokeMethodAsync).not.toHaveBeenCalledWith("OnMapStyleReloadedAsync");
 
     // act
-    completeOverlayComposition?.();
+    const finishOverlayComposition = completeOverlayComposition as (() => void) | null;
+    finishOverlayComposition?.();
     await overlayCompositionCompleted;
     await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -2297,7 +2298,7 @@ describe("setMapOptions", () => {
     setMapOptions(mapElement, createDefaultMapOptions({ projection: "globe" }));
 
     // assert — should call setProjection when projection changes
-    expect(mockMap.setProjection).toHaveBeenCalledWith("globe");
+    expect(mockMap.setProjection).toHaveBeenCalledWith({ type: "globe" });
   });
 
   it("should call jumpTo after all other state updates", () => {
@@ -2837,6 +2838,8 @@ function createDefaultMarker(overrides?: Partial<IMarker>): IMarker {
     color: null,
     scale: null,
     rotation: null,
+    rotationAlignment: null,
+    pitchAlignment: null,
     draggable: false,
     opacity: null,
     className: null,
