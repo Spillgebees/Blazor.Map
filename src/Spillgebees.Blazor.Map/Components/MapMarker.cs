@@ -8,9 +8,7 @@ namespace Spillgebees.Blazor.Map.Components;
 
 public sealed class MapMarker : ComponentBase, IAsyncDisposable
 {
-    private readonly string _ownerId = Guid.NewGuid().ToString("N");
-    private BaseMap? _registeredMap;
-    private Marker? _currentMarker;
+    private readonly MapOverlayRegistration<Marker> _registration = new();
 
     [CascadingParameter]
     private BaseMap? Map { get; set; }
@@ -41,18 +39,6 @@ public sealed class MapMarker : ComponentBase, IAsyncDisposable
 
     protected override async Task OnParametersSetAsync()
     {
-        ValidatePlacement();
-
-        await SetOverlayFeaturesAsync();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await RemoveRegisteredOverlayFeaturesAsync();
-    }
-
-    private async ValueTask SetOverlayFeaturesAsync()
-    {
         var marker = new Marker(
             Id,
             Position,
@@ -63,42 +49,11 @@ public sealed class MapMarker : ComponentBase, IAsyncDisposable
             PitchAlignment: PitchAlignment
         );
 
-        if (ReferenceEquals(_registeredMap, Map) && _currentMarker == marker)
-        {
-            return;
-        }
-
-        if (_registeredMap is not null && !ReferenceEquals(_registeredMap, Map))
-        {
-            await RemoveRegisteredOverlayFeaturesAsync();
-        }
-
-        _currentMarker = marker;
-        _registeredMap = Map;
-        await Map!.SetOverlayMarkersAsync(_ownerId, [marker]);
+        await _registration.RegisterAsync(Map, SectionContext, nameof(MapMarker), marker, SetOverlayMarkersAsync);
     }
 
-    private async ValueTask RemoveRegisteredOverlayFeaturesAsync()
-    {
-        if (_registeredMap is not null)
-        {
-            await _registeredMap.RemoveOverlayFeaturesAsync(_ownerId);
-        }
+    public async ValueTask DisposeAsync() => await _registration.DisposeAsync();
 
-        _registeredMap = null;
-        _currentMarker = null;
-    }
-
-    private void ValidatePlacement()
-    {
-        if (Map is null)
-        {
-            throw new InvalidOperationException("MapMarker must be placed inside SgbMap.");
-        }
-
-        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
-        {
-            throw new InvalidOperationException("MapMarker must be placed inside MapOverlays.");
-        }
-    }
+    private static ValueTask SetOverlayMarkersAsync(BaseMap map, string ownerId, IReadOnlyList<Marker> markers) =>
+        map.SetOverlayMarkersAsync(ownerId, markers);
 }

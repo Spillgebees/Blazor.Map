@@ -195,6 +195,45 @@ public class MapSingleOverlayTests : BunitContext
         GetOverlayCount(newMap, "_registeredOverlayPolylines").Should().Be(1);
     }
 
+    [Test]
+    public void Should_remove_marker_overlay_registration_when_removed_from_render_tree()
+    {
+        // arrange
+        var cut = RenderMarker("marker-1", new Coordinate(49.61, 6.13));
+
+        // act
+        RenderEmpty(cut);
+
+        // assert
+        GetOverlayCount(cut.Instance, "_registeredOverlayMarkers").Should().Be(0);
+    }
+
+    [Test]
+    public void Should_remove_circle_overlay_registration_when_removed_from_render_tree()
+    {
+        // arrange
+        var cut = RenderCircle("circle-1", new Coordinate(49.61, 6.13));
+
+        // act
+        RenderEmpty(cut);
+
+        // assert
+        GetOverlayCount(cut.Instance, "_registeredOverlayCircles").Should().Be(0);
+    }
+
+    [Test]
+    public void Should_remove_polyline_overlay_registration_when_removed_from_render_tree()
+    {
+        // arrange
+        var cut = RenderPolyline("polyline-1", [new Coordinate(49.61, 6.13), new Coordinate(49.62, 6.14)]);
+
+        // act
+        RenderEmpty(cut);
+
+        // assert
+        GetOverlayCount(cut.Instance, "_registeredOverlayPolylines").Should().Be(0);
+    }
+
     private IRenderedComponent<SgbMap> RenderMarker(string id, Coordinate position) =>
         Render<SgbMap>(parameters =>
             parameters.AddChildContent<MapOverlays>(overlays =>
@@ -208,6 +247,9 @@ public class MapSingleOverlayTests : BunitContext
                 overlays.AddChildContent<MapMarker>(marker => marker.Add(m => m.Id, id).Add(m => m.Position, position))
             )
         );
+
+    private static void RenderEmpty(IRenderedComponent<SgbMap> cut) =>
+        cut.Render(parameters => parameters.AddChildContent(_ => { }));
 
     private IRenderedComponent<SgbMap> RenderCircle(string id, Coordinate position) =>
         Render<SgbMap>(parameters =>

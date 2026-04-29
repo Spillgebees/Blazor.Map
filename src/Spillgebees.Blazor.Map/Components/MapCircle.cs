@@ -7,9 +7,7 @@ namespace Spillgebees.Blazor.Map.Components;
 
 public sealed class MapCircle : ComponentBase, IAsyncDisposable
 {
-    private readonly string _ownerId = Guid.NewGuid().ToString("N");
-    private BaseMap? _registeredMap;
-    private Circle? _currentCircle;
+    private readonly MapOverlayRegistration<Circle> _registration = new();
 
     [CascadingParameter]
     private BaseMap? Map { get; set; }
@@ -34,56 +32,13 @@ public sealed class MapCircle : ComponentBase, IAsyncDisposable
 
     protected override async Task OnParametersSetAsync()
     {
-        ValidatePlacement();
-
-        await SetOverlayFeaturesAsync();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await RemoveRegisteredOverlayFeaturesAsync();
-    }
-
-    private async ValueTask SetOverlayFeaturesAsync()
-    {
         var circle = new Circle(Id, Position, Radius, Color, Popup: Popup);
 
-        if (ReferenceEquals(_registeredMap, Map) && _currentCircle == circle)
-        {
-            return;
-        }
-
-        if (_registeredMap is not null && !ReferenceEquals(_registeredMap, Map))
-        {
-            await RemoveRegisteredOverlayFeaturesAsync();
-        }
-
-        _currentCircle = circle;
-        _registeredMap = Map;
-        await Map!.SetOverlayCirclesAsync(_ownerId, [circle]);
+        await _registration.RegisterAsync(Map, SectionContext, nameof(MapCircle), circle, SetOverlayCirclesAsync);
     }
 
-    private async ValueTask RemoveRegisteredOverlayFeaturesAsync()
-    {
-        if (_registeredMap is not null)
-        {
-            await _registeredMap.RemoveOverlayFeaturesAsync(_ownerId);
-        }
+    public async ValueTask DisposeAsync() => await _registration.DisposeAsync();
 
-        _registeredMap = null;
-        _currentCircle = null;
-    }
-
-    private void ValidatePlacement()
-    {
-        if (Map is null)
-        {
-            throw new InvalidOperationException("MapCircle must be placed inside SgbMap.");
-        }
-
-        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
-        {
-            throw new InvalidOperationException("MapCircle must be placed inside MapOverlays.");
-        }
-    }
+    private static ValueTask SetOverlayCirclesAsync(BaseMap map, string ownerId, IReadOnlyList<Circle> circles) =>
+        map.SetOverlayCirclesAsync(ownerId, circles);
 }

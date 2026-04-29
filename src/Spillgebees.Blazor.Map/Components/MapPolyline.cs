@@ -8,11 +8,9 @@ namespace Spillgebees.Blazor.Map.Components;
 
 public sealed class MapPolyline : ComponentBase, IAsyncDisposable
 {
-    private readonly string _ownerId = Guid.NewGuid().ToString("N");
-    private BaseMap? _registeredMap;
+    private readonly MapOverlayRegistration<Polyline> _registration = new();
     private IReadOnlyList<Coordinate>? _cachedCoordinatesSource;
     private ImmutableList<Coordinate> _cachedCoordinates = [];
-    private Polyline? _currentPolyline;
 
     [CascadingParameter]
     private BaseMap? Map { get; set; }
@@ -37,44 +35,14 @@ public sealed class MapPolyline : ComponentBase, IAsyncDisposable
 
     protected override async Task OnParametersSetAsync()
     {
-        ValidatePlacement();
+        var polyline = new Polyline(Id, GetCoordinateSnapshot(), Color, Width, Popup: Popup);
 
-        await SetOverlayFeaturesAsync();
+        await _registration.RegisterAsync(Map, SectionContext, nameof(MapPolyline), polyline, SetOverlayPolylinesAsync);
     }
 
     public async ValueTask DisposeAsync()
     {
-        await RemoveRegisteredOverlayFeaturesAsync();
-    }
-
-    private async ValueTask SetOverlayFeaturesAsync()
-    {
-        var polyline = new Polyline(Id, GetCoordinateSnapshot(), Color, Width, Popup: Popup);
-
-        if (ReferenceEquals(_registeredMap, Map) && _currentPolyline == polyline)
-        {
-            return;
-        }
-
-        if (_registeredMap is not null && !ReferenceEquals(_registeredMap, Map))
-        {
-            await RemoveRegisteredOverlayFeaturesAsync();
-        }
-
-        _currentPolyline = polyline;
-        _registeredMap = Map;
-        await Map!.SetOverlayPolylinesAsync(_ownerId, [polyline]);
-    }
-
-    private async ValueTask RemoveRegisteredOverlayFeaturesAsync()
-    {
-        if (_registeredMap is not null)
-        {
-            await _registeredMap.RemoveOverlayFeaturesAsync(_ownerId);
-        }
-
-        _registeredMap = null;
-        _currentPolyline = null;
+        await _registration.DisposeAsync();
         _cachedCoordinatesSource = null;
         _cachedCoordinates = [];
     }
@@ -90,16 +58,6 @@ public sealed class MapPolyline : ComponentBase, IAsyncDisposable
         return _cachedCoordinates;
     }
 
-    private void ValidatePlacement()
-    {
-        if (Map is null)
-        {
-            throw new InvalidOperationException("MapPolyline must be placed inside SgbMap.");
-        }
-
-        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
-        {
-            throw new InvalidOperationException("MapPolyline must be placed inside MapOverlays.");
-        }
-    }
+    private static ValueTask SetOverlayPolylinesAsync(BaseMap map, string ownerId, IReadOnlyList<Polyline> polylines) =>
+        map.SetOverlayPolylinesAsync(ownerId, polylines);
 }
