@@ -102,14 +102,15 @@
 
 <h2 id="popups">// popups</h2>
 <p>Three trigger modes: click, hover, and permanent. Attach a <code>PopupOptions</code> record to any <code>Marker</code> or <code>Circle</code> via its <code>Popup</code> property. Set <code>CloseButton: false</code> on permanent popups for a cleaner look.</p>
+<p><strong>Popup safety:</strong> use <code>PopupOptions.FromText</code> by default. Use <code>PopupOptions.FromRawHtml</code> only with trusted or sanitized HTML.</p>
 <ExampleView TComponent="PopupsExample">
     <PopupsExample />
 </ExampleView>
 
-<h2 id="wms_tile_layers">// wms_tile_layers</h2>
+<h2 id="wms_raster_styles">// wms_raster_styles</h2>
 <p>Use <code>MapStyle.FromWmsUrl</code> to render WMS raster tiles as the base map style. Other factory methods include <code>FromWmtsUrl</code>, <code>FromArcGisMapServer</code>, and <code>FromRasterUrl</code>. To layer raster sources on top of a vector base, use <code>TileOverlay</code> instead.</p>
-<ExampleView TComponent="WmsTileLayerExample">
-    <WmsTileLayerExample />
+<ExampleView TComponent="WmsRasterStyleExample">
+    <WmsRasterStyleExample />
 </ExampleView>
 
 @code {

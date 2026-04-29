@@ -12,8 +12,6 @@
     </MapOverlays>
 </SgbMap>
 
-<p><strong>Raw HTML warning:</strong> use <code>PopupOptions.FromRawHtml</code> only with trusted or sanitized HTML.</p>
-
 @code {
     private readonly MapOptions _mapOptions = new(
         Center: new Coordinate(49.6117, 6.1319),
@@ -35,8 +33,8 @@
             "marker-hover",
             new Coordinate(49.6117, 6.1319),
             Title: "Hover popup",
-            Popup: PopupOptions.FromRawHtml(
-                "<strong>Hover popup</strong><br>Hover over the marker to open this popup.",
+            Popup: PopupOptions.FromText(
+                "Hover popup: hover over the marker to open this popup.",
                 PopupTrigger.Hover
             )
         ),
@@ -44,8 +42,8 @@
             "marker-permanent",
             new Coordinate(49.6230, 6.1500),
             Title: "Permanent popup",
-            Popup: PopupOptions.FromRawHtml(
-                "<strong>Permanent popup</strong><br>This popup is always visible.",
+            Popup: PopupOptions.FromText(
+                "Permanent popup: this popup is always visible.",
                 PopupTrigger.Permanent,
                 closeButton: false
             )
