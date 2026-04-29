@@ -1,3 +1,4 @@
+import type { Map as MapLibreMap } from "maplibre-gl";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockDotNetHelper } from "../test/dotNetHelperMock";
 import {
@@ -15,6 +16,7 @@ import { LegendControl } from "./controls/legendControl";
 import type { IMapControl } from "./interfaces/controls";
 import type { IMarker, IPolyline } from "./interfaces/features";
 import type { IFitBoundsOptions, IMapOptions, IMapStyle, ITileOverlay } from "./interfaces/map";
+import type { SpillgebeesMapNamespace } from "./interfaces/spillgebees";
 import {
   bootstrap,
   buildStyleFromOptions,
@@ -67,6 +69,14 @@ function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions 
 }
 
 type IMapControlOptions = IMapControl[];
+
+function setCorruptedSpillgebeesNamespace(namespace: unknown): void {
+  window.Spillgebees = namespace as Window["Spillgebees"];
+}
+
+function asCorruptedMapNamespace(namespace: unknown): SpillgebeesMapNamespace {
+  return namespace as SpillgebeesMapNamespace;
+}
 
 function createDefaultControlOptions(): IMapControlOptions {
   return [];
@@ -179,15 +189,15 @@ describe("bootstrap", () => {
 
   it("should force-reinitialize when mapFunctions are missing", () => {
     // arrange — simulate a stale namespace that has no callable map API
-    window.Spillgebees = {
+    setCorruptedSpillgebeesNamespace({
       Map: {
-        mapFunctions: { staleFunction: () => {} } as never,
+        mapFunctions: { staleFunction: () => {} },
         maps: new Map(),
         features: new Map(),
         overlays: new Map(),
         controls: new Map(),
-      } as never,
-    } as never;
+      },
+    });
     const staleMapFunctions = window.Spillgebees.Map.mapFunctions;
 
     // act
@@ -220,8 +230,8 @@ describe("bootstrap", () => {
 
   it("should reinitialize when maps store is missing", () => {
     // arrange — simulate a corrupted namespace with missing stores
-    window.Spillgebees = {
-      Map: {
+    setCorruptedSpillgebeesNamespace({
+      Map: asCorruptedMapNamespace({
         mapFunctions: {
           createMap: vi.fn(),
           disposeMap: vi.fn(),
@@ -229,8 +239,8 @@ describe("bootstrap", () => {
         features: new Map(),
         overlays: new Map(),
         controls: new Map(),
-      } as never,
-    };
+      }),
+    });
 
     // act
     bootstrap();
@@ -249,9 +259,9 @@ describe("bootstrap", () => {
       },
     });
 
-    window.Spillgebees = {
-      Map: brokenMapNamespace as never,
-    };
+    setCorruptedSpillgebeesNamespace({
+      Map: asCorruptedMapNamespace(brokenMapNamespace),
+    });
 
     // act
     bootstrap();
@@ -262,9 +272,9 @@ describe("bootstrap", () => {
 
   it("should preserve other Spillgebees namespace properties", () => {
     // arrange — simulate other libraries using the Spillgebees namespace
-    window.Spillgebees = {
+    setCorruptedSpillgebeesNamespace({
       OtherLibrary: { foo: "bar" },
-    } as never;
+    });
 
     // act
     bootstrap();
@@ -276,12 +286,12 @@ describe("bootstrap", () => {
 
   it("should preserve other Spillgebees namespace siblings when map is reinitialized", () => {
     // arrange
-    window.Spillgebees = {
+    setCorruptedSpillgebeesNamespace({
       OtherLibrary: { foo: "bar" },
-      Map: {
-        mapFunctions: {} as never,
-      } as never,
-    } as never;
+      Map: asCorruptedMapNamespace({
+        mapFunctions: {},
+      }),
+    });
 
     // act
     bootstrap();
@@ -3650,7 +3660,7 @@ describe("advanced interop helpers", () => {
 
     const mockMap = getLatestMockMapInstance()!;
     window.Spillgebees.Map.composedStyleLayerIds.set(
-      mockMap as never,
+      mockMap as unknown as MapLibreMap,
       new Map([
         [
           "sgb-train-tracking-overlay\u0000railway-stations-circle",
@@ -3692,7 +3702,7 @@ describe("advanced interop helpers", () => {
 
     const mockMap = getLatestMockMapInstance()!;
     window.Spillgebees.Map.composedStyleLayerIds.set(
-      mockMap as never,
+      mockMap as unknown as MapLibreMap,
       new Map([
         [
           "sgb-train-tracking-overlay\u0000railway-stations-circle",

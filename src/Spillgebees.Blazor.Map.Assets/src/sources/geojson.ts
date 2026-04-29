@@ -625,16 +625,17 @@ export function removePopupDomContent(mapElement: HTMLElement, popupId: string):
   if (!map) return;
 
   const store = componentPopups.get(map);
-  const registration = store?.get(popupId);
+  if (!store) {
+    return;
+  }
+
+  const registration = store.get(popupId);
   if (!registration) {
     return;
   }
 
   registration.suppressCloseCallback = true;
   registration.popup.remove();
-  if (!store) {
-    return;
-  }
   detachPopupDomContent(store, popupId, registration);
 }
 

@@ -1,4 +1,5 @@
 import type { DotNet } from "@microsoft/dotnet-js-interop";
+import type { GeoJSON } from "geojson";
 import type { RegisteredMapLayer } from "../interfaces/spillgebees";
 
 export type LayerOrdering = RegisteredMapLayer["ordering"];
@@ -21,7 +22,7 @@ export type SceneMutation =
   | {
       kind: "setSourceDataAnimated";
       sourceId: string;
-      data: unknown;
+      data: GeoJSON;
       animationDuration: number;
       animationEasing: string;
     }
