@@ -6,7 +6,7 @@ namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
 /// A high-frequency tracked entity with a stable ID, primary symbol, and optional companion decorations.
 /// </summary>
 /// <typeparam name="TItem">Optional strongly typed domain item associated with the entity.</typeparam>
-public sealed record TrackedEntity<TItem>
+internal sealed record TrackedEntity<TItem>
 {
     /// <summary>
     /// Creates a new tracked entity.

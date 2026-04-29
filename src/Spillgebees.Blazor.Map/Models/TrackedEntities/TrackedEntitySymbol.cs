@@ -5,7 +5,7 @@ namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
 /// <summary>
 /// Primary symbol configuration for a tracked entity.
 /// </summary>
-public sealed record TrackedEntitySymbol
+internal sealed record TrackedEntitySymbol
 {
     /// <summary>
     /// Creates a new tracked entity symbol.

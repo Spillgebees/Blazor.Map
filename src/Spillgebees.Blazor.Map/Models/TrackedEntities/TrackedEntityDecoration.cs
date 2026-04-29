@@ -5,7 +5,7 @@ namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
 /// <summary>
 /// A decoration that follows a tracked entity using the same position with relative offsets.
 /// </summary>
-public sealed record TrackedEntityDecoration
+internal sealed record TrackedEntityDecoration
 {
     /// <summary>
     /// Creates a new tracked entity decoration.

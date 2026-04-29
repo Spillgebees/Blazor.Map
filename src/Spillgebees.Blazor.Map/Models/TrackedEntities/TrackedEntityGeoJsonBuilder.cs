@@ -5,7 +5,7 @@ namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
 /// <summary>
 /// Builds diff-friendly GeoJSON feature collections for tracked entities.
 /// </summary>
-public static class TrackedEntityGeoJsonBuilder
+internal static class TrackedEntityGeoJsonBuilder
 {
     /// <summary>
     /// Builds the primary entity feature collection.

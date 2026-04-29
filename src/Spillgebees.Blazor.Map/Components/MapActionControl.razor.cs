@@ -7,9 +7,27 @@ namespace Spillgebees.Blazor.Map.Components;
 /// <summary>
 /// Renders a first-class styled map action button control.
 /// </summary>
-public partial class MapActionControl : StyledContentMapControlBase
+public partial class MapActionControl : ComponentBase, IAsyncDisposable
 {
+    private readonly StyledContentMapControlRegistration _registration = new();
     private readonly string _contentId = $"sgb-map-action-control-content-{Guid.NewGuid():N}";
+    private ElementReference _placeholderReference;
+    private ElementReference _contentReference;
+
+    [CascadingParameter]
+    private MapControlRegistryContext? Registry { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Id { get; set; } = string.Empty;
+
+    [Parameter]
+    public ControlPosition Position { get; set; } = ControlPosition.TopRight;
+
+    [Parameter]
+    public int Order { get; set; } = 500;
+
+    [Parameter]
+    public bool Enabled { get; set; } = true;
 
     [Parameter]
     public string? Class { get; set; }
@@ -38,7 +56,7 @@ public partial class MapActionControl : StyledContentMapControlBase
     [Parameter]
     public EventCallback<MouseEventArgs> OnClick { get; set; }
 
-    protected override string PlacementErrorMessage => "MapActionControl must be placed inside a map.";
+    private const string PlacementErrorMessage = "MapActionControl must be placed inside a map.";
 
     private string GroupClass =>
         string.Join(
@@ -76,9 +94,9 @@ public partial class MapActionControl : StyledContentMapControlBase
         return "sgb-map-control-button-text-only";
     }
 
-    protected override void ValidateParameters()
+    protected override void OnParametersSet()
     {
-        base.ValidateParameters();
+        StyledContentMapControlRegistration.ValidateId(Id);
 
         if (string.IsNullOrWhiteSpace(Label))
         {
@@ -89,5 +107,12 @@ public partial class MapActionControl : StyledContentMapControlBase
         {
             throw new InvalidOperationException("MapActionControl requires non-empty Text or Icon.");
         }
+
+        _registration.Register(Registry, PlacementErrorMessage, Id, Enabled, Position, Order);
     }
+
+    protected override Task OnAfterRenderAsync(bool firstRender) =>
+        _registration.SyncAfterRenderAsync(Registry, Id, Enabled, _placeholderReference, _contentReference);
+
+    public ValueTask DisposeAsync() => _registration.DisposeAsync(Registry);
 }

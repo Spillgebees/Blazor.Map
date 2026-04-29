@@ -6,8 +6,16 @@ using Spillgebees.Blazor.Map.Models.Popups;
 
 namespace Spillgebees.Blazor.Map.Components;
 
-public sealed class MapMarker : MapOverlayComponentBase
+public sealed class MapMarker : ComponentBase, IAsyncDisposable
 {
+    private readonly MapOverlayRegistration<Marker> _registration = new();
+
+    [CascadingParameter]
+    private BaseMap? Map { get; set; }
+
+    [CascadingParameter]
+    private MapSectionContext? SectionContext { get; set; }
+
     [Parameter, EditorRequired]
     public string Id { get; set; } = string.Empty;
 
@@ -29,19 +37,23 @@ public sealed class MapMarker : MapOverlayComponentBase
     [Parameter]
     public MapAlignment? PitchAlignment { get; set; }
 
-    protected override ValueTask SetOverlayFeaturesAsync() =>
-        Map!.SetOverlayMarkersAsync(
-            OwnerId,
-            [
-                new Marker(
-                    Id,
-                    Position,
-                    Title,
-                    Popup,
-                    Color: Color,
-                    RotationAlignment: RotationAlignment,
-                    PitchAlignment: PitchAlignment
-                ),
-            ]
+    protected override async Task OnParametersSetAsync()
+    {
+        var marker = new Marker(
+            Id,
+            Position,
+            Title,
+            Popup,
+            Color: Color,
+            RotationAlignment: RotationAlignment,
+            PitchAlignment: PitchAlignment
         );
+
+        await _registration.RegisterAsync(Map, SectionContext, nameof(MapMarker), marker, SetOverlayMarkersAsync);
+    }
+
+    public async ValueTask DisposeAsync() => await _registration.DisposeAsync();
+
+    private static ValueTask SetOverlayMarkersAsync(BaseMap map, string ownerId, IReadOnlyList<Marker> markers) =>
+        map.SetOverlayMarkersAsync(ownerId, markers);
 }

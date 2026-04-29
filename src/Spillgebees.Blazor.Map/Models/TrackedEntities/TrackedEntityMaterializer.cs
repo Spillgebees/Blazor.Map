@@ -5,7 +5,7 @@ namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
 /// <summary>
 /// Materializes raw tracked items into low-level tracked entities.
 /// </summary>
-public static class TrackedEntityMaterializer
+internal static class TrackedEntityMaterializer
 {
     /// <summary>
     /// Converts raw items into tracked entities.

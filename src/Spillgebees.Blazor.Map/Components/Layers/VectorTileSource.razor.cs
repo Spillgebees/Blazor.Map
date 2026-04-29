@@ -102,7 +102,9 @@ public partial class VectorTileSource : ComponentBase, IMapSource, IAsyncDisposa
     private MapLayerOrderOptions _previousOrderOptions = MapLayerOrderOptions.Empty;
 
     /// <inheritdoc/>
-    public MapLayerOrderOptions OrderOptions => new(LayerGroup, BeforeLayerGroup, AfterLayerGroup);
+    MapLayerOrderOptions IMapSource.OrderOptions => new(LayerGroup, BeforeLayerGroup, AfterLayerGroup);
+
+    private MapLayerOrderOptions OrderOptions => new(LayerGroup, BeforeLayerGroup, AfterLayerGroup);
 
     /// <inheritdoc/>
     public async Task RegisterLayerAsync(LayerBase layer)

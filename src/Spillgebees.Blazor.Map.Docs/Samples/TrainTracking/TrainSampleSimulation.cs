@@ -60,65 +60,68 @@ public static class TrainSampleSimulation
         return new TrainFeatureCollection(features);
     }
 
-    public static IReadOnlyList<TrackedEntity<TrainSampleState>> BuildTrackedEntities(
-        IEnumerable<TrainSampleState> trains
-    )
-    {
-        return trains
-            .Select(train =>
-            {
-                ValidateTrain(train);
-                var bearing = CalculateBearing(train.CurrentPosition, train.NextPosition);
-                var isInternational = IsInternational(train);
-
-                return new TrackedEntity<TrainSampleState>(
-                    train.Id,
-                    train.CurrentPosition,
-                    new TrackedEntitySymbol($"train-{train.Color.TrimStart('#')}", size: 1.0, rotation: bearing),
-                    color: train.Color,
-                    hover: new TrackedEntityHoverIntent(1.2, true),
-                    renderOrder: 100,
-                    decorations:
-                    [
-                        new TrackedEntityDecoration(
-                            "service",
-                            text: train.ServiceNumber,
-                            offset: new PixelPoint(1.3, -0.3),
-                            anchor: SymbolAnchor.Left,
-                            color: "#1e293b",
-                            textSize: 11,
-                            rotation: bearing,
-                            renderOrder: 110
-                        ),
-                        new TrackedEntityDecoration(
-                            "route",
-                            text: train.Route,
-                            offset: new PixelPoint(1.8, 1.2),
-                            anchor: SymbolAnchor.Left,
-                            displayMode: TrackedEntityDecorationDisplayMode.Hover,
-                            color: "#64748b",
-                            textSize: 9,
-                            rotation: bearing,
-                            renderOrder: 105
-                        ),
-                        new TrackedEntityDecoration(
-                            "operator",
-                            text: train.Operator,
-                            offset: new PixelPoint(-1.3, 0.0),
-                            anchor: SymbolAnchor.Right,
-                            displayMode: TrackedEntityDecorationDisplayMode.Selected,
-                            color: train.Color,
-                            textSize: 8,
-                            rotation: null,
-                            renderOrder: 108
-                        ),
-                    ],
-                    item: train,
-                    properties: new Dictionary<string, object?> { ["internationalPresence"] = isInternational ? 1 : 0 }
-                );
-            })
-            .ToArray();
-    }
+    public static TrackedEntityLayerDefinition<TrainSampleState> BuildTrackedEntityLayer(
+        IReadOnlyList<TrainSampleState> trains
+    ) =>
+        new(
+            "sample-trains",
+            trains,
+            new TrackedEntityIdOptions<TrainSampleState>(train => train.Id),
+            new TrackedEntityVisualOptions<TrainSampleState>(
+                new TrackedEntitySymbolOptions<TrainSampleState>(
+                    train => train.CurrentPosition,
+                    train => $"train-{train.Color.TrimStart('#')}",
+                    SizeSelector: _ => 1.0,
+                    RotationSelector: train => CalculateBearing(train.CurrentPosition, train.NextPosition),
+                    ColorSelector: train => train.Color,
+                    HoverSelector: _ => new TrackedEntityHoverIntent(1.2, true),
+                    RenderOrderSelector: _ => 100,
+                    PropertiesSelector: train => new Dictionary<string, object?>
+                    {
+                        ["internationalPresence"] = IsInternational(train) ? 1 : 0,
+                    }
+                ),
+                [
+                    new(
+                        "service",
+                        TextSelector: train => train.ServiceNumber,
+                        Offset: new PixelPoint(1.3, -0.3),
+                        Anchor: SymbolAnchor.Left,
+                        ColorSelector: _ => "#1e293b",
+                        TextSizeSelector: _ => 11,
+                        RotationSelector: train => CalculateBearing(train.CurrentPosition, train.NextPosition),
+                        RenderOrderSelector: _ => 110
+                    ),
+                    new(
+                        "route",
+                        TextSelector: train => train.Route,
+                        Offset: new PixelPoint(1.8, 1.2),
+                        Anchor: SymbolAnchor.Left,
+                        DisplayMode: TrackedEntityDecorationDisplayMode.Hover,
+                        ColorSelector: _ => "#64748b",
+                        TextSizeSelector: _ => 9,
+                        RotationSelector: train => CalculateBearing(train.CurrentPosition, train.NextPosition),
+                        RenderOrderSelector: _ => 105
+                    ),
+                    new(
+                        "operator",
+                        TextSelector: train => train.Operator,
+                        Offset: new PixelPoint(-1.3, 0.0),
+                        Anchor: SymbolAnchor.Right,
+                        DisplayMode: TrackedEntityDecorationDisplayMode.Selected,
+                        ColorSelector: train => train.Color,
+                        TextSizeSelector: _ => 8,
+                        RenderOrderSelector: _ => 108
+                    ),
+                ],
+                new TrackedEntityClusterOptions(),
+                null,
+                true,
+                null
+            ),
+            new TrackedEntityBehaviorOptions<TrainSampleState>(),
+            new TrackedEntityCallbacks<TrainSampleState>()
+        );
 
     public static string BuildIconSvg(string color) =>
         $"""

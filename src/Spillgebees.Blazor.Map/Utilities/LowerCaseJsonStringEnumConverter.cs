@@ -6,7 +6,7 @@ namespace Spillgebees.Blazor.Map.Utilities;
 /// <summary>
 /// A JSON converter that converts enum values to lowercase strings.
 /// </summary>
-public class LowerCaseJsonStringEnumConverter : JsonStringEnumConverter
+internal class LowerCaseJsonStringEnumConverter : JsonStringEnumConverter
 {
     private static readonly JsonNamingPolicy _namingPolicy = new LowercaseNamingPolicy();
 
@@ -14,7 +14,7 @@ public class LowerCaseJsonStringEnumConverter : JsonStringEnumConverter
         : base(namingPolicy: _namingPolicy, allowIntegerValues: false) { }
 }
 
-public class LowercaseNamingPolicy : JsonNamingPolicy
+internal class LowercaseNamingPolicy : JsonNamingPolicy
 {
     public override string ConvertName(string name) => name.ToLowerInvariant();
 }

@@ -4,7 +4,7 @@ namespace Spillgebees.Blazor.Map.Components.Layers;
 /// Interface for map source components that can host child layer components.
 /// Implemented by <see cref="GeoJsonSource"/> and <see cref="VectorTileSource"/>.
 /// </summary>
-public interface IMapSource
+internal interface IMapSource
 {
     /// <summary>
     /// The unique identifier for this source.

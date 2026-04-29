@@ -1,3 +1,4 @@
+using System.Text.Json;
 using AwesomeAssertions;
 using Spillgebees.Blazor.Map.Models.Expressions;
 
@@ -165,5 +166,31 @@ public class FeatureStateKeyTests
         ((object[])expr[1])[0].Should().Be("feature-state");
         ((object[])expr[1])[1].Should().Be("rotation");
         expr[2].Should().Be(0.0);
+    }
+
+    [Test]
+    public void Should_serialize_style_value_literal_with_attribute_converter()
+    {
+        // arrange
+        StyleValue<double> value = 0.75;
+
+        // act
+        var json = JsonSerializer.Serialize(value, JsonSerializerOptions.Web);
+
+        // assert
+        json.Should().Be("0.75");
+    }
+
+    [Test]
+    public void Should_serialize_style_value_expression_with_attribute_converter()
+    {
+        // arrange
+        StyleValue<double> value = new object[] { "get", "opacity" };
+
+        // act
+        var json = JsonSerializer.Serialize(value, JsonSerializerOptions.Web);
+
+        // assert
+        json.Should().Be("[\"get\",\"opacity\"]");
     }
 }

@@ -6,7 +6,7 @@ namespace Spillgebees.Blazor.Map.Components;
 /// <summary>
 /// Base component for map controls registered through map context.
 /// </summary>
-public abstract class MapControlComponentBase : ComponentBase, IAsyncDisposable
+internal abstract class MapControlComponentBase : ComponentBase, IAsyncDisposable
 {
     private readonly string _ownerId = Guid.NewGuid().ToString("N");
     private bool _syncPending = true;

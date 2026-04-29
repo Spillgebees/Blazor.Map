@@ -7,7 +7,7 @@ namespace Spillgebees.Blazor.Map.Models.Expressions;
 /// JSON converter factory for <see cref="StyleValue{T}"/>.
 /// Serializes as either the literal value or the expression array.
 /// </summary>
-public class StyleValueConverterFactory : JsonConverterFactory
+internal class StyleValueConverterFactory : JsonConverterFactory
 {
     /// <inheritdoc />
     public override bool CanConvert(Type typeToConvert) =>

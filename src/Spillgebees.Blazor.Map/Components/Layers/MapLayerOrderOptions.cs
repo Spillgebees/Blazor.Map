@@ -3,7 +3,7 @@ namespace Spillgebees.Blazor.Map.Components.Layers;
 /// <summary>
 /// Declarative ordering metadata for custom sources and layers.
 /// </summary>
-public sealed record MapLayerOrderOptions(string? LayerGroup, string? BeforeLayerGroup, string? AfterLayerGroup)
+internal sealed record MapLayerOrderOptions(string? LayerGroup, string? BeforeLayerGroup, string? AfterLayerGroup)
 {
     /// <summary>
     /// An empty ordering definition.

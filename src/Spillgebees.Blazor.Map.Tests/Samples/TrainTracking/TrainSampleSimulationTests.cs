@@ -137,7 +137,13 @@ public class TrainSampleSimulationTests
         };
 
         // act
-        var trackedEntities = TrainSampleSimulation.BuildTrackedEntities([train]);
+        var layer = TrainSampleSimulation.BuildTrackedEntityLayer([train]);
+        var trackedEntities = TrackedEntityMaterializer.Materialize(
+            layer.Items,
+            layer.IdOptions,
+            layer.Visual.Symbol,
+            layer.Visual.Decorations
+        );
 
         // assert
         trackedEntities.Should().HaveCount(1);
@@ -187,7 +193,10 @@ public class TrainSampleSimulationTests
         };
 
         // act
-        var trackedEntity = TrainSampleSimulation.BuildTrackedEntities([train]).Single();
+        var layer = TrainSampleSimulation.BuildTrackedEntityLayer([train]);
+        var trackedEntity = TrackedEntityMaterializer
+            .Materialize(layer.Items, layer.IdOptions, layer.Visual.Symbol, layer.Visual.Decorations)
+            .Single();
 
         // assert
         trackedEntity.Properties.Should().NotBeNull();
@@ -214,7 +223,10 @@ public class TrainSampleSimulationTests
         };
 
         // act
-        var trackedEntity = TrainSampleSimulation.BuildTrackedEntities([train]).Single();
+        var layer = TrainSampleSimulation.BuildTrackedEntityLayer([train]);
+        var trackedEntity = TrackedEntityMaterializer
+            .Materialize(layer.Items, layer.IdOptions, layer.Visual.Symbol, layer.Visual.Decorations)
+            .Single();
 
         // assert
         trackedEntity.Decorations.Single(decoration => decoration.Id == "operator").Rotation.Should().BeNull();
@@ -238,12 +250,28 @@ public class TrainSampleSimulationTests
             NextPosition = new Coordinate(49.7, 6.2),
         };
 
-        var initialTrackedEntity = TrainSampleSimulation.BuildTrackedEntities([train]).Single();
+        var initialLayer = TrainSampleSimulation.BuildTrackedEntityLayer([train]);
+        var initialTrackedEntity = TrackedEntityMaterializer
+            .Materialize(
+                initialLayer.Items,
+                initialLayer.IdOptions,
+                initialLayer.Visual.Symbol,
+                initialLayer.Visual.Decorations
+            )
+            .Single();
 
         TrainSampleSimulation.Advance(train);
 
         // act
-        var rebuiltTrackedEntity = TrainSampleSimulation.BuildTrackedEntities([train]).Single();
+        var rebuiltLayer = TrainSampleSimulation.BuildTrackedEntityLayer([train]);
+        var rebuiltTrackedEntity = TrackedEntityMaterializer
+            .Materialize(
+                rebuiltLayer.Items,
+                rebuiltLayer.IdOptions,
+                rebuiltLayer.Visual.Symbol,
+                rebuiltLayer.Visual.Decorations
+            )
+            .Single();
 
         // assert
         initialTrackedEntity.Id.Should().Be(train.Id);

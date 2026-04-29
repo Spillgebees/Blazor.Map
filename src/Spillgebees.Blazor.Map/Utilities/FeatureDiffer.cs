@@ -9,7 +9,7 @@ namespace Spillgebees.Blazor.Map.Utilities;
 /// <param name="Added">Features present in the new collection but not in the old.</param>
 /// <param name="Removed">IDs of features present in the old collection but not in the new.</param>
 /// <param name="Updated">Features present in both collections where the value has changed.</param>
-public record FeatureDiffResult<T>(ImmutableArray<T> Added, ImmutableArray<string> Removed, ImmutableArray<T> Updated)
+internal record FeatureDiffResult<T>(ImmutableArray<T> Added, ImmutableArray<string> Removed, ImmutableArray<T> Updated)
 {
     /// <summary>
     /// Whether the diff contains any changes.
@@ -20,7 +20,7 @@ public record FeatureDiffResult<T>(ImmutableArray<T> Added, ImmutableArray<strin
 /// <summary>
 /// Computes the diff between two feature collections by ID.
 /// </summary>
-public static class FeatureDiffer
+internal static class FeatureDiffer
 {
     /// <summary>
     /// Diffs two feature collections, producing added, removed, and updated buckets.

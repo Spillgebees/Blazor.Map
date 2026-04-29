@@ -905,7 +905,15 @@ public class TrainTrackingExampleTests : BunitContext
     private static TrackedEntityInteractionEventArgs<TrainSampleState> CreateTrainInteraction(
         TrackedEntity<TrainSampleState> entity,
         string? decorationId = null
-    ) => new(entity, new LayerFeatureEventArgs("train-source-symbols", entity.Position, null), decorationId);
+    ) =>
+        new(
+            entity.Id,
+            entity.Item,
+            entity.Position,
+            new LayerFeatureEventArgs("train-source-symbols", entity.Position, null),
+            decorationId,
+            entity.Properties
+        );
 
     private static TrackedEntityLayerDefinition<TrainSampleState> ResolveTrackedLayer(
         IRenderedComponent<TrainTrackingExample> cut

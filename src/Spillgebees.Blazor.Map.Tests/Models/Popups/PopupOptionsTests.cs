@@ -53,4 +53,17 @@ public class PopupOptionsTests
         // assert
         json.Should().Contain("\"contentMode\":\"rawHtml\"");
     }
+
+    [Test]
+    public void Should_serialize_popup_trigger_with_attribute_converter()
+    {
+        // arrange
+        var popup = new PopupOptions("stop", PopupContentMode.Text, Trigger: PopupTrigger.Hover);
+
+        // act
+        var json = JsonSerializer.Serialize(popup, JsonSerializerOptions.Web);
+
+        // assert
+        json.Should().Contain("\"trigger\":\"hover\"");
+    }
 }

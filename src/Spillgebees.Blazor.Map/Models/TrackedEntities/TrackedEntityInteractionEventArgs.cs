@@ -6,13 +6,10 @@ namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
 /// Typed interaction details for a tracked entity feature.
 /// </summary>
 public sealed record TrackedEntityInteractionEventArgs<TItem>(
-    TrackedEntity<TItem> Entity,
+    string EntityId,
+    TItem? Item,
+    Coordinate Position,
     LayerFeatureEventArgs FeatureEvent,
-    string? DecorationId = null
-)
-{
-    /// <summary>
-    /// The tracked entity ID.
-    /// </summary>
-    public string EntityId => Entity.Id;
-}
+    string? DecorationId = null,
+    IReadOnlyDictionary<string, object?>? Properties = null
+);
