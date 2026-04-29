@@ -6,9 +6,27 @@ namespace Spillgebees.Blazor.Map.Components;
 /// <summary>
 /// Renders a first-class styled map toggle button control.
 /// </summary>
-public partial class MapToggleControl : StyledContentMapControlBase
+public partial class MapToggleControl : ComponentBase, IAsyncDisposable
 {
+    private readonly StyledContentMapControlRegistration _registration = new();
     private readonly string _contentId = $"sgb-map-toggle-control-content-{Guid.NewGuid():N}";
+    private ElementReference _placeholderReference;
+    private ElementReference _contentReference;
+
+    [CascadingParameter]
+    private MapControlRegistryContext? Registry { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Id { get; set; } = string.Empty;
+
+    [Parameter]
+    public ControlPosition Position { get; set; } = ControlPosition.TopRight;
+
+    [Parameter]
+    public int Order { get; set; } = 500;
+
+    [Parameter]
+    public bool Enabled { get; set; } = true;
 
     [Parameter]
     public string? Class { get; set; }
@@ -49,7 +67,7 @@ public partial class MapToggleControl : StyledContentMapControlBase
     [Parameter]
     public EventCallback<bool> PressedChanged { get; set; }
 
-    protected override string PlacementErrorMessage => "MapToggleControl must be placed inside a map.";
+    private const string PlacementErrorMessage = "MapToggleControl must be placed inside a map.";
 
     private RenderFragment? CurrentIcon => Pressed && PressedIcon is not null ? PressedIcon : Icon;
 
@@ -104,9 +122,9 @@ public partial class MapToggleControl : StyledContentMapControlBase
         return "sgb-map-control-button-text-only";
     }
 
-    protected override void ValidateParameters()
+    protected override void OnParametersSet()
     {
-        base.ValidateParameters();
+        StyledContentMapControlRegistration.ValidateId(Id);
 
         if (string.IsNullOrWhiteSpace(Label))
         {
@@ -119,5 +137,12 @@ public partial class MapToggleControl : StyledContentMapControlBase
                 "MapToggleControl requires visible content for the current pressed state."
             );
         }
+
+        _registration.Register(Registry, PlacementErrorMessage, Id, Enabled, Position, Order);
     }
+
+    protected override Task OnAfterRenderAsync(bool firstRender) =>
+        _registration.SyncAfterRenderAsync(Registry, Id, Enabled, _placeholderReference, _contentReference);
+
+    public ValueTask DisposeAsync() => _registration.DisposeAsync(Registry);
 }

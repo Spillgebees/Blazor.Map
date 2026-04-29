@@ -1,5 +1,7 @@
 using BlazorComponentUtilities;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Rendering;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using Spillgebees.Blazor.Map.Interop;
@@ -12,7 +14,7 @@ namespace Spillgebees.Blazor.Map.Components;
 /// <summary>
 /// Renders and wires one declarative legend control entry.
 /// </summary>
-public partial class MapLegendControlHost : ComponentBase, IAsyncDisposable
+internal sealed class MapLegendControlHost : ComponentBase, IAsyncDisposable
 {
     private const string CustomControlKind = "legend";
 
@@ -49,6 +51,153 @@ public partial class MapLegendControlHost : ComponentBase, IAsyncDisposable
                 !string.IsNullOrWhiteSpace(Control.Content.Definition.ClassName)
             )
             .Build();
+
+    /// <inheritdoc/>
+    protected override void BuildRenderTree(RenderTreeBuilder builder)
+    {
+        var sequence = 0;
+
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "sgb-map-legend-placeholder");
+        builder.AddAttribute(sequence++, "hidden", true);
+        builder.AddElementReferenceCapture(sequence++, elementReference => _placeholderReference = elementReference);
+
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "id", _contentId);
+        builder.AddAttribute(sequence++, "class", ContentClassName);
+        builder.AddAttribute(sequence++, "hidden", true);
+        builder.AddElementReferenceCapture(sequence++, elementReference => _contentReference = elementReference);
+
+        foreach (var legendSection in Control.Content.Definition.Sections)
+        {
+            builder.OpenElement(sequence++, "div");
+            builder.AddAttribute(sequence++, "class", GetSectionClassName(legendSection));
+
+            builder.OpenElement(sequence++, "header");
+            builder.AddAttribute(sequence++, "class", "sgb-map-legend-section-header");
+
+            builder.OpenElement(sequence++, "div");
+            builder.AddAttribute(sequence++, "class", "sgb-map-legend-section-title");
+            builder.AddContent(sequence++, legendSection.Title);
+            builder.CloseElement();
+
+            if (!string.IsNullOrWhiteSpace(legendSection.Description))
+            {
+                builder.OpenElement(sequence++, "p");
+                builder.AddAttribute(sequence++, "class", "sgb-map-legend-section-description");
+                builder.AddContent(sequence++, legendSection.Description);
+                builder.CloseElement();
+            }
+
+            builder.CloseElement();
+
+            builder.OpenElement(sequence++, "div");
+            builder.AddAttribute(sequence++, "class", "sgb-map-legend-items");
+
+            foreach (var item in legendSection.Items)
+            {
+                if (Control.Content.ItemTemplate is not null)
+                {
+                    builder.AddContent(
+                        sequence++,
+                        Control.Content.ItemTemplate(
+                            new MapLegendItemTemplateContext(
+                                item,
+                                GetItemSelected(item.Id),
+                                selected => SetItemSelectedAsync(item, selected)
+                            )
+                        )
+                    );
+
+                    continue;
+                }
+
+                RenderDefaultItem(builder, ref sequence, item);
+            }
+
+            builder.CloseElement();
+            builder.CloseElement();
+        }
+
+        builder.CloseElement();
+        builder.CloseElement();
+    }
+
+    private void RenderDefaultItem(RenderTreeBuilder builder, ref int sequence, MapLegendItem item)
+    {
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", GetItemClassName(item));
+
+        if (item.IsToggleable)
+        {
+            RenderToggleableItem(builder, ref sequence, item);
+        }
+        else
+        {
+            RenderItemCopy(builder, ref sequence, item, "div");
+        }
+
+        builder.CloseElement();
+    }
+
+    private void RenderToggleableItem(RenderTreeBuilder builder, ref int sequence, MapLegendItem item)
+    {
+        builder.OpenElement(sequence++, "label");
+        builder.AddAttribute(sequence++, "class", "sgb-map-legend-item-toggle");
+
+        RenderItemCopy(builder, ref sequence, item, "span");
+
+        builder.OpenElement(sequence++, "span");
+        builder.AddAttribute(sequence++, "class", "sgb-map-legend-item-switch");
+
+        var selected = GetItemSelected(item.Id);
+
+        builder.OpenElement(sequence++, "input");
+        builder.AddAttribute(sequence++, "type", "checkbox");
+        builder.AddAttribute(sequence++, "role", "switch");
+        builder.AddAttribute(sequence++, "aria-checked", selected.ToString().ToLowerInvariant());
+        builder.AddAttribute(sequence++, "data-testid", $"map-legend-toggle-{item.Id}");
+        builder.AddAttribute(sequence++, "checked", selected);
+        builder.AddAttribute(
+            sequence++,
+            "onchange",
+            EventCallback.Factory.Create<ChangeEventArgs>(this, args => ToggleItemAsync(item, args))
+        );
+        builder.CloseElement();
+
+        builder.OpenElement(sequence++, "span");
+        builder.AddAttribute(sequence++, "class", "sgb-map-legend-item-switch-track");
+        builder.CloseElement();
+
+        builder.CloseElement();
+        builder.CloseElement();
+    }
+
+    private static void RenderItemCopy(
+        RenderTreeBuilder builder,
+        ref int sequence,
+        MapLegendItem item,
+        string elementName
+    )
+    {
+        builder.OpenElement(sequence++, elementName);
+        builder.AddAttribute(sequence++, "class", "sgb-map-legend-item-copy");
+
+        builder.OpenElement(sequence++, "span");
+        builder.AddAttribute(sequence++, "class", "sgb-map-legend-item-label");
+        builder.AddContent(sequence++, item.Label);
+        builder.CloseElement();
+
+        if (!string.IsNullOrWhiteSpace(item.Description))
+        {
+            builder.OpenElement(sequence++, "span");
+            builder.AddAttribute(sequence++, "class", "sgb-map-legend-item-description");
+            builder.AddContent(sequence++, item.Description);
+            builder.CloseElement();
+        }
+
+        builder.CloseElement();
+    }
 
     /// <inheritdoc/>
     protected override void OnParametersSet()

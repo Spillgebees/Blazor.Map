@@ -142,7 +142,9 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
     private MapLayerOrderOptions _previousOrderOptions = MapLayerOrderOptions.Empty;
 
     /// <inheritdoc/>
-    public MapLayerOrderOptions OrderOptions => new(LayerGroup, BeforeLayerGroup, AfterLayerGroup);
+    MapLayerOrderOptions IMapSource.OrderOptions => new(LayerGroup, BeforeLayerGroup, AfterLayerGroup);
+
+    private MapLayerOrderOptions OrderOptions => new(LayerGroup, BeforeLayerGroup, AfterLayerGroup);
 
     /// <inheritdoc/>
     protected override void OnParametersSet()

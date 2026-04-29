@@ -400,7 +400,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
         return SetFeatureStateAsync(entityId, new Dictionary<string, object> { [state.Key] = state.Value });
     }
 
-    public bool TryGetEntity(string entityId, out TrackedEntity<TItem>? entity)
+    private bool TryGetEntity(string entityId, out TrackedEntity<TItem>? entity)
     {
         if (_entitiesById.TryGetValue(entityId, out var resolvedEntity))
         {
@@ -424,9 +424,12 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
         }
 
         interaction = new TrackedEntityInteractionEventArgs<TItem>(
-            entity!,
+            entity!.Id,
+            entity.Item,
+            entity.Position,
             featureEvent,
-            GetDecorationId(featureEvent)
+            GetDecorationId(featureEvent),
+            entity.Properties
         );
         return true;
     }
@@ -609,7 +612,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
             return;
         }
 
-        await OpenPopupAsync(interaction.Entity.Id, interaction.Entity.Position, popup, PopupTrigger.Click);
+        await OpenPopupAsync(interaction.EntityId, interaction.Position, popup, PopupTrigger.Click);
     }
 
     private async Task HandlePopupOnMouseEnterAsync(TrackedEntityInteractionEventArgs<TItem> interaction)
@@ -619,7 +622,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
             return;
         }
 
-        await OpenPopupAsync(interaction.Entity.Id, interaction.Entity.Position, popup, PopupTrigger.Hover);
+        await OpenPopupAsync(interaction.EntityId, interaction.Position, popup, PopupTrigger.Hover);
     }
 
     private async Task HandlePopupOnMouseLeaveAsync()
@@ -640,12 +643,12 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
     {
         popup = null;
 
-        if (interaction.Entity.Item is null)
+        if (interaction.Item is null)
         {
             return false;
         }
 
-        var resolvedPopup = Symbol.GetPopup(interaction.Entity.Item);
+        var resolvedPopup = Symbol.GetPopup(interaction.Item);
         if (resolvedPopup?.Trigger == PopupTrigger.Permanent)
         {
             return false;

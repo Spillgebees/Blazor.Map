@@ -19,7 +19,7 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
     private IJSRuntime _jsRuntime { get; set; } = null!;
 
     [CascadingParameter]
-    public IMapSource? Source { get; set; }
+    internal IMapSource? Source { get; set; }
 
     [CascadingParameter]
     public BaseMap? Map { get; set; }

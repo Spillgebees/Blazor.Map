@@ -6,8 +6,16 @@ using Spillgebees.Blazor.Map.Models.Popups;
 
 namespace Spillgebees.Blazor.Map.Components;
 
-public sealed class MapMarker : MapOverlayComponentBase
+public sealed class MapMarker : ComponentBase, IAsyncDisposable
 {
+    private readonly string _ownerId = Guid.NewGuid().ToString("N");
+
+    [CascadingParameter]
+    private BaseMap? Map { get; set; }
+
+    [CascadingParameter]
+    private MapSectionContext? SectionContext { get; set; }
+
     [Parameter, EditorRequired]
     public string Id { get; set; } = string.Empty;
 
@@ -29,9 +37,27 @@ public sealed class MapMarker : MapOverlayComponentBase
     [Parameter]
     public MapAlignment? PitchAlignment { get; set; }
 
-    protected override ValueTask SetOverlayFeaturesAsync() =>
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
+        {
+            throw new InvalidOperationException("MapMarker must be placed inside MapOverlays.");
+        }
+
+        await SetOverlayFeaturesAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (Map is not null)
+        {
+            await Map.RemoveOverlayFeaturesAsync(_ownerId);
+        }
+    }
+
+    private ValueTask SetOverlayFeaturesAsync() =>
         Map!.SetOverlayMarkersAsync(
-            OwnerId,
+            _ownerId,
             [
                 new Marker(
                     Id,

@@ -3,7 +3,7 @@ using Spillgebees.Blazor.Map.Models.Controls;
 
 namespace Spillgebees.Blazor.Map.Components;
 
-public abstract class StyledContentMapControlBase : ComponentBase, IAsyncDisposable
+internal abstract class StyledContentMapControlBase : ComponentBase, IAsyncDisposable
 {
     private const string CustomControlKind = "content";
     private readonly string _ownerId = Guid.NewGuid().ToString("N");

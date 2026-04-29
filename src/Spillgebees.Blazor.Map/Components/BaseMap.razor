@@ -14,7 +14,7 @@
                     </div>
                     @foreach (var legendControl in Controls.OfType<LegendMapControl>())
                     {
-                        <MapLegendControlHost Control="@legendControl" />
+                        <DynamicComponent Type="typeof(MapLegendControlHost)" Parameters="GetLegendControlHostParameters(legendControl)" />
                     }
                     @ChildContent
                 </CascadingValue>

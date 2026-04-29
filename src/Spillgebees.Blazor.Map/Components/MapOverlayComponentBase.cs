@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace Spillgebees.Blazor.Map.Components;
 
-public abstract class MapOverlayComponentBase : ComponentBase, IAsyncDisposable
+internal abstract class MapOverlayComponentBase : ComponentBase, IAsyncDisposable
 {
     private readonly string _ownerId = Guid.NewGuid().ToString("N");
 

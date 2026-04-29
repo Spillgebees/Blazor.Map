@@ -192,7 +192,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
 
     private async Task HandleTrainClick(TrackedEntityInteractionEventArgs<TrainSampleState> interaction)
     {
-        if (interaction.Entity.Item is not { } train)
+        if (interaction.Item is not { } train)
         {
             return;
         }
@@ -202,13 +202,13 @@ public partial class TrainTrackingExample : IAsyncDisposable
         await InvokeAsync(StateHasChanged);
 
         var targetZoom = await GetSelectionFocusZoomAsync();
-        await _map.FlyToAsync(interaction.Entity.Position, zoom: targetZoom);
+        await _map.FlyToAsync(interaction.Position, zoom: targetZoom);
         await _map.ClosePopupAsync();
     }
 
     private Task HandleTrainHover(TrackedEntityInteractionEventArgs<TrainSampleState> interaction)
     {
-        if (interaction.Entity.Item is not { } train)
+        if (interaction.Item is not { } train)
         {
             return Task.CompletedTask;
         }

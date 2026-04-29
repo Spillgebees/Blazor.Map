@@ -6,10 +6,17 @@ using Spillgebees.Blazor.Map.Models.Popups;
 
 namespace Spillgebees.Blazor.Map.Components;
 
-public sealed class MapPolyline : MapOverlayComponentBase
+public sealed class MapPolyline : ComponentBase, IAsyncDisposable
 {
+    private readonly string _ownerId = Guid.NewGuid().ToString("N");
     private IReadOnlyList<Coordinate>? _cachedCoordinatesSource;
     private ImmutableList<Coordinate> _cachedCoordinates = [];
+
+    [CascadingParameter]
+    private BaseMap? Map { get; set; }
+
+    [CascadingParameter]
+    private MapSectionContext? SectionContext { get; set; }
 
     [Parameter, EditorRequired]
     public string Id { get; set; } = string.Empty;
@@ -26,10 +33,28 @@ public sealed class MapPolyline : MapOverlayComponentBase
     [Parameter]
     public PopupOptions? Popup { get; set; }
 
-    protected override ValueTask SetOverlayFeaturesAsync()
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
+        {
+            throw new InvalidOperationException("MapPolyline must be placed inside MapOverlays.");
+        }
+
+        await SetOverlayFeaturesAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (Map is not null)
+        {
+            await Map.RemoveOverlayFeaturesAsync(_ownerId);
+        }
+    }
+
+    private ValueTask SetOverlayFeaturesAsync()
     {
         return Map!.SetOverlayPolylinesAsync(
-            OwnerId,
+            _ownerId,
             [new Polyline(Id, GetCoordinateSnapshot(), Color, Width, Popup: Popup)]
         );
     }

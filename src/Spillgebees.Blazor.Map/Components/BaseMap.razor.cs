@@ -40,6 +40,9 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     internal IJSRuntime Runtime => JsRuntime;
     internal ILogger RuntimeLogger => Logger.Value;
 
+    private static IDictionary<string, object> GetLegendControlHostParameters(LegendMapControl control) =>
+        new Dictionary<string, object> { [nameof(MapLegendControlHost.Control)] = control };
+
     /// <summary>
     /// Options for the map (center, zoom, style, pitch, bearing, etc.).
     /// </summary>

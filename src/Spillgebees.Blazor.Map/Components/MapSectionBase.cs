@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Components;
 
 namespace Spillgebees.Blazor.Map.Components;
 
-public abstract class MapSectionBase : ComponentBase
+internal abstract class MapSectionBase : ComponentBase
 {
     private MapSectionContext? _sectionContext;
 

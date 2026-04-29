@@ -5,8 +5,16 @@ using Spillgebees.Blazor.Map.Models.Popups;
 
 namespace Spillgebees.Blazor.Map.Components;
 
-public sealed class MapCircle : MapOverlayComponentBase
+public sealed class MapCircle : ComponentBase, IAsyncDisposable
 {
+    private readonly string _ownerId = Guid.NewGuid().ToString("N");
+
+    [CascadingParameter]
+    private BaseMap? Map { get; set; }
+
+    [CascadingParameter]
+    private MapSectionContext? SectionContext { get; set; }
+
     [Parameter, EditorRequired]
     public string Id { get; set; } = string.Empty;
 
@@ -22,6 +30,24 @@ public sealed class MapCircle : MapOverlayComponentBase
     [Parameter]
     public PopupOptions? Popup { get; set; }
 
-    protected override ValueTask SetOverlayFeaturesAsync() =>
-        Map!.SetOverlayCirclesAsync(OwnerId, [new Circle(Id, Position, Radius, Color, Popup: Popup)]);
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
+        {
+            throw new InvalidOperationException("MapCircle must be placed inside MapOverlays.");
+        }
+
+        await SetOverlayFeaturesAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (Map is not null)
+        {
+            await Map.RemoveOverlayFeaturesAsync(_ownerId);
+        }
+    }
+
+    private ValueTask SetOverlayFeaturesAsync() =>
+        Map!.SetOverlayCirclesAsync(_ownerId, [new Circle(Id, Position, Radius, Color, Popup: Popup)]);
 }
