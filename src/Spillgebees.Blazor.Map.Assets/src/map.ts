@@ -873,7 +873,6 @@ export function createMap(
       : undefined,
     interactive: mapOptions.interactive,
     cooperativeGestures: mapOptions.cooperativeGestures,
-    attributionControl: {},
     transformRequest,
   });
 
