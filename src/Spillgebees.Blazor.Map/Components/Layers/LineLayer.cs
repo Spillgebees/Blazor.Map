@@ -9,15 +9,15 @@ namespace Spillgebees.Blazor.Map.Components.Layers;
 /// </summary>
 public class LineLayer : LayerBase
 {
-    /// <summary>The line color (CSS color string or expression).</summary>
+    /// <summary>The line color. Accepts either a CSS color literal or a MapLibre expression.</summary>
     [Parameter]
     public StyleValue<string>? Color { get; set; }
 
-    /// <summary>The line width in pixels (literal or expression).</summary>
+    /// <summary>The line width in pixels. Accepts either a numeric literal or a MapLibre expression.</summary>
     [Parameter]
     public StyleValue<double>? Width { get; set; }
 
-    /// <summary>The line opacity (0.0–1.0, literal or expression).</summary>
+    /// <summary>The line opacity (0.0-1.0). Accepts either a numeric literal or a MapLibre expression.</summary>
     [Parameter]
     public StyleValue<double>? Opacity { get; set; }
 
@@ -25,25 +25,39 @@ public class LineLayer : LayerBase
     [Parameter]
     public double[]? DashArray { get; set; }
 
-    /// <summary>The width of a gap between parallel lines (literal or expression).</summary>
+    /// <summary>
+    /// The width of a gap between parallel lines. Accepts either a numeric literal or a MapLibre expression.
+    /// </summary>
     [Parameter]
     public StyleValue<double>? GapWidth { get; set; }
 
-    /// <summary>The blur applied to the line in pixels (literal or expression).</summary>
+    /// <summary>The blur applied to the line. Accepts either a numeric literal or a MapLibre expression.</summary>
     [Parameter]
     public StyleValue<double>? Blur { get; set; }
 
-    /// <summary>The line offset perpendicular to the line direction (literal or expression).</summary>
+    /// <summary>
+    /// The line offset perpendicular to the line direction. Accepts either a numeric literal or a MapLibre expression.
+    /// </summary>
     [Parameter]
     public StyleValue<double>? Offset { get; set; }
 
-    /// <summary>The cap style for line endpoints ("butt", "round", "square").</summary>
+    /// <summary>
+    /// The cap style for line endpoints. Accepts either a <see cref="LineCap" /> literal or a MapLibre expression.
+    /// </summary>
     [Parameter]
-    public LineCap? Cap { get; set; }
+    public StyleValue<LineCap>? Cap { get; set; }
 
     /// <summary>The join style for line corners ("bevel", "round", "miter").</summary>
     [Parameter]
     public LineJoin? Join { get; set; }
+
+    /// <summary>The line miter limit. Accepts either a numeric literal or a MapLibre expression.</summary>
+    [Parameter]
+    public StyleValue<double>? MiterLimit { get; set; }
+
+    /// <summary>The line round limit. Accepts either a numeric literal or a MapLibre expression.</summary>
+    [Parameter]
+    public StyleValue<double>? RoundLimit { get; set; }
 
     internal override string _layerType => "line";
 
@@ -60,5 +74,11 @@ public class LineLayer : LayerBase
         };
 
     internal override Dictionary<string, object?> GetLayoutProperties() =>
-        new() { ["line-cap"] = Cap?.ToJsonName(), ["line-join"] = Join?.ToJsonName() };
+        new()
+        {
+            ["line-cap"] = Cap?.ToSerializable(),
+            ["line-join"] = Join?.ToJsonName(),
+            ["line-miter-limit"] = MiterLimit?.ToSerializable(),
+            ["line-round-limit"] = RoundLimit?.ToSerializable(),
+        };
 }
