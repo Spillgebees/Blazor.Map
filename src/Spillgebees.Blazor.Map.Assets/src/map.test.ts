@@ -886,7 +886,6 @@ describe("createMap", () => {
         maxZoom: 18,
         interactive: false,
         cooperativeGestures: true,
-        attributionControl: {},
       }),
     );
   });
