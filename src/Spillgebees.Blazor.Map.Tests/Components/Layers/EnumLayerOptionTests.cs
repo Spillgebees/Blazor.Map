@@ -17,7 +17,13 @@ public class EnumLayerOptionTests
     public void Should_serialize_line_enum_layout_values_as_maplibre_strings()
     {
         // arrange
-        var layer = new LineLayer { Cap = LineCap.Square, Join = LineJoin.Miter };
+        var layer = new LineLayer
+        {
+            Cap = LineCap.Square,
+            Join = LineJoin.Miter,
+            MiterLimit = 2,
+            RoundLimit = 1.5,
+        };
 
         // act
         var layout = layer.GetLayoutProperties();
@@ -25,6 +31,31 @@ public class EnumLayerOptionTests
         // assert
         layout["line-cap"].Should().Be("square");
         layout["line-join"].Should().Be("miter");
+        layout["line-miter-limit"].Should().Be(2.0);
+        layout["line-round-limit"].Should().Be(1.5);
+    }
+
+    [Test]
+    public void Should_serialize_line_data_driven_layout_values_as_expressions()
+    {
+        // arrange
+        object[] capExpression = ["get", "cap"];
+        object[] miterLimitExpression = ["get", "miterLimit"];
+        object[] roundLimitExpression = ["get", "roundLimit"];
+        var layer = new LineLayer
+        {
+            Cap = capExpression,
+            MiterLimit = miterLimitExpression,
+            RoundLimit = roundLimitExpression,
+        };
+
+        // act
+        var layout = layer.GetLayoutProperties();
+
+        // assert
+        layout["line-cap"].Should().BeSameAs(capExpression);
+        layout["line-miter-limit"].Should().BeSameAs(miterLimitExpression);
+        layout["line-round-limit"].Should().BeSameAs(roundLimitExpression);
     }
 
     [Test]
