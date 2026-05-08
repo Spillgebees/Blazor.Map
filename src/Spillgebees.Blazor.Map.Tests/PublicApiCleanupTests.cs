@@ -154,8 +154,6 @@ public class PublicApiCleanupTests
             "Spillgebees.Blazor.Map.Models.Legends.MapLegendItem",
             "Spillgebees.Blazor.Map.Models.Legends.MapLegendItemTemplateContext",
             "Spillgebees.Blazor.Map.Models.Legends.MapLegendSection",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendTarget",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendVisibilityChangedEventArgs",
             "Spillgebees.Blazor.Map.Models.MapBounds",
             "Spillgebees.Blazor.Map.Models.MapImage",
             "Spillgebees.Blazor.Map.Models.MapOptions",
@@ -200,6 +198,12 @@ public class PublicApiCleanupTests
             "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntitySymbolOptions`1",
             "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityVisualDefaults",
             "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityVisualOptions`1",
+            "Spillgebees.Blazor.Map.Models.Visibility.MapLayerVisibilityChangeKind",
+            "Spillgebees.Blazor.Map.Models.Visibility.MapLayerVisibilityChangedEventArgs",
+            "Spillgebees.Blazor.Map.Models.Visibility.MapLayerVisibilityGroup",
+            "Spillgebees.Blazor.Map.Models.Visibility.MapLayerVisibilityState",
+            "Spillgebees.Blazor.Map.Models.Visibility.MapLayerVisibilityTarget",
+            "Spillgebees.Blazor.Map.Models.Visibility.MapLayerVisibilityTargetKind",
             "Spillgebees.Blazor.Map.Models.WmsTileSource",
         };
 
@@ -267,8 +271,8 @@ public class PublicApiCleanupTests
             "Spillgebees.Blazor.Map.Models.Legends.MapLegend",
             "Spillgebees.Blazor.Map.Models.Legends.MapLegendSection",
             "Spillgebees.Blazor.Map.Models.Legends.MapLegendItem",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendTarget",
             "Spillgebees.Blazor.Map.Models.MapImage",
+            "Spillgebees.Blazor.Map.Models.Visibility.MapLayerVisibilityState",
         };
 
         // act

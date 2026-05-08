@@ -398,7 +398,7 @@ describe.sequential("applySceneMutations", () => {
           kind: "setVisibilityGroup",
           groupId: "legend:stations",
           visible: false,
-          targets: [{ styleId: "base-style", layerIds: ["visibility-layer"] }],
+          targets: [{ kind: "styleLayer", styleId: "base-style", layerIds: ["visibility-layer"] }],
         },
       ],
     });
@@ -616,7 +616,7 @@ describe.sequential("applySceneMutations", () => {
           kind: "setVisibilityGroup",
           groupId: "legend:overlay",
           visible: false,
-          targets: [{ styleId: "overlay-style", layerIds: ["overlay-layer"] }],
+          targets: [{ kind: "styleLayer", styleId: "overlay-style", layerIds: ["overlay-layer"] }],
         },
       ],
     });
@@ -646,5 +646,46 @@ describe.sequential("applySceneMutations", () => {
 
     // cleanup
     applyOverlayStylesSpy.mockRestore();
+  });
+
+  it("should apply runtime layer visibility targets directly", () => {
+    // arrange
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitializedAsync",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControls(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getLayer.mockImplementation((id: string) => (id === "runtime-layer" ? { id } : undefined));
+
+    // act
+    applySceneMutations(mapElement, {
+      mutations: [
+        {
+          kind: "setVisibilityGroup",
+          groupId: "runtime-group",
+          visible: false,
+          targets: [{ kind: "runtimeLayer", layerIds: ["runtime-layer"] }],
+        },
+      ],
+    });
+
+    // assert
+    expect(mockMap.setLayoutProperty).toHaveBeenCalledWith("runtime-layer", "visibility", "none");
   });
 });

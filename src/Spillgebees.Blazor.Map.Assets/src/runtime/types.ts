@@ -81,10 +81,17 @@ export type SceneMutation =
       kind: "setVisibilityGroup";
       groupId: string;
       visible: boolean;
-      targets: Array<{
-        styleId: string;
-        layerIds: string[];
-      }>;
+      targets: Array<
+        | {
+            kind: "styleLayer";
+            styleId: string;
+            layerIds: string[];
+          }
+        | {
+            kind: "runtimeLayer";
+            layerIds: string[];
+          }
+      >;
     }
   | {
       kind: "removeVisibilityGroup";

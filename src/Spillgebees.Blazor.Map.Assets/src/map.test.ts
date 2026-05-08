@@ -2091,7 +2091,7 @@ describe("setMapOptions", () => {
           kind: "setVisibilityGroup",
           groupId: "legend:stations",
           visible: false,
-          targets: [{ styleId: "sgb-base-style", layerIds: ["visibility-layer"] }],
+          targets: [{ kind: "styleLayer", styleId: "sgb-base-style", layerIds: ["visibility-layer"] }],
         },
       ],
     });

@@ -12,6 +12,7 @@ using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Layers;
 using Spillgebees.Blazor.Map.Models.Popups;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
+using Spillgebees.Blazor.Map.Models.Visibility;
 using Spillgebees.Blazor.Map.Runtime.Scene;
 using Spillgebees.Blazor.Map.Utilities;
 
@@ -91,6 +92,12 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// </summary>
     [Parameter]
     public List<MapImage> Images { get; set; } = [];
+
+    /// <summary>
+    /// Shared layer visibility groups registered by the map and usable from legends or custom UI.
+    /// </summary>
+    [Parameter]
+    public MapLayerVisibilityState? LayerVisibility { get; set; }
 
     /// <summary>
     /// The width of the map. If not set, the map will take the full width of its container.
@@ -191,6 +198,9 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     private readonly Dictionary<string, IReadOnlyList<Polyline>> _registeredOverlayPolylines = new(
         StringComparer.Ordinal
     );
+    private readonly HashSet<string> _registeredLayerVisibilityGroupIds = new(StringComparer.Ordinal);
+    private MapLayerVisibilityState? _activeLayerVisibility;
+    private bool _layerVisibilitySyncPending = true;
 
     /// <summary>
     /// Returns a task that completes when the map has been initialized and is ready
@@ -427,6 +437,12 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         }
         finally
         {
+            if (_activeLayerVisibility is not null)
+            {
+                _activeLayerVisibility.Changed -= HandleLayerVisibilityChanged;
+                _activeLayerVisibility = null;
+            }
+
             DotNetObjectReference?.Dispose();
         }
 
@@ -462,6 +478,8 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         // Signal that the map is ready for child components (sources, layers)
         RuntimeIsReady = true;
         _readyTcs.TrySetResult(true);
+
+        await SyncLayerVisibilityGroupsAsync();
     }
 
     /// <summary>
@@ -546,10 +564,16 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     {
         MapOptionsCompositionValidator.Validate(MapOptions);
         ValidateControlIds(GetDesiredControls());
+        UpdateLayerVisibilitySubscription();
 
         if (IsInitialized is false)
         {
             return;
+        }
+
+        if (_layerVisibilitySyncPending)
+        {
+            await SyncLayerVisibilityGroupsAsync();
         }
 
         await SyncFeaturesAsync();
@@ -606,6 +630,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         InternalPolylines = GetDesiredPolylines();
         InternalOverlays = [.. Overlays];
         InternalImages = [.. GetDesiredImages()];
+        UpdateLayerVisibilitySubscription();
 
         await MapJs.CreateMapAsync(
             JsRuntime,
@@ -622,6 +647,110 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             InternalOverlays
         );
     }
+
+    private void UpdateLayerVisibilitySubscription()
+    {
+        if (ReferenceEquals(_activeLayerVisibility, LayerVisibility))
+        {
+            return;
+        }
+
+        if (_activeLayerVisibility is not null)
+        {
+            _activeLayerVisibility.Changed -= HandleLayerVisibilityChanged;
+        }
+
+        _activeLayerVisibility = LayerVisibility;
+
+        if (_activeLayerVisibility is not null)
+        {
+            _activeLayerVisibility.Changed += HandleLayerVisibilityChanged;
+        }
+
+        _layerVisibilitySyncPending = true;
+    }
+
+    private void HandleLayerVisibilityChanged(object? sender, MapLayerVisibilityChangedEventArgs args)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                if (IsDisposing || !RuntimeIsReady)
+                {
+                    _layerVisibilitySyncPending = true;
+                    return;
+                }
+
+                if (
+                    args.ChangeKind == MapLayerVisibilityChangeKind.GroupChanged
+                    && args.GroupId is not null
+                    && _activeLayerVisibility?.TryGetGroup(args.GroupId, out var group) == true
+                )
+                {
+                    await SceneRegistry.RegisterVisibilityGroupAsync(BuildVisibilityGroupDescriptor(group));
+                    _registeredLayerVisibilityGroupIds.Add(group.Id);
+                    return;
+                }
+
+                await SyncLayerVisibilityGroupsAsync();
+            }
+            catch (Exception exception) when (!IsDisposing)
+            {
+                _layerVisibilitySyncPending = true;
+                Logger.Value.LogError(
+                    exception,
+                    "Failed to handle layer visibility change in {Method} for change kind {ChangeKind} and group {GroupId}.",
+                    nameof(HandleLayerVisibilityChanged),
+                    args.ChangeKind,
+                    args.GroupId
+                );
+            }
+        });
+    }
+
+    private async Task SyncLayerVisibilityGroupsAsync()
+    {
+        if (IsDisposing || !RuntimeIsReady)
+        {
+            _layerVisibilitySyncPending = true;
+            return;
+        }
+
+        IReadOnlyList<MapLayerVisibilityGroup> desiredGroups = _activeLayerVisibility?.Groups ?? [];
+        var desiredGroupIds = desiredGroups.Select(group => group.Id).ToHashSet(StringComparer.Ordinal);
+        var removedGroupIds = _registeredLayerVisibilityGroupIds
+            .Except(desiredGroupIds, StringComparer.Ordinal)
+            .ToArray();
+
+        foreach (var groupId in removedGroupIds)
+        {
+            await SceneRegistry.UnregisterVisibilityGroupAsync(groupId);
+            _registeredLayerVisibilityGroupIds.Remove(groupId);
+        }
+
+        foreach (var group in desiredGroups)
+        {
+            await SceneRegistry.RegisterVisibilityGroupAsync(BuildVisibilityGroupDescriptor(group));
+            _registeredLayerVisibilityGroupIds.Add(group.Id);
+        }
+
+        _layerVisibilitySyncPending = false;
+    }
+
+    private static MapVisibilityGroupDescriptor BuildVisibilityGroupDescriptor(MapLayerVisibilityGroup group) =>
+        new(group.Id, group.IsVisible, group.Targets.Select(BuildVisibilityGroupTargetDescriptor).ToArray());
+
+    private static MapVisibilityGroupTargetDescriptor BuildVisibilityGroupTargetDescriptor(
+        MapLayerVisibilityTarget target
+    ) =>
+        new(
+            target.Kind == MapLayerVisibilityTargetKind.StyleLayer
+                ? MapVisibilityGroupTargetKind.StyleLayer
+                : MapVisibilityGroupTargetKind.RuntimeLayer,
+            target.LayerIds.ToArray(),
+            target.StyleId
+        );
 
     private async Task SyncFeaturesAsync()
     {

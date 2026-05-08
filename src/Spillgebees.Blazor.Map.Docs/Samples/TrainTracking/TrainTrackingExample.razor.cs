@@ -7,6 +7,7 @@ using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Legends;
 using Spillgebees.Blazor.Map.Models.Options;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
+using Spillgebees.Blazor.Map.Models.Visibility;
 
 namespace Spillgebees.Blazor.Map.Docs.Samples.TrainTracking;
 
@@ -23,7 +24,6 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private readonly List<TrainSampleState> _trains = [];
     private readonly List<MapImage> _images;
     private RenderFragment<MapLegendItemTemplateContext>? _overlayLegendItemTemplate;
-    private EventCallback<MapLegendVisibilityChangedEventArgs> _legendItemVisibilityChangedCallback;
 
     [CascadingParameter]
     public MapTheme GlobalTheme { get; set; }
@@ -38,7 +38,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private readonly TrackedEntityBehaviorOptions<TrainSampleState> _trainBehavior;
     private readonly TrackedEntityCallbacks<TrainSampleState> _trainCallbacks;
     private readonly object[] _trainIconOpacityExpr = TrainTrackingPresentation.TrainIconOpacityExpression;
-    private readonly TrainTrackingVisibilityState _visibility = new();
+    private readonly MapLayerVisibilityState _visibility = TrainTrackingPresentation.CreateLayerVisibility();
     private readonly TrackedEntityIdOptions<TrainSampleState> _trainId = new(train => train.Id);
     private readonly TrackedEntityInteractionOptions<TrainSampleState> _trainInteraction;
     private readonly TrackedEntitySymbolOptions<TrainSampleState> _trainSymbol = new(
@@ -120,6 +120,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
             OnItemMouseLeave: HandleTrainLeave,
             OnBeforeShowPopup: null
         );
+        _visibility.Changed += HandleLayerVisibilityChanged;
     }
 
     protected override void OnInitialized()
@@ -283,12 +284,18 @@ public partial class TrainTrackingExample : IAsyncDisposable
         return currentZoom.Value >= SelectionDetailsMinZoom ? null : SelectionDetailsMinZoom;
     }
 
-    private Task HandleLegendItemVisibilityChangedAsync(MapLegendVisibilityChangedEventArgs args)
+    private void HandleLayerVisibilityChanged(object? sender, MapLayerVisibilityChangedEventArgs args)
     {
-        _visibility.SetOverlayGroupVisibility(args.Item.Id, args.Selected);
-        RebuildTrackedLayers();
+        if (
+            args.ChangeKind == MapLayerVisibilityChangeKind.GroupsReplaced
+            || string.Equals(args.GroupId, "trains", StringComparison.Ordinal)
+            || string.Equals(args.GroupId, "3d-buildings", StringComparison.Ordinal)
+        )
+        {
+            RebuildTrackedLayers();
+        }
 
-        return Task.CompletedTask;
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private void RebuildTrackedLayers()
@@ -302,7 +309,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
                 Decorations: _trainDecorations,
                 Cluster: _trainClusterOptions,
                 Animation: _trainAnimation,
-                Visible: _visibility.ShowTrains,
+                Visible: _visibility.IsVisible("trains"),
                 PrimaryIconOpacity: _trainIconOpacityExpr
             ),
             Behavior: _trainBehavior,
@@ -328,5 +335,6 @@ public partial class TrainTrackingExample : IAsyncDisposable
         }
 
         _timer?.Dispose();
+        _visibility.Changed -= HandleLayerVisibilityChanged;
     }
 }

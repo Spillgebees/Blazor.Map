@@ -25,11 +25,9 @@ public sealed record LegendChromeOptions(string? Title, bool Collapsible, bool I
 /// </summary>
 /// <param name="Definition">Legend content definition.</param>
 /// <param name="ItemTemplate">Optional item template.</param>
-/// <param name="OnItemVisibilityChanged">Callback invoked when an item selection changes.</param>
 public sealed record LegendContentOptions(
     MapLegend Definition,
-    RenderFragment<MapLegendItemTemplateContext>? ItemTemplate,
-    EventCallback<MapLegendVisibilityChangedEventArgs> OnItemVisibilityChanged
+    RenderFragment<MapLegendItemTemplateContext>? ItemTemplate
 );
 
 /// <summary>

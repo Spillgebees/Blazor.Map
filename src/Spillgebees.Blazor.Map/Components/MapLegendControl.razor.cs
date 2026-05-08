@@ -2,7 +2,7 @@ using BlazorComponentUtilities;
 using Microsoft.AspNetCore.Components;
 using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Legends;
-using Spillgebees.Blazor.Map.Runtime.Scene;
+using Spillgebees.Blazor.Map.Models.Visibility;
 
 namespace Spillgebees.Blazor.Map.Components;
 
@@ -13,24 +13,26 @@ public partial class MapLegendControl : ComponentBase, IAsyncDisposable
 {
     private const string CustomControlKind = "legend";
     private readonly string _ownerId = Guid.NewGuid().ToString("N");
-    private readonly Dictionary<string, bool> _itemSelection = new(StringComparer.Ordinal);
     private readonly string _contentId = $"sgb-map-legend-content-{Guid.NewGuid():N}";
-    private readonly Dictionary<string, MapVisibilityGroupDescriptor> _registeredVisibilityGroupDescriptors = new(
-        StringComparer.Ordinal
-    );
     private ElementReference _placeholderReference;
     private ElementReference _contentReference;
     private bool _controlSyncPending = true;
     private bool _contentSyncPending = true;
-    private bool _visibilitySyncPending = true;
     private string? _registeredControlId;
     private readonly List<string> _pendingRemovalIds = [];
+    private MapLegendVisibilityBinder? _visibilityBinder;
+
+    private MapLegendVisibilityBinder VisibilityBinder =>
+        _visibilityBinder ??= new MapLegendVisibilityBinder(() => InvokeAsync(StateHasChanged));
 
     [CascadingParameter]
     private BaseMap? Map { get; set; }
 
     [CascadingParameter]
     private MapControlRegistryContext? Registry { get; set; }
+
+    [CascadingParameter]
+    private MapLayerVisibilityState? LayerVisibility { get; set; }
 
     [Parameter]
     public string Id { get; set; } = "legend";
@@ -62,9 +64,6 @@ public partial class MapLegendControl : ComponentBase, IAsyncDisposable
     [Parameter]
     public RenderFragment<MapLegendItemTemplateContext>? ItemTemplate { get; set; }
 
-    [Parameter]
-    public EventCallback<MapLegendVisibilityChangedEventArgs> OnItemVisibilityChanged { get; set; }
-
     private string ContentClassName =>
         new CssBuilder()
             .AddClass("sgb-map-legend-content")
@@ -80,8 +79,8 @@ public partial class MapLegendControl : ComponentBase, IAsyncDisposable
         }
 
         ValidateControl();
+        VisibilityBinder.UpdateVisibilitySubscription(LayerVisibility);
         ValidateDefinition();
-        SyncItemSelection();
 
         if (
             !string.IsNullOrWhiteSpace(_registeredControlId)
@@ -97,7 +96,6 @@ public partial class MapLegendControl : ComponentBase, IAsyncDisposable
         _registeredControlId = Id;
         _controlSyncPending = _controlSyncPending || changed;
         _contentSyncPending = _contentSyncPending || changed;
-        _visibilitySyncPending = true;
     }
 
     /// <inheritdoc />
@@ -138,17 +136,14 @@ public partial class MapLegendControl : ComponentBase, IAsyncDisposable
             await Registry.SetControlContentAsync(Id, CustomControlKind, _placeholderReference, _contentReference);
             _contentSyncPending = false;
         }
-
-        if (_visibilitySyncPending)
-        {
-            await SyncVisibilityGroupsAsync();
-            _visibilitySyncPending = false;
-        }
     }
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
+        _visibilityBinder?.Dispose();
+        _visibilityBinder = null;
+
         if (Registry is null)
         {
             return;
@@ -163,11 +158,8 @@ public partial class MapLegendControl : ComponentBase, IAsyncDisposable
             if (!Registry.IsReady)
             {
                 _pendingRemovalIds.Clear();
-                _registeredVisibilityGroupDescriptors.Clear();
                 return;
             }
-
-            await UnregisterVisibilityGroupsAsync();
 
             var removalIds = pendingRemovalIds
                 .Append(controlId)
@@ -201,7 +193,7 @@ public partial class MapLegendControl : ComponentBase, IAsyncDisposable
             Id,
             new MapControlPlacement(Position, Order, Enabled),
             new LegendChromeOptions(Title, Collapsible, InitiallyOpen, Class),
-            new LegendContentOptions(Definition, ItemTemplate, OnItemVisibilityChanged)
+            new LegendContentOptions(Definition, ItemTemplate)
         );
 
     private static string GetSectionClassName(MapLegendSection section) =>
@@ -210,44 +202,17 @@ public partial class MapLegendControl : ComponentBase, IAsyncDisposable
             .AddClass(section.ClassName, !string.IsNullOrWhiteSpace(section.ClassName))
             .Build();
 
-    private string GetItemClassName(MapLegendItem item) =>
-        new CssBuilder()
-            .AddClass("sgb-map-legend-item")
-            .AddClass("sgb-map-legend-item-toggleable", item.IsToggleable)
-            .AddClass("sgb-map-legend-item-off", item.IsToggleable && !GetItemSelected(item.Id))
-            .AddClass(item.ClassName, !string.IsNullOrWhiteSpace(item.ClassName))
-            .Build();
+    private string GetItemClassName(MapLegendItem item) => VisibilityBinder.GetItemClassName(item);
 
-    private bool GetItemSelected(string itemId) => _itemSelection.TryGetValue(itemId, out var selected) && selected;
+    private static bool IsToggleable(MapLegendItem item) => MapLegendVisibilityBinder.IsToggleable(item);
 
-    private async Task ToggleItemAsync(MapLegendItem item, ChangeEventArgs args)
-    {
-        var selected = args.Value switch
-        {
-            bool boolValue => boolValue,
-            string stringValue when bool.TryParse(stringValue, out var parsed) => parsed,
-            _ => false,
-        };
+    private bool GetItemVisible(MapLegendItem item) => VisibilityBinder.GetItemVisible(item);
 
-        await SetItemSelectedAsync(item, selected);
-    }
+    private Task ToggleItemAsync(MapLegendItem item, ChangeEventArgs args) =>
+        VisibilityBinder.ToggleItemAsync(item, args);
 
-    private async Task SetItemSelectedAsync(MapLegendItem item, bool selected)
-    {
-        _itemSelection[item.Id] = selected;
-
-        if (Map is not null && item.IsToggleable)
-        {
-            var descriptor = BuildVisibilityGroupDescriptor(item);
-            await Map.SceneRegistry.RegisterVisibilityGroupAsync(descriptor);
-            _registeredVisibilityGroupDescriptors[descriptor.GroupId] = descriptor;
-        }
-
-        if (OnItemVisibilityChanged.HasDelegate)
-        {
-            await OnItemVisibilityChanged.InvokeAsync(new MapLegendVisibilityChangedEventArgs(item, selected));
-        }
-    }
+    private MapLegendItemTemplateContext BuildTemplateContext(MapLegendItem item) =>
+        VisibilityBinder.BuildTemplateContext(item);
 
     private void ValidateControl()
     {
@@ -266,6 +231,7 @@ public partial class MapLegendControl : ComponentBase, IAsyncDisposable
 
         if (duplicateId is null)
         {
+            VisibilityBinder.ValidateVisibilityGroups(Definition.GetItems());
             return;
         }
 
@@ -274,113 +240,5 @@ public partial class MapLegendControl : ComponentBase, IAsyncDisposable
                 ? "Legend item IDs must be non-empty."
                 : $"Legend item IDs must be unique. Duplicate ID: '{duplicateId.Key}'."
         );
-    }
-
-    private void SyncItemSelection()
-    {
-        var nextSelection = Definition
-            .GetItems()
-            .ToDictionary(
-                item => item.Id,
-                item =>
-                    _itemSelection.TryGetValue(item.Id, out var currentSelection)
-                        ? currentSelection
-                        : item.IsVisibleByDefault,
-                StringComparer.Ordinal
-            );
-
-        _itemSelection.Clear();
-
-        foreach (var pair in nextSelection)
-        {
-            _itemSelection[pair.Key] = pair.Value;
-        }
-    }
-
-    private async Task SyncVisibilityGroupsAsync()
-    {
-        if (Map is null)
-        {
-            return;
-        }
-
-        var activeGroupIds = Enabled
-            ? Definition
-                .GetItems()
-                .Where(item => item.IsToggleable)
-                .Select(GetVisibilityGroupId)
-                .ToHashSet(StringComparer.Ordinal)
-            : new HashSet<string>(StringComparer.Ordinal);
-
-        var removedGroupIds = _registeredVisibilityGroupDescriptors
-            .Keys.Except(activeGroupIds, StringComparer.Ordinal)
-            .ToArray();
-        foreach (var groupId in removedGroupIds)
-        {
-            await Map.SceneRegistry.UnregisterVisibilityGroupAsync(groupId);
-            _registeredVisibilityGroupDescriptors.Remove(groupId);
-        }
-
-        if (!Enabled)
-        {
-            return;
-        }
-
-        foreach (var item in Definition.GetItems().Where(item => item.IsToggleable))
-        {
-            var descriptor = BuildVisibilityGroupDescriptor(item);
-
-            if (
-                _registeredVisibilityGroupDescriptors.TryGetValue(descriptor.GroupId, out var registeredDescriptor)
-                && VisibilityGroupDescriptorsEqual(registeredDescriptor, descriptor)
-            )
-            {
-                continue;
-            }
-
-            await Map.SceneRegistry.RegisterVisibilityGroupAsync(descriptor);
-            _registeredVisibilityGroupDescriptors[descriptor.GroupId] = descriptor;
-        }
-    }
-
-    private MapVisibilityGroupDescriptor BuildVisibilityGroupDescriptor(MapLegendItem item) =>
-        new(
-            GetVisibilityGroupId(item),
-            GetItemSelected(item.Id),
-            item.Targets?.Select(target => new MapVisibilityGroupTargetDescriptor(target.StyleId, [.. target.LayerIds]))
-                .ToArray()
-                ?? []
-        );
-
-    private static string GetVisibilityGroupId(MapLegendItem item) => $"legend:{item.Id}";
-
-    private static bool VisibilityGroupDescriptorsEqual(
-        MapVisibilityGroupDescriptor left,
-        MapVisibilityGroupDescriptor right
-    ) =>
-        string.Equals(left.GroupId, right.GroupId, StringComparison.Ordinal)
-        && left.Visible == right.Visible
-        && left.Targets.Count == right.Targets.Count
-        && left.Targets.Zip(right.Targets).All(pair => VisibilityGroupTargetsEqual(pair.First, pair.Second));
-
-    private static bool VisibilityGroupTargetsEqual(
-        MapVisibilityGroupTargetDescriptor left,
-        MapVisibilityGroupTargetDescriptor right
-    ) =>
-        string.Equals(left.StyleId, right.StyleId, StringComparison.Ordinal)
-        && left.LayerIds.SequenceEqual(right.LayerIds, StringComparer.Ordinal);
-
-    private async Task UnregisterVisibilityGroupsAsync()
-    {
-        if (Map is null)
-        {
-            return;
-        }
-
-        foreach (var groupId in _registeredVisibilityGroupDescriptors.Keys.ToArray())
-        {
-            await Map.SceneRegistry.UnregisterVisibilityGroupAsync(groupId);
-            _registeredVisibilityGroupDescriptors.Remove(groupId);
-        }
     }
 }

@@ -3,8 +3,10 @@
 @using Spillgebees.Blazor.Map.Models
 @using Spillgebees.Blazor.Map.Models.Controls
 @using Spillgebees.Blazor.Map.Models.Legends
+@using Spillgebees.Blazor.Map.Models.Visibility
 
 <SgbMap MapOptions="@_mapOptions"
+        LayerVisibility="@_layerVisibility"
         Height="450px"
         Width="100%"
         @ref="_map">
@@ -82,6 +84,21 @@
     private object? _networkData;
     private int _nextStationIndex;
     private string? _focusedStationName;
+    private readonly MapLayerVisibilityState _layerVisibility =
+        new(
+            [
+                new MapLayerVisibilityGroup(
+                    "metro-lines",
+                    [MapLayerVisibilityTarget.Layer("metro-line")],
+                    Label: "Metro lines"
+                ),
+                new MapLayerVisibilityGroup(
+                    "stations",
+                    [MapLayerVisibilityTarget.Layer("station-layer")],
+                    Label: "Stations"
+                ),
+            ]
+        );
 
     private StationFeature NextStation => _stations[_nextStationIndex];
 
@@ -107,22 +124,12 @@
                         new MapLegendItem(
                             Id: "metro-lines",
                             Label: "Metro lines",
-                            Targets:
-                            [
-                                new MapLegendTarget(styleId: "sgb-liberty", layerIds: ["metro-line"]),
-                            ],
-                            IsVisibleByDefault: true,
-                            IsToggleable: true
+                            VisibilityGroupId: "metro-lines"
                         ),
                         new MapLegendItem(
                             Id: "stations",
                             Label: "Stations",
-                            Targets:
-                            [
-                                new MapLegendTarget(styleId: "sgb-liberty", layerIds: ["station-layer"]),
-                            ],
-                            IsVisibleByDefault: true,
-                            IsToggleable: true
+                            VisibilityGroupId: "stations"
                         ),
                     ]
                 ),

@@ -37,6 +37,7 @@ public partial class MapCustomControl : ComponentBase, IAsyncDisposable
     private ElementReference _contentReference;
     private bool _controlSyncPending = true;
     private bool _contentSyncPending = true;
+    private bool _contentRegistered;
     private string? _registeredId;
     private readonly List<string> _pendingRemovalIds = [];
 
@@ -86,6 +87,11 @@ public partial class MapCustomControl : ComponentBase, IAsyncDisposable
             await Registry.RemoveControlContentAsync(pendingRemovalId);
         }
 
+        if (pendingRemovalIds.Length > 0)
+        {
+            _contentRegistered = false;
+        }
+
         if (_controlSyncPending)
         {
             await Registry.SyncControlsAsync();
@@ -94,7 +100,12 @@ public partial class MapCustomControl : ComponentBase, IAsyncDisposable
 
         if (!Enabled)
         {
-            await Registry.RemoveControlContentAsync(_registeredId);
+            if (_contentRegistered)
+            {
+                await Registry.RemoveControlContentAsync(_registeredId);
+                _contentRegistered = false;
+            }
+
             _contentSyncPending = false;
             return;
         }
@@ -102,6 +113,7 @@ public partial class MapCustomControl : ComponentBase, IAsyncDisposable
         if (_contentSyncPending)
         {
             await Registry.SetControlContentAsync(Id, CustomControlKind, _placeholderReference, _contentReference);
+            _contentRegistered = true;
             _contentSyncPending = false;
         }
     }
@@ -149,6 +161,7 @@ public partial class MapCustomControl : ComponentBase, IAsyncDisposable
         finally
         {
             _registeredId = null;
+            _contentRegistered = false;
             _pendingRemovalIds.Clear();
         }
     }
