@@ -19,18 +19,12 @@
                     {
                         @if (ItemTemplate is not null)
                         {
-                            @ItemTemplate(
-                                new MapLegendItemTemplateContext(
-                                    item,
-                                    GetItemSelected(item.Id),
-                                    selected => SetItemSelectedAsync(item, selected)
-                                )
-                            )
+                            @ItemTemplate(BuildTemplateContext(item))
                         }
                         else
                         {
                             <div class="@GetItemClassName(item)">
-                                @if (item.IsToggleable)
+                                @if (IsToggleable(item))
                                 {
                                     <label class="sgb-map-legend-item-toggle">
                                         <span class="sgb-map-legend-item-copy">
@@ -43,9 +37,9 @@
                                         <span class="sgb-map-legend-item-switch">
                                             <input type="checkbox"
                                                    role="switch"
-                                                   aria-checked="@(GetItemSelected(item.Id).ToString().ToLowerInvariant())"
+                                                   aria-checked="@(GetItemVisible(item).ToString().ToLowerInvariant())"
                                                    data-testid="@($"map-legend-toggle-{item.Id}")"
-                                                   checked="@GetItemSelected(item.Id)"
+                                                   checked="@GetItemVisible(item)"
                                                    @onchange="@((ChangeEventArgs args) => ToggleItemAsync(item, args))" />
                                             <span class="sgb-map-legend-item-switch-track"></span>
                                         </span>

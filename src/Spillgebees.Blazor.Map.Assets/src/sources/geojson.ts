@@ -240,7 +240,7 @@ export function setVisibilityGroup(
   mapElement: HTMLElement,
   groupId: string,
   visible: boolean,
-  targets: Array<{ styleId: string; layerIds: string[] }>,
+  targets: VisibilityGroupRegistration["targets"],
 ): void {
   const map = window.Spillgebees.Map.maps.get(mapElement);
   if (!map) {
@@ -273,7 +273,8 @@ export function removeVisibilityGroup(mapElement: HTMLElement, groupId: string):
 export function applyVisibilityGroup(mapElement: HTMLElement, group: VisibilityGroupRegistration): void {
   for (const target of group.targets) {
     for (const layerId of target.layerIds) {
-      const resolvedLayerId = resolveStyleLayerId(mapElement, target.styleId, layerId);
+      const resolvedLayerId =
+        target.kind === "styleLayer" ? resolveStyleLayerId(mapElement, target.styleId, layerId) : layerId;
       if (!resolvedLayerId) {
         continue;
       }

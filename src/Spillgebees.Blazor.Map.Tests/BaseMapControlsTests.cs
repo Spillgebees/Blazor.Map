@@ -16,7 +16,7 @@ public class BaseMapControlsTests
             "legend-main",
             new MapControlPlacement(ControlPosition.TopRight, 500, Enabled: true),
             new LegendChromeOptions("Legend", Collapsible: true, InitiallyOpen: true, ClassName: null),
-            new LegendContentOptions(new MapLegend([]), ItemTemplate: null, OnItemVisibilityChanged: default)
+            new LegendContentOptions(new MapLegend([]), ItemTemplate: null)
         );
         map.SetInternalControls([control]);
 
@@ -39,7 +39,7 @@ public class BaseMapControlsTests
                 "legend-main",
                 new MapControlPlacement(ControlPosition.TopRight, 500, Enabled: true),
                 new LegendChromeOptions("Legend", Collapsible: true, InitiallyOpen: true, ClassName: null),
-                new LegendContentOptions(new MapLegend([]), ItemTemplate: null, OnItemVisibilityChanged: default)
+                new LegendContentOptions(new MapLegend([]), ItemTemplate: null)
             ),
         ]);
 

@@ -31,10 +31,16 @@ export interface RegisteredMapImage {
   isSdf: boolean;
 }
 
-export interface VisibilityGroupTargetRegistration {
-  styleId: string;
-  layerIds: string[];
-}
+export type VisibilityGroupTargetRegistration =
+  | {
+      kind: "styleLayer";
+      styleId: string;
+      layerIds: string[];
+    }
+  | {
+      kind: "runtimeLayer";
+      layerIds: string[];
+    };
 
 export interface VisibilityGroupRegistration {
   groupId: string;

@@ -108,6 +108,7 @@ export function applySceneMutations(mapElement: HTMLElement, batch: SceneMutatio
         break;
       case "reconcileOrdering":
         reconcileLayerOrdering(map);
+        replayVisibilityGroups(mapElement);
         break;
     }
   }

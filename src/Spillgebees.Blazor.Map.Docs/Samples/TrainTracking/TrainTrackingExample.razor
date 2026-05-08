@@ -257,6 +257,7 @@
 <div class="train-showcase-map">
     <SgbMap @ref="_map"
             MapOptions="@_mapOptions"
+            LayerVisibility="@_visibility"
             Images="@_images"
             Theme="@GlobalTheme"
             Height="600px"
@@ -270,8 +271,7 @@
                               Collapsible="true"
                               InitiallyOpen="true"
                               Definition="TrainTrackingPresentation.OverlayLegendDefinition"
-                              ItemTemplate="_overlayLegendItemTemplate"
-                              OnItemVisibilityChanged="_legendItemVisibilityChangedCallback" />
+                              ItemTemplate="_overlayLegendItemTemplate" />
         </MapControls>
         <FillExtrusionLayer Id="sgb-buildings-3d"
                             SourceId="openmaptiles"
@@ -281,7 +281,7 @@
                             Height="@(Expr.Get("render_height"))"
                             Base="@(Expr.Get("render_min_height"))"
                             MinZoom="14"
-                            Visible="@_visibility.ShowBuildings" />
+                            Visible="@(_visibility.IsVisible("3d-buildings"))" />
         <MapOverlays>
             @if (_trackedEntityLayer is not null)
             {
@@ -295,18 +295,10 @@
 @code {
     protected override void OnParametersSet()
     {
-        if (!_legendItemVisibilityChangedCallback.HasDelegate)
-        {
-            _legendItemVisibilityChangedCallback = EventCallback.Factory.Create<MapLegendVisibilityChangedEventArgs>(
-                this,
-                HandleLegendItemVisibilityChangedAsync
-            );
-        }
-
         _overlayLegendItemTemplate ??= OverlayLegendItemTemplate;
     }
 
-    private RenderFragment<MapLegendItemTemplateContext> OverlayLegendItemTemplate => context => @<label class="train-overlay-legend-item" data-active="@context.Selected.ToString().ToLowerInvariant()">
+    private RenderFragment<MapLegendItemTemplateContext> OverlayLegendItemTemplate => context => @<label class="train-overlay-legend-item" data-active="@context.IsVisible.ToString().ToLowerInvariant()">
             <span class="@GetOverlayLegendSwatchClassName(context.Item)" aria-hidden="true">
                 <span class="train-overlay-swatch-art">
                     @switch (context.Item.Id)
@@ -376,8 +368,8 @@
             </span>
             <input type="checkbox"
                    data-testid="@($"map-legend-toggle-{context.Item.Id}")"
-                   checked="@context.Selected"
-                   @onchange="@(async args => await context.SetSelectedAsync(ResolveLegendToggleValue(args)))" />
+                   checked="@context.IsVisible"
+                   @onchange="@(async args => await context.SetVisibleAsync(ResolveLegendToggleValue(args)))" />
         </label>;
 
     private static bool ResolveLegendToggleValue(ChangeEventArgs args)
