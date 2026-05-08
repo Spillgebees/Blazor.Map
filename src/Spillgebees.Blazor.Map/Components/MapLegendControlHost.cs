@@ -40,9 +40,11 @@ internal sealed class MapLegendControlHost : ComponentBase, IAsyncDisposable
     private bool _registered;
     private string? _registeredControlId;
     private ILogger? _logger;
-    private MapLayerVisibilityState? _subscribedLayerVisibility;
+    private MapLegendVisibilityBinder? _visibilityBinder;
 
     private ILogger Logger => _logger ??= LoggerFactory.CreateLogger<MapLegendControlHost>();
+    private MapLegendVisibilityBinder VisibilityBinder =>
+        _visibilityBinder ??= new MapLegendVisibilityBinder(() => InvokeAsync(StateHasChanged));
 
     private string ContentClassName =>
         new CssBuilder()
@@ -194,8 +196,8 @@ internal sealed class MapLegendControlHost : ComponentBase, IAsyncDisposable
     protected override void OnParametersSet()
     {
         ValidateControl();
+        VisibilityBinder.UpdateVisibilitySubscription(LayerVisibility);
         ValidateDefinition();
-        UpdateVisibilitySubscription();
 
         _controlSyncPending = true;
     }
@@ -266,11 +268,8 @@ internal sealed class MapLegendControlHost : ComponentBase, IAsyncDisposable
     /// <inheritdoc/>
     public async ValueTask DisposeAsync()
     {
-        if (_subscribedLayerVisibility is not null)
-        {
-            _subscribedLayerVisibility.Changed -= HandleLayerVisibilityChanged;
-            _subscribedLayerVisibility = null;
-        }
+        _visibilityBinder?.Dispose();
+        _visibilityBinder = null;
 
         if (Map is null || !_registered)
         {
@@ -297,107 +296,23 @@ internal sealed class MapLegendControlHost : ComponentBase, IAsyncDisposable
         }
     }
 
-    private void UpdateVisibilitySubscription()
-    {
-        if (ReferenceEquals(_subscribedLayerVisibility, LayerVisibility))
-        {
-            return;
-        }
-
-        if (_subscribedLayerVisibility is not null)
-        {
-            _subscribedLayerVisibility.Changed -= HandleLayerVisibilityChanged;
-        }
-
-        _subscribedLayerVisibility = LayerVisibility;
-
-        if (_subscribedLayerVisibility is not null)
-        {
-            _subscribedLayerVisibility.Changed += HandleLayerVisibilityChanged;
-        }
-    }
-
-    private void HandleLayerVisibilityChanged(object? sender, MapLayerVisibilityChangedEventArgs args) =>
-        _ = InvokeAsync(StateHasChanged);
-
     private static string GetSectionClassName(MapLegendSection section) =>
         new CssBuilder()
             .AddClass("sgb-map-legend-section")
             .AddClass(section.ClassName, !string.IsNullOrWhiteSpace(section.ClassName))
             .Build();
 
-    private string GetItemClassName(MapLegendItem item)
-    {
-        var isToggleable = IsToggleable(item);
-        return new CssBuilder()
-            .AddClass("sgb-map-legend-item")
-            .AddClass("sgb-map-legend-item-toggleable", isToggleable)
-            .AddClass("sgb-map-legend-item-off", isToggleable && !GetItemVisible(item))
-            .AddClass(item.ClassName, !string.IsNullOrWhiteSpace(item.ClassName))
-            .Build();
-    }
+    private string GetItemClassName(MapLegendItem item) => VisibilityBinder.GetItemClassName(item);
 
-    private static bool IsToggleable(MapLegendItem item) => item.VisibilityGroupId is not null;
+    private static bool IsToggleable(MapLegendItem item) => MapLegendVisibilityBinder.IsToggleable(item);
 
-    private bool GetItemVisible(MapLegendItem item) =>
-        ResolveVisibilityGroup(item, required: item.VisibilityGroupId is not null)?.IsVisible ?? true;
+    private bool GetItemVisible(MapLegendItem item) => VisibilityBinder.GetItemVisible(item);
 
-    private async Task ToggleItemAsync(MapLegendItem item, ChangeEventArgs args)
-    {
-        var selected = args.Value switch
-        {
-            bool boolValue => boolValue,
-            string stringValue when bool.TryParse(stringValue, out var parsed) => parsed,
-            _ => false,
-        };
+    private Task ToggleItemAsync(MapLegendItem item, ChangeEventArgs args) =>
+        VisibilityBinder.ToggleItemAsync(item, args);
 
-        await SetItemVisibleAsync(item, selected);
-    }
-
-    private Task SetItemVisibleAsync(MapLegendItem item, bool selected)
-    {
-        var group = ResolveVisibilityGroup(item, required: true);
-        if (group is not null)
-        {
-            LayerVisibility!.SetVisible(group.Id, selected);
-        }
-
-        return Task.CompletedTask;
-    }
-
-    private MapLegendItemTemplateContext BuildTemplateContext(MapLegendItem item)
-    {
-        var group = ResolveVisibilityGroup(item, required: item.VisibilityGroupId is not null);
-        return new(
-            item,
-            group is not null,
-            group?.IsVisible ?? true,
-            group,
-            selected => SetItemVisibleAsync(item, selected)
-        );
-    }
-
-    private MapLayerVisibilityGroup? ResolveVisibilityGroup(MapLegendItem item, bool required)
-    {
-        if (item.VisibilityGroupId is null)
-        {
-            return null;
-        }
-
-        if (LayerVisibility is not null && LayerVisibility.TryGetGroup(item.VisibilityGroupId, out var group))
-        {
-            return group;
-        }
-
-        if (!required)
-        {
-            return null;
-        }
-
-        throw new InvalidOperationException(
-            $"Legend item '{item.Id}' references missing layer visibility group '{item.VisibilityGroupId}'."
-        );
-    }
+    private MapLegendItemTemplateContext BuildTemplateContext(MapLegendItem item) =>
+        VisibilityBinder.BuildTemplateContext(item);
 
     private void ValidateControl()
     {
@@ -421,21 +336,8 @@ internal sealed class MapLegendControlHost : ComponentBase, IAsyncDisposable
 
         if (duplicateId is null)
         {
-            var missingGroupItem = Control
-                .Content.Definition.GetItems()
-                .FirstOrDefault(item =>
-                    item.VisibilityGroupId is not null
-                    && (LayerVisibility is null || !LayerVisibility.Contains(item.VisibilityGroupId))
-                );
-
-            if (missingGroupItem is null)
-            {
-                return;
-            }
-
-            throw new InvalidOperationException(
-                $"Legend item '{missingGroupItem.Id}' references missing layer visibility group '{missingGroupItem.VisibilityGroupId}'."
-            );
+            VisibilityBinder.ValidateVisibilityGroups(Control.Content.Definition.GetItems());
+            return;
         }
 
         throw new InvalidOperationException(

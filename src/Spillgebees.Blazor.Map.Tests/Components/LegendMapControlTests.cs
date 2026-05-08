@@ -66,9 +66,7 @@ public class LegendMapControlTests : BunitContext
         GetLatestSceneMutationBatch()
             .Mutations.Should()
             .ContainSingle(mutation =>
-                mutation.Kind == "setVisibilityGroup"
-                && mutation.GroupId == "stations"
-                && mutation.GroupVisible == true
+                mutation.Kind == "setVisibilityGroup" && mutation.GroupId == "stations" && mutation.GroupVisible == true
             );
     }
 
@@ -110,9 +108,7 @@ public class LegendMapControlTests : BunitContext
     [Test, Timeout(TestTimeoutMs)]
     public async Task Should_render_static_legend_items_without_toggle(CancellationToken cancellationToken)
     {
-        var definition = new MapLegend(
-            [new MapLegendSection("Static", [new MapLegendItem("static", "Static item")])]
-        );
+        var definition = new MapLegend([new MapLegendSection("Static", [new MapLegendItem("static", "Static item")])]);
         var cut = Render<SgbMap>(parameters =>
             parameters.AddChildContent<MapLegendControl>(control => control.Add(c => c.Definition, definition))
         );
@@ -210,23 +206,16 @@ public class LegendMapControlTests : BunitContext
             .Subject;
 
     private static MapLayerVisibilityState CreateVisibility() =>
-        new(
-            [
-                new MapLayerVisibilityGroup(
-                    "stations",
-                    [MapLayerVisibilityTarget.Style("overlay-style", "stations-circle", "stations-label")],
-                    IsVisible: false
-                ),
-            ]
-        );
+        new([
+            new MapLayerVisibilityGroup(
+                "stations",
+                [MapLayerVisibilityTarget.Style("overlay-style", "stations-circle", "stations-label")],
+                IsVisible: false
+            ),
+        ]);
 
     private static MapLegend CreateLegend() =>
-        new(
-            [
-                new MapLegendSection(
-                    "Layers",
-                    [new MapLegendItem("stations", "Stations", VisibilityGroupId: "stations")]
-                ),
-            ]
-        );
+        new([
+            new MapLegendSection("Layers", [new MapLegendItem("stations", "Stations", VisibilityGroupId: "stations")]),
+        ]);
 }

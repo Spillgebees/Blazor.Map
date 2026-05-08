@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Spillgebees.Blazor.Map.Models.Visibility;
 
 /// <summary>
@@ -35,8 +37,8 @@ public sealed class MapLayerVisibilityState
     /// <summary>
     /// Attempts to get a visibility group.
     /// </summary>
-    public bool TryGetGroup(string groupId, out MapLayerVisibilityGroup group) =>
-        _groups.TryGetValue(groupId, out group!);
+    public bool TryGetGroup(string groupId, [MaybeNullWhen(false)] out MapLayerVisibilityGroup group) =>
+        _groups.TryGetValue(groupId, out group);
 
     /// <summary>
     /// Gets the current visibility value for a group.
@@ -71,12 +73,7 @@ public sealed class MapLayerVisibilityState
         _snapshot = Array.AsReadOnly(_groups.Values.ToArray());
         Changed?.Invoke(
             this,
-            new MapLayerVisibilityChangedEventArgs(
-                MapLayerVisibilityChangeKind.GroupChanged,
-                groupId,
-                visible,
-                updated
-            )
+            MapLayerVisibilityChangedEventArgs.CreateForGroup(MapLayerVisibilityChangeKind.GroupChanged, updated)
         );
     }
 
@@ -90,29 +87,26 @@ public sealed class MapLayerVisibilityState
     /// </summary>
     public void Replace(IEnumerable<MapLayerVisibilityGroup> groups)
     {
-        ReplaceCore(groups);
+        var next = ValidateGroups(groups);
+        if (GroupsEqual(_snapshot, next))
+        {
+            return;
+        }
+
+        ReplaceCore(next);
         Changed?.Invoke(
             this,
-            new MapLayerVisibilityChangedEventArgs(MapLayerVisibilityChangeKind.GroupsReplaced, null, null, null)
+            MapLayerVisibilityChangedEventArgs.CreateForStandalone(
+                MapLayerVisibilityChangeKind.GroupsReplaced,
+                null,
+                null
+            )
         );
     }
 
     private void ReplaceCore(IEnumerable<MapLayerVisibilityGroup> groups)
     {
-        ArgumentNullException.ThrowIfNull(groups);
-
-        var next = groups.ToArray();
-        var duplicate = next
-            .GroupBy(group => group.Id, StringComparer.Ordinal)
-            .FirstOrDefault(group => group.Count() > 1);
-
-        if (duplicate is not null)
-        {
-            throw new ArgumentException(
-                $"Layer visibility group IDs must be unique. Duplicate ID: '{duplicate.Key}'.",
-                nameof(groups)
-            );
-        }
+        var next = ValidateGroups(groups);
 
         _groups.Clear();
 
@@ -123,4 +117,40 @@ public sealed class MapLayerVisibilityState
 
         _snapshot = Array.AsReadOnly(next);
     }
+
+    private static MapLayerVisibilityGroup[] ValidateGroups(IEnumerable<MapLayerVisibilityGroup> groups)
+    {
+        ArgumentNullException.ThrowIfNull(groups);
+        var next = groups.ToArray();
+        var duplicate = next.GroupBy(group => group.Id, StringComparer.Ordinal)
+            .FirstOrDefault(group => group.Count() > 1);
+
+        if (duplicate is not null)
+        {
+            throw new ArgumentException(
+                $"Layer visibility group IDs must be unique. Duplicate ID: '{duplicate.Key}'.",
+                nameof(groups)
+            );
+        }
+
+        return next;
+    }
+
+    private static bool GroupsEqual(
+        IReadOnlyList<MapLayerVisibilityGroup> left,
+        IReadOnlyList<MapLayerVisibilityGroup> right
+    ) => left.Count == right.Count && left.Zip(right).All(pair => GroupsEqual(pair.First, pair.Second));
+
+    private static bool GroupsEqual(MapLayerVisibilityGroup left, MapLayerVisibilityGroup right) =>
+        string.Equals(left.Id, right.Id, StringComparison.Ordinal)
+        && left.IsVisible == right.IsVisible
+        && string.Equals(left.Label, right.Label, StringComparison.Ordinal)
+        && string.Equals(left.Description, right.Description, StringComparison.Ordinal)
+        && left.Targets.Count == right.Targets.Count
+        && left.Targets.Zip(right.Targets).All(pair => TargetsEqual(pair.First, pair.Second));
+
+    private static bool TargetsEqual(MapLayerVisibilityTarget left, MapLayerVisibilityTarget right) =>
+        left.Kind == right.Kind
+        && string.Equals(left.StyleId, right.StyleId, StringComparison.Ordinal)
+        && left.LayerIds.SequenceEqual(right.LayerIds, StringComparer.Ordinal);
 }

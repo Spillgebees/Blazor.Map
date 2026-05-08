@@ -36,7 +36,12 @@ public static class TrainTrackingPresentation
                 new MapLegendSection(
                     "Map layers",
                     [
-                        new MapLegendItem("3d-buildings", "3D Buildings", "Extruded building footprints.", "3d-buildings"),
+                        new MapLegendItem(
+                            "3d-buildings",
+                            "3D Buildings",
+                            "Extruded building footprints.",
+                            "3d-buildings"
+                        ),
                         new MapLegendItem(
                             "trains",
                             "Trains",
@@ -72,12 +77,7 @@ public static class TrainTrackingPresentation
                             "Platform areas, 3D extrusions, and labels.",
                             "platforms"
                         ),
-                        new MapLegendItem(
-                            "routes",
-                            "Routes",
-                            "Named railway routes with color-coded lines.",
-                            "routes"
-                        ),
+                        new MapLegendItem("routes", "Routes", "Named railway routes with color-coded lines.", "routes"),
                         new MapLegendItem(
                             "lifecycle",
                             "Lifecycle",
@@ -97,142 +97,140 @@ public static class TrainTrackingPresentation
         );
 
     public static MapLayerVisibilityState CreateLayerVisibility() =>
-        new(
-            [
-                new MapLayerVisibilityGroup(
-                    "3d-buildings",
-                    [MapLayerVisibilityTarget.Layer("sgb-buildings-3d")],
-                    Label: "3D Buildings"
-                ),
-                new MapLayerVisibilityGroup(
-                    "trains",
-                    [
-                        MapLayerVisibilityTarget.Layer(
-                            "train-source-cluster-hit-area",
-                            "train-source-clusters",
-                            "train-source-cluster-count",
-                            "train-source-hit-area",
-                            "train-source-symbols",
-                            "train-source-cluster-sentinel",
-                            "train-source-service-left",
-                            "train-source-route-left",
-                            "train-source-operator-right"
-                        ),
-                    ],
-                    Label: "Trains"
-                ),
-                new MapLayerVisibilityGroup(
-                    "tracks",
-                    [
-                        MapLayerVisibilityTarget.Style(
-                            OverlayStyleId,
-                            "railway-line-rail",
-                            "railway-line-light-rail",
-                            "railway-line-subway",
-                            "railway-line-narrow-gauge",
-                            "railway-line-funicular",
-                            "railway-line-monorail",
-                            "railway-line-miniature",
-                            "railway-line-service",
-                            "railway-line-tunnel",
-                            "railway-tunnel-label",
-                            "railway-areas-fill",
-                            "railway-areas-outline"
-                        ),
-                    ],
-                    Label: "Tracks & tunnels"
-                ),
-                new MapLayerVisibilityGroup(
-                    "tram",
-                    [
-                        MapLayerVisibilityTarget.Style(
-                            OverlayStyleId,
-                            "tram-line-fill",
-                            "tram-line-tunnel",
-                            "tram-stations-icon",
-                            "subway-entrance-icon",
-                            "tram-lifecycle-fill",
-                            "railway-tram-crossings-circle"
-                        ),
-                    ],
-                    IsVisible: false,
-                    Label: "Tram & metro"
-                ),
-                new MapLayerVisibilityGroup(
-                    "stations",
-                    [
-                        MapLayerVisibilityTarget.Style(
-                            OverlayStyleId,
-                            "railway-stations-circle",
-                            "railway-stations-label",
-                            "railway-border-circle",
-                            "railway-border-label"
-                        ),
-                    ],
-                    Label: "Stations & borders"
-                ),
-                new MapLayerVisibilityGroup(
-                    "platforms",
-                    [
-                        MapLayerVisibilityTarget.Style(
-                            OverlayStyleId,
-                            "railway-platforms-fill",
-                            "railway-platforms-3d",
-                            "railway-platforms-label",
-                            "railway-platform-refs-label",
-                            "railway-platform-names-label"
-                        ),
-                    ],
-                    Label: "Platforms"
-                ),
-                new MapLayerVisibilityGroup(
-                    "routes",
-                    [
-                        MapLayerVisibilityTarget.Style(
-                            OverlayStyleId,
-                            "railway-routes-casing",
-                            "railway-routes",
-                            "railway-routes-label"
-                        ),
-                    ],
-                    Label: "Routes"
-                ),
-                new MapLayerVisibilityGroup(
-                    "lifecycle",
-                    [
-                        MapLayerVisibilityTarget.Style(
-                            OverlayStyleId,
-                            "railway-lifecycle-construction",
-                            "railway-lifecycle-proposed",
-                            "railway-lifecycle-disused",
-                            "railway-lifecycle-abandoned",
-                            "railway-lifecycle-preserved",
-                            "railway-lifecycle-razed"
-                        ),
-                    ],
-                    Label: "Lifecycle"
-                ),
-                new MapLayerVisibilityGroup(
-                    "infrastructure",
-                    [
-                        MapLayerVisibilityTarget.Style(
-                            OverlayStyleId,
-                            "railway-switches",
-                            "railway-signals",
-                            "railway-buffer-stops",
-                            "railway-milestones",
-                            "railway-turntables",
-                            "railway-derails",
-                            "railway-crossings-track",
-                            "railway-owner-change",
-                            "railway-crossings-circle"
-                        ),
-                    ],
-                    IsVisible: false,
-                    Label: "Infrastructure"
-                ),
-            ]
-        );
+        new([
+            new MapLayerVisibilityGroup(
+                "3d-buildings",
+                [MapLayerVisibilityTarget.Layer("sgb-buildings-3d")],
+                Label: "3D Buildings"
+            ),
+            new MapLayerVisibilityGroup(
+                "trains",
+                [
+                    MapLayerVisibilityTarget.Layer(
+                        "train-source-cluster-hit-area",
+                        "train-source-clusters",
+                        "train-source-cluster-count",
+                        "train-source-hit-area",
+                        "train-source-symbols",
+                        "train-source-cluster-sentinel",
+                        "train-source-service-left",
+                        "train-source-route-left",
+                        "train-source-operator-right"
+                    ),
+                ],
+                Label: "Trains"
+            ),
+            new MapLayerVisibilityGroup(
+                "tracks",
+                [
+                    MapLayerVisibilityTarget.Style(
+                        OverlayStyleId,
+                        "railway-line-rail",
+                        "railway-line-light-rail",
+                        "railway-line-subway",
+                        "railway-line-narrow-gauge",
+                        "railway-line-funicular",
+                        "railway-line-monorail",
+                        "railway-line-miniature",
+                        "railway-line-service",
+                        "railway-line-tunnel",
+                        "railway-tunnel-label",
+                        "railway-areas-fill",
+                        "railway-areas-outline"
+                    ),
+                ],
+                Label: "Tracks & tunnels"
+            ),
+            new MapLayerVisibilityGroup(
+                "tram",
+                [
+                    MapLayerVisibilityTarget.Style(
+                        OverlayStyleId,
+                        "tram-line-fill",
+                        "tram-line-tunnel",
+                        "tram-stations-icon",
+                        "subway-entrance-icon",
+                        "tram-lifecycle-fill",
+                        "railway-tram-crossings-circle"
+                    ),
+                ],
+                IsVisible: false,
+                Label: "Tram & metro"
+            ),
+            new MapLayerVisibilityGroup(
+                "stations",
+                [
+                    MapLayerVisibilityTarget.Style(
+                        OverlayStyleId,
+                        "railway-stations-circle",
+                        "railway-stations-label",
+                        "railway-border-circle",
+                        "railway-border-label"
+                    ),
+                ],
+                Label: "Stations & borders"
+            ),
+            new MapLayerVisibilityGroup(
+                "platforms",
+                [
+                    MapLayerVisibilityTarget.Style(
+                        OverlayStyleId,
+                        "railway-platforms-fill",
+                        "railway-platforms-3d",
+                        "railway-platforms-label",
+                        "railway-platform-refs-label",
+                        "railway-platform-names-label"
+                    ),
+                ],
+                Label: "Platforms"
+            ),
+            new MapLayerVisibilityGroup(
+                "routes",
+                [
+                    MapLayerVisibilityTarget.Style(
+                        OverlayStyleId,
+                        "railway-routes-casing",
+                        "railway-routes",
+                        "railway-routes-label"
+                    ),
+                ],
+                Label: "Routes"
+            ),
+            new MapLayerVisibilityGroup(
+                "lifecycle",
+                [
+                    MapLayerVisibilityTarget.Style(
+                        OverlayStyleId,
+                        "railway-lifecycle-construction",
+                        "railway-lifecycle-proposed",
+                        "railway-lifecycle-disused",
+                        "railway-lifecycle-abandoned",
+                        "railway-lifecycle-preserved",
+                        "railway-lifecycle-razed"
+                    ),
+                ],
+                Label: "Lifecycle"
+            ),
+            new MapLayerVisibilityGroup(
+                "infrastructure",
+                [
+                    MapLayerVisibilityTarget.Style(
+                        OverlayStyleId,
+                        "railway-switches",
+                        "railway-signals",
+                        "railway-buffer-stops",
+                        "railway-milestones",
+                        "railway-turntables",
+                        "railway-derails",
+                        "railway-crossings-track",
+                        "railway-owner-change",
+                        "railway-crossings-circle"
+                    ),
+                ],
+                IsVisible: false,
+                Label: "Infrastructure"
+            ),
+        ]);
 
     public static MapOptions BuildMapOptions(string? overlayStyleUrl, string? composedGlyphsUrl)
     {

@@ -17,12 +17,10 @@ public class MapLayerVisibilityStateTests
     public void Should_validate_duplicate_group_ids()
     {
         var act = () =>
-            new MapLayerVisibilityState(
-                [
-                    new MapLayerVisibilityGroup("group", [MapLayerVisibilityTarget.Layer("layer-a")]),
-                    new MapLayerVisibilityGroup("group", [MapLayerVisibilityTarget.Layer("layer-b")]),
-                ]
-            );
+            new MapLayerVisibilityState([
+                new MapLayerVisibilityGroup("group", [MapLayerVisibilityTarget.Layer("layer-a")]),
+                new MapLayerVisibilityGroup("group", [MapLayerVisibilityTarget.Layer("layer-b")]),
+            ]);
 
         act.Should().Throw<ArgumentException>().WithMessage("*unique*group*");
     }
@@ -44,10 +42,7 @@ public class MapLayerVisibilityStateTests
     public void Should_snapshot_input_lists()
     {
         var layerIds = new List<string> { "layer-a" };
-        var targets = new List<MapLayerVisibilityTarget>
-        {
-            new(MapLayerVisibilityTargetKind.RuntimeLayer, layerIds),
-        };
+        var targets = new List<MapLayerVisibilityTarget> { new(MapLayerVisibilityTargetKind.RuntimeLayer, layerIds) };
         var group = new MapLayerVisibilityGroup("group", targets);
         var state = new MapLayerVisibilityState([group]);
 
@@ -61,9 +56,9 @@ public class MapLayerVisibilityStateTests
     [Test]
     public void Should_raise_one_group_changed_event_when_visibility_changes()
     {
-        var state = new MapLayerVisibilityState(
-            [new MapLayerVisibilityGroup("group", [MapLayerVisibilityTarget.Layer("layer")])]
-        );
+        var state = new MapLayerVisibilityState([
+            new MapLayerVisibilityGroup("group", [MapLayerVisibilityTarget.Layer("layer")]),
+        ]);
         var events = new List<MapLayerVisibilityChangedEventArgs>();
         state.Changed += (_, args) => events.Add(args);
 
@@ -79,9 +74,9 @@ public class MapLayerVisibilityStateTests
     [Test]
     public void Should_toggle_visibility()
     {
-        var state = new MapLayerVisibilityState(
-            [new MapLayerVisibilityGroup("group", [MapLayerVisibilityTarget.Layer("layer")])]
-        );
+        var state = new MapLayerVisibilityState([
+            new MapLayerVisibilityGroup("group", [MapLayerVisibilityTarget.Layer("layer")]),
+        ]);
 
         state.Toggle("group");
 
@@ -91,9 +86,9 @@ public class MapLayerVisibilityStateTests
     [Test]
     public void Should_raise_one_groups_replaced_event()
     {
-        var state = new MapLayerVisibilityState(
-            [new MapLayerVisibilityGroup("old", [MapLayerVisibilityTarget.Layer("old-layer")])]
-        );
+        var state = new MapLayerVisibilityState([
+            new MapLayerVisibilityGroup("old", [MapLayerVisibilityTarget.Layer("old-layer")]),
+        ]);
         var events = new List<MapLayerVisibilityChangedEventArgs>();
         state.Changed += (_, args) => events.Add(args);
 

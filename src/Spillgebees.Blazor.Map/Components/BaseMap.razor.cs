@@ -674,24 +674,38 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     {
         _ = InvokeAsync(async () =>
         {
-            if (IsDisposing || !RuntimeIsReady)
+            try
+            {
+                if (IsDisposing || !RuntimeIsReady)
+                {
+                    _layerVisibilitySyncPending = true;
+                    return;
+                }
+
+                if (
+                    args.ChangeKind == MapLayerVisibilityChangeKind.GroupChanged
+                    && args.GroupId is not null
+                    && _activeLayerVisibility?.TryGetGroup(args.GroupId, out var group) == true
+                )
+                {
+                    await SceneRegistry.RegisterVisibilityGroupAsync(BuildVisibilityGroupDescriptor(group));
+                    _registeredLayerVisibilityGroupIds.Add(group.Id);
+                    return;
+                }
+
+                await SyncLayerVisibilityGroupsAsync();
+            }
+            catch (Exception exception) when (!IsDisposing)
             {
                 _layerVisibilitySyncPending = true;
-                return;
+                Logger.Value.LogError(
+                    exception,
+                    "Failed to handle layer visibility change in {Method} for change kind {ChangeKind} and group {GroupId}.",
+                    nameof(HandleLayerVisibilityChanged),
+                    args.ChangeKind,
+                    args.GroupId
+                );
             }
-
-            if (
-                args.ChangeKind == MapLayerVisibilityChangeKind.GroupChanged
-                && args.GroupId is not null
-                && _activeLayerVisibility?.TryGetGroup(args.GroupId, out var group) == true
-            )
-            {
-                await SceneRegistry.RegisterVisibilityGroupAsync(BuildVisibilityGroupDescriptor(group));
-                _registeredLayerVisibilityGroupIds.Add(group.Id);
-                return;
-            }
-
-            await SyncLayerVisibilityGroupsAsync();
         });
     }
 
@@ -705,7 +719,9 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
         IReadOnlyList<MapLayerVisibilityGroup> desiredGroups = _activeLayerVisibility?.Groups ?? [];
         var desiredGroupIds = desiredGroups.Select(group => group.Id).ToHashSet(StringComparer.Ordinal);
-        var removedGroupIds = _registeredLayerVisibilityGroupIds.Except(desiredGroupIds, StringComparer.Ordinal).ToArray();
+        var removedGroupIds = _registeredLayerVisibilityGroupIds
+            .Except(desiredGroupIds, StringComparer.Ordinal)
+            .ToArray();
 
         foreach (var groupId in removedGroupIds)
         {
@@ -723,11 +739,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     }
 
     private static MapVisibilityGroupDescriptor BuildVisibilityGroupDescriptor(MapLayerVisibilityGroup group) =>
-        new(
-            group.Id,
-            group.IsVisible,
-            group.Targets.Select(BuildVisibilityGroupTargetDescriptor).ToArray()
-        );
+        new(group.Id, group.IsVisible, group.Targets.Select(BuildVisibilityGroupTargetDescriptor).ToArray());
 
     private static MapVisibilityGroupTargetDescriptor BuildVisibilityGroupTargetDescriptor(
         MapLayerVisibilityTarget target
