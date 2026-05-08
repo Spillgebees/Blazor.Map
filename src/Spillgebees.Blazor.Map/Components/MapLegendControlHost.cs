@@ -337,7 +337,7 @@ internal sealed class MapLegendControlHost : ComponentBase, IAsyncDisposable
             .Build();
     }
 
-    private bool IsToggleable(MapLegendItem item) => item.VisibilityGroupId is not null;
+    private static bool IsToggleable(MapLegendItem item) => item.VisibilityGroupId is not null;
 
     private bool GetItemVisible(MapLegendItem item) =>
         ResolveVisibilityGroup(item, required: item.VisibilityGroupId is not null)?.IsVisible ?? true;
