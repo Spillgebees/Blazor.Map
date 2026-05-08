@@ -73,6 +73,6 @@ public class TrainTrackingExampleTests : BunitContext
 
         items.Should().Contain(item => item.Id == "tracks" && item.VisibilityGroupId == "tracks");
         items.Should().Contain(item => item.Id == "trains" && item.VisibilityGroupId == "trains");
-        items.Should().OnlyContain(item => item.VisibilityGroupId is not null);
+        items.Should().OnlyContain(item => item.VisibilityGroupId != null);
     }
 }

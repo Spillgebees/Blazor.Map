@@ -31,7 +31,10 @@ public sealed record MapLayerVisibilityTarget
 
         if (Kind == MapLayerVisibilityTargetKind.StyleLayer)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(StyleId);
+            if (string.IsNullOrWhiteSpace(StyleId))
+            {
+                throw new ArgumentException("Style layer visibility targets require a non-empty style ID.", nameof(StyleId));
+            }
         }
         else if (StyleId is not null)
         {

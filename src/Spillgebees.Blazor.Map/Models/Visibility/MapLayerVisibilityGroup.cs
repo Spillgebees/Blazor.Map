@@ -21,7 +21,11 @@ public sealed record MapLayerVisibilityGroup
         string? Description = null
     )
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(Id);
+        if (string.IsNullOrWhiteSpace(Id))
+        {
+            throw new ArgumentException("Layer visibility group IDs must be non-empty.", nameof(Id));
+        }
+
         ArgumentNullException.ThrowIfNull(Targets);
 
         if (Targets.Count == 0)

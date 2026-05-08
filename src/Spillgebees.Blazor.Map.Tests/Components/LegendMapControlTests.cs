@@ -203,8 +203,7 @@ public class LegendMapControlTests : BunitContext
 
     private MapSceneMutationBatch GetLatestSceneMutationBatch() =>
         JSInterop
-            .Invocations[ApplySceneMutationsIdentifier]
-            .Last()
+            .Invocations[ApplySceneMutationsIdentifier][^1]
             .Arguments[1]
             .Should()
             .BeOfType<MapSceneMutationBatch>()
