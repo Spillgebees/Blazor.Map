@@ -36,6 +36,8 @@ function createDefaultMapOptions(): IMapOptions {
     interactive: true,
     cooperativeGestures: false,
     webFonts: null,
+    pixelRatioMode: "browserDefault",
+    pixelRatio: null,
   };
 }
 

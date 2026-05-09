@@ -400,6 +400,17 @@ internal static class MapJs
             mapOptions.Interactive,
             mapOptions.CooperativeGestures,
             WebFonts = mapOptions.WebFonts?.ToArray(),
+            PixelRatioMode = mapOptions.PixelRatioMode switch
+            {
+                MapPixelRatioMode.BrowserDefault => "browserDefault",
+                MapPixelRatioMode.RoundedUpDevicePixelRatio => "roundedUpDevicePixelRatio",
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(mapOptions),
+                    mapOptions.PixelRatioMode,
+                    $"Unsupported map pixel ratio mode '{mapOptions.PixelRatioMode}'."
+                ),
+            },
+            mapOptions.PixelRatio,
         };
 
     private static object ToJsModel(MapControl control) =>

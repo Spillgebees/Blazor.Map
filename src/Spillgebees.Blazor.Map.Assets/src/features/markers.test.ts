@@ -34,6 +34,8 @@ function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions 
     interactive: true,
     cooperativeGestures: false,
     webFonts: null,
+    pixelRatioMode: "browserDefault",
+    pixelRatio: null,
     ...overrides,
   };
 }

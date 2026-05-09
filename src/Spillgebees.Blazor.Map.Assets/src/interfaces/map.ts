@@ -26,6 +26,8 @@ export interface IMapOptions {
   interactive: boolean;
   cooperativeGestures: boolean;
   webFonts: string[] | null;
+  pixelRatioMode: "browserDefault" | "roundedUpDevicePixelRatio";
+  pixelRatio: number | null;
 }
 
 export interface IMapBounds {

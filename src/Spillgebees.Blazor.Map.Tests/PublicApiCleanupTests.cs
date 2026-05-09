@@ -157,6 +157,7 @@ public class PublicApiCleanupTests
             "Spillgebees.Blazor.Map.Models.MapBounds",
             "Spillgebees.Blazor.Map.Models.MapImage",
             "Spillgebees.Blazor.Map.Models.MapOptions",
+            "Spillgebees.Blazor.Map.Models.MapPixelRatioMode",
             "Spillgebees.Blazor.Map.Models.MapProjection",
             "Spillgebees.Blazor.Map.Models.MapStyle",
             "Spillgebees.Blazor.Map.Models.MapStyle+OpenFreeMap",
@@ -388,6 +389,21 @@ public class PublicApiCleanupTests
         zoomType.Should().Be(typeof(double));
         minZoomType.Should().Be(typeof(double?));
         maxZoomType.Should().Be(typeof(double?));
+    }
+
+    [Test]
+    public void Should_expose_pixel_ratio_option_types()
+    {
+        // arrange
+        var mapOptionsType = typeof(MapOptions);
+
+        // act
+        var pixelRatioModeType = mapOptionsType.GetProperty(nameof(MapOptions.PixelRatioMode))?.PropertyType;
+        var pixelRatioType = mapOptionsType.GetProperty(nameof(MapOptions.PixelRatio))?.PropertyType;
+
+        // assert
+        pixelRatioModeType.Should().Be(typeof(MapPixelRatioMode));
+        pixelRatioType.Should().Be(typeof(double?));
     }
 
     [Test]

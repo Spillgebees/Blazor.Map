@@ -44,6 +44,12 @@ namespace Spillgebees.Blazor.Map.Models;
 /// The fonts must also be loaded via CSS <c>@@import</c> or <c>@@font-face</c> in your application.
 /// Once loaded, they can be referenced by name in SymbolLayer's TextFont property.
 /// </param>
+/// <param name="PixelRatioMode">
+/// Controls how the MapLibre canvas pixel ratio is resolved. Default preserves browser behavior.
+/// </param>
+/// <param name="PixelRatio">
+/// Explicit MapLibre canvas pixel ratio override. When set, this takes precedence over <see cref="PixelRatioMode"/>.
+/// </param>
 public record MapOptions(
     Coordinate Center,
     double Zoom = 0,
@@ -61,11 +67,34 @@ public record MapOptions(
     MapBounds? MaxBounds = null,
     bool Interactive = true,
     bool CooperativeGestures = false,
-    IReadOnlyList<string>? WebFonts = null
+    IReadOnlyList<string>? WebFonts = null,
+    MapPixelRatioMode PixelRatioMode = MapPixelRatioMode.BrowserDefault,
+    double? PixelRatio = null
 )
 {
+    private double? _pixelRatio = ValidatePixelRatio(PixelRatio);
+
+    /// <summary>
+    /// Explicit MapLibre canvas pixel ratio override. When set, this takes precedence over <see cref="PixelRatioMode"/>.
+    /// </summary>
+    public double? PixelRatio
+    {
+        get => _pixelRatio;
+        init => _pixelRatio = ValidatePixelRatio(value);
+    }
+
     /// <summary>
     /// Default map options centered at (0, 0) with zoom level 0.
     /// </summary>
     public static MapOptions Default => new(new Coordinate(0, 0));
+
+    private static double? ValidatePixelRatio(double? pixelRatio)
+    {
+        if (pixelRatio is <= 0 || (pixelRatio.HasValue && !double.IsFinite(pixelRatio.Value)))
+        {
+            throw new ArgumentOutOfRangeException(nameof(pixelRatio), "Pixel ratio must be greater than zero.");
+        }
+
+        return pixelRatio;
+    }
 }
