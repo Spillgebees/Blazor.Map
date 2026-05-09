@@ -27,6 +27,7 @@
                                 @if (IsToggleable(item))
                                 {
                                     <label class="sgb-map-legend-item-toggle">
+                                        @RenderLegendSymbol(item)
                                         <span class="sgb-map-legend-item-copy">
                                             <span class="sgb-map-legend-item-label">@item.Label</span>
                                             @if (!string.IsNullOrWhiteSpace(item.Description))
@@ -47,6 +48,7 @@
                                 }
                                 else
                                 {
+                                    @RenderLegendSymbol(item)
                                     <div class="sgb-map-legend-item-copy">
                                         <span class="sgb-map-legend-item-label">@item.Label</span>
                                         @if (!string.IsNullOrWhiteSpace(item.Description))

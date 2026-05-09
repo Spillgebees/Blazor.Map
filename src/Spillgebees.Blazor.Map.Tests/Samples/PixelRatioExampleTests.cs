@@ -22,7 +22,7 @@ public class PixelRatioExampleTests : BunitContext
 
         // assert
         cut.FindComponents<SgbMap>().Should().HaveCount(1);
-        cut.FindComponents<MapCustomControl>().Should().HaveCount(1);
+        cut.FindComponents<CustomMapControl>().Should().HaveCount(1);
         cut.Find(".docs-pixel-ratio-control").TextContent.Should().Contain("1.25x");
         cut.Find(".docs-pixel-ratio-control").TextContent.Should().Contain("2x");
         cut.Find("button.active").TextContent.Should().Contain("Browser default");

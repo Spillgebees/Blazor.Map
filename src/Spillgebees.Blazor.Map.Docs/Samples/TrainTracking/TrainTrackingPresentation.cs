@@ -17,8 +17,8 @@ public static class TrainTrackingPresentation
          OnMoveEnd=""@HandleMapViewChangedAsync""
          OnZoomEnd=""@HandleMapViewChangedAsync"">
      <MapControls>
-         <MapNavigationControl />
-         <MapLegendControl Id=""overlay-legend""
+         <NavigationMapControl />
+         <LegendMapControl Id=""overlay-legend""
                            Position=""@ControlPosition.TopLeft""
                            Title=""Legend""
                            Definition=""@TrainTrackingPresentation.OverlayLegendDefinition"" />

@@ -250,6 +250,114 @@
   }
 }
 
+// panel control
+.sgb-map-panel-control {
+  position: relative;
+
+  &.sgb-map-panel-open {
+    z-index: 10;
+  }
+
+  .sgb-map-panel-toggle {
+    width: var(--sgb-map-ctrl-btn-size);
+    height: var(--sgb-map-ctrl-btn-size);
+
+    svg {
+      width: var(--sgb-map-ctrl-icon-size);
+      height: var(--sgb-map-ctrl-icon-size);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--sgb-map-ctrl-link);
+      outline-offset: -2px;
+    }
+  }
+
+  .sgb-map-panel {
+    position: absolute;
+    z-index: 2;
+    min-width: 16rem;
+    max-width: min(var(--sgb-map-panel-max-width, 22rem), calc(100vw - 20px));
+    max-height: min(var(--sgb-map-panel-max-height, 420px), calc(100vh - 20px));
+    overflow: auto;
+    color: var(--sgb-map-ctrl-text);
+    background: var(--sgb-map-ctrl-bg);
+    border: 1px solid var(--sgb-map-ctrl-border);
+    border-radius: 4px;
+    box-shadow: var(--sgb-map-ctrl-shadow);
+  }
+
+  .sgb-map-panel-header {
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid var(--sgb-map-ctrl-border);
+  }
+
+  .sgb-map-panel-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .sgb-map-panel-body {
+    padding: 0.75rem;
+  }
+
+  &.sgb-map-panel-closed .sgb-map-panel {
+    display: none;
+  }
+}
+
+.maplibregl-ctrl-top-left .sgb-map-panel-control .sgb-map-panel,
+.maplibregl-ctrl-bottom-left .sgb-map-panel-control .sgb-map-panel {
+  left: 0;
+}
+
+.maplibregl-ctrl-top-right .sgb-map-panel-control .sgb-map-panel,
+.maplibregl-ctrl-bottom-right .sgb-map-panel-control .sgb-map-panel {
+  right: 0;
+}
+
+.maplibregl-ctrl-top-left .sgb-map-panel-control .sgb-map-panel,
+.maplibregl-ctrl-top-right .sgb-map-panel-control .sgb-map-panel {
+  top: calc(var(--sgb-map-ctrl-btn-size) + 4px);
+}
+
+.maplibregl-ctrl-bottom-left .sgb-map-panel-control .sgb-map-panel,
+.maplibregl-ctrl-bottom-right .sgb-map-panel-control .sgb-map-panel {
+  bottom: calc(var(--sgb-map-ctrl-btn-size) + 4px);
+}
+
+.sgb-map-layer-control-content {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.sgb-map-layer-control-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.35rem 0;
+}
+
+.sgb-map-layer-control-copy {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.sgb-map-layer-control-label {
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+}
+
+.sgb-map-layer-control-description {
+  color: var(--sgb-map-ctrl-muted);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
 // legend control
 .sgb-map-legend {
   --sgb-map-legend-max-width: 320px;
@@ -331,6 +439,10 @@
 .sgb-map-legend.sgb-map-legend-collapsible {
   position: relative;
 
+  &.sgb-map-legend-open {
+    z-index: 10;
+  }
+
   .sgb-map-legend-panel {
     // by default, panel below and aligned to the right edge of the button
     top: calc(var(--sgb-map-ctrl-btn-size) + 4px);
@@ -391,7 +503,7 @@
 
 .sgb-map-legend-item-toggle {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
   padding: 8px;
@@ -402,6 +514,52 @@
 
   &:hover {
     background: var(--sgb-map-ctrl-bg-hover);
+  }
+}
+
+.sgb-map-legend-item:not(.sgb-map-legend-item-toggleable) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+}
+
+.sgb-map-legend-symbol {
+  position: relative;
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  color: var(--sgb-map-legend-symbol-color, currentColor);
+
+  &[data-symbol="swatch"]::before {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    background: var(--sgb-map-legend-symbol-color);
+    content: "";
+  }
+
+  &[data-symbol="line"]::before,
+  &[data-symbol="dashed-line"]::before {
+    width: 20px;
+    border-top: var(--sgb-map-legend-symbol-width, 3px) solid var(--sgb-map-legend-symbol-color);
+    content: "";
+  }
+
+  &[data-symbol="dashed-line"]::before {
+    border-top-style: dashed;
+  }
+
+  &[data-symbol="circle"]::before {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--sgb-map-legend-symbol-stroke);
+    border-radius: 999px;
+    background: var(--sgb-map-legend-symbol-color);
+    content: "";
   }
 }
 

@@ -4,7 +4,7 @@
 <button type="button"
         class="@ButtonClass"
         aria-label="@Label"
-        title="@Title"
+        title="@EffectiveTitle"
         disabled="@Disabled"
         @onclick="OnClick">
     @if (Icon is not null)
@@ -20,6 +20,9 @@
 </button>
 
 @code {
+    [CascadingParameter]
+    private MapButtonGroupContext? ButtonGroup { get; set; }
+
     [Parameter, EditorRequired]
     public string Label { get; set; } = string.Empty;
 
@@ -33,16 +36,18 @@
     public RenderFragment? Icon { get; set; }
 
     [Parameter]
-    public MapControlButtonVariant Variant { get; set; } = MapControlButtonVariant.Neutral;
+    public MapButtonVariant Variant { get; set; } = MapButtonVariant.Neutral;
 
     [Parameter]
-    public MapControlButtonSize Size { get; set; } = MapControlButtonSize.Medium;
+    public MapButtonSize Size { get; set; } = MapButtonSize.Medium;
 
     [Parameter]
     public bool Disabled { get; set; }
 
     [Parameter]
     public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    private string EffectiveTitle => string.IsNullOrWhiteSpace(Title) ? Label : Title;
 
     private string ButtonClass => string.Join(
         " ",
@@ -58,6 +63,11 @@
 
     protected override void OnParametersSet()
     {
+        if (ButtonGroup is null)
+        {
+            throw new InvalidOperationException("MapButton must be placed inside ButtonGroupMapControl.");
+        }
+
         if (string.IsNullOrWhiteSpace(Label))
         {
             throw new InvalidOperationException("A non-empty Label is required.");
@@ -65,7 +75,7 @@
 
         if (Icon is null && string.IsNullOrWhiteSpace(Text))
         {
-            throw new InvalidOperationException("MapControlButton requires non-empty Text or Icon.");
+            throw new InvalidOperationException("MapButton requires non-empty Text or Icon.");
         }
     }
 

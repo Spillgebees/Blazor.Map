@@ -6,21 +6,22 @@
 @code {
     protected virtual RenderFragment Render
         => @<CascadingValue Value="this">
-            <CascadingValue Value="new MapRootContext(this)">
-                <CascadingValue Value="ControlRegistry">
-                    <CascadingValue Value="LayerVisibility">
-                        <div id="@ContainerId"
-                             class="@InternalContainerClass"
-                             style="@InternalContainerStyle"
-                             @ref="@MapReference">
-                        </div>
-                        @foreach (var legendControl in Controls.OfType<LegendMapControl>())
-                        {
-                            <DynamicComponent Type="typeof(MapLegendControlHost)" Parameters="GetLegendControlHostParameters(legendControl)" />
-                        }
-                        @ChildContent
+                <CascadingValue Value="new MapRootContext(this)">
+                    <CascadingValue Value="ControlRegistry">
+                        <CascadingValue Value="LayerVisibility">
+                            <div id="@ContainerId"
+                                 class="@InternalContainerClass"
+                                 style="@InternalContainerStyle"
+                                 @ref="@MapReference">
+                            </div>
+                            @foreach (var legendControl in Controls.OfType<LegendControlDefinition>())
+                            {
+                                <DynamicComponent Type="typeof(LegendMapControlHost)"
+                                                  Parameters="GetLegendControlHostParameters(legendControl)" />
+                            }
+                            @ChildContent
+                        </CascadingValue>
                     </CascadingValue>
                 </CascadingValue>
-            </CascadingValue>
-              </CascadingValue>;
+            </CascadingValue>;
 }

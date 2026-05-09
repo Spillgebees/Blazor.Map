@@ -3,7 +3,7 @@ namespace Spillgebees.Blazor.Map.Models.Controls;
 /// <summary>
 /// Visual variant for first-class map control buttons.
 /// </summary>
-public enum MapControlButtonVariant
+public enum MapButtonVariant
 {
     Neutral,
     Primary,
@@ -12,7 +12,7 @@ public enum MapControlButtonVariant
 /// <summary>
 /// Visual size for first-class map control buttons.
 /// </summary>
-public enum MapControlButtonSize
+public enum MapButtonSize
 {
     Medium,
     Small,

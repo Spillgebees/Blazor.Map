@@ -9,8 +9,8 @@ See the [documentation and demos](https://spillgebees.github.io/Blazor.Map) for 
 ```razor
 <SgbMap MapOptions="@_mapOptions" Height="400px" Width="100%">
     <MapControls>
-        <MapNavigationControl />
-        <MapScaleControl />
+        <NavigationMapControl />
+        <ScaleMapControl />
     </MapControls>
 
     <MapSources>

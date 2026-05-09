@@ -11,6 +11,7 @@ import {
 import { CenterControl } from "./controls/centerControl";
 import { ContentControl } from "./controls/contentControl";
 import { LegendControl } from "./controls/legendControl";
+import { PanelControl } from "./controls/panelControl";
 import { addMarkers, removeMarkers, updateMarkers } from "./features/markers";
 import {
   addCircles,
@@ -22,13 +23,20 @@ import {
   updateCircles,
   updatePolylines,
 } from "./features/shapes";
-import type { ControlPosition, IContentMapControl, ILegendMapControl, IMapControl } from "./interfaces/controls";
+import type {
+  ControlPosition,
+  IContentMapControl,
+  ILegendMapControl,
+  IMapControl,
+  IPanelMapControl,
+} from "./interfaces/controls";
 import type { ICircle, IMarker, IPolyline } from "./interfaces/features";
 import type { ICoordinate, IFitBoundsOptions, IMapImage, IMapOptions, IMapStyle, ITileOverlay } from "./interfaces/map";
 import type {
   ComposedStyleLayerRegistration,
   CustomControlRegistration,
   LayerEventSubscription,
+  NativeControlRegistration,
   OverlayStyleRequestOptions,
   RegisteredMapImage,
   RegisteredMapLayer,
@@ -112,6 +120,7 @@ const REQUIRED_MAP_FUNCTION_NAMES = [
 const MAP_NAMESPACE_BUNDLE_MARKER = "spillgebees.blazor.map.assets.bundle.v1";
 
 const LEGEND_CONTROL_KIND = "legend";
+const PANEL_CONTROL_KIND = "panel";
 const CONTENT_CONTROL_KIND = "content";
 
 interface OrderedControlRegistration {
@@ -272,6 +281,7 @@ function isValidMapNamespace(): boolean {
       mapNamespace.features instanceof Map &&
       mapNamespace.overlays instanceof Map &&
       mapNamespace.controls instanceof Map &&
+      mapNamespace.nativeControlRegistrations instanceof Map &&
       mapNamespace.customControlRegistrations instanceof Map &&
       mapNamespace.styles instanceof Map &&
       mapNamespace.mapOptions instanceof Map &&
@@ -346,6 +356,7 @@ function initializeNamespace(): void {
     features: new Map<MapLibreMap, FeatureStorage>(),
     overlays: new Map<MapLibreMap, Map<string, ITileOverlay>>(),
     controls: new Map<MapLibreMap, Set<IControl>>(),
+    nativeControlRegistrations: new Map<MapLibreMap, Map<string, NativeControlRegistration>>(),
     customControlRegistrations: new Map<MapLibreMap, Map<string, CustomControlRegistration>>(),
     styles: new Map<MapLibreMap, string | StyleSpecification>(),
     mapOptions: new Map<MapLibreMap, IMapOptions>(),
@@ -505,19 +516,83 @@ function getCustomControlStore(map: MapLibreMap): Map<string, CustomControlRegis
   return created;
 }
 
+function getNativeControlStore(map: MapLibreMap): Map<string, NativeControlRegistration> {
+  const existing = window.Spillgebees.Map.nativeControlRegistrations.get(map);
+  if (existing) {
+    return existing;
+  }
+
+  const created = new Map<string, NativeControlRegistration>();
+  window.Spillgebees.Map.nativeControlRegistrations.set(map, created);
+  return created;
+}
+
+function isContentControlKind(kind: IMapControl["kind"]): kind is "legend" | "panel" | "content" {
+  return kind === LEGEND_CONTROL_KIND || kind === PANEL_CONTROL_KIND || kind === CONTENT_CONTROL_KIND;
+}
+
+function createNativeControlSignature(control: IMapControl): string {
+  switch (control.kind) {
+    case "navigation":
+      return JSON.stringify({ kind: control.kind, showCompass: control.showCompass, showZoom: control.showZoom });
+    case "scale":
+      return JSON.stringify({ kind: control.kind, unit: control.unit });
+    case "fullscreen":
+    case "center":
+      return JSON.stringify({ kind: control.kind });
+    case "geolocate":
+      return JSON.stringify({ kind: control.kind, trackUser: control.trackUser });
+    case "terrain":
+      return JSON.stringify({ kind: control.kind, sourceId: control.sourceId });
+    default:
+      return JSON.stringify({ kind: control.kind });
+  }
+}
+
+function getOrCreateControl(map: MapLibreMap, controlDefinition: IMapControl): IControl | null {
+  const customRegistration = getCustomControlStore(map).get(controlDefinition.controlId);
+  if (customRegistration) {
+    return customRegistration.control;
+  }
+
+  if (isContentControlKind(controlDefinition.kind)) {
+    return null;
+  }
+
+  const nativeControlStore = getNativeControlStore(map);
+  const signature = createNativeControlSignature(controlDefinition);
+  const existingRegistration = nativeControlStore.get(controlDefinition.controlId);
+  if (
+    existingRegistration &&
+    existingRegistration.kind === controlDefinition.kind &&
+    existingRegistration.signature === signature
+  ) {
+    return existingRegistration.control;
+  }
+
+  const control = createControlFromDefinition(map, controlDefinition);
+  if (!control) {
+    nativeControlStore.delete(controlDefinition.controlId);
+    return null;
+  }
+
+  nativeControlStore.set(controlDefinition.controlId, {
+    controlId: controlDefinition.controlId,
+    kind: controlDefinition.kind,
+    signature,
+    control,
+  });
+  return control;
+}
+
 function getOrderedRegistrations(map: MapLibreMap, controlsPayload: IMapControl[]): OrderedControlRegistration[] {
   const registrations: OrderedControlRegistration[] = [];
   for (const [declarationOrder, controlDefinition] of controlsPayload.entries()) {
-    if (!controlDefinition.enabled) {
+    if (!controlDefinition.visible) {
       continue;
     }
 
-    const customRegistration = getCustomControlStore(map).get(controlDefinition.controlId);
-    let control: IControl | null | undefined = customRegistration?.control;
-    if (!control) {
-      control = createControlFromDefinition(map, controlDefinition);
-    }
-
+    const control = getOrCreateControl(map, controlDefinition);
     if (!control) {
       continue;
     }
@@ -581,6 +656,7 @@ function createControlFromDefinition(map: MapLibreMap, control: IMapControl): IC
     case "center":
       return new CenterControl();
     case "legend":
+    case "panel":
     case "content":
       return null;
     default:
@@ -603,6 +679,35 @@ function ensureUniqueControlIds(controlsPayload: IMapControl[]): void {
   }
 }
 
+function pruneControlRegistrations(map: MapLibreMap, controlsPayload: IMapControl[]): void {
+  const desiredById = new Map(controlsPayload.map((control) => [control.controlId, control]));
+  const nativeControlStore = getNativeControlStore(map);
+  const customControlStore = getCustomControlStore(map);
+
+  for (const [controlId, registration] of nativeControlStore) {
+    const desired = desiredById.get(controlId);
+    if (!desired?.visible) {
+      nativeControlStore.delete(controlId);
+      continue;
+    }
+
+    if (
+      isContentControlKind(desired.kind) ||
+      desired.kind !== registration.kind ||
+      createNativeControlSignature(desired) !== registration.signature
+    ) {
+      nativeControlStore.delete(controlId);
+    }
+  }
+
+  for (const [controlId, registration] of customControlStore) {
+    const desired = desiredById.get(controlId);
+    if (!desired?.visible || desired.kind !== registration.kind) {
+      customControlStore.delete(controlId);
+    }
+  }
+}
+
 function recomposeControls(mapElement: HTMLElement, controlsPayload: IMapControl[]): void {
   const map = window.Spillgebees.Map.maps.get(mapElement);
   if (!map) {
@@ -611,6 +716,7 @@ function recomposeControls(mapElement: HTMLElement, controlsPayload: IMapControl
 
   ensureUniqueControlIds(controlsPayload);
   window.Spillgebees.Map.controlsPayload.set(map, structuredClone(controlsPayload));
+  pruneControlRegistrations(map, controlsPayload);
 
   const existingControls = window.Spillgebees.Map.controls.get(map);
   if (existingControls) {
@@ -951,6 +1057,7 @@ export function createMap(
   // Initialize control storage
   window.Spillgebees.Map.controls.set(map, new Set());
   window.Spillgebees.Map.controlsPayload.set(map, structuredClone(controlsPayload));
+  window.Spillgebees.Map.nativeControlRegistrations.set(map, new Map());
   window.Spillgebees.Map.customControlRegistrations.set(map, new Map());
   window.Spillgebees.Map.mapOptions.set(map, mapOptions);
   window.Spillgebees.Map.requestContexts.set(map, {
@@ -1074,6 +1181,7 @@ export function disposeMap(mapElement: HTMLElement): void {
 
   // Clean up control storage
   window.Spillgebees.Map.controls.delete(map);
+  window.Spillgebees.Map.nativeControlRegistrations.delete(map);
   window.Spillgebees.Map.customControlRegistrations.delete(map);
   window.Spillgebees.Map.controlsPayload.delete(map);
 
@@ -1359,13 +1467,14 @@ export function setControlContent(
   kind: string,
   placeholderHost?: HTMLElement,
   contentRoot?: HTMLElement,
+  stateReference?: DotNet.DotNetObject,
 ): void {
   const map = window.Spillgebees.Map.maps.get(mapElement);
   if (!map) {
     return;
   }
 
-  if (kind !== LEGEND_CONTROL_KIND && kind !== CONTENT_CONTROL_KIND) {
+  if (kind !== LEGEND_CONTROL_KIND && kind !== PANEL_CONTROL_KIND && kind !== CONTENT_CONTROL_KIND) {
     throw new Error(`Unsupported control content kind '${kind}' for control '${controlId}'.`);
   }
 
@@ -1382,6 +1491,12 @@ export function setControlContent(
     return;
   }
 
+  if (existingRegistration?.control instanceof PanelControl && kind === PANEL_CONTROL_KIND) {
+    existingRegistration.control.update(controlDefinition as IPanelMapControl, stateReference);
+    customControlStore.set(controlId, existingRegistration);
+    return;
+  }
+
   if (existingRegistration?.control instanceof ContentControl && kind === CONTENT_CONTROL_KIND) {
     existingRegistration.control.update(controlDefinition as IContentMapControl);
     customControlStore.set(controlId, existingRegistration);
@@ -1391,6 +1506,8 @@ export function setControlContent(
   let control: IControl;
   if (kind === LEGEND_CONTROL_KIND) {
     control = new LegendControl(controlDefinition as ILegendMapControl, placeholderHost, contentRoot);
+  } else if (kind === PANEL_CONTROL_KIND) {
+    control = new PanelControl(controlDefinition as IPanelMapControl, placeholderHost, contentRoot, stateReference);
   } else {
     control = new ContentControl(controlDefinition as IContentMapControl, placeholderHost, contentRoot);
   }
@@ -1405,7 +1522,7 @@ export function setControlContent(
 
   customControlStore.set(controlId, {
     controlId,
-    kind: kind as "legend" | "content",
+    kind: kind as "legend" | "panel" | "content",
     control,
   });
 

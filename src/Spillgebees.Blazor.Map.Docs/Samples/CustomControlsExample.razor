@@ -11,12 +11,12 @@
         Width="100%"
         @ref="_map">
     <MapControls>
-        <MapNavigationControl Position="ControlPosition.TopRight" Order="10" />
-        <MapFullscreenControl Position="ControlPosition.TopRight" Order="20" />
-        <MapCenterControl Position="ControlPosition.TopLeft" Order="5" />
-        <MapScaleControl Position="ControlPosition.BottomLeft" Order="5" />
+        <NavigationMapControl Position="ControlPosition.TopRight" Order="10" />
+        <FullscreenMapControl Position="ControlPosition.TopRight" Order="20" />
+        <CenterMapControl Position="ControlPosition.TopLeft" Order="5" />
+        <ScaleMapControl Position="ControlPosition.BottomLeft" Order="5" />
 
-        <MapActionControl Id="station-focus"
+        <ButtonMapControl Id="station-focus"
                           Position="ControlPosition.TopLeft"
                           Order="15"
                           Label="@FocusActionLabel"
@@ -40,14 +40,30 @@
                             fill="currentColor" />
                 </svg>
             </Icon>
-        </MapActionControl>
+        </ButtonMapControl>
 
-        <MapLegendControl Id="network-legend"
+        <LayerMapControl Id="network-layers"
+                         Position="ControlPosition.TopRight"
+                         Order="40"
+                         InitiallyOpen="true" />
+
+        <PanelMapControl Id="network-options"
+                         Position="ControlPosition.TopRight"
+                         Order="45"
+                         Label="Network options"
+                         Title="Network options">
+            <label class="docs-map-option">
+                <input type="checkbox" @bind="_showStationNames" />
+                Station labels
+            </label>
+        </PanelMapControl>
+
+        <LegendMapControl Id="network-legend"
                           Position="ControlPosition.TopRight"
                           Order="50"
-                          Title="Network layers"
+                          Title="Legend"
                           Collapsible="true"
-                          InitiallyOpen="true"
+                          InitiallyOpen="false"
                           Definition="@_legendDefinition" />
     </MapControls>
 
@@ -84,6 +100,7 @@
     private object? _networkData;
     private int _nextStationIndex;
     private string? _focusedStationName;
+    private bool _showStationNames = true;
     private readonly MapLayerVisibilityState _layerVisibility =
         new(
             [
@@ -124,12 +141,12 @@
                         new MapLegendItem(
                             Id: "metro-lines",
                             Label: "Metro lines",
-                            VisibilityGroupId: "metro-lines"
+                            Symbol: MapLegendSymbol.Line("#2563eb", 4)
                         ),
                         new MapLegendItem(
                             Id: "stations",
                             Label: "Stations",
-                            VisibilityGroupId: "stations"
+                            Symbol: MapLegendSymbol.Circle("#f97316", "#ffffff")
                         ),
                     ]
                 ),

@@ -341,9 +341,11 @@ export class LegendControl implements IControl {
     }
 
     if (this._toggleButton) {
+      const buttonLabel = this._isOpen ? "Hide legend" : "Show legend";
       this._toggleButton.innerHTML = this._isOpen ? CLOSE_ICON_SVG : LEGEND_ICON_SVG;
       this._toggleButton.setAttribute("aria-expanded", this._isOpen ? "true" : "false");
-      this._toggleButton.setAttribute("aria-label", this._isOpen ? "Hide legend" : "Show legend");
+      this._toggleButton.setAttribute("aria-label", buttonLabel);
+      this._toggleButton.title = buttonLabel;
     }
   }
 }

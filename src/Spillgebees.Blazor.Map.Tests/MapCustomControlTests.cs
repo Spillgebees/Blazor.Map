@@ -6,7 +6,7 @@ using Spillgebees.Blazor.Map.Models.Controls;
 
 namespace Spillgebees.Blazor.Map.Tests;
 
-public class MapCustomControlTests : BunitContext
+public class CustomMapControlTests : BunitContext
 {
     private const int TestTimeoutMs = 5000;
     private const string CreateMapIdentifier = "Spillgebees.Map.mapFunctions.createMap";
@@ -15,7 +15,7 @@ public class MapCustomControlTests : BunitContext
     private const string SetControlContentIdentifier = "Spillgebees.Map.mapFunctions.setControlContent";
     private const string RemoveControlContentIdentifier = "Spillgebees.Map.mapFunctions.removeControlContent";
 
-    public MapCustomControlTests()
+    public CustomMapControlTests()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
         JSInterop.SetupVoid(CreateMapIdentifier);
@@ -30,8 +30,10 @@ public class MapCustomControlTests : BunitContext
     {
         // arrange & act
         var cut = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapCustomControl>(control =>
-                control.Add(c => c.Id, "refresh-control").AddChildContent("Refresh")
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<CustomMapControl>(control =>
+                    control.Add(c => c.Id, "refresh-control").AddChildContent("Refresh")
+                )
             )
         );
 
@@ -45,8 +47,10 @@ public class MapCustomControlTests : BunitContext
     {
         // arrange & act
         var cut = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapControlButtonGroup>(control =>
-                control.Add(c => c.Id, "station-tools").Add(c => c.Label, "Station tools").AddChildContent("Focus")
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<ButtonGroupMapControl>(control =>
+                    control.Add(c => c.Id, "station-tools").Add(c => c.Label, "Station tools").AddChildContent("Focus")
+                )
             )
         );
 
@@ -63,13 +67,15 @@ public class MapCustomControlTests : BunitContext
     {
         // arrange
         var cut = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapCustomControl>(control =>
-                control
-                    .Add(c => c.Id, "refresh-control")
-                    .Add(c => c.Position, ControlPosition.TopLeft)
-                    .Add(c => c.Order, 10)
-                    .Add(c => c.Class, "refresh-shell")
-                    .AddChildContent("Refresh")
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<CustomMapControl>(control =>
+                    control
+                        .Add(c => c.Id, "refresh-control")
+                        .Add(c => c.Position, ControlPosition.TopLeft)
+                        .Add(c => c.Order, 10)
+                        .Add(c => c.Class, "refresh-shell")
+                        .AddChildContent("Refresh")
+                )
             )
         );
         cancellationToken.ThrowIfCancellationRequested();
@@ -84,23 +90,27 @@ public class MapCustomControlTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public async Task Should_remove_content_control_when_disabled(CancellationToken cancellationToken)
+    public async Task Should_remove_content_control_when_hidden(CancellationToken cancellationToken)
     {
         // arrange
-        var enabled = true;
+        var visible = true;
         var cut = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapCustomControl>(control =>
-                control.Add(c => c.Id, "refresh-control").Add(c => c.Enabled, enabled).AddChildContent("Refresh")
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<CustomMapControl>(control =>
+                    control.Add(c => c.Id, "refresh-control").Add(c => c.Visible, visible).AddChildContent("Refresh")
+                )
             )
         );
         cancellationToken.ThrowIfCancellationRequested();
         await cut.Instance.OnMapInitializedAsync();
 
         // act
-        enabled = false;
+        visible = false;
         cut.Render(parameters =>
-            parameters.AddChildContent<MapCustomControl>(control =>
-                control.Add(c => c.Id, "refresh-control").Add(c => c.Enabled, enabled).AddChildContent("Refresh")
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<CustomMapControl>(control =>
+                    control.Add(c => c.Id, "refresh-control").Add(c => c.Visible, visible).AddChildContent("Refresh")
+                )
             )
         );
 
@@ -118,7 +128,7 @@ public class MapCustomControlTests : BunitContext
         var map = cut.FindComponent<SgbMap>().Instance;
         cancellationToken.ThrowIfCancellationRequested();
         await map.OnMapInitializedAsync();
-        AddPendingRemovalId(cut.FindComponent<MapCustomControl>().Instance, pendingControlId);
+        AddPendingRemovalId(cut.FindComponent<CustomMapControl>().Instance, pendingControlId);
 
         // act
         showControl = false;
@@ -142,7 +152,9 @@ public class MapCustomControlTests : BunitContext
         // arrange
         var action = () =>
             Render<SgbMap>(parameters =>
-                parameters.AddChildContent<MapCustomControl>(control => control.Add(c => c.Id, " "))
+                parameters.AddChildContent<MapControls>(controls =>
+                    controls.AddChildContent<CustomMapControl>(control => control.Add(c => c.Id, " "))
+                )
             );
 
         // act & assert
@@ -164,17 +176,28 @@ public class MapCustomControlTests : BunitContext
                 (RenderFragment)(
                     childBuilder =>
                     {
-                        if (ShowControl)
-                        {
-                            childBuilder.OpenComponent<MapCustomControl>(0);
-                            childBuilder.AddAttribute(1, nameof(MapCustomControl.Id), "refresh-control");
-                            childBuilder.AddAttribute(
-                                2,
-                                nameof(MapCustomControl.ChildContent),
-                                (RenderFragment)(contentBuilder => contentBuilder.AddContent(0, "Refresh"))
-                            );
-                            childBuilder.CloseComponent();
-                        }
+                        childBuilder.OpenComponent<MapControls>(0);
+                        childBuilder.AddAttribute(
+                            1,
+                            nameof(MapControls.ChildContent),
+                            (RenderFragment)(
+                                controlsBuilder =>
+                                {
+                                    if (ShowControl)
+                                    {
+                                        controlsBuilder.OpenComponent<CustomMapControl>(0);
+                                        controlsBuilder.AddAttribute(1, nameof(CustomMapControl.Id), "refresh-control");
+                                        controlsBuilder.AddAttribute(
+                                            2,
+                                            nameof(CustomMapControl.ChildContent),
+                                            (RenderFragment)(contentBuilder => contentBuilder.AddContent(0, "Refresh"))
+                                        );
+                                        controlsBuilder.CloseComponent();
+                                    }
+                                }
+                            )
+                        );
+                        childBuilder.CloseComponent();
                     }
                 )
             );
@@ -188,13 +211,24 @@ public class MapCustomControlTests : BunitContext
 
     private static void AddPendingRemovalId(object component, string controlId)
     {
-        var field = component
+        var registrationField = component
+            .GetType()
+            .GetField(
+                "_registration",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
+            );
+        var registration = registrationField!.GetValue(component);
+        var pendingRemovalIdsField = registration!
             .GetType()
             .GetField(
                 "_pendingRemovalIds",
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
             );
-        var pendingRemovalIds = field!.GetValue(component).Should().BeAssignableTo<ICollection<string>>().Subject;
+        var pendingRemovalIds = pendingRemovalIdsField!
+            .GetValue(registration)
+            .Should()
+            .BeAssignableTo<ICollection<string>>()
+            .Subject;
         pendingRemovalIds.Add(controlId);
     }
 }

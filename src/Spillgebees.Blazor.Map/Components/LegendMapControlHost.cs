@@ -14,7 +14,7 @@ namespace Spillgebees.Blazor.Map.Components;
 /// <summary>
 /// Renders and wires one declarative legend control entry.
 /// </summary>
-internal sealed class MapLegendControlHost : ComponentBase, IAsyncDisposable
+internal sealed class LegendMapControlHost : ComponentBase, IAsyncDisposable
 {
     private const string CustomControlKind = "legend";
 
@@ -31,7 +31,7 @@ internal sealed class MapLegendControlHost : ComponentBase, IAsyncDisposable
     private IJSRuntime JsRuntime { get; set; } = null!;
 
     [Parameter, EditorRequired]
-    public LegendMapControl Control { get; set; } = null!;
+    public LegendControlDefinition Control { get; set; } = null!;
 
     private readonly string _contentId = $"sgb-map-legend-content-{Guid.NewGuid():N}";
     private ElementReference _placeholderReference;
@@ -42,7 +42,7 @@ internal sealed class MapLegendControlHost : ComponentBase, IAsyncDisposable
     private ILogger? _logger;
     private MapLegendVisibilityBinder? _visibilityBinder;
 
-    private ILogger Logger => _logger ??= LoggerFactory.CreateLogger<MapLegendControlHost>();
+    private ILogger Logger => _logger ??= LoggerFactory.CreateLogger<LegendMapControlHost>();
     private MapLegendVisibilityBinder VisibilityBinder =>
         _visibilityBinder ??= new MapLegendVisibilityBinder(() => InvokeAsync(StateHasChanged));
 
@@ -127,6 +127,7 @@ internal sealed class MapLegendControlHost : ComponentBase, IAsyncDisposable
         }
         else
         {
+            RenderLegendSymbol(builder, ref sequence, item);
             RenderItemCopy(builder, ref sequence, item, "div");
         }
 
@@ -138,6 +139,7 @@ internal sealed class MapLegendControlHost : ComponentBase, IAsyncDisposable
         builder.OpenElement(sequence++, "label");
         builder.AddAttribute(sequence++, "class", "sgb-map-legend-item-toggle");
 
+        RenderLegendSymbol(builder, ref sequence, item);
         RenderItemCopy(builder, ref sequence, item, "span");
 
         builder.OpenElement(sequence++, "span");
@@ -163,6 +165,50 @@ internal sealed class MapLegendControlHost : ComponentBase, IAsyncDisposable
         builder.CloseElement();
 
         builder.CloseElement();
+        builder.CloseElement();
+    }
+
+    private static void RenderLegendSymbol(RenderTreeBuilder builder, ref int sequence, MapLegendItem item)
+    {
+        var symbol = item.ResolvedSymbol;
+        builder.OpenElement(sequence++, "span");
+        builder.AddAttribute(
+            sequence++,
+            "class",
+            symbol is MapLegendSymbol.NoneSymbol
+                ? "sgb-map-legend-symbol sgb-map-legend-symbol-empty"
+                : "sgb-map-legend-symbol"
+        );
+        builder.AddAttribute(sequence++, "aria-hidden", "true");
+
+        switch (symbol)
+        {
+            case MapLegendSymbol.ColorSwatchSymbol swatch:
+                builder.AddAttribute(sequence++, "style", $"--sgb-map-legend-symbol-color:{swatch.Color}");
+                builder.AddAttribute(sequence++, "data-symbol", "swatch");
+                break;
+            case MapLegendSymbol.LineSymbol line:
+                builder.AddAttribute(
+                    sequence++,
+                    "style",
+                    $"--sgb-map-legend-symbol-color:{line.Color};--sgb-map-legend-symbol-width:{line.Width}px"
+                );
+                builder.AddAttribute(sequence++, "data-symbol", line.Dashed ? "dashed-line" : "line");
+                break;
+            case MapLegendSymbol.CircleSymbol circle:
+                builder.AddAttribute(
+                    sequence++,
+                    "style",
+                    $"--sgb-map-legend-symbol-color:{circle.Color};--sgb-map-legend-symbol-stroke:{circle.StrokeColor ?? "transparent"}"
+                );
+                builder.AddAttribute(sequence++, "data-symbol", "circle");
+                break;
+            case MapLegendSymbol.IconSymbol icon:
+                builder.AddAttribute(sequence++, "class", $"sgb-map-legend-symbol {icon.CssClass}");
+                builder.AddAttribute(sequence++, "data-symbol", "icon");
+                break;
+        }
+
         builder.CloseElement();
     }
 
@@ -232,7 +278,7 @@ internal sealed class MapLegendControlHost : ComponentBase, IAsyncDisposable
             _registeredControlId = null;
         }
 
-        if (!Control.Enabled)
+        if (!Control.Visible)
         {
             if (_registered)
             {

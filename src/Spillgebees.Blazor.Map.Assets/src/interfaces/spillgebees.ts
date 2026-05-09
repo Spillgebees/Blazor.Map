@@ -70,7 +70,14 @@ export interface OverlayStyleRequestOptions {
 
 export interface CustomControlRegistration {
   controlId: string;
-  kind: "legend" | "content";
+  kind: "legend" | "panel" | "content";
+  control: IControl;
+}
+
+export interface NativeControlRegistration {
+  controlId: string;
+  kind: IMapControl["kind"];
+  signature: string;
   control: IControl;
 }
 
@@ -83,6 +90,7 @@ export interface SpillgebeesMapNamespace {
   features: Map<MapLibreMap, FeatureStorage>;
   overlays: Map<MapLibreMap, Map<string, ITileOverlay>>;
   controls: Map<MapLibreMap, Set<IControl>>;
+  nativeControlRegistrations: Map<MapLibreMap, Map<string, NativeControlRegistration>>;
   customControlRegistrations: Map<MapLibreMap, Map<string, CustomControlRegistration>>;
   styles: Map<MapLibreMap, string | StyleSpecification>;
   mapOptions: Map<MapLibreMap, IMapOptions>;

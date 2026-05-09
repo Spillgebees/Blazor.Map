@@ -3,7 +3,7 @@ using Spillgebees.Blazor.Map.Models.Controls;
 
 namespace Spillgebees.Blazor.Map.Tests.Models.Controls;
 
-public class ContentMapControlTests
+public class ContentControlDefinitionTests
 {
     [Test]
     public void Should_set_kind_to_content_literal()
@@ -11,7 +11,7 @@ public class ContentMapControlTests
         // arrange
 
         // act
-        var control = new ContentMapControl("custom-control");
+        var control = new ContentControlDefinition("custom-control");
 
         // assert
         control.Kind.Should().Be("content");

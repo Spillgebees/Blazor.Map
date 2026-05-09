@@ -1,0 +1,45 @@
+@using Spillgebees.Blazor.Map.Models.Visibility
+
+@namespace Spillgebees.Blazor.Map.Components
+
+<PanelMapControl Id="@Id"
+                 Position="@Position"
+                 Order="@Order"
+                 Visible="@Visible"
+                 Class="@Class"
+                 Label="@Label"
+                 Title="@Title"
+                 InitiallyOpen="@InitiallyOpen"
+                 MaxWidth="@MaxWidth"
+                 PanelClass="@PanelClass">
+    <div class="sgb-map-layer-control-content">
+        @foreach (var item in Items)
+        {
+            @if (ItemTemplate is not null)
+            {
+                @ItemTemplate(BuildTemplateContext(item))
+            }
+            else
+            {
+                <label class="sgb-map-layer-control-item">
+                    <span class="sgb-map-layer-control-copy">
+                        <span class="sgb-map-layer-control-label">@ResolveLabel(item)</span>
+                        @if (!string.IsNullOrWhiteSpace(item.Description))
+                        {
+                            <span class="sgb-map-layer-control-description">@item.Description</span>
+                        }
+                    </span>
+                    <span class="sgb-map-legend-item-switch">
+                        <input type="checkbox"
+                               role="switch"
+                               aria-checked="@item.IsVisible.ToString().ToLowerInvariant()"
+                               checked="@item.IsVisible"
+                               data-testid="@($"map-layer-toggle-{item.Id}")"
+                               @onchange="@((ChangeEventArgs args) => ToggleItemAsync(item, args))" />
+                        <span class="sgb-map-legend-item-switch-track"></span>
+                    </span>
+                </label>
+            }
+        }
+    </div>
+</PanelMapControl>

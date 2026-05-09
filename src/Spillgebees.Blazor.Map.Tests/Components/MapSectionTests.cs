@@ -60,14 +60,14 @@ public class MapSectionTests : BunitContext
         // arrange
         var action = () =>
             Render<SgbMap>(parameters =>
-                parameters.AddChildContent<MapNavigationControl>(control => control.Add(c => c.Id, "navigation"))
+                parameters.AddChildContent<NavigationMapControl>(control => control.Add(c => c.Id, "navigation"))
             );
 
         // act & assert
         action
             .Should()
             .Throw<InvalidOperationException>()
-            .WithMessage("MapNavigationControl must be placed inside MapControls.");
+            .WithMessage("NavigationMapControl must be placed inside MapControls.");
     }
 
     [Test]

@@ -5,7 +5,7 @@ namespace Spillgebees.Blazor.Map.Components;
 
 internal sealed class MapControlRegistryContext(BaseMap map)
 {
-    public bool Register(string ownerId, MapControl control) => map.RegisterControl(ownerId, control);
+    public bool Register(string ownerId, MapControlDefinition control) => map.RegisterControl(ownerId, control);
 
     public bool Unregister(string controlId) => map.UnregisterControl(controlId);
 
@@ -21,8 +21,9 @@ internal sealed class MapControlRegistryContext(BaseMap map)
         string controlId,
         string kind,
         ElementReference placeholderReference,
-        ElementReference contentReference
-    ) => map.SetControlContentAsync(controlId, kind, placeholderReference, contentReference);
+        ElementReference contentReference,
+        object? stateReference = null
+    ) => map.SetControlContentAsync(controlId, kind, placeholderReference, contentReference, stateReference);
 
     public ValueTask RemoveControlContentAsync(string controlId) => map.RemoveControlContentAsync(controlId);
 }

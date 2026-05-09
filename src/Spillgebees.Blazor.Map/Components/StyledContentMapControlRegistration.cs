@@ -10,6 +10,7 @@ internal sealed class StyledContentMapControlRegistration
     private readonly List<string> _pendingRemovalIds = [];
     private bool _controlSyncPending = true;
     private bool _contentSyncPending = true;
+    private bool _contentRegistered;
     private string? _registeredId;
 
     public static void ValidateId(string id)
@@ -22,16 +23,20 @@ internal sealed class StyledContentMapControlRegistration
 
     public void Register(
         MapControlRegistryContext? registry,
+        MapSectionContext? sectionContext,
         string placementErrorMessage,
         string id,
-        bool enabled,
-        ControlPosition position,
-        int order
+        MapControlDefinition control
     )
     {
         ValidateId(id);
 
         if (registry is null)
+        {
+            throw new InvalidOperationException(placementErrorMessage);
+        }
+
+        if (sectionContext?.Kind is not MapContentSectionKind.Controls)
         {
             throw new InvalidOperationException(placementErrorMessage);
         }
@@ -44,18 +49,65 @@ internal sealed class StyledContentMapControlRegistration
             _registeredId = null;
         }
 
-        var changed = registry.Register(_ownerId, new ContentMapControl(id, enabled, position, order));
+        var changed = registry.Register(_ownerId, control);
         _registeredId = id;
         _controlSyncPending = _controlSyncPending || changed;
         _contentSyncPending = _contentSyncPending || changed;
     }
 
+    public void RegisterContent(
+        MapControlRegistryContext? registry,
+        MapSectionContext? sectionContext,
+        string placementErrorMessage,
+        string id,
+        bool visible,
+        ControlPosition position,
+        int order,
+        string? className = null
+    ) =>
+        Register(
+            registry,
+            sectionContext,
+            placementErrorMessage,
+            id,
+            new ContentControlDefinition(id, visible, position, order, className)
+        );
+
+    public Task SyncAfterRenderAsync(
+        MapControlRegistryContext? registry,
+        string id,
+        bool visible,
+        ElementReference placeholderReference,
+        ElementReference contentReference
+    ) => SyncAfterRenderAsync(registry, id, visible, CustomControlKind, placeholderReference, contentReference);
+
+    public Task SyncAfterRenderAsync(
+        MapControlRegistryContext? registry,
+        string id,
+        bool visible,
+        string kind,
+        ElementReference placeholderReference,
+        ElementReference contentReference,
+        object? stateReference = null
+    ) =>
+        SyncAfterRenderAsync(
+            registry,
+            id,
+            visible,
+            kind,
+            placeholderReference,
+            contentReference,
+            stateReference is null ? null : () => stateReference
+        );
+
     public async Task SyncAfterRenderAsync(
         MapControlRegistryContext? registry,
         string id,
-        bool enabled,
+        bool visible,
+        string kind,
         ElementReference placeholderReference,
-        ElementReference contentReference
+        ElementReference contentReference,
+        Func<object?>? stateReferenceFactory
     )
     {
         if (registry is null || string.IsNullOrWhiteSpace(_registeredId))
@@ -77,16 +129,23 @@ internal sealed class StyledContentMapControlRegistration
             _controlSyncPending = false;
         }
 
-        if (!enabled)
+        if (!visible)
         {
-            await registry.RemoveControlContentAsync(_registeredId);
+            if (_contentRegistered)
+            {
+                await registry.RemoveControlContentAsync(_registeredId);
+                _contentRegistered = false;
+            }
+
             _contentSyncPending = false;
             return;
         }
 
         if (_contentSyncPending)
         {
-            await registry.SetControlContentAsync(id, CustomControlKind, placeholderReference, contentReference);
+            var stateReference = stateReferenceFactory?.Invoke();
+            await registry.SetControlContentAsync(id, kind, placeholderReference, contentReference, stateReference);
+            _contentRegistered = true;
             _contentSyncPending = false;
         }
     }
@@ -133,6 +192,7 @@ internal sealed class StyledContentMapControlRegistration
         finally
         {
             _registeredId = null;
+            _contentRegistered = false;
             _pendingRemovalIds.Clear();
         }
     }
@@ -145,6 +205,11 @@ internal sealed class StyledContentMapControlRegistration
         foreach (var pendingRemovalId in pendingRemovalIds)
         {
             await registry.RemoveControlContentAsync(pendingRemovalId);
+        }
+
+        if (pendingRemovalIds.Length > 0)
+        {
+            _contentRegistered = false;
         }
     }
 }

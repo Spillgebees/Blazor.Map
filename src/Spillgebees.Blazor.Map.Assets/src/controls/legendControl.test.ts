@@ -35,7 +35,7 @@ function createDefaultLegendOptions(overrides?: Partial<ILegendMapControl>): ILe
     kind: "legend",
     controlId: "legend",
     order: 500,
-    enabled: true,
+    visible: true,
     position: "top-right",
     title: "Legend",
     collapsible: true,
@@ -286,6 +286,7 @@ describe("LegendControl", () => {
       expect(container.classList.contains("sgb-map-legend-open")).toBe(true);
       expect(toggleButton.getAttribute("aria-expanded")).toBe("true");
       expect(toggleButton.getAttribute("aria-label")).toBe("Hide legend");
+      expect(toggleButton.title).toBe("Hide legend");
       const panel = container.querySelector(".sgb-map-legend-panel") as HTMLDivElement;
       expect(panel.hidden).toBe(false);
     });
@@ -307,6 +308,7 @@ describe("LegendControl", () => {
       expect(container.classList.contains("sgb-map-legend-open")).toBe(false);
       expect(toggleButton.getAttribute("aria-expanded")).toBe("false");
       expect(toggleButton.getAttribute("aria-label")).toBe("Show legend");
+      expect(toggleButton.title).toBe("Show legend");
       const panel = container.querySelector(".sgb-map-legend-panel") as HTMLDivElement;
       expect(panel.hidden).toBe(true);
     });
@@ -325,6 +327,7 @@ describe("LegendControl", () => {
       const toggleButton = container.querySelector("button.sgb-map-legend-toggle") as HTMLButtonElement;
       expect(toggleButton.getAttribute("aria-expanded")).toBe("false");
       expect(toggleButton.getAttribute("aria-label")).toBe("Show legend");
+      expect(toggleButton.title).toBe("Show legend");
       expect(container.classList.contains("sgb-map-legend-closed")).toBe(true);
     });
 
