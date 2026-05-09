@@ -1,0 +1,228 @@
+@page "/components/controls"
+
+<PageTitle>Map Controls | Spillgebees.Blazor.Map</PageTitle>
+
+<Breadcrumb Section="components" PageName="Map Controls" />
+<OnThisPage />
+
+<h1>Map Controls</h1>
+<p>Map controls are component-first UI elements rendered inside <code>MapControls</code>. Every top-level control ends with <code>MapControl</code>, so controls are easy to find in IntelliSense and docs.</p>
+
+<h2 id="choose_the_right_map_control">// choose_the_right_map_control</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Goal</th>
+            <th>Use</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>Zoom and compass</td><td><code>NavigationMapControl</code></td></tr>
+        <tr><td>Scale bar</td><td><code>ScaleMapControl</code></td></tr>
+        <tr><td>Fullscreen</td><td><code>FullscreenMapControl</code></td></tr>
+        <tr><td>Browser geolocation</td><td><code>GeolocateMapControl</code></td></tr>
+        <tr><td>Terrain toggle</td><td><code>TerrainMapControl</code></td></tr>
+        <tr><td>Return to configured view</td><td><code>CenterMapControl</code></td></tr>
+        <tr><td>One command</td><td><code>ButtonMapControl</code></td></tr>
+        <tr><td>One boolean state</td><td><code>ToggleButtonMapControl</code></td></tr>
+        <tr><td>Several related buttons</td><td><code>ButtonGroupMapControl</code></td></tr>
+        <tr><td>Filters, settings, basemaps, options, status</td><td><code>PanelMapControl</code></td></tr>
+        <tr><td>Layer visibility</td><td><code>LayerMapControl</code></td></tr>
+        <tr><td>Symbology explanation</td><td><code>LegendMapControl</code></td></tr>
+        <tr><td>Bespoke UI</td><td><code>CustomMapControl</code></td></tr>
+    </tbody>
+</table>
+
+<h2 id="placement_ids_ordering_and_visibility">// placement_ids_ordering_and_visibility</h2>
+<p>All controls must be declared inside <code>MapControls</code>. IDs must be unique. <code>Position</code> chooses the map corner, <code>Order</code> sorts controls in that corner, and <code>Visible</code> controls whether the entry is rendered.</p>
+<CodeBlock Language="razor" Files="@_placementExample" />
+
+<h2 id="icons">// icons</h2>
+<p>Icons are plain <code>RenderFragment</code> content. Inline SVG and component-library icons are both correct. Use <code>currentColor</code>, mark decorative icons with <code>aria-hidden="true"</code>, and keep <code>Label</code> as the accessible name and default tooltip.</p>
+<CodeBlock Language="razor" Files="@_iconExamples" />
+
+<h2 id="built_in_map_controls">// built_in_map_controls</h2>
+<p>Built-in controls wrap MapLibre behavior and should be used before custom equivalents.</p>
+<CodeBlock Language="razor" Files="@_builtInExamples" />
+
+<h2 id="button_map_controls">// button_map_controls</h2>
+<p><code>ButtonMapControl</code> is for one immediate command. Use <code>Disabled</code> for button interactivity; use <code>Visible</code> only to remove the control.</p>
+<CodeBlock Language="razor" Files="@_buttonExamples" />
+
+<h2 id="toggle_button_map_controls">// toggle_button_map_controls</h2>
+<p><code>ToggleButtonMapControl</code> is for one boolean state and renders <code>aria-pressed</code>.</p>
+<CodeBlock Language="razor" Files="@_toggleExamples" />
+
+<h2 id="button_group_map_controls">// button_group_map_controls</h2>
+<p><code>ButtonGroupMapControl</code> groups related commands and states. Its children must be <code>MapButton</code> or <code>MapToggleButton</code>.</p>
+<CodeBlock Language="razor" Files="@_groupExamples" />
+
+<h2 id="panel_map_controls">// panel_map_controls</h2>
+<p><code>PanelMapControl</code> is the default for filters, settings, basemap pickers, search forms, status panels, and other options UI. Use <code>InitiallyOpen</code> for uncontrolled panels, or bind <code>IsOpen</code> when application state owns the open value.</p>
+<CodeBlock Language="razor" Files="@_panelExamples" />
+
+<h2 id="layer_map_controls">// layer_map_controls</h2>
+<p><code>LayerMapControl</code> renders <code>SgbMap.LayerVisibility</code> groups. Use <code>GroupIds</code> to choose and order a subset.</p>
+<CodeBlock Language="razor" Files="@_layerExamples" />
+
+<h2 id="legend_map_controls">// legend_map_controls</h2>
+<p><code>LegendMapControl</code> explains visual symbols. Use structured symbols for common swatches, lines, dashed lines, and circles; use templates only for bespoke legends.</p>
+<CodeBlock Language="razor" Files="@_legendExamples" />
+
+<h2 id="custom_map_controls">// custom_map_controls</h2>
+<p><code>CustomMapControl</code> is the escape hatch when none of the purpose-built controls match.</p>
+<CodeBlock Language="razor" Files="@_customExamples" />
+
+<h2 id="accessibility">// accessibility</h2>
+<p>Button-like controls require <code>Label</code>. The label is rendered as the accessible name and default HTML <code>title</code>; set <code>Title</code> only when the pointer tooltip should differ from the accessible name. Toggles expose pressed state, panels expose expanded state, and panels close with Escape.</p>
+
+<h2 id="performance">// performance</h2>
+<p>Blazor owns control content and event handlers. JavaScript owns the MapLibre control shell, placement, max-height handling, and lifecycle. Controls are reconciled by <code>Id</code>; content-bearing controls preserve their Blazor DOM instances, and native MapLibre controls are reused across placement and ordering changes.</p>
+
+<ExampleView TComponent="CustomControlsExample">
+    <CustomControlsExample />
+</ExampleView>
+
+@code {
+    private static readonly Dictionary<string, string> _placementExample = new()
+    {
+        ["Placement.razor"] = """
+            <MapControls>
+                <NavigationMapControl Id="navigation" Position="ControlPosition.TopRight" Order="10" />
+                <ScaleMapControl Id="scale" Position="ControlPosition.BottomLeft" />
+                <ButtonMapControl Id="refresh" Label="Refresh data" Text="Refresh" OnClick="RefreshAsync" />
+            </MapControls>
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _iconExamples = new()
+    {
+        ["InlineSvgIcon.razor"] = """
+            <ButtonMapControl Id="focus" Label="Focus station" OnClick="FocusAsync">
+                <Icon>
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2" />
+                    </svg>
+                </Icon>
+            </ButtonMapControl>
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _builtInExamples = new()
+    {
+        ["BuiltIns.razor"] = """
+            <MapControls>
+                <NavigationMapControl />
+                <FullscreenMapControl />
+                <GeolocateMapControl TrackUser="true" />
+                <CenterMapControl />
+                <ScaleMapControl Unit="ScaleUnit.Metric" />
+            </MapControls>
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _buttonExamples = new()
+    {
+        ["ButtonMapControl.razor"] = """
+            <ButtonMapControl Id="focus-station"
+                              Label="Focus station"
+                              Text="Focus"
+                              OnClick="FocusStationAsync" />
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _toggleExamples = new()
+    {
+        ["ToggleButtonMapControl.razor"] = """
+            <ToggleButtonMapControl Id="station-labels"
+                                    Label="Show station labels"
+                                    Text="Labels"
+                                    IsOn="@_labelsVisible"
+                                    IsOnChanged="value => _labelsVisible = value" />
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _groupExamples = new()
+    {
+        ["ButtonGroupMapControl.razor"] = """
+            <ButtonGroupMapControl Id="map-tools" Label="Map tools">
+                <MapButton Label="Zoom to network" Text="Network" OnClick="ZoomToNetworkAsync" />
+                <MapToggleButton Label="Show alerts"
+                                 Text="Alerts"
+                                 IsOn="@_alertsVisible"
+                                 IsOnChanged="value => _alertsVisible = value" />
+            </ButtonGroupMapControl>
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _panelExamples = new()
+    {
+        ["PanelMapControl.razor"] = """
+            <PanelMapControl Id="filters" Label="Filters" Title="Map filters">
+                <label>
+                    <input type="checkbox" @bind="_showStations" />
+                    Stations
+                </label>
+            </PanelMapControl>
+            """,
+        ["ControlledPanelMapControl.razor"] = """
+            <ToggleButtonMapControl Id="filter-toggle"
+                                    Label="Open filters"
+                                    Text="Filters"
+                                    IsOn="@_filtersOpen"
+                                    IsOnChanged="value => _filtersOpen = value" />
+
+            <PanelMapControl Id="filters"
+                             Label="Filters"
+                             Title="Map filters"
+                             IsOpen="@_filtersOpen"
+                             IsOpenChanged="value => _filtersOpen = value">
+                <label>
+                    <input type="checkbox" @bind="_showStations" />
+                    Stations
+                </label>
+            </PanelMapControl>
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _layerExamples = new()
+    {
+        ["LayerMapControl.razor"] = """
+            <SgbMap LayerVisibility="@_layerVisibility">
+                <MapControls>
+                    <LayerMapControl Id="layers" InitiallyOpen="true" />
+                </MapControls>
+            </SgbMap>
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _legendExamples = new()
+    {
+        ["LegendMapControl.razor"] = """
+            <MapControls>
+                <LegendMapControl Id="legend" Title="Legend" Definition="@_legend" />
+            </MapControls>
+
+            @code {
+                private readonly MapLegend _legend = new([
+                    new MapLegendSection("Transit", [
+                        new MapLegendItem("routes", "Routes", Symbol: MapLegendSymbol.Line("#2563eb")),
+                        new MapLegendItem("stations", "Stations", Symbol: MapLegendSymbol.Circle("#f97316", "#ffffff")),
+                    ]),
+                ]);
+            }
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _customExamples = new()
+    {
+        ["CustomMapControl.razor"] = """
+            <CustomMapControl Id="bespoke-control">
+                <div class="my-map-widget">...</div>
+            </CustomMapControl>
+            """,
+    };
+}

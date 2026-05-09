@@ -72,20 +72,18 @@ public class MapJsInteropPayloadTests : BunitContext
     public void Should_send_simplified_center_control_payload_when_initializing_map(CancellationToken cancellationToken)
     {
         // arrange & act
-        Render<SgbMap>(parameters =>
-            parameters.Add<IReadOnlyList<MapControl>>(p => p.Controls, [new CenterMapControl()])
-        );
+        Render<SgbMap>(parameters => parameters.Add(p => p.Controls, new[] { new CenterControlDefinition() }));
 
         // assert
         var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
         var controlsPayload = invocation.Arguments[4].Should().BeOfType<object[]>().Subject;
         var centerPayload = controlsPayload.Single();
         var kindValue = GetRequiredPropertyValue(centerPayload, "Kind");
-        var enabledValue = GetRequiredPropertyValue(centerPayload, "Enabled");
+        var visibleValue = GetRequiredPropertyValue(centerPayload, "Visible");
         var positionValue = GetRequiredPropertyValue(centerPayload, "Position");
 
         kindValue.Should().Be("center");
-        enabledValue.Should().Be(true);
+        visibleValue.Should().Be(true);
         positionValue.Should().Be(ControlPosition.TopLeft);
     }
 
@@ -94,7 +92,10 @@ public class MapJsInteropPayloadTests : BunitContext
     {
         // arrange & act
         Render<SgbMap>(parameters =>
-            parameters.Add<IReadOnlyList<MapControl>>(p => p.Controls, [new ContentMapControl("content-main")])
+            parameters.Add<IReadOnlyList<MapControlDefinition>>(
+                p => p.Controls,
+                [new ContentControlDefinition("content-main")]
+            )
         );
 
         // assert
@@ -107,13 +108,49 @@ public class MapJsInteropPayloadTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
+    public void Should_send_panel_control_open_state_when_initializing_map(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        Render<SgbMap>(parameters =>
+            parameters.Add<IReadOnlyList<MapControlDefinition>>(
+                p => p.Controls,
+                [
+                    new PanelControlDefinition(
+                        "filters",
+                        new MapControlPlacement(ControlPosition.TopRight, 500),
+                        new PanelChromeOptions(
+                            "Filters",
+                            "Map filters",
+                            InitiallyOpen: false,
+                            IsOpen: true,
+                            MaxWidth: "20rem"
+                        )
+                    ),
+                ]
+            )
+        );
+
+        // assert
+        var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
+        var controlsPayload = invocation.Arguments[4].Should().BeOfType<object[]>().Subject;
+        var panelPayload = controlsPayload.Single();
+
+        GetRequiredPropertyValue(panelPayload, "Kind").Should().Be("panel");
+        GetRequiredPropertyValue(panelPayload, "IsOpen").Should().Be(true);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
     public void Should_send_control_order_payload_when_initializing_map(CancellationToken cancellationToken)
     {
         // arrange & act
         Render<SgbMap>(parameters =>
             parameters.Add(
                 p => p.Controls,
-                new List<MapControl> { new NavigationMapControl(Order: 250), new ScaleMapControl(Order: 25) }
+                new List<MapControlDefinition>
+                {
+                    new NavigationControlDefinition(Order: 250),
+                    new ScaleControlDefinition(Order: 25),
+                }
             )
         );
 
@@ -136,7 +173,7 @@ public class MapJsInteropPayloadTests : BunitContext
     {
         // arrange & act
         Render<SgbMap>(parameters =>
-            parameters.Add<IReadOnlyList<MapControl>>(p => p.Controls, [new TerrainMapControl()])
+            parameters.Add<IReadOnlyList<MapControlDefinition>>(p => p.Controls, [new TerrainControlDefinition()])
         );
 
         // assert
@@ -152,7 +189,10 @@ public class MapJsInteropPayloadTests : BunitContext
     {
         // arrange & act
         Render<SgbMap>(parameters =>
-            parameters.Add<IReadOnlyList<MapControl>>(p => p.Controls, [new TerrainMapControl(SourceId: "dem-source")])
+            parameters.Add<IReadOnlyList<MapControlDefinition>>(
+                p => p.Controls,
+                [new TerrainControlDefinition(SourceId: "dem-source")]
+            )
         );
 
         // assert

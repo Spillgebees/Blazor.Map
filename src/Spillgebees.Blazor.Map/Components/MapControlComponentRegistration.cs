@@ -13,7 +13,7 @@ internal sealed class MapControlComponentRegistration
         MapSectionContext? sectionContext,
         string componentName,
         string id,
-        MapControl control
+        MapControlDefinition control
     )
     {
         if (registry is null)

@@ -2077,7 +2077,7 @@ describe("setMapOptions", () => {
       {
         kind: "navigation",
         controlId: "nav",
-        enabled: true,
+        visible: true,
         position: "top-right",
         order: 100,
         showCompass: true,
@@ -2702,7 +2702,7 @@ describe("setControls", () => {
       {
         kind: "navigation",
         controlId: "nav",
-        enabled: true,
+        visible: true,
         position: "top-right",
         order: 100,
         showCompass: true,
@@ -2711,7 +2711,7 @@ describe("setControls", () => {
       {
         kind: "scale",
         controlId: "scale",
-        enabled: true,
+        visible: true,
         position: "bottom-left",
         order: 100,
         unit: "metric",
@@ -2735,7 +2735,7 @@ describe("setControls", () => {
       {
         kind: "terrain",
         controlId: "terrain-control",
-        enabled: true,
+        visible: true,
         position: "top-right",
         order: 400,
         sourceId: "dem-source",
@@ -2762,7 +2762,7 @@ describe("setControls", () => {
         {
           kind: "terrain",
           controlId: "terrain-control",
-          enabled: true,
+          visible: true,
           position: "top-right",
           order: 400,
           sourceId: "missing-dem-source",
@@ -2793,7 +2793,7 @@ describe("setControls", () => {
       {
         kind: "navigation",
         controlId: "b",
-        enabled: true,
+        visible: true,
         position: "top-right",
         order: 100,
         showCompass: true,
@@ -2802,14 +2802,14 @@ describe("setControls", () => {
       {
         kind: "fullscreen",
         controlId: "a",
-        enabled: true,
+        visible: true,
         position: "top-right",
         order: 50,
       },
       {
         kind: "navigation",
         controlId: "c",
-        enabled: true,
+        visible: true,
         position: "top-right",
         order: 100,
         showCompass: true,
@@ -2827,6 +2827,70 @@ describe("setControls", () => {
     ]);
   });
 
+  it("should reuse native control instances when only placement changes", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, createDefaultMapOptions(), [], "light", [], [], [], []);
+    const mockMap = getLatestMockMapInstance()!;
+    vi.mocked(NavigationControl).mockClear();
+
+    const control: IMapControl = {
+      kind: "navigation",
+      controlId: "nav",
+      visible: true,
+      position: "top-right",
+      order: 100,
+      showCompass: true,
+      showZoom: true,
+    };
+
+    // act
+    setControls(mapElement, [control]);
+    const initialInstance = vi.mocked(NavigationControl).mock.results[0]?.value;
+    setControls(mapElement, [{ ...control, position: "top-left", order: 10 }]);
+
+    // assert
+    expect(NavigationControl).toHaveBeenCalledTimes(1);
+    expect(mockMap.removeControl).toHaveBeenCalledWith(initialInstance);
+    expect(mockMap.addControl.mock.calls.at(-1)).toEqual([initialInstance, "top-left"]);
+  });
+
+  it("should recreate native controls when native options change", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(dotNetHelper, "OnMapInitialized", mapElement, createDefaultMapOptions(), [], "light", [], [], [], []);
+    vi.mocked(NavigationControl).mockClear();
+
+    // act
+    setControls(mapElement, [
+      {
+        kind: "navigation",
+        controlId: "nav",
+        visible: true,
+        position: "top-right",
+        order: 100,
+        showCompass: true,
+        showZoom: true,
+      },
+    ]);
+    setControls(mapElement, [
+      {
+        kind: "navigation",
+        controlId: "nav",
+        visible: true,
+        position: "top-right",
+        order: 100,
+        showCompass: false,
+        showZoom: true,
+      },
+    ]);
+
+    // assert
+    expect(NavigationControl).toHaveBeenCalledTimes(2);
+  });
+
   it("should throw when control IDs are duplicated", () => {
     // arrange
     const mapElement = document.createElement("div");
@@ -2839,7 +2903,7 @@ describe("setControls", () => {
         {
           kind: "navigation",
           controlId: "duplicate",
-          enabled: true,
+          visible: true,
           position: "top-right",
           order: 100,
           showCompass: true,
@@ -2848,7 +2912,7 @@ describe("setControls", () => {
         {
           kind: "fullscreen",
           controlId: "duplicate",
-          enabled: true,
+          visible: true,
           position: "top-right",
           order: 200,
         },
@@ -2881,7 +2945,7 @@ describe("setControlContent", () => {
         {
           kind: "legend",
           controlId: "legend-main",
-          enabled: true,
+          visible: true,
           position: "top-right",
           order: 500,
           title: "Legend",
@@ -2945,7 +3009,7 @@ describe("setControlContent", () => {
         {
           kind: "navigation",
           controlId: "nav-main",
-          enabled: true,
+          visible: true,
           position: "top-right",
           order: 100,
           showCompass: true,
@@ -2989,7 +3053,7 @@ describe("setControlContent", () => {
         {
           kind: "legend",
           controlId: "legend-main",
-          enabled: true,
+          visible: true,
           position: "top-right",
           order: 500,
           title: "Legend",
@@ -3015,7 +3079,7 @@ describe("setControlContent", () => {
       {
         kind: "legend",
         controlId: "legend-main",
-        enabled: true,
+        visible: true,
         position: "top-right",
         order: 700,
         title: "Legend",
@@ -3049,7 +3113,7 @@ describe("setControlContent", () => {
         {
           kind: "legend",
           controlId: "legend-first",
-          enabled: true,
+          visible: true,
           position: "top-right",
           order: 500,
           title: "First",
@@ -3060,7 +3124,7 @@ describe("setControlContent", () => {
         {
           kind: "legend",
           controlId: "legend-second",
-          enabled: true,
+          visible: true,
           position: "top-right",
           order: 500,
           title: "Second",
@@ -3118,7 +3182,7 @@ describe("setControlContent", () => {
         {
           kind: "legend",
           controlId: "legend-main",
-          enabled: true,
+          visible: true,
           position: "top-right",
           order: 500,
           title: "Legend",

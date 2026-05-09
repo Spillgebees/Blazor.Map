@@ -28,7 +28,7 @@ internal static class MapJs
         string onAfterCreateMapCallback,
         ElementReference mapReference,
         MapOptions mapOptions,
-        IReadOnlyList<MapControl> controls,
+        IReadOnlyList<MapControlDefinition> controls,
         MapTheme theme,
         List<Marker> markers,
         List<Circle> circles,
@@ -134,7 +134,7 @@ internal static class MapJs
         IJSRuntime jsRuntime,
         ILogger logger,
         ElementReference mapReference,
-        IReadOnlyList<MapControl> controls
+        IReadOnlyList<MapControlDefinition> controls
     ) =>
         jsRuntime.SafeInvokeVoidAsync(
             logger,
@@ -150,7 +150,8 @@ internal static class MapJs
         string controlId,
         string kind,
         ElementReference placeholderReference,
-        ElementReference contentReference
+        ElementReference contentReference,
+        object? stateReference = null
     ) =>
         jsRuntime.SafeInvokeVoidAsync(
             logger,
@@ -159,7 +160,8 @@ internal static class MapJs
             controlId,
             kind,
             placeholderReference,
-            contentReference
+            contentReference,
+            stateReference
         );
 
     internal static ValueTask RemoveControlContentAsync(
@@ -413,67 +415,67 @@ internal static class MapJs
             mapOptions.PixelRatio,
         };
 
-    private static object ToJsModel(MapControl control) =>
+    private static object ToJsModel(MapControlDefinition control) =>
         control switch
         {
-            NavigationMapControl navigation => new
+            NavigationControlDefinition navigation => new
             {
                 Kind = "navigation",
                 navigation.ControlId,
-                navigation.Enabled,
+                navigation.Visible,
                 navigation.Position,
                 navigation.Order,
                 navigation.ShowCompass,
                 navigation.ShowZoom,
             },
-            ScaleMapControl scale => new
+            ScaleControlDefinition scale => new
             {
                 Kind = "scale",
                 scale.ControlId,
-                scale.Enabled,
+                scale.Visible,
                 scale.Position,
                 scale.Order,
                 scale.Unit,
             },
-            FullscreenMapControl fullscreen => new
+            FullscreenControlDefinition fullscreen => new
             {
                 Kind = "fullscreen",
                 fullscreen.ControlId,
-                fullscreen.Enabled,
+                fullscreen.Visible,
                 fullscreen.Position,
                 fullscreen.Order,
             },
-            GeolocateMapControl geolocate => new
+            GeolocateControlDefinition geolocate => new
             {
                 Kind = "geolocate",
                 geolocate.ControlId,
-                geolocate.Enabled,
+                geolocate.Visible,
                 geolocate.Position,
                 geolocate.Order,
                 geolocate.TrackUser,
             },
-            TerrainMapControl terrain => new
+            TerrainControlDefinition terrain => new
             {
                 Kind = "terrain",
                 terrain.ControlId,
-                terrain.Enabled,
+                terrain.Visible,
                 terrain.Position,
                 terrain.Order,
                 terrain.SourceId,
             },
-            CenterMapControl center => new
+            CenterControlDefinition center => new
             {
                 Kind = "center",
                 center.ControlId,
-                center.Enabled,
+                center.Visible,
                 center.Position,
                 center.Order,
             },
-            LegendMapControl legend => new
+            LegendControlDefinition legend => new
             {
                 Kind = "legend",
                 legend.ControlId,
-                legend.Enabled,
+                legend.Visible,
                 legend.Position,
                 legend.Order,
                 legend.Chrome.Title,
@@ -481,11 +483,25 @@ internal static class MapJs
                 legend.Chrome.InitiallyOpen,
                 legend.Chrome.ClassName,
             },
-            ContentMapControl content => new
+            PanelControlDefinition panel => new
+            {
+                Kind = "panel",
+                panel.ControlId,
+                panel.Visible,
+                panel.Position,
+                panel.Order,
+                panel.Chrome.Label,
+                panel.Chrome.Title,
+                panel.Chrome.InitiallyOpen,
+                panel.Chrome.IsOpen,
+                panel.Chrome.MaxWidth,
+                panel.ClassName,
+            },
+            ContentControlDefinition content => new
             {
                 Kind = "content",
                 content.ControlId,
-                content.Enabled,
+                content.Visible,
                 content.Position,
                 content.Order,
                 content.ClassName,

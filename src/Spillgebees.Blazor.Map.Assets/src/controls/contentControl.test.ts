@@ -9,7 +9,7 @@ function createDefaultContentOptions(overrides?: Partial<IContentMapControl>): I
     kind: "content",
     controlId: "actions",
     order: 500,
-    enabled: true,
+    visible: true,
     position: "top-right",
     className: null,
     ...overrides,

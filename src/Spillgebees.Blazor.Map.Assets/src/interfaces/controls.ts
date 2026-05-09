@@ -1,7 +1,7 @@
 export interface IMapControlBase {
   kind: string;
   controlId: string;
-  enabled: boolean;
+  visible: boolean;
   position: ControlPosition;
   order: number;
 }
@@ -43,6 +43,16 @@ export interface ILegendMapControl extends IMapControlBase {
   className: string | null;
 }
 
+export interface IPanelMapControl extends IMapControlBase {
+  kind: "panel";
+  label: string;
+  title: string | null;
+  initiallyOpen: boolean;
+  isOpen: boolean | null;
+  maxWidth: string | null;
+  className: string | null;
+}
+
 export interface IContentMapControl extends IMapControlBase {
   kind: "content";
   className: string | null;
@@ -56,6 +66,7 @@ export type IMapControl =
   | ITerrainMapControl
   | ICenterMapControl
   | ILegendMapControl
+  | IPanelMapControl
   | IContentMapControl;
 
 export type ControlPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";

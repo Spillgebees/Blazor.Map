@@ -27,12 +27,12 @@ public class CustomControlsExampleTests : BunitContext
         var focusButton = cut.Find("button.sgb-map-action-control-button");
 
         // assert
-        cut.FindComponents<MapGeolocateControl>().Should().BeEmpty();
-        cut.FindComponents<MapTerrainControl>().Should().BeEmpty();
+        cut.FindComponents<GeolocateMapControl>().Should().BeEmpty();
+        cut.FindComponents<TerrainMapControl>().Should().BeEmpty();
         cut.Markup.Should().Contain("Focus station");
         cut.Markup.Should().Contain("Central Station");
         focusButton.GetAttribute("aria-label").Should().Be("Focus Central Station");
-        cut.FindComponents<MapActionControl>().Should().HaveCount(1);
+        cut.FindComponents<ButtonMapControl>().Should().HaveCount(1);
         focusButton.ParentElement!.ClassList.Should().NotContain("sgb-map-ctrl-group");
 
         var icon = focusButton.QuerySelector("svg.docs-station-focus-icon");

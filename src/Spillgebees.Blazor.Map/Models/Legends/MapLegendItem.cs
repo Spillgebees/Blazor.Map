@@ -8,10 +8,15 @@ namespace Spillgebees.Blazor.Map.Models.Legends;
 /// <param name="Description">Optional helper text.</param>
 /// <param name="VisibilityGroupId">Optional shared layer visibility group ID controlled by the item.</param>
 /// <param name="ClassName">Optional additional CSS class for the item container.</param>
+/// <param name="Symbol">Optional structured symbol rendered before the item copy.</param>
 public sealed record MapLegendItem(
     string Id,
     string Label,
     string? Description = null,
     string? VisibilityGroupId = null,
-    string? ClassName = null
-);
+    string? ClassName = null,
+    MapLegendSymbol? Symbol = null
+)
+{
+    public MapLegendSymbol ResolvedSymbol => Symbol ?? MapLegendSymbol.None;
+}

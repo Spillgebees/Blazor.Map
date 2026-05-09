@@ -4,26 +4,35 @@ using Spillgebees.Blazor.Map.Models.Controls;
 namespace Spillgebees.Blazor.Map.Components;
 
 /// <summary>
-/// Registers a scale control subcomponent.
+/// Registers a navigation control subcomponent.
 /// </summary>
-public sealed class MapScaleControl : ComponentBase, IAsyncDisposable
+public sealed class NavigationMapControl : ComponentBase, IAsyncDisposable
 {
     private readonly MapControlComponentRegistration _registration = new();
 
-    [Parameter]
-    public string Id { get; set; } = "scale";
+    public NavigationMapControl()
+    {
+        Id = "navigation";
+        Position = ControlPosition.TopRight;
+    }
 
     [Parameter]
-    public ControlPosition Position { get; set; } = ControlPosition.BottomLeft;
+    public string Id { get; set; } = string.Empty;
+
+    [Parameter]
+    public ControlPosition Position { get; set; } = ControlPosition.TopRight;
 
     [Parameter]
     public int Order { get; set; } = 100;
 
     [Parameter]
-    public bool Enabled { get; set; } = true;
+    public bool Visible { get; set; } = true;
 
     [Parameter]
-    public ScaleUnit Unit { get; set; } = ScaleUnit.Metric;
+    public bool ShowCompass { get; set; } = true;
+
+    [Parameter]
+    public bool ShowZoom { get; set; } = true;
 
     [CascadingParameter]
     private MapControlRegistryContext? Registry { get; set; }
@@ -32,11 +41,12 @@ public sealed class MapScaleControl : ComponentBase, IAsyncDisposable
     private MapSectionContext? SectionContext { get; set; }
 
     protected override void OnParametersSet() =>
-        _registration.Register(Registry, SectionContext, nameof(MapScaleControl), Id, BuildControl());
+        _registration.Register(Registry, SectionContext, nameof(NavigationMapControl), Id, BuildControl());
 
     protected override Task OnAfterRenderAsync(bool firstRender) => _registration.SyncAfterRenderAsync(Registry);
 
     public ValueTask DisposeAsync() => _registration.DisposeAsync(Registry);
 
-    private MapControl BuildControl() => new ScaleMapControl(Id, Enabled, Position, Unit, Order);
+    private MapControlDefinition BuildControl() =>
+        new NavigationControlDefinition(Id, Visible, Position, ShowCompass, ShowZoom, Order);
 }

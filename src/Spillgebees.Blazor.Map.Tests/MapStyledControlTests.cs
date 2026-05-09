@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Spillgebees.Blazor.Map.Components;
 using Spillgebees.Blazor.Map.Models.Controls;
+using Spillgebees.Blazor.Map.Models.Visibility;
 
 namespace Spillgebees.Blazor.Map.Tests;
 
@@ -31,13 +32,15 @@ public class MapStyledControlTests : BunitContext
         // arrange
         var clickCount = 0;
         var cut = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapActionControl>(control =>
-                control
-                    .Add(c => c.Id, "refresh-control")
-                    .Add(c => c.Position, ControlPosition.TopLeft)
-                    .Add(c => c.Label, "Refresh map")
-                    .Add(c => c.Text, "Refresh")
-                    .Add(c => c.OnClick, EventCallback.Factory.Create<MouseEventArgs>(this, () => clickCount++))
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<ButtonMapControl>(control =>
+                    control
+                        .Add(c => c.Id, "refresh-control")
+                        .Add(c => c.Position, ControlPosition.TopLeft)
+                        .Add(c => c.Label, "Refresh map")
+                        .Add(c => c.Text, "Refresh")
+                        .Add(c => c.OnClick, EventCallback.Factory.Create<MouseEventArgs>(this, () => clickCount++))
+                )
             )
         );
         cancellationToken.ThrowIfCancellationRequested();
@@ -49,22 +52,25 @@ public class MapStyledControlTests : BunitContext
 
         // assert
         JSInterop.VerifyInvoke(SetControlContentIdentifier);
+        cut.Find("button.sgb-map-action-control-button").GetAttribute("title").Should().Be("Refresh map");
         clickCount.Should().Be(1);
     }
 
     [Test]
-    public void Should_render_toggle_aria_pressed_and_invoke_pressed_changed()
+    public void Should_render_toggle_aria_pressed_and_invoke_is_on_changed()
     {
         // arrange
         bool? changedValue = null;
         var cut = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapToggleControl>(control =>
-                control
-                    .Add(c => c.Id, "layer-toggle")
-                    .Add(c => c.Label, "Toggle stations")
-                    .Add(c => c.Text, "Stations")
-                    .Add(c => c.Pressed, true)
-                    .Add(c => c.PressedChanged, EventCallback.Factory.Create<bool>(this, value => changedValue = value))
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<ToggleButtonMapControl>(control =>
+                    control
+                        .Add(c => c.Id, "layer-toggle")
+                        .Add(c => c.Label, "Toggle stations")
+                        .Add(c => c.Text, "Stations")
+                        .Add(c => c.IsOn, true)
+                        .Add(c => c.IsOnChanged, EventCallback.Factory.Create<bool>(this, value => changedValue = value))
+                )
             )
         );
 
@@ -74,6 +80,7 @@ public class MapStyledControlTests : BunitContext
 
         // assert
         button.GetAttribute("aria-pressed").Should().Be("true");
+        button.GetAttribute("title").Should().Be("Toggle stations");
         changedValue.Should().BeFalse();
     }
 
@@ -82,19 +89,21 @@ public class MapStyledControlTests : BunitContext
     {
         // arrange & act
         var cut = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapActionControl>(control =>
-                control
-                    .Add(c => c.Id, "focus-control")
-                    .Add(c => c.Label, "Focus station")
-                    .Add(c => c.Text, "Central Station")
-                    .Add(
-                        c => c.Icon!,
-                        builder =>
-                        {
-                            builder.OpenElement(0, "svg");
-                            builder.CloseElement();
-                        }
-                    )
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<ButtonMapControl>(control =>
+                    control
+                        .Add(c => c.Id, "focus-control")
+                        .Add(c => c.Label, "Focus station")
+                        .Add(c => c.Text, "Central Station")
+                        .Add(
+                            c => c.Icon!,
+                            builder =>
+                            {
+                                builder.OpenElement(0, "svg");
+                                builder.CloseElement();
+                            }
+                        )
+                )
             )
         );
 
@@ -108,7 +117,17 @@ public class MapStyledControlTests : BunitContext
     public void Should_throw_when_button_label_is_empty()
     {
         // arrange
-        var action = () => Render<MapControlButton>(parameters => parameters.Add(p => p.Text, "Refresh"));
+        var action = () =>
+            Render<SgbMap>(parameters =>
+                parameters.AddChildContent<MapControls>(controls =>
+                    controls.AddChildContent<ButtonGroupMapControl>(group =>
+                        group
+                            .Add(p => p.Id, "tools")
+                            .Add(p => p.Label, "Tools")
+                            .AddChildContent<MapButton>(button => button.Add(p => p.Text, "Refresh"))
+                    )
+                )
+            );
 
         // act & assert
         action.Should().Throw<InvalidOperationException>().WithMessage("A non-empty Label is required.");
@@ -118,29 +137,51 @@ public class MapStyledControlTests : BunitContext
     public void Should_throw_when_button_has_no_visible_icon_or_text()
     {
         // arrange
-        var action = () => Render<MapControlButton>(parameters => parameters.Add(p => p.Label, "Refresh"));
-
-        // act & assert
-        action
-            .Should()
-            .Throw<InvalidOperationException>()
-            .WithMessage("MapControlButton requires non-empty Text or Icon.");
-    }
-
-    [Test]
-    public void Should_throw_when_toggle_button_pressed_state_has_no_visible_content()
-    {
-        // arrange
         var action = () =>
-            Render<MapControlToggleButton>(parameters =>
-                parameters.Add(p => p.Label, "Toggle stations").Add(p => p.Pressed, true).Add(p => p.OffText, "Show")
+            Render<SgbMap>(parameters =>
+                parameters.AddChildContent<MapControls>(controls =>
+                    controls.AddChildContent<ButtonGroupMapControl>(group =>
+                        group
+                            .Add(p => p.Id, "tools")
+                            .Add(p => p.Label, "Tools")
+                            .AddChildContent<MapButton>(button => button.Add(p => p.Label, "Refresh"))
+                    )
+                )
             );
 
         // act & assert
         action
             .Should()
             .Throw<InvalidOperationException>()
-            .WithMessage("MapControlToggleButton requires visible content for the current pressed state.");
+            .WithMessage("MapButton requires non-empty Text or Icon.");
+    }
+
+    [Test]
+    public void Should_throw_when_toggle_button_on_state_has_no_visible_content()
+    {
+        // arrange
+        var action = () =>
+            Render<SgbMap>(parameters =>
+                parameters.AddChildContent<MapControls>(controls =>
+                    controls.AddChildContent<ButtonGroupMapControl>(group =>
+                        group
+                            .Add(p => p.Id, "tools")
+                            .Add(p => p.Label, "Tools")
+                            .AddChildContent<MapToggleButton>(button =>
+                                button
+                                    .Add(p => p.Label, "Toggle stations")
+                                    .Add(p => p.IsOn, true)
+                                    .Add(p => p.OffText, "Show")
+                            )
+                    )
+                )
+            );
+
+        // act & assert
+        action
+            .Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("MapToggleButton requires visible content for the current on state.");
     }
 
     [Test]
@@ -148,13 +189,113 @@ public class MapStyledControlTests : BunitContext
     {
         // arrange & act
         var cut = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapToggleControl>(control =>
-                control.Add(c => c.Id, "layer-toggle").Add(c => c.Label, "Toggle stations").Add(c => c.Text, "Stations")
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<ToggleButtonMapControl>(control =>
+                    control
+                        .Add(c => c.Id, "layer-toggle")
+                        .Add(c => c.Label, "Toggle stations")
+                        .Add(c => c.Text, "Stations")
+                )
             )
         );
 
         // assert
         cut.Find(".sgb-map-toggle-control").HasAttribute("aria-label").Should().BeFalse();
         cut.Find("button.sgb-map-toggle-control-button").GetAttribute("aria-label").Should().Be("Toggle stations");
+    }
+
+    [Test]
+    public void Should_use_explicit_button_title_when_provided()
+    {
+        // arrange & act
+        var cut = Render<SgbMap>(parameters =>
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<ButtonMapControl>(control =>
+                    control
+                        .Add(c => c.Id, "refresh-control")
+                        .Add(c => c.Label, "Refresh map")
+                        .Add(c => c.Title, "Reload visible data")
+                        .Add(c => c.Text, "Refresh")
+                )
+            )
+        );
+
+        // assert
+        cut.Find("button.sgb-map-action-control-button").GetAttribute("aria-label").Should().Be("Refresh map");
+        cut.Find("button.sgb-map-action-control-button").GetAttribute("title").Should().Be("Reload visible data");
+    }
+
+    [Test]
+    public void Should_throw_when_panel_label_is_empty()
+    {
+        // arrange
+        var action = () =>
+            Render<SgbMap>(parameters =>
+                parameters.AddChildContent<MapControls>(controls =>
+                    controls.AddChildContent<PanelMapControl>(panel =>
+                        panel.Add(p => p.Id, "filters").Add(p => p.Label, " ")
+                    )
+                )
+            );
+
+        // act & assert
+        action.Should().Throw<InvalidOperationException>().WithMessage("A non-empty Label is required.");
+    }
+
+    [Test]
+    public async Task Should_invoke_panel_open_state_callback()
+    {
+        // arrange
+        bool? openState = null;
+        var cut = Render<SgbMap>(parameters =>
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<PanelMapControl>(panel =>
+                    panel
+                        .Add(p => p.Id, "filters")
+                        .Add(p => p.Label, "Filters")
+                        .Add(p => p.IsOpen, false)
+                        .Add(p => p.IsOpenChanged, EventCallback.Factory.Create<bool>(this, value => openState = value))
+                )
+            )
+        );
+
+        // act
+        await cut.FindComponent<PanelMapControl>().Instance.OnPanelOpenChangedAsync(true);
+
+        // assert
+        openState.Should().BeTrue();
+    }
+
+    [Test]
+    public void Should_render_layer_visibility_control_and_bind_switches()
+    {
+        // arrange
+        var visibility = new MapLayerVisibilityState(
+            [
+                new MapLayerVisibilityGroup("routes", [MapLayerVisibilityTarget.Layer("routes-layer")], Label: "Routes"),
+                new MapLayerVisibilityGroup("stations", [MapLayerVisibilityTarget.Layer("stations-layer")], Label: "Stations"),
+            ]
+        );
+
+        var cut = Render<SgbMap>(parameters =>
+            parameters
+                .Add(map => map.LayerVisibility, visibility)
+                .AddChildContent<MapControls>(controls =>
+                    controls.AddChildContent<LayerMapControl>(control =>
+                        control
+                            .Add(c => c.Id, "layers")
+                            .Add(c => c.GroupIds, ["stations"])
+                    )
+                )
+        );
+
+        // act
+        cut.Find("[data-testid='map-layer-toggle-stations']").Change(false);
+
+        // assert
+        cut.Markup.Should().Contain("Stations");
+        cut.Markup.Should().NotContain("Routes");
+        visibility.TryGetGroup("stations", out var stations).Should().BeTrue();
+        stations!.IsVisible.Should().BeFalse();
     }
 }

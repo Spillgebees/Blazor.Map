@@ -41,8 +41,8 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     internal IJSRuntime Runtime => JsRuntime;
     internal ILogger RuntimeLogger => Logger.Value;
 
-    private static IDictionary<string, object> GetLegendControlHostParameters(LegendMapControl control) =>
-        new Dictionary<string, object> { [nameof(MapLegendControlHost.Control)] = control };
+    private static IDictionary<string, object> GetLegendControlHostParameters(LegendControlDefinition control) =>
+        new Dictionary<string, object> { [nameof(LegendMapControlHost.Control)] = control };
 
     /// <summary>
     /// Options for the map (center, zoom, style, pitch, bearing, etc.).
@@ -54,7 +54,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// Declarative map controls (built-in, legend, and content controls). Empty by default. Prefer control subcomponents.
     /// </summary>
     [Parameter]
-    public IReadOnlyList<MapControl> Controls { get; set; } = [];
+    public IReadOnlyList<MapControlDefinition> Controls { get; set; } = [];
 
     /// <summary>
     /// The visual theme for UI controls, popups, and attribution.
@@ -161,7 +161,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     public EventCallback<MarkerDragEventArgs> OnMarkerDragEnd { get; set; }
 
     protected MapOptions InternalMapOptions = null!;
-    protected List<MapControl> InternalControls { get; set; } = [];
+    protected List<MapControlDefinition> InternalControls { get; set; } = [];
     protected MapTheme InternalTheme;
     protected List<Marker> InternalMarkers { get; set; } = [];
     protected List<Circle> InternalCircles { get; set; } = [];
@@ -845,7 +845,8 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         string controlId,
         string kind,
         ElementReference placeholderReference,
-        ElementReference contentReference
+        ElementReference contentReference,
+        object? stateReference = null
     ) =>
         MapJs.SetControlContentAsync(
             JsRuntime,
@@ -854,13 +855,14 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             controlId,
             kind,
             placeholderReference,
-            contentReference
+            contentReference,
+            stateReference
         );
 
     internal ValueTask RemoveControlContentAsync(string controlId) =>
         MapJs.RemoveControlContentAsync(JsRuntime, Logger.Value, MapReference, controlId);
 
-    internal bool RegisterControl(string ownerId, MapControl control)
+    internal bool RegisterControl(string ownerId, MapControlDefinition control)
     {
         var existing = _registeredControls.FirstOrDefault(entry => entry.OwnerId == ownerId);
         if (existing is not null)
@@ -904,16 +906,16 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         return true;
     }
 
-    protected List<MapControl> GetDesiredControls() =>
+    protected List<MapControlDefinition> GetDesiredControls() =>
         [.. Controls, .. _registeredControls.Select(entry => entry.Control)];
 
-    internal bool TryGetControl(string controlId, [NotNullWhen(true)] out MapControl? control)
+    internal bool TryGetControl(string controlId, [NotNullWhen(true)] out MapControlDefinition? control)
     {
         control = InternalControls.FirstOrDefault(control => control.ControlId == controlId);
         return control is not null;
     }
 
-    private static void ValidateControlIds(IEnumerable<MapControl> controls)
+    private static void ValidateControlIds(IEnumerable<MapControlDefinition> controls)
     {
         var duplicateControlId = controls
             .GroupBy(control => control.ControlId, StringComparer.Ordinal)
@@ -931,11 +933,11 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         );
     }
 
-    private sealed class RegisteredControl(string ownerId, MapControl control)
+    private sealed class RegisteredControl(string ownerId, MapControlDefinition control)
     {
         public string OwnerId { get; } = ownerId;
 
-        public MapControl Control { get; set; } = control;
+        public MapControlDefinition Control { get; set; } = control;
     }
 
     private ValueTask SetMapOptionsAsync() =>

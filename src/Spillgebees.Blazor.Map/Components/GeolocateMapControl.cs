@@ -6,7 +6,7 @@ namespace Spillgebees.Blazor.Map.Components;
 /// <summary>
 /// Registers a geolocate control subcomponent.
 /// </summary>
-public sealed class MapGeolocateControl : ComponentBase, IAsyncDisposable
+public sealed class GeolocateMapControl : ComponentBase, IAsyncDisposable
 {
     private readonly MapControlComponentRegistration _registration = new();
 
@@ -20,7 +20,7 @@ public sealed class MapGeolocateControl : ComponentBase, IAsyncDisposable
     public int Order { get; set; } = 300;
 
     [Parameter]
-    public bool Enabled { get; set; } = true;
+    public bool Visible { get; set; } = true;
 
     [Parameter]
     public bool TrackUser { get; set; }
@@ -32,11 +32,11 @@ public sealed class MapGeolocateControl : ComponentBase, IAsyncDisposable
     private MapSectionContext? SectionContext { get; set; }
 
     protected override void OnParametersSet() =>
-        _registration.Register(Registry, SectionContext, nameof(MapGeolocateControl), Id, BuildControl());
+        _registration.Register(Registry, SectionContext, nameof(GeolocateMapControl), Id, BuildControl());
 
     protected override Task OnAfterRenderAsync(bool firstRender) => _registration.SyncAfterRenderAsync(Registry);
 
     public ValueTask DisposeAsync() => _registration.DisposeAsync(Registry);
 
-    private MapControl BuildControl() => new GeolocateMapControl(Id, Enabled, Position, TrackUser, Order);
+    private MapControlDefinition BuildControl() => new GeolocateControlDefinition(Id, Visible, Position, TrackUser, Order);
 }

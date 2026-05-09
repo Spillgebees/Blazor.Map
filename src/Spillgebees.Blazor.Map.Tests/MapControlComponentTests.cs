@@ -25,7 +25,7 @@ public class MapControlComponentTests : BunitContext
         // arrange & act
         var cut = Render<SgbMap>(parameters =>
             parameters.AddChildContent<MapControls>(controls =>
-                controls.AddChildContent<MapNavigationControl>(control => control.Add(c => c.Id, "navigation-tools"))
+                controls.AddChildContent<NavigationMapControl>(control => control.Add(c => c.Id, "navigation-tools"))
             )
         );
 
@@ -39,7 +39,7 @@ public class MapControlComponentTests : BunitContext
         // arrange
         var cut = Render<SgbMap>(parameters =>
             parameters.AddChildContent<MapControls>(controls =>
-                controls.AddChildContent<MapNavigationControl>(control =>
+                controls.AddChildContent<NavigationMapControl>(control =>
                     control
                         .Add(c => c.Id, "navigation-tools")
                         .Add(c => c.Position, ControlPosition.TopLeft)
@@ -65,7 +65,7 @@ public class MapControlComponentTests : BunitContext
         var showZoom = true;
         var cut = Render<SgbMap>(parameters =>
             parameters.AddChildContent<MapControls>(controls =>
-                controls.AddChildContent<MapNavigationControl>(control =>
+                controls.AddChildContent<NavigationMapControl>(control =>
                     control.Add(c => c.Id, "navigation-tools").Add(c => c.ShowZoom, showZoom)
                 )
             )
@@ -76,7 +76,7 @@ public class MapControlComponentTests : BunitContext
         showZoom = false;
         cut.Render(parameters =>
             parameters.AddChildContent<MapControls>(controls =>
-                controls.AddChildContent<MapNavigationControl>(control =>
+                controls.AddChildContent<NavigationMapControl>(control =>
                     control.Add(c => c.Id, "navigation-tools").Add(c => c.ShowZoom, showZoom)
                 )
             )
@@ -131,9 +131,9 @@ public class MapControlComponentTests : BunitContext
         var action = () =>
             Render<SgbMap>(parameters =>
                 parameters
-                    .Add(p => p.Controls, [new NavigationMapControl("navigation-tools")])
+                    .Add(p => p.Controls, [new NavigationControlDefinition("navigation-tools")])
                     .AddChildContent<MapControls>(controls =>
-                        controls.AddChildContent<MapScaleControl>(control => control.Add(c => c.Id, "navigation-tools"))
+                        controls.AddChildContent<ScaleMapControl>(control => control.Add(c => c.Id, "navigation-tools"))
                     )
             );
 
@@ -148,7 +148,7 @@ public class MapControlComponentTests : BunitContext
     public void Should_use_default_geolocate_control_values()
     {
         // arrange
-        var control = new MapGeolocateControl();
+        var control = new GeolocateMapControl();
 
         // act
         var defaults = new
@@ -156,7 +156,7 @@ public class MapControlComponentTests : BunitContext
             control.Id,
             control.Position,
             control.Order,
-            control.Enabled,
+            control.Visible,
             control.TrackUser,
         };
 
@@ -164,7 +164,7 @@ public class MapControlComponentTests : BunitContext
         defaults.Id.Should().Be("geolocate");
         defaults.Position.Should().Be(ControlPosition.TopRight);
         defaults.Order.Should().Be(300);
-        defaults.Enabled.Should().BeTrue();
+        defaults.Visible.Should().BeTrue();
         defaults.TrackUser.Should().BeFalse();
     }
 
@@ -172,7 +172,7 @@ public class MapControlComponentTests : BunitContext
     public void Should_use_default_scale_control_values()
     {
         // arrange
-        var control = new MapScaleControl();
+        var control = new ScaleMapControl();
 
         // act
         var defaults = new
@@ -180,7 +180,7 @@ public class MapControlComponentTests : BunitContext
             control.Id,
             control.Position,
             control.Order,
-            control.Enabled,
+            control.Visible,
             control.Unit,
         };
 
@@ -188,7 +188,7 @@ public class MapControlComponentTests : BunitContext
         defaults.Id.Should().Be("scale");
         defaults.Position.Should().Be(ControlPosition.BottomLeft);
         defaults.Order.Should().Be(100);
-        defaults.Enabled.Should().BeTrue();
+        defaults.Visible.Should().BeTrue();
         defaults.Unit.Should().Be(ScaleUnit.Metric);
     }
 
@@ -196,7 +196,7 @@ public class MapControlComponentTests : BunitContext
     public void Should_use_default_terrain_control_source_id()
     {
         // arrange
-        var control = new MapTerrainControl();
+        var control = new TerrainMapControl();
 
         // act
         var defaults = new
@@ -204,7 +204,7 @@ public class MapControlComponentTests : BunitContext
             control.Id,
             control.Position,
             control.Order,
-            control.Enabled,
+            control.Visible,
             control.SourceId,
         };
 
@@ -212,7 +212,7 @@ public class MapControlComponentTests : BunitContext
         defaults.Id.Should().Be("terrain");
         defaults.Position.Should().Be(ControlPosition.TopRight);
         defaults.Order.Should().Be(400);
-        defaults.Enabled.Should().BeTrue();
+        defaults.Visible.Should().BeTrue();
         defaults.SourceId.Should().Be("terrain");
     }
 
@@ -239,8 +239,8 @@ public class MapControlComponentTests : BunitContext
                                 {
                                     if (ShowControl)
                                     {
-                                        controlsBuilder.OpenComponent<MapScaleControl>(0);
-                                        controlsBuilder.AddAttribute(1, nameof(MapScaleControl.Id), "scale-tools");
+                                        controlsBuilder.OpenComponent<ScaleMapControl>(0);
+                                        controlsBuilder.AddAttribute(1, nameof(ScaleMapControl.Id), "scale-tools");
                                         controlsBuilder.CloseComponent();
                                     }
                                 }

@@ -96,7 +96,9 @@ public class LegendMapControlTests : BunitContext
         var cut = Render<SgbMap>(parameters =>
             parameters
                 .Add(map => map.LayerVisibility, visibility)
-                .AddChildContent<MapLegendControl>(control => control.Add(c => c.Definition, definition))
+                .AddChildContent<MapControls>(controls =>
+                    controls.AddChildContent<LegendMapControl>(control => control.Add(c => c.Definition, definition))
+                )
         );
         await cut.Instance.OnMapInitializedAsync();
 
@@ -110,13 +112,47 @@ public class LegendMapControlTests : BunitContext
     {
         var definition = new MapLegend([new MapLegendSection("Static", [new MapLegendItem("static", "Static item")])]);
         var cut = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapLegendControl>(control => control.Add(c => c.Definition, definition))
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<LegendMapControl>(control => control.Add(c => c.Definition, definition))
+            )
         );
 
         await cut.Instance.OnMapInitializedAsync();
 
         cut.Markup.Should().Contain("Static item");
         cut.FindAll("input[data-testid='map-legend-toggle-static']").Should().BeEmpty();
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_sanitize_icon_symbol_css_class(CancellationToken cancellationToken)
+    {
+        var definition = new MapLegend(
+            [
+                new MapLegendSection(
+                    "Static",
+                    [new MapLegendItem("icon", "Icon item", Symbol: MapLegendSymbol.Icon("valid_class invalid<script>"))]
+                ),
+            ]
+        );
+        var cut = Render<SgbMap>(parameters =>
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<LegendMapControl>(control => control.Add(c => c.Definition, definition))
+            )
+        );
+
+        await cut.Instance.OnMapInitializedAsync();
+
+        var symbol = cut.Find(".sgb-map-legend-symbol[data-symbol='icon']");
+        symbol.GetAttribute("class").Should().Be("sgb-map-legend-symbol valid_class invalidscript");
+    }
+
+    [Test]
+    public void Should_keep_class_name_as_fifth_positional_legend_item_argument()
+    {
+        var item = new MapLegendItem("item", "Item", null, null, "item-class");
+
+        item.ClassName.Should().Be("item-class");
+        item.Symbol.Should().BeNull();
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -127,17 +163,19 @@ public class LegendMapControlTests : BunitContext
         var cut = Render<SgbMap>(parameters =>
             parameters
                 .Add(map => map.LayerVisibility, visibility)
-                .AddChildContent(builder =>
-                {
-                    builder.OpenComponent<MapLegendControl>(0);
-                    builder.AddAttribute(1, nameof(MapLegendControl.Id), "legend-a");
-                    builder.AddAttribute(2, nameof(MapLegendControl.Definition), definition);
-                    builder.CloseComponent();
-                    builder.OpenComponent<MapLegendControl>(3);
-                    builder.AddAttribute(4, nameof(MapLegendControl.Id), "legend-b");
-                    builder.AddAttribute(5, nameof(MapLegendControl.Definition), definition);
-                    builder.CloseComponent();
-                })
+                .AddChildContent<MapControls>(controls =>
+                    controls.AddChildContent(builder =>
+                    {
+                        builder.OpenComponent<LegendMapControl>(0);
+                        builder.AddAttribute(1, nameof(LegendMapControl.Id), "legend-a");
+                        builder.AddAttribute(2, nameof(LegendMapControl.Definition), definition);
+                        builder.CloseComponent();
+                        builder.OpenComponent<LegendMapControl>(3);
+                        builder.AddAttribute(4, nameof(LegendMapControl.Id), "legend-b");
+                        builder.AddAttribute(5, nameof(LegendMapControl.Definition), definition);
+                        builder.CloseComponent();
+                    })
+                )
         );
         await cut.Instance.OnMapInitializedAsync();
 
@@ -164,8 +202,10 @@ public class LegendMapControlTests : BunitContext
         var cut = Render<SgbMap>(parameters =>
             parameters
                 .Add(map => map.LayerVisibility, visibility)
-                .AddChildContent<MapLegendControl>(control =>
-                    control.Add(c => c.Definition, CreateLegend()).Add(c => c.ItemTemplate, template)
+                .AddChildContent<MapControls>(controls =>
+                    controls.AddChildContent<LegendMapControl>(control =>
+                        control.Add(c => c.Definition, CreateLegend()).Add(c => c.ItemTemplate, template)
+                    )
                 )
         );
 
@@ -183,7 +223,9 @@ public class LegendMapControlTests : BunitContext
         var definition = CreateLegend();
         var act = () =>
             Render<SgbMap>(parameters =>
-                parameters.AddChildContent<MapLegendControl>(control => control.Add(c => c.Definition, definition))
+                parameters.AddChildContent<MapControls>(controls =>
+                    controls.AddChildContent<LegendMapControl>(control => control.Add(c => c.Definition, definition))
+                )
             );
 
         act.Should().Throw<InvalidOperationException>().WithMessage("*stations*");

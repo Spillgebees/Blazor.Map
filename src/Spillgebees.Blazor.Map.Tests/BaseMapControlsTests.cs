@@ -12,9 +12,9 @@ public class BaseMapControlsTests
     {
         // arrange
         var map = new TestBaseMap();
-        var control = new LegendMapControl(
+        var control = new LegendControlDefinition(
             "legend-main",
-            new MapControlPlacement(ControlPosition.TopRight, 500, Enabled: true),
+            new MapControlPlacement(ControlPosition.TopRight, 500, Visible: true),
             new LegendChromeOptions("Legend", Collapsible: true, InitiallyOpen: true, ClassName: null),
             new LegendContentOptions(new MapLegend([]), ItemTemplate: null)
         );
@@ -35,9 +35,9 @@ public class BaseMapControlsTests
         // arrange
         var map = new TestBaseMap();
         map.SetInternalControls([
-            new LegendMapControl(
+            new LegendControlDefinition(
                 "legend-main",
-                new MapControlPlacement(ControlPosition.TopRight, 500, Enabled: true),
+                new MapControlPlacement(ControlPosition.TopRight, 500, Visible: true),
                 new LegendChromeOptions("Legend", Collapsible: true, InitiallyOpen: true, ClassName: null),
                 new LegendContentOptions(new MapLegend([]), ItemTemplate: null)
             ),
@@ -94,8 +94,8 @@ public class BaseMapControlsTests
         map.RegisterTestCustomControl("second-owner", CreateContentControl("second"));
 
         // act
-        map.RegisterTestCustomControl(firstOwnerId, CreateContentControl("first", enabled: false));
-        map.RegisterTestCustomControl(firstOwnerId, CreateContentControl("first", enabled: true));
+        map.RegisterTestCustomControl(firstOwnerId, CreateContentControl("first", visible: false));
+        map.RegisterTestCustomControl(firstOwnerId, CreateContentControl("first", visible: true));
 
         // assert
         map.GetDesiredControlIds().Should().Equal("first", "second");
@@ -116,8 +116,8 @@ public class BaseMapControlsTests
         map.GetDesiredControlIds().Should().Equal("second");
     }
 
-    private static ContentMapControl CreateContentControl(string controlId, bool enabled = true) =>
-        new(controlId, enabled, ControlPosition.TopRight, 500);
+    private static ContentControlDefinition CreateContentControl(string controlId, bool visible = true) =>
+        new(controlId, visible, ControlPosition.TopRight, 500);
 
     private sealed class TestBaseMap : BaseMap
     {
@@ -126,7 +126,7 @@ public class BaseMapControlsTests
             Controls = [];
         }
 
-        public void SetInternalControls(IReadOnlyList<MapControl> controls)
+        public void SetInternalControls(IReadOnlyList<MapControlDefinition> controls)
         {
             // arrange
 
@@ -136,7 +136,7 @@ public class BaseMapControlsTests
             // assert
         }
 
-        public bool TryResolveControl(string controlId, out MapControl? control)
+        public bool TryResolveControl(string controlId, out MapControlDefinition? control)
         {
             // arrange
 
@@ -147,7 +147,7 @@ public class BaseMapControlsTests
             return found;
         }
 
-        public void RegisterTestCustomControl(string ownerId, ContentMapControl control)
+        public void RegisterTestCustomControl(string ownerId, ContentControlDefinition control)
         {
             // arrange
 

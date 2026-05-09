@@ -4,8 +4,8 @@
 <button type="button"
         class="@ButtonClass"
         aria-label="@Label"
-        title="@Title"
-        aria-pressed="@AriaPressed"
+        title="@EffectiveTitle"
+        aria-pressed="@AriaIsOn"
         disabled="@Disabled"
         @onclick="ToggleAsync">
     @if (CurrentIcon is not null)
@@ -21,6 +21,9 @@
 </button>
 
 @code {
+    [CascadingParameter]
+    private MapButtonGroupContext? ButtonGroup { get; set; }
+
     [Parameter, EditorRequired]
     public string Label { get; set; } = string.Empty;
 
@@ -40,28 +43,33 @@
     public RenderFragment? Icon { get; set; }
 
     [Parameter]
-    public RenderFragment? PressedIcon { get; set; }
+    public RenderFragment? OnIcon { get; set; }
 
     [Parameter]
-    public MapControlButtonVariant Variant { get; set; } = MapControlButtonVariant.Neutral;
+    public RenderFragment? OffIcon { get; set; }
 
     [Parameter]
-    public MapControlButtonSize Size { get; set; } = MapControlButtonSize.Medium;
+    public MapButtonVariant Variant { get; set; } = MapButtonVariant.Neutral;
+
+    [Parameter]
+    public MapButtonSize Size { get; set; } = MapButtonSize.Medium;
 
     [Parameter]
     public bool Disabled { get; set; }
 
     [Parameter]
-    public bool Pressed { get; set; }
+    public bool IsOn { get; set; }
 
     [Parameter]
-    public EventCallback<bool> PressedChanged { get; set; }
+    public EventCallback<bool> IsOnChanged { get; set; }
 
-    private RenderFragment? CurrentIcon => Pressed && PressedIcon is not null ? PressedIcon : Icon;
+    private string EffectiveTitle => string.IsNullOrWhiteSpace(Title) ? Label : Title;
 
-    private string? DisplayText => Pressed ? OnText ?? Text : OffText ?? Text;
+    private RenderFragment? CurrentIcon => IsOn ? OnIcon ?? Icon : OffIcon ?? Icon;
 
-    private string AriaPressed => Pressed.ToString().ToLowerInvariant();
+    private string? DisplayText => IsOn ? OnText ?? Text : OffText ?? Text;
+
+    private string AriaIsOn => IsOn.ToString().ToLowerInvariant();
 
     private string ButtonClass => string.Join(
         " ",
@@ -69,7 +77,7 @@
         {
             "sgb-map-control-button",
             "sgb-map-control-group-toggle-button",
-            Pressed ? "sgb-map-control-button-pressed" : "sgb-map-control-button-unpressed",
+            IsOn ? "sgb-map-control-button-pressed" : "sgb-map-control-button-unpressed",
             GetLayoutClass(),
             $"sgb-map-control-button-{Variant.ToString().ToLowerInvariant()}",
             $"sgb-map-control-button-{Size.ToString().ToLowerInvariant()}",
@@ -78,6 +86,11 @@
 
     protected override void OnParametersSet()
     {
+        if (ButtonGroup is null)
+        {
+            throw new InvalidOperationException("MapToggleButton must be placed inside ButtonGroupMapControl.");
+        }
+
         if (string.IsNullOrWhiteSpace(Label))
         {
             throw new InvalidOperationException("A non-empty Label is required.");
@@ -86,7 +99,7 @@
         if (CurrentIcon is null && string.IsNullOrWhiteSpace(DisplayText))
         {
             throw new InvalidOperationException(
-                "MapControlToggleButton requires visible content for the current pressed state."
+                "MapToggleButton requires visible content for the current on state."
             );
         }
     }
@@ -98,7 +111,7 @@
             return;
         }
 
-        await PressedChanged.InvokeAsync(!Pressed);
+        await IsOnChanged.InvokeAsync(!IsOn);
     }
 
     private string GetLayoutClass()

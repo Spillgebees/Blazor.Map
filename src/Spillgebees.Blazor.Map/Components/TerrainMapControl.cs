@@ -6,27 +6,21 @@ namespace Spillgebees.Blazor.Map.Components;
 /// <summary>
 /// Registers a terrain control subcomponent.
 /// </summary>
-public sealed class MapTerrainControl : ComponentBase, IAsyncDisposable
+public sealed class TerrainMapControl : ComponentBase, IAsyncDisposable
 {
     private readonly MapControlComponentRegistration _registration = new();
 
-    public MapTerrainControl()
-    {
-        Id = "terrain";
-        Order = 400;
-    }
-
     [Parameter]
-    public string Id { get; set; } = string.Empty;
+    public string Id { get; set; } = "terrain";
 
     [Parameter]
     public ControlPosition Position { get; set; } = ControlPosition.TopRight;
 
     [Parameter]
-    public int Order { get; set; } = 100;
+    public int Order { get; set; } = 400;
 
     [Parameter]
-    public bool Enabled { get; set; } = true;
+    public bool Visible { get; set; } = true;
 
     [Parameter]
     public string SourceId { get; set; } = "terrain";
@@ -38,11 +32,11 @@ public sealed class MapTerrainControl : ComponentBase, IAsyncDisposable
     private MapSectionContext? SectionContext { get; set; }
 
     protected override void OnParametersSet() =>
-        _registration.Register(Registry, SectionContext, nameof(MapTerrainControl), Id, BuildControl());
+        _registration.Register(Registry, SectionContext, nameof(TerrainMapControl), Id, BuildControl());
 
     protected override Task OnAfterRenderAsync(bool firstRender) => _registration.SyncAfterRenderAsync(Registry);
 
     public ValueTask DisposeAsync() => _registration.DisposeAsync(Registry);
 
-    private MapControl BuildControl() => new TerrainMapControl(Id, Enabled, Position, Order, SourceId);
+    private MapControlDefinition BuildControl() => new TerrainControlDefinition(Id, Visible, Position, Order, SourceId);
 }
