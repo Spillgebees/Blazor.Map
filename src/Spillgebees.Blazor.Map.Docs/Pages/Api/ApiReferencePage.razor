@@ -1,7 +1,6 @@
-@page "/api/{TypeName}"
-@using System.Text.Json
+@page "/api/{TypeSlug}"
 
-<PageTitle>API Reference | @ShortName</PageTitle>
+<PageTitle>API Reference | @TypeSlug</PageTitle>
 
 @if (_typeInfo is not null)
 {
@@ -10,35 +9,17 @@
 else
 {
     <h1>Type not found</h1>
-    <p>Could not resolve <code>@TypeName</code>.</p>
+    <p>No API documentation available for <code>@TypeSlug</code>.</p>
 }
 
 @code {
     [Parameter]
-    public string TypeName { get; set; } = "";
-
-    private string ShortName => TypeName.Split('.').Last();
+    public string TypeSlug { get; set; } = "";
 
     private ApiTypeInfo? _typeInfo;
 
-    private static readonly ApiManifest? _manifest = LoadManifest();
-
     protected override void OnParametersSet()
     {
-        _typeInfo = _manifest?.Types.FirstOrDefault(t => t.FullName == TypeName);
-    }
-
-    /// The SDK's ApiDoc looks for the manifest in Type.Assembly,
-    /// but the manifest is embedded in the Docs assembly, not the library assembly.
-    /// Load it manually from the Docs assembly as a workaround.
-    private static ApiManifest? LoadManifest()
-    {
-        var docsAssembly = typeof(ApiReferencePage).Assembly;
-        var resourceName = "ApiManifest:Spillgebees.Blazor.Map";
-
-        using var stream = docsAssembly.GetManifestResourceStream(resourceName);
-        if (stream is null) return null;
-
-        return JsonSerializer.Deserialize<ApiManifest>(stream);
+        _typeInfo = ApiReferenceNav.FindType<SgbMap>(TypeSlug);
     }
 }
