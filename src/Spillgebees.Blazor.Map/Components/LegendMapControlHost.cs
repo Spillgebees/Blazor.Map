@@ -204,12 +204,30 @@ internal sealed class LegendMapControlHost : ComponentBase, IAsyncDisposable
                 builder.AddAttribute(sequence++, "data-symbol", "circle");
                 break;
             case MapLegendSymbol.IconSymbol icon:
-                builder.AddAttribute(sequence++, "class", $"sgb-map-legend-symbol {icon.CssClass}");
+                var sanitizedCssClass = SanitizeCssClass(icon.CssClass);
+                builder.AddAttribute(sequence++, "class", BuildSymbolClassName(sanitizedCssClass));
                 builder.AddAttribute(sequence++, "data-symbol", "icon");
                 break;
         }
 
         builder.CloseElement();
+    }
+
+    private static string BuildSymbolClassName(string? cssClass) =>
+        string.IsNullOrWhiteSpace(cssClass) ? "sgb-map-legend-symbol" : $"sgb-map-legend-symbol {cssClass}";
+
+    private static string? SanitizeCssClass(string? cssClass)
+    {
+        if (string.IsNullOrWhiteSpace(cssClass))
+        {
+            return null;
+        }
+
+        var sanitized = new string(
+            cssClass.Where(character => char.IsLetterOrDigit(character) || character is '-' or '_' or ' ').ToArray()
+        );
+
+        return string.IsNullOrWhiteSpace(sanitized) ? null : sanitized.Trim();
     }
 
     private static void RenderItemCopy(

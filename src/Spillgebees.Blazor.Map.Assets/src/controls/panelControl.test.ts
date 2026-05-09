@@ -109,6 +109,34 @@ describe("PanelControl", () => {
     expect(panel.contains(content)).toBe(true);
   });
 
+  it("should leave Escape from nested content to the nested element", () => {
+    // arrange
+    const { container } = createPanelControl({ initiallyOpen: true });
+    const panel = container.querySelector(".sgb-map-panel") as HTMLDivElement;
+    const nestedInput = document.createElement("input");
+    panel.appendChild(nestedInput);
+
+    // act
+    nestedInput.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+
+    // assert
+    expect(panel.hidden).toBe(false);
+  });
+
+  it("should not close when Escape was already prevented", () => {
+    // arrange
+    const { container } = createPanelControl({ initiallyOpen: true });
+    const panel = container.querySelector(".sgb-map-panel") as HTMLDivElement;
+    const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    event.preventDefault();
+
+    // act
+    panel.dispatchEvent(event);
+
+    // assert
+    expect(panel.hidden).toBe(false);
+  });
+
   it("should preserve open state and content when options update", () => {
     // arrange
     const { container, content, control } = createPanelControl();
@@ -171,6 +199,28 @@ describe("PanelControl", () => {
     // assert
     // biome-ignore lint/security/noSecrets: JSInvokable method identifier, not a secret
     expect(invokeMethodAsync).toHaveBeenCalledWith("OnPanelOpenChangedAsync", true);
+  });
+
+  it("should log .NET callback failures with panel context", async () => {
+    // arrange
+    const invokeMethodAsync = vi.fn().mockRejectedValue(new Error("disposed"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { container } = createPanelControl({ isOpen: false }, {
+      invokeMethodAsync,
+    } as unknown as DotNet.DotNetObject);
+    const button = container.querySelector("button") as HTMLButtonElement;
+
+    // act
+    button.click();
+    await Promise.resolve();
+
+    // assert
+    expect(consoleError).toHaveBeenCalledWith(
+      "[Spillgebees.Map] panel control 'filters' failed to report open state 'true'.",
+      expect.any(Error),
+    );
+
+    consoleError.mockRestore();
   });
 
   it("should not mutate controlled open state until options update", () => {

@@ -41,7 +41,7 @@ public partial class CustomMapControl : ComponentBase, IAsyncDisposable
     /// <inheritdoc />
     protected override void OnParametersSet()
     {
-        ValidateParameters();
+        StyledContentMapControlRegistration.ValidateId(Id);
 
         _registration.RegisterContent(
             Registry,
@@ -68,12 +68,4 @@ public partial class CustomMapControl : ComponentBase, IAsyncDisposable
 
     /// <inheritdoc />
     public ValueTask DisposeAsync() => _registration.DisposeAsync(Registry);
-
-    private void ValidateParameters()
-    {
-        if (string.IsNullOrWhiteSpace(Id))
-        {
-            throw new InvalidOperationException("A non-empty Id is required.");
-        }
-    }
 }

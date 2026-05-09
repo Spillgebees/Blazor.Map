@@ -57,7 +57,7 @@ public class MapStyledControlTests : BunitContext
     }
 
     [Test]
-    public void Should_render_toggle_aria_pressed_and_invoke_pressed_changed()
+    public void Should_render_toggle_aria_pressed_and_invoke_is_on_changed()
     {
         // arrange
         bool? changedValue = null;
@@ -157,7 +157,7 @@ public class MapStyledControlTests : BunitContext
     }
 
     [Test]
-    public void Should_throw_when_toggle_button_pressed_state_has_no_visible_content()
+    public void Should_throw_when_toggle_button_on_state_has_no_visible_content()
     {
         // arrange
         var action = () =>
@@ -181,7 +181,7 @@ public class MapStyledControlTests : BunitContext
         action
             .Should()
             .Throw<InvalidOperationException>()
-            .WithMessage("MapToggleButton requires visible content for the current pressed state.");
+            .WithMessage("MapToggleButton requires visible content for the current on state.");
     }
 
     [Test]

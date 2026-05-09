@@ -142,7 +142,7 @@ public partial class ToggleButtonMapControl : ComponentBase, IAsyncDisposable
         if (CurrentIcon is null && string.IsNullOrWhiteSpace(DisplayText))
         {
             throw new InvalidOperationException(
-                "ToggleButtonMapControl requires visible content for the current pressed state."
+                "ToggleButtonMapControl requires visible content for the current on state."
             );
         }
 

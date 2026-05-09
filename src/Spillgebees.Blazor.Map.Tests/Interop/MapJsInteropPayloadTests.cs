@@ -72,9 +72,7 @@ public class MapJsInteropPayloadTests : BunitContext
     public void Should_send_simplified_center_control_payload_when_initializing_map(CancellationToken cancellationToken)
     {
         // arrange & act
-        Render<SgbMap>(parameters =>
-            parameters.Add<IReadOnlyList<MapControlDefinition>>(p => p.Controls, [new CenterControlDefinition()])
-        );
+        Render<SgbMap>(parameters => parameters.Add(p => p.Controls, new[] { new CenterControlDefinition() }));
 
         // assert
         var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();

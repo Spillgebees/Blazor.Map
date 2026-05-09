@@ -134,7 +134,7 @@ export class PanelControl implements IControl {
     this._panel.id = this._panelId;
     this._panel.className = "sgb-map-panel";
     this._panel.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !event.defaultPrevented && event.target === event.currentTarget) {
         this._requestOpenChange(false);
         this._toggleButton?.focus();
         event.stopPropagation();
@@ -211,7 +211,14 @@ export class PanelControl implements IControl {
     }
 
     // biome-ignore lint/security/noSecrets: JSInvokable method identifier, not a secret
-    void this._stateReference?.invokeMethodAsync("OnPanelOpenChangedAsync", isOpen);
+    const openChangedTask = this._stateReference?.invokeMethodAsync("OnPanelOpenChangedAsync", isOpen);
+    void openChangedTask?.catch((error: unknown) => {
+      // biome-ignore lint/suspicious/noConsole: explicit diagnostics for async .NET callback failures
+      console.error(
+        `[Spillgebees.Map] panel control '${this._options.controlId}' failed to report open state '${isOpen}'.`,
+        error,
+      );
+    });
   }
 
   private _buildContainerClassName(): string {

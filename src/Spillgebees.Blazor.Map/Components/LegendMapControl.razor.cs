@@ -130,48 +130,63 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
     private static RenderFragment RenderLegendSymbol(MapLegendItem item) =>
         builder =>
         {
-            var symbol = item.ResolvedSymbol;
-            var sequence = 0;
-            builder.OpenElement(sequence++, "span");
-            builder.AddAttribute(
-                sequence++,
-                "class",
-                symbol is MapLegendSymbol.NoneSymbol
-                    ? "sgb-map-legend-symbol sgb-map-legend-symbol-empty"
-                    : "sgb-map-legend-symbol"
-            );
-            builder.AddAttribute(sequence++, "aria-hidden", "true");
-
-            switch (symbol)
+            var (finalClass, finalStyle, finalDataSymbol) = item.ResolvedSymbol switch
             {
-                case MapLegendSymbol.ColorSwatchSymbol swatch:
-                    builder.AddAttribute(sequence++, "style", $"--sgb-map-legend-symbol-color:{swatch.Color}");
-                    builder.AddAttribute(sequence++, "data-symbol", "swatch");
-                    break;
-                case MapLegendSymbol.LineSymbol line:
-                    builder.AddAttribute(
-                        sequence++,
-                        "style",
-                        $"--sgb-map-legend-symbol-color:{line.Color};--sgb-map-legend-symbol-width:{line.Width}px"
-                    );
-                    builder.AddAttribute(sequence++, "data-symbol", line.Dashed ? "dashed-line" : "line");
-                    break;
-                case MapLegendSymbol.CircleSymbol circle:
-                    builder.AddAttribute(
-                        sequence++,
-                        "style",
-                        $"--sgb-map-legend-symbol-color:{circle.Color};--sgb-map-legend-symbol-stroke:{circle.StrokeColor ?? "transparent"}"
-                    );
-                    builder.AddAttribute(sequence++, "data-symbol", "circle");
-                    break;
-                case MapLegendSymbol.IconSymbol icon:
-                    builder.AddAttribute(sequence++, "class", $"sgb-map-legend-symbol {icon.CssClass}");
-                    builder.AddAttribute(sequence++, "data-symbol", "icon");
-                    break;
+                MapLegendSymbol.NoneSymbol => ("sgb-map-legend-symbol sgb-map-legend-symbol-empty", null, null),
+                MapLegendSymbol.ColorSwatchSymbol swatch => (
+                    "sgb-map-legend-symbol",
+                    $"--sgb-map-legend-symbol-color:{swatch.Color}",
+                    "swatch"
+                ),
+                MapLegendSymbol.LineSymbol line => (
+                    "sgb-map-legend-symbol",
+                    $"--sgb-map-legend-symbol-color:{line.Color};--sgb-map-legend-symbol-width:{line.Width}px",
+                    line.Dashed ? "dashed-line" : "line"
+                ),
+                MapLegendSymbol.CircleSymbol circle => (
+                    "sgb-map-legend-symbol",
+                    $"--sgb-map-legend-symbol-color:{circle.Color};--sgb-map-legend-symbol-stroke:{circle.StrokeColor ?? "transparent"}",
+                    "circle"
+                ),
+                MapLegendSymbol.IconSymbol icon => (
+                    BuildSymbolClassName(SanitizeCssClass(icon.CssClass)),
+                    null,
+                    "icon"
+                ),
+                _ => ("sgb-map-legend-symbol sgb-map-legend-symbol-empty", null, null),
+            };
+
+            builder.OpenElement(0, "span");
+            builder.AddAttribute(1, "class", finalClass);
+            if (finalStyle is not null)
+            {
+                builder.AddAttribute(2, "style", finalStyle);
             }
+            if (finalDataSymbol is not null)
+            {
+                builder.AddAttribute(3, "data-symbol", finalDataSymbol);
+            }
+            builder.AddAttribute(4, "aria-hidden", "true");
 
             builder.CloseElement();
         };
+
+    private static string BuildSymbolClassName(string? cssClass) =>
+        string.IsNullOrWhiteSpace(cssClass) ? "sgb-map-legend-symbol" : $"sgb-map-legend-symbol {cssClass}";
+
+    private static string? SanitizeCssClass(string? cssClass)
+    {
+        if (string.IsNullOrWhiteSpace(cssClass))
+        {
+            return null;
+        }
+
+        var sanitized = new string(
+            cssClass.Where(character => char.IsLetterOrDigit(character) || character is '-' or '_' or ' ').ToArray()
+        );
+
+        return string.IsNullOrWhiteSpace(sanitized) ? null : sanitized.Trim();
+    }
 
     private void ValidateControl()
     {

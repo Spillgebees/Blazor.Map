@@ -114,11 +114,13 @@
     private static readonly Dictionary<string, string> _builtInExamples = new()
     {
         ["BuiltIns.razor"] = """
-            <NavigationMapControl />
-            <FullscreenMapControl />
-            <GeolocateMapControl TrackUser="true" />
-            <CenterMapControl />
-            <ScaleMapControl Unit="ScaleUnit.Metric" />
+            <MapControls>
+                <NavigationMapControl />
+                <FullscreenMapControl />
+                <GeolocateMapControl TrackUser="true" />
+                <CenterMapControl />
+                <ScaleMapControl Unit="ScaleUnit.Metric" />
+            </MapControls>
             """,
     };
 
@@ -200,6 +202,10 @@
     private static readonly Dictionary<string, string> _legendExamples = new()
     {
         ["LegendMapControl.razor"] = """
+            <MapControls>
+                <LegendMapControl Id="legend" Title="Legend" Definition="@_legend" />
+            </MapControls>
+
             @code {
                 private readonly MapLegend _legend = new([
                     new MapLegendSection("Transit", [

@@ -124,6 +124,38 @@ public class LegendMapControlTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_sanitize_icon_symbol_css_class(CancellationToken cancellationToken)
+    {
+        var definition = new MapLegend(
+            [
+                new MapLegendSection(
+                    "Static",
+                    [new MapLegendItem("icon", "Icon item", Symbol: MapLegendSymbol.Icon("valid_class invalid<script>"))]
+                ),
+            ]
+        );
+        var cut = Render<SgbMap>(parameters =>
+            parameters.AddChildContent<MapControls>(controls =>
+                controls.AddChildContent<LegendMapControl>(control => control.Add(c => c.Definition, definition))
+            )
+        );
+
+        await cut.Instance.OnMapInitializedAsync();
+
+        var symbol = cut.Find(".sgb-map-legend-symbol[data-symbol='icon']");
+        symbol.GetAttribute("class").Should().Be("sgb-map-legend-symbol valid_class invalidscript");
+    }
+
+    [Test]
+    public void Should_keep_class_name_as_fifth_positional_legend_item_argument()
+    {
+        var item = new MapLegendItem("item", "Item", null, null, "item-class");
+
+        item.ClassName.Should().Be("item-class");
+        item.Symbol.Should().BeNull();
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
     public async Task Should_keep_two_legends_in_sync(CancellationToken cancellationToken)
     {
         var visibility = CreateVisibility();
