@@ -46,6 +46,9 @@ import * as composition from "./styles/composition";
 const applyOverlayStylesSpy = vi.spyOn(composition, "applyOverlayStyles");
 const validateComposedGlyphsSpy = vi.spyOn(composition, "validateComposedGlyphs");
 
+// biome-ignore lint/security/noSecrets: Map option mode literal, not a secret.
+const roundedUpDevicePixelRatioMode = "roundedUpDevicePixelRatio";
+
 function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions {
   return {
     center: { latitude: 51.505, longitude: -0.09 },
@@ -65,6 +68,8 @@ function createDefaultMapOptions(overrides?: Partial<IMapOptions>): IMapOptions 
     interactive: true,
     cooperativeGestures: false,
     webFonts: null,
+    pixelRatioMode: "browserDefault",
+    pixelRatio: null,
     ...overrides,
   };
 }
@@ -890,6 +895,153 @@ describe("createMap", () => {
     );
   });
 
+  it("should omit pixelRatio from MapLibre constructor by default", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    // assert
+    const constructorOptions = getMockMapConstructor().mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(constructorOptions).not.toHaveProperty("pixelRatio");
+  });
+
+  it("should pass rounded device pixel ratio to MapLibre constructor", () => {
+    // arrange
+    Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 1.25 });
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions({ pixelRatioMode: roundedUpDevicePixelRatioMode }),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    // assert
+    expect(getMockMapConstructor()).toHaveBeenCalledWith(expect.objectContaining({ pixelRatio: 2 }));
+  });
+
+  it("should keep whole-number device pixel ratio unchanged", () => {
+    // arrange
+    Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 2 });
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions({ pixelRatioMode: roundedUpDevicePixelRatioMode }),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    // assert
+    expect(getMockMapConstructor()).toHaveBeenCalledWith(expect.objectContaining({ pixelRatio: 2 }));
+  });
+
+  it("should pass explicit pixel ratio to MapLibre constructor", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions({ pixelRatio: 1.5 }),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    // assert
+    expect(getMockMapConstructor()).toHaveBeenCalledWith(expect.objectContaining({ pixelRatio: 1.5 }));
+  });
+
+  it("should prefer explicit pixel ratio over rounded mode", () => {
+    // arrange
+    Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 1.25 });
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+
+    // act
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions({ pixelRatioMode: roundedUpDevicePixelRatioMode, pixelRatio: 1.5 }),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+
+    // assert
+    expect(getMockMapConstructor()).toHaveBeenCalledWith(expect.objectContaining({ pixelRatio: 1.5 }));
+  });
+
+  it.each([
+    0,
+    -1,
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY,
+  ])("should reject invalid explicit pixel ratio %s", (pixelRatio) => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+
+    // act/assert
+    expect(() =>
+      createMap(
+        dotNetHelper,
+        "OnMapInitialized",
+        mapElement,
+        createDefaultMapOptions({ pixelRatio }),
+        createDefaultControlOptions(),
+        "light",
+        [],
+        [],
+        [],
+        [],
+      ),
+    ).toThrow("pixelRatio must be greater than zero.");
+  });
+
   it("should pass undefined for minZoom/maxZoom when null", () => {
     // arrange
     const mapElement = document.createElement("div");
@@ -1502,6 +1654,107 @@ describe("setMapOptions", () => {
     // assert
     expect(mockMap.setPitch).toHaveBeenCalledWith(60);
     expect(mockMap.setBearing).toHaveBeenCalledWith(180);
+  });
+
+  it("should apply changed pixel ratio", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const mockMap = getLatestMockMapInstance()!;
+
+    // act
+    setMapOptions(mapElement, createDefaultMapOptions({ pixelRatio: 1.5 }));
+
+    // assert
+    expect(mockMap.setPixelRatio).toHaveBeenCalledWith(1.5);
+  });
+
+  it("should apply rounded changed pixel ratio", () => {
+    // arrange
+    Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 1.25 });
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const mockMap = getLatestMockMapInstance()!;
+
+    // act
+    setMapOptions(mapElement, createDefaultMapOptions({ pixelRatioMode: roundedUpDevicePixelRatioMode }));
+
+    // assert
+    expect(mockMap.setPixelRatio).toHaveBeenCalledWith(2);
+  });
+
+  it("should clear pixel ratio override when returning to browser default", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions({ pixelRatio: 1.5 }),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const mockMap = getLatestMockMapInstance()!;
+
+    // act
+    setMapOptions(mapElement, createDefaultMapOptions());
+
+    // assert
+    expect(mockMap.setPixelRatio).toHaveBeenCalledWith(null);
+  });
+
+  it("should not set pixel ratio for browser default to browser default updates", () => {
+    // arrange
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControlOptions(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    const mockMap = getLatestMockMapInstance()!;
+
+    // act
+    setMapOptions(mapElement, createDefaultMapOptions());
+
+    // assert
+    expect(mockMap.setPixelRatio).not.toHaveBeenCalled();
   });
 
   it("should not throw for unknown elements", () => {

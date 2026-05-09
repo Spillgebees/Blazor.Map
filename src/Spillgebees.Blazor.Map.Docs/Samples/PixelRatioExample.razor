@@ -1,0 +1,112 @@
+@inject IJSRuntime JsRuntime
+
+<div class="sample-btn-row">
+    <button type="button"
+            class="sample-btn @(_activeMode == "browser" ? "active" : "")"
+            aria-pressed="@(_activeMode == "browser")"
+            @onclick="UseBrowserDefault">
+        Browser default
+    </button>
+    <button type="button"
+            class="sample-btn @(_activeMode == "rounded" ? "active" : "")"
+            aria-pressed="@(_activeMode == "rounded")"
+            @onclick="UseRoundedDpr">
+        Rounded DPR
+    </button>
+    <button type="button"
+            class="sample-btn @(_activeMode == "explicit" ? "active" : "")"
+            aria-pressed="@(_activeMode == "explicit")"
+            @onclick="UseExplicitRatio">
+        Explicit 1.25x
+    </button>
+</div>
+
+<SgbMap MapOptions="@_mapOptions"
+        Height="400px"
+        Width="100%">
+    <MapControls>
+        <MapNavigationControl />
+        <MapCustomControl Id="pixel-ratio-status"
+                          Position="ControlPosition.TopLeft"
+                          Order="20"
+                          Class="docs-pixel-ratio-control-shell">
+            <div class="docs-pixel-ratio-control"
+                 role="status"
+                 aria-live="polite">
+                <span class="docs-pixel-ratio-label">Browser default</span>
+                <strong>@BrowserDefaultPixelRatioDisplay</strong>
+                <span class="docs-pixel-ratio-label">Rounded DPR</span>
+                <strong>@RoundedPixelRatioDisplay</strong>
+                <span class="docs-pixel-ratio-label">Selected map</span>
+                <strong>@SelectedPixelRatioDisplay</strong>
+            </div>
+        </MapCustomControl>
+    </MapControls>
+</SgbMap>
+
+@code {
+    private string _activeMode = "browser";
+    private double? _devicePixelRatio;
+
+    private MapOptions _mapOptions = new(
+        Center: new Coordinate(49.75, 6.10),
+        Zoom: 9,
+        Style: MapStyle.OpenFreeMap.Positron
+    );
+
+    private string BrowserDefaultPixelRatioDisplay => FormatPixelRatio(_devicePixelRatio);
+
+    private string RoundedPixelRatioDisplay =>
+        _devicePixelRatio is { } value ? FormatPixelRatio(Math.Max(1, Math.Ceiling(value))) : "Checking...";
+
+    private string SelectedPixelRatioDisplay =>
+        _mapOptions.PixelRatio switch
+        {
+            { } pixelRatio => FormatPixelRatio(pixelRatio),
+            _ when _mapOptions.PixelRatioMode == MapPixelRatioMode.RoundedUpDevicePixelRatio => RoundedPixelRatioDisplay,
+            _ => BrowserDefaultPixelRatioDisplay,
+        };
+
+    private static string FormatPixelRatio(double? value) => value is { } pixelRatio ? $"{pixelRatio:0.##}x" : "Checking...";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _devicePixelRatio = await JsRuntime.InvokeAsync<double>("SpillgebeesDocs.getDevicePixelRatio");
+        StateHasChanged();
+    }
+
+    private void UseBrowserDefault()
+    {
+        _activeMode = "browser";
+        _mapOptions = _mapOptions with
+        {
+            PixelRatioMode = MapPixelRatioMode.BrowserDefault,
+            PixelRatio = null,
+        };
+    }
+
+    private void UseRoundedDpr()
+    {
+        _activeMode = "rounded";
+        _mapOptions = _mapOptions with
+        {
+            PixelRatioMode = MapPixelRatioMode.RoundedUpDevicePixelRatio,
+            PixelRatio = null,
+        };
+    }
+
+    private void UseExplicitRatio()
+    {
+        _activeMode = "explicit";
+        _mapOptions = _mapOptions with
+        {
+            PixelRatioMode = MapPixelRatioMode.BrowserDefault,
+            PixelRatio = 1.25,
+        };
+    }
+}

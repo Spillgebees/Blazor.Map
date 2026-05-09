@@ -200,6 +200,55 @@ public class MapJsInteropPayloadTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
+    public void Should_send_default_pixel_ratio_options_when_initializing_map(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        Render<SgbMap>();
+
+        // assert
+        var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
+        var mapOptionsPayload = invocation.Arguments[3];
+
+        GetRequiredPropertyValue(mapOptionsPayload!, "PixelRatioMode").Should().Be("browserDefault");
+        GetPropertyValue(mapOptionsPayload!, "PixelRatio").Should().BeNull();
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_send_rounded_pixel_ratio_mode_when_initializing_map(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        Render<SgbMap>(parameters =>
+            parameters.Add(
+                p => p.MapOptions,
+                new MapOptions(new Coordinate(49.61, 6.13), PixelRatioMode: MapPixelRatioMode.RoundedUpDevicePixelRatio)
+            )
+        );
+
+        // assert
+        var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
+        var mapOptionsPayload = invocation.Arguments[3];
+
+        GetRequiredPropertyValue(mapOptionsPayload!, "PixelRatioMode").Should().Be("roundedUpDevicePixelRatio");
+        GetPropertyValue(mapOptionsPayload!, "PixelRatio").Should().BeNull();
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public void Should_send_explicit_pixel_ratio_when_initializing_map(CancellationToken cancellationToken)
+    {
+        // arrange & act
+        Render<SgbMap>(parameters =>
+            parameters.Add(p => p.MapOptions, new MapOptions(new Coordinate(49.61, 6.13), PixelRatio: 1.5))
+        );
+
+        // assert
+        var invocation = JSInterop.Invocations[CreateMapIdentifier].Single();
+        var mapOptionsPayload = invocation.Arguments[3];
+
+        GetRequiredPropertyValue(mapOptionsPayload!, "PixelRatioMode").Should().Be("browserDefault");
+        GetRequiredPropertyValue(mapOptionsPayload!, "PixelRatio").Should().Be(1.5);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
     public void Should_send_referrer_policies_when_initializing_map(CancellationToken cancellationToken)
     {
         // arrange & act
@@ -359,5 +408,13 @@ public class MapJsInteropPayloadTests : BunitContext
         var value = property!.GetValue(source);
         value.Should().NotBeNull($"property {propertyName} should have a value");
         return value!;
+    }
+
+    private static object? GetPropertyValue(object source, string propertyName)
+    {
+        var property = source.GetType().GetProperty(propertyName);
+        property.Should().NotBeNull($"property {propertyName} should exist on {source.GetType().Name}");
+
+        return property!.GetValue(source);
     }
 }

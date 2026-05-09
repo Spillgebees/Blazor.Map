@@ -77,6 +77,12 @@
     <StyleSwitchingExample />
 </ExampleView>
 
+<h2 id="pixel_ratio">// pixel_ratio</h2>
+<p>Use <code>PixelRatioMode</code> or <code>PixelRatio</code> to opt into MapLibre canvas pixel ratio control. The default preserves browser behavior. Rounded DPR can improve label sharpness on fractional display scaling such as 125%, at the cost of higher canvas resolution and GPU memory use.</p>
+<ExampleView TComponent="PixelRatioExample">
+    <PixelRatioExample />
+</ExampleView>
+
 <h2 id="themes">// themes</h2>
 <p>The <code>Theme</code> parameter controls UI chrome appearance (controls, popups, attribution). It has no effect on tile rendering. Pass <code>MapTheme.Dark</code> to switch to dark chrome. Hover the marker below and toggle themes to see the popup styling change.</p>
 <ExampleView TComponent="ThemeSwitchingExample">

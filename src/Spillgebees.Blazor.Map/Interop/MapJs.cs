@@ -400,6 +400,13 @@ internal static class MapJs
             mapOptions.Interactive,
             mapOptions.CooperativeGestures,
             WebFonts = mapOptions.WebFonts?.ToArray(),
+            PixelRatioMode = mapOptions.PixelRatioMode switch
+            {
+                MapPixelRatioMode.BrowserDefault => "browserDefault",
+                MapPixelRatioMode.RoundedUpDevicePixelRatio => "roundedUpDevicePixelRatio",
+                _ => "browserDefault",
+            },
+            mapOptions.PixelRatio,
         };
 
     private static object ToJsModel(MapControl control) =>

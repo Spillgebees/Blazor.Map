@@ -432,6 +432,45 @@ function getBaseStyleId(mapOptions: IMapOptions): string | null {
   return stylesList[0]?.id ?? null;
 }
 
+// biome-ignore lint/security/noSecrets: Map option mode literal, not a secret.
+const roundedUpDevicePixelRatioMode = "roundedUpDevicePixelRatio";
+const mapPixelRatioOverrides = new WeakMap<MapLibreMap, number>();
+
+function resolvePixelRatio(mapOptions: IMapOptions): number | undefined {
+  if (mapOptions.pixelRatio != null) {
+    if (!Number.isFinite(mapOptions.pixelRatio) || mapOptions.pixelRatio <= 0) {
+      throw new Error("pixelRatio must be greater than zero.");
+    }
+
+    return mapOptions.pixelRatio;
+  }
+
+  if (mapOptions.pixelRatioMode === roundedUpDevicePixelRatioMode) {
+    return Math.max(1, Math.ceil(window.devicePixelRatio || 1));
+  }
+
+  return undefined;
+}
+
+function syncMapPixelRatio(map: MapLibreMap, mapOptions: IMapOptions): void {
+  const nextPixelRatio = resolvePixelRatio(mapOptions);
+  const currentPixelRatio = mapPixelRatioOverrides.get(map);
+
+  if (nextPixelRatio === undefined) {
+    if (currentPixelRatio !== undefined) {
+      map.setPixelRatio(null as unknown as number);
+      mapPixelRatioOverrides.delete(map);
+    }
+
+    return;
+  }
+
+  if (currentPixelRatio !== nextPixelRatio) {
+    map.setPixelRatio(nextPixelRatio);
+    mapPixelRatioOverrides.set(map, nextPixelRatio);
+  }
+}
+
 function replayRegisteredImages(mapElement: HTMLElement): void | Promise<void> {
   const map = window.Spillgebees.Map.maps.get(mapElement);
   if (!map) {
@@ -853,6 +892,7 @@ export function createMap(
   const baseStyle = buildStyleFromOptions(stylesList[0] ?? null);
   const overlayStyles = getComposedOverlayStyles(mapOptions);
   const overlayStyleUrls = overlayStyles.map((style) => style.url);
+  const pixelRatio = resolvePixelRatio(mapOptions);
 
   let map: MapLibreMap | null = null;
   const transformRequest = createMapTransformRequest(() => map);
@@ -874,7 +914,11 @@ export function createMap(
     interactive: mapOptions.interactive,
     cooperativeGestures: mapOptions.cooperativeGestures,
     transformRequest,
+    ...(pixelRatio === undefined ? {} : { pixelRatio }),
   });
+  if (pixelRatio !== undefined) {
+    mapPixelRatioOverrides.set(map, pixelRatio);
+  }
 
   // Store the map instance
   window.Spillgebees.Map.maps.set(mapElement, map);
@@ -1062,6 +1106,7 @@ export function setMapOptions(mapElement: HTMLElement, mapOptions: IMapOptions):
     (window.Spillgebees.Map.overlays.get(map) ?? new Map()).values(),
   ) as ITileOverlay[];
   updateMapRequestContext(map, mapOptions, existingOverlays);
+  syncMapPixelRatio(map, mapOptions);
 
   // Update pitch and bearing
   map.setPitch(mapOptions.pitch);

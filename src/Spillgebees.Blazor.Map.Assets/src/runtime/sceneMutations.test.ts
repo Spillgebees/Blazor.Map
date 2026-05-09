@@ -30,6 +30,8 @@ describe.sequential("applySceneMutations", () => {
       interactive: true,
       cooperativeGestures: false,
       webFonts: null,
+      pixelRatioMode: "browserDefault",
+      pixelRatio: null,
       ...overrides,
     };
   }

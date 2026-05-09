@@ -43,10 +43,34 @@
             border-color: var(--color-primary);
             background: rgba(200, 160, 80, 0.08);
         }
+
+        .docs-pixel-ratio-control {
+            display: grid;
+            gap: 2px;
+            padding: 7px 10px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            color: var(--color-text);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            line-height: 1.25;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+        }
+
+        .docs-pixel-ratio-label {
+            color: var(--color-text-muted);
+            font-size: 10px;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
     <div id="app">Loading...</div>
+    <script>
+        window.SpillgebeesDocs = {
+            getDevicePixelRatio: () => window.devicePixelRatio || 1
+        };
+    </script>
     <script src="_framework/blazor.webassembly.js"></script>
 </body>
 </html>
