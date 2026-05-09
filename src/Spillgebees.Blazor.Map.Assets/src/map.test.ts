@@ -1707,8 +1707,9 @@ describe("setMapOptions", () => {
     expect(mockMap.setPixelRatio).toHaveBeenCalledWith(2);
   });
 
-  it("should clear pixel ratio override when returning to browser default", () => {
+  it("should restore browser pixel ratio when returning to browser default", () => {
     // arrange
+    Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 1.25 });
     const mapElement = document.createElement("div");
     const dotNetHelper = createMockDotNetHelper();
     createMap(
@@ -1729,7 +1730,7 @@ describe("setMapOptions", () => {
     setMapOptions(mapElement, createDefaultMapOptions());
 
     // assert
-    expect(mockMap.setPixelRatio).toHaveBeenCalledWith(null);
+    expect(mockMap.setPixelRatio).toHaveBeenCalledWith(1.25);
   });
 
   it("should not set pixel ratio for browser default to browser default updates", () => {

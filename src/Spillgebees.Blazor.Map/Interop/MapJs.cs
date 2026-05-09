@@ -404,7 +404,11 @@ internal static class MapJs
             {
                 MapPixelRatioMode.BrowserDefault => "browserDefault",
                 MapPixelRatioMode.RoundedUpDevicePixelRatio => "roundedUpDevicePixelRatio",
-                _ => "browserDefault",
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(mapOptions),
+                    mapOptions.PixelRatioMode,
+                    $"Unsupported map pixel ratio mode '{mapOptions.PixelRatioMode}'."
+                ),
             },
             mapOptions.PixelRatio,
         };

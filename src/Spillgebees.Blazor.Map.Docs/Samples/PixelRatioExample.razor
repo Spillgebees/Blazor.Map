@@ -3,18 +3,21 @@
 <div class="sample-btn-row">
     <button type="button"
             class="sample-btn @(_activeMode == "browser" ? "active" : "")"
+            data-test="pixel-ratio-browser-default"
             aria-pressed="@(_activeMode == "browser")"
             @onclick="UseBrowserDefault">
         Browser default
     </button>
     <button type="button"
             class="sample-btn @(_activeMode == "rounded" ? "active" : "")"
+            data-test="pixel-ratio-rounded-dpr"
             aria-pressed="@(_activeMode == "rounded")"
             @onclick="UseRoundedDpr">
         Rounded DPR
     </button>
     <button type="button"
             class="sample-btn @(_activeMode == "explicit" ? "active" : "")"
+            data-test="pixel-ratio-explicit"
             aria-pressed="@(_activeMode == "explicit")"
             @onclick="UseExplicitRatio">
         Explicit 1.25x
@@ -76,7 +79,15 @@
             return;
         }
 
-        _devicePixelRatio = await JsRuntime.InvokeAsync<double>("SpillgebeesDocs.getDevicePixelRatio");
+        try
+        {
+            _devicePixelRatio = await JsRuntime.InvokeAsync<double>("SpillgebeesDocs.getDevicePixelRatio");
+        }
+        catch (Exception)
+        {
+            _devicePixelRatio = 1.0;
+        }
+
         StateHasChanged();
     }
 

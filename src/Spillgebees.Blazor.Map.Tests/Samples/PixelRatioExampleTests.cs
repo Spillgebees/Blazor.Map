@@ -39,7 +39,7 @@ public class PixelRatioExampleTests : BunitContext
         var cut = Render<PixelRatioExample>();
 
         // act
-        cut.FindAll("button.sample-btn").Single(button => button.TextContent.Contains("Rounded DPR")).Click();
+        cut.Find("button[data-test='pixel-ratio-rounded-dpr']").Click();
 
         // assert
         var mapOptions = cut.FindComponent<SgbMap>().Instance.MapOptions;
@@ -55,7 +55,7 @@ public class PixelRatioExampleTests : BunitContext
         var cut = Render<PixelRatioExample>();
 
         // act
-        cut.FindAll("button.sample-btn")[2].Click();
+        cut.Find("button[data-test='pixel-ratio-explicit']").Click();
 
         // assert
         var mapOptions = cut.FindComponent<SgbMap>().Instance.MapOptions;
@@ -70,8 +70,8 @@ public class PixelRatioExampleTests : BunitContext
         var cut = Render<PixelRatioExample>();
 
         // act
-        cut.FindAll("button.sample-btn").Single(button => button.TextContent.Contains("Rounded DPR")).Click();
-        cut.FindAll("button.sample-btn").Single(button => button.TextContent.Contains("Browser default")).Click();
+        cut.Find("button[data-test='pixel-ratio-rounded-dpr']").Click();
+        cut.Find("button[data-test='pixel-ratio-browser-default']").Click();
 
         // assert
         var mapOptions = cut.FindComponent<SgbMap>().Instance.MapOptions;

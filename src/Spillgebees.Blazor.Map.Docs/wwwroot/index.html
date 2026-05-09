@@ -67,9 +67,8 @@
 <body>
     <div id="app">Loading...</div>
     <script>
-        window.SpillgebeesDocs = {
-            getDevicePixelRatio: () => window.devicePixelRatio || 1
-        };
+        window.SpillgebeesDocs = window.SpillgebeesDocs || {};
+        window.SpillgebeesDocs.getDevicePixelRatio = () => window.devicePixelRatio || 1;
     </script>
     <script src="_framework/blazor.webassembly.js"></script>
 </body>

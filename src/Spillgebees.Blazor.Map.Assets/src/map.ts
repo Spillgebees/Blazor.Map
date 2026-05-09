@@ -436,6 +436,10 @@ function getBaseStyleId(mapOptions: IMapOptions): string | null {
 const roundedUpDevicePixelRatioMode = "roundedUpDevicePixelRatio";
 const mapPixelRatioOverrides = new WeakMap<MapLibreMap, number>();
 
+function getBrowserPixelRatio(): number {
+  return window.devicePixelRatio || 1;
+}
+
 function resolvePixelRatio(mapOptions: IMapOptions): number | undefined {
   if (mapOptions.pixelRatio != null) {
     if (!Number.isFinite(mapOptions.pixelRatio) || mapOptions.pixelRatio <= 0) {
@@ -446,7 +450,7 @@ function resolvePixelRatio(mapOptions: IMapOptions): number | undefined {
   }
 
   if (mapOptions.pixelRatioMode === roundedUpDevicePixelRatioMode) {
-    return Math.max(1, Math.ceil(window.devicePixelRatio || 1));
+    return Math.max(1, Math.ceil(getBrowserPixelRatio()));
   }
 
   return undefined;
@@ -458,8 +462,13 @@ function syncMapPixelRatio(map: MapLibreMap, mapOptions: IMapOptions): void {
 
   if (nextPixelRatio === undefined) {
     if (currentPixelRatio !== undefined) {
-      map.setPixelRatio(null as unknown as number);
-      mapPixelRatioOverrides.delete(map);
+      const browserPixelRatio = getBrowserPixelRatio();
+
+      if (currentPixelRatio !== browserPixelRatio) {
+        map.setPixelRatio(browserPixelRatio);
+      }
+
+      mapPixelRatioOverrides.set(map, browserPixelRatio);
     }
 
     return;
