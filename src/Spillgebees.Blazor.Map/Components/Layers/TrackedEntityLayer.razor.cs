@@ -273,9 +273,9 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
 
     protected override void OnParametersSet()
     {
-        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
+        if (SectionContext?.Kind is not MapContentSectionKind.Features)
         {
-            throw new InvalidOperationException("TrackedEntityLayer must be placed inside MapOverlays.");
+            throw new InvalidOperationException("TrackedEntityLayer must be placed inside MapFeatures.");
         }
 
         if (Layer is null)

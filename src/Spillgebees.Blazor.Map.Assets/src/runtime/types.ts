@@ -1,6 +1,10 @@
 import type { DotNet } from "@microsoft/dotnet-js-interop";
 import type { GeoJSON } from "geojson";
-import type { RegisteredMapLayer } from "../interfaces/spillgebees";
+import type {
+  OverlayPartRegistration,
+  RegisteredMapLayer,
+  VisibilityGroupTargetRegistration,
+} from "../interfaces/spillgebees";
 
 export type LayerOrdering = RegisteredMapLayer["ordering"];
 
@@ -96,6 +100,17 @@ export type SceneMutation =
   | {
       kind: "removeVisibilityGroup";
       groupId: string;
+    }
+  | {
+      kind: "setOverlay";
+      overlayId: string;
+      visible: boolean;
+      targets: VisibilityGroupTargetRegistration[];
+      parts: OverlayPartRegistration[];
+    }
+  | {
+      kind: "removeOverlay";
+      overlayId: string;
     }
   | {
       kind: "reconcileOrdering";

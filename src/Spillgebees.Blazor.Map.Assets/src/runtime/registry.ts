@@ -1,6 +1,7 @@
 import type { Map as MapLibreMap } from "maplibre-gl";
 import type {
   LayerEventSubscription,
+  OverlayRegistration,
   RegisteredMapLayer,
   RegisteredMapSource,
   VisibilityGroupRegistration,
@@ -31,4 +32,8 @@ export function getLayerEventStore(map: MapLibreMap): Map<string, LayerEventSubs
 
 export function getVisibilityGroupStore(map: MapLibreMap): Map<string, VisibilityGroupRegistration> {
   return getOrCreateStore(window.Spillgebees.Map.visibilityGroups, map);
+}
+
+export function getOverlayStore(map: MapLibreMap): Map<string, OverlayRegistration> {
+  return getOrCreateStore(window.Spillgebees.Map.overlayVisibility, map);
 }

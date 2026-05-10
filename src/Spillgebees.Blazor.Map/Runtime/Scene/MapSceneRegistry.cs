@@ -99,6 +99,20 @@ internal sealed class MapSceneRegistry
         return ApplyBatchAsync(batch);
     }
 
+    internal Task RegisterOverlayAsync(MapOverlayDescriptor descriptor)
+    {
+        var batch = CreateBatchBuilder();
+        batch.SetOverlay(descriptor);
+        return ApplyBatchAsync(batch);
+    }
+
+    internal Task UnregisterOverlayAsync(string overlayId)
+    {
+        var batch = CreateBatchBuilder();
+        batch.RemoveOverlay(overlayId);
+        return ApplyBatchAsync(batch);
+    }
+
     internal async Task ApplyBatchAsync(MapSceneBatchBuilder batch)
     {
         if (!batch.HasMutations)

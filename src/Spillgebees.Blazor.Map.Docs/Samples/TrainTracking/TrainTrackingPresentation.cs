@@ -23,9 +23,9 @@ public static class TrainTrackingPresentation
                            Title=""Legend""
                            Definition=""@TrainTrackingPresentation.OverlayLegendDefinition"" />
      </MapControls>
-     <MapOverlays>
+     <MapFeatures>
          <TrackedEntityLayer TItem=""TrainSampleState"" Layer=""@_trackedEntityLayer"" />
-     </MapOverlays>
+     </MapFeatures>
    </SgbMap>
 
 // hover and selection use feature-state, labels stay screen-facing, and supplementary labels stay hidden while clustered";

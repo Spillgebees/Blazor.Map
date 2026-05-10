@@ -19,12 +19,12 @@ See the [documentation and demos](https://spillgebees.github.io/Blazor.Map) for 
         </GeoJsonSource>
     </MapSources>
 
-    <MapOverlays>
+    <MapFeatures>
         <MapMarker Id="luxembourg-city"
                    Position="@(new Coordinate(49.6117, 6.1319))"
                    Title="Luxembourg City"
                    Popup="@_luxembourgPopup" />
-    </MapOverlays>
+    </MapFeatures>
 </SgbMap>
 
 @code {

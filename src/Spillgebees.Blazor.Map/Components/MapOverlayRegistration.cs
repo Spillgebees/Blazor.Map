@@ -61,9 +61,9 @@ internal sealed class MapOverlayRegistration<TFeature>
             throw new InvalidOperationException($"{componentName} must be placed inside SgbMap.");
         }
 
-        if (sectionContext?.Kind is not MapContentSectionKind.Overlays)
+        if (sectionContext?.Kind is not MapContentSectionKind.Features)
         {
-            throw new InvalidOperationException($"{componentName} must be placed inside MapOverlays.");
+            throw new InvalidOperationException($"{componentName} must be placed inside MapFeatures.");
         }
     }
 }

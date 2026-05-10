@@ -26,7 +26,9 @@ internal sealed record MapSceneMutation(
     bool? GroupVisible = null,
     IReadOnlyList<MapVisibilityGroupTargetDescriptor>? VisibilityTargets = null,
     bool? Visible = null,
-    IReadOnlyList<MapVisibilityGroupTargetDescriptor>? Targets = null
+    IReadOnlyList<MapVisibilityGroupTargetDescriptor>? Targets = null,
+    string? OverlayId = null,
+    IReadOnlyList<MapOverlayPartDescriptor>? Parts = null
 )
 {
     internal static MapSceneMutation AddSource(MapSourceDescriptor descriptor) =>
@@ -102,6 +104,17 @@ internal sealed record MapSceneMutation(
 
     internal static MapSceneMutation RemoveVisibilityGroup(string groupId) =>
         new("removeVisibilityGroup", GroupId: groupId);
+
+    internal static MapSceneMutation SetOverlay(MapOverlayDescriptor descriptor) =>
+        new(
+            "setOverlay",
+            OverlayId: descriptor.OverlayId,
+            Visible: descriptor.Visible,
+            Targets: descriptor.Targets,
+            Parts: descriptor.Parts
+        );
+
+    internal static MapSceneMutation RemoveOverlay(string overlayId) => new("removeOverlay", OverlayId: overlayId);
 
     internal static MapSceneMutation ReconcileOrdering() => new("reconcileOrdering");
 }

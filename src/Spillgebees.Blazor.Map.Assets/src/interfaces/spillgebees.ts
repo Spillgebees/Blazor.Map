@@ -48,6 +48,19 @@ export interface VisibilityGroupRegistration {
   targets: VisibilityGroupTargetRegistration[];
 }
 
+export interface OverlayPartRegistration {
+  partId: string;
+  visible: boolean;
+  targets: VisibilityGroupTargetRegistration[];
+}
+
+export interface OverlayRegistration {
+  overlayId: string;
+  visible: boolean;
+  targets: VisibilityGroupTargetRegistration[];
+  parts: OverlayPartRegistration[];
+}
+
 export interface LayerEventSubscription {
   dotNetRef?: DotNet.DotNetObject;
   click?: (event: { lngLat: { lat: number; lng: number }; features?: Array<{ properties?: unknown }> }) => void;
@@ -60,6 +73,7 @@ export interface ComposedStyleLayerRegistration {
   runtimeLayerId: string;
   styleId: string;
   originalLayerId: string;
+  originalVisible?: boolean;
 }
 
 export interface OverlayStyleRequestOptions {
@@ -101,6 +115,7 @@ export interface SpillgebeesMapNamespace {
   imageRegistrations: Map<MapLibreMap, Map<string, RegisteredMapImage>>;
   layerEventSubscriptions: Map<MapLibreMap, Map<string, LayerEventSubscription>>;
   visibilityGroups: Map<MapLibreMap, Map<string, VisibilityGroupRegistration>>;
+  overlayVisibility: Map<MapLibreMap, Map<string, OverlayRegistration>>;
   overlayStyleUrls: Map<MapLibreMap, string[]>;
   overlayStyleRequests: Map<MapLibreMap, OverlayStyleRequestOptions[]>;
   composedStyleLayerIds: Map<MapLibreMap, Map<string, ComposedStyleLayerRegistration>>;

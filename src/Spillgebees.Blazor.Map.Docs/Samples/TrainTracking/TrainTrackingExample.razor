@@ -282,12 +282,12 @@
                             Base="@(Expr.Get("render_min_height"))"
                             MinZoom="14"
                             Visible="@(_visibility.IsVisible("3d-buildings"))" />
-        <MapOverlays>
+        <MapFeatures>
             @if (_trackedEntityLayer is not null)
             {
                 <TrackedEntityLayer TItem="TrainSampleState" Layer="_trackedEntityLayer" />
             }
-        </MapOverlays>
+        </MapFeatures>
 
     </SgbMap>
 </div>

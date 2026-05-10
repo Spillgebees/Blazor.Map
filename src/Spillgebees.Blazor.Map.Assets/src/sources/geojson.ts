@@ -4,12 +4,15 @@ import type { IPopupOptions } from "../interfaces/features";
 import type { ICoordinate } from "../interfaces/map";
 import type {
   LayerEventSubscription,
+  OverlayRegistration,
   RegisteredMapLayer,
   VisibilityGroupRegistration,
+  VisibilityGroupTargetRegistration,
 } from "../interfaces/spillgebees";
 import { buildLayerPlan } from "../ordering";
 import {
   getLayerEventStore,
+  getOverlayStore,
   getSceneLayerStore,
   getSceneSourceStore,
   getVisibilityGroupStore,
@@ -270,8 +273,70 @@ export function removeVisibilityGroup(mapElement: HTMLElement, groupId: string):
   getVisibilityGroupStore(map).delete(groupId);
 }
 
+export function setOverlay(
+  mapElement: HTMLElement,
+  overlayId: string,
+  visible: boolean,
+  targets: VisibilityGroupTargetRegistration[],
+  parts: OverlayRegistration["parts"],
+): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return;
+  }
+
+  const overlay: OverlayRegistration = { overlayId, visible, targets, parts };
+  getOverlayStore(map).set(overlayId, overlay);
+  applyOverlay(mapElement, overlay);
+}
+
+export function removeOverlay(mapElement: HTMLElement, overlayId: string): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return;
+  }
+
+  getOverlayStore(map).delete(overlayId);
+}
+
+export function replayOverlays(mapElement: HTMLElement): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return;
+  }
+
+  for (const overlay of getOverlayStore(map).values()) {
+    applyOverlay(mapElement, overlay);
+  }
+}
+
+export function applyOverlay(mapElement: HTMLElement, overlay: OverlayRegistration): void {
+  const layerVisibility = new Map<string, boolean>();
+  for (const resolved of resolveTargets(mapElement, overlay.targets)) {
+    layerVisibility.set(resolved.layerId, resolved.originalVisible && overlay.visible);
+  }
+
+  for (const part of overlay.parts) {
+    for (const resolved of resolveTargets(mapElement, part.targets)) {
+      const previous = layerVisibility.get(resolved.layerId) ?? (resolved.originalVisible && overlay.visible);
+      layerVisibility.set(resolved.layerId, previous && part.visible);
+    }
+  }
+
+  for (const [layerId, visible] of layerVisibility) {
+    setLayerVisibility(mapElement, layerId, visible);
+  }
+}
+
 export function applyVisibilityGroup(mapElement: HTMLElement, group: VisibilityGroupRegistration): void {
   for (const target of group.targets) {
+    if (target.kind === "styleLayer" && target.layerIds.length === 0) {
+      for (const resolvedLayerId of resolveStyleLayerIds(mapElement, target.styleId)) {
+        setLayerVisibility(mapElement, resolvedLayerId, group.visible);
+      }
+      continue;
+    }
+
     for (const layerId of target.layerIds) {
       const resolvedLayerId =
         target.kind === "styleLayer" ? resolveStyleLayerId(mapElement, target.styleId, layerId) : layerId;
@@ -282,6 +347,129 @@ export function applyVisibilityGroup(mapElement: HTMLElement, group: VisibilityG
       setLayerVisibility(mapElement, resolvedLayerId, group.visible);
     }
   }
+}
+
+function resolveTargets(
+  mapElement: HTMLElement,
+  targets: VisibilityGroupTargetRegistration[],
+): Array<{ layerId: string; originalVisible: boolean }> {
+  const layers: Array<{ layerId: string; originalVisible: boolean }> = [];
+  for (const target of targets) {
+    if (target.kind === "styleLayer" && target.layerIds.length === 0) {
+      layers.push(...resolveStyleLayers(mapElement, target.styleId));
+      continue;
+    }
+
+    for (const layerId of target.layerIds) {
+      if (target.kind === "styleLayer") {
+        const resolved = resolveStyleLayer(mapElement, target.styleId, layerId);
+        if (resolved) {
+          layers.push(resolved);
+        }
+      } else {
+        layers.push({ layerId, originalVisible: getRuntimeLayerOriginalVisible(mapElement, layerId) });
+      }
+    }
+  }
+
+  return layers;
+}
+
+function resolveStyleLayers(
+  mapElement: HTMLElement,
+  styleId: string,
+): Array<{ layerId: string; originalVisible: boolean }> {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return [];
+  }
+
+  const mapOptions = window.Spillgebees.Map.mapOptions.get(map);
+  const baseStyleId = mapOptions?.styles?.[0]?.id ?? mapOptions?.style?.id ?? null;
+  if (baseStyleId === styleId) {
+    return (
+      map.getStyle().layers?.map((layer) => ({
+        layerId: layer.id,
+        originalVisible: (layer.layout as { visibility?: string } | undefined)?.visibility !== "none",
+      })) ?? []
+    );
+  }
+
+  const composedStyleLayerIds = window.Spillgebees.Map.composedStyleLayerIds.get(map);
+  if (!composedStyleLayerIds) {
+    return [];
+  }
+
+  return Array.from(composedStyleLayerIds.values())
+    .filter((registration) => registration.styleId === styleId)
+    .map((registration) => ({
+      layerId: registration.runtimeLayerId,
+      originalVisible: registration.originalVisible ?? true,
+    }));
+}
+
+function resolveStyleLayer(
+  mapElement: HTMLElement,
+  styleId: string,
+  layerId: string,
+): { layerId: string; originalVisible: boolean } | null {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return null;
+  }
+
+  const mapOptions = window.Spillgebees.Map.mapOptions.get(map);
+  const baseStyleId = mapOptions?.styles?.[0]?.id ?? mapOptions?.style?.id ?? null;
+  if (baseStyleId === styleId) {
+    const layer = map.getStyle().layers?.find((candidate) => candidate.id === layerId);
+    return layer
+      ? { layerId, originalVisible: (layer.layout as { visibility?: string } | undefined)?.visibility !== "none" }
+      : null;
+  }
+
+  const composedLayerKey = `${styleId}\u0000${layerId}`;
+  const registration = window.Spillgebees.Map.composedStyleLayerIds.get(map)?.get(composedLayerKey);
+  return registration
+    ? { layerId: registration.runtimeLayerId, originalVisible: registration.originalVisible ?? true }
+    : null;
+}
+
+function getRuntimeLayerOriginalVisible(mapElement: HTMLElement, layerId: string): boolean {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return true;
+  }
+
+  const layerStore = getSceneLayerStore(map);
+  const registeredLayer = layerStore.get(layerId);
+  const registeredVisibility = (registeredLayer?.layerSpec.layout as { visibility?: string } | undefined)?.visibility;
+  if (registeredVisibility) {
+    return registeredVisibility !== "none";
+  }
+
+  return map.getLayoutProperty(layerId, "visibility") !== "none";
+}
+
+function resolveStyleLayerIds(mapElement: HTMLElement, styleId: string): string[] {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return [];
+  }
+
+  const mapOptions = window.Spillgebees.Map.mapOptions.get(map);
+  const baseStyleId = mapOptions?.styles?.[0]?.id ?? mapOptions?.style?.id ?? null;
+  if (baseStyleId === styleId) {
+    return map.getStyle().layers?.map((layer) => layer.id) ?? [];
+  }
+
+  const composedStyleLayerIds = window.Spillgebees.Map.composedStyleLayerIds.get(map);
+  if (!composedStyleLayerIds) {
+    return [];
+  }
+
+  return Array.from(composedStyleLayerIds.values())
+    .filter((registration) => registration.styleId === styleId)
+    .map((registration) => registration.runtimeLayerId);
 }
 
 function resolveStyleLayerId(mapElement: HTMLElement, styleId: string, layerId: string): string | null {
