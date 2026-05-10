@@ -10,6 +10,8 @@ using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Controls;
 using Spillgebees.Blazor.Map.Models.Events;
 using Spillgebees.Blazor.Map.Models.Layers;
+using Spillgebees.Blazor.Map.Models.Legends;
+using Spillgebees.Blazor.Map.Models.Overlays;
 using Spillgebees.Blazor.Map.Models.Popups;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 using Spillgebees.Blazor.Map.Models.Visibility;
@@ -199,8 +201,13 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         StringComparer.Ordinal
     );
     private readonly HashSet<string> _registeredLayerVisibilityGroupIds = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, RegisteredOverlayDefinition> _registeredOverlays = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _registeredRuntimeOverlayIds = new(StringComparer.Ordinal);
     private MapLayerVisibilityState? _activeLayerVisibility;
     private bool _layerVisibilitySyncPending = true;
+    private bool _overlaySyncPending = true;
+
+    internal event EventHandler<MapOverlayChangedEventArgs>? OverlayChanged;
 
     /// <summary>
     /// Returns a task that completes when the map has been initialized and is ready
@@ -480,6 +487,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         _readyTcs.TrySetResult(true);
 
         await SyncLayerVisibilityGroupsAsync();
+        await SyncOverlayRegistrationsAsync();
     }
 
     /// <summary>
@@ -562,7 +570,8 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// <inheritdoc/>
     protected override async Task OnParametersSetAsync()
     {
-        MapOptionsCompositionValidator.Validate(MapOptions);
+        var desiredMapOptions = GetDesiredMapOptions();
+        MapOptionsCompositionValidator.Validate(desiredMapOptions);
         ValidateControlIds(GetDesiredControls());
         UpdateLayerVisibilitySubscription();
 
@@ -574,6 +583,11 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         if (_layerVisibilitySyncPending)
         {
             await SyncLayerVisibilityGroupsAsync();
+        }
+
+        if (_overlaySyncPending)
+        {
+            await SyncOverlayRegistrationsAsync();
         }
 
         await SyncFeaturesAsync();
@@ -594,10 +608,12 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             await SetControlsAsync();
         }
 
-        if (InternalMapOptions != MapOptions)
+        desiredMapOptions = GetDesiredMapOptions();
+        if (InternalMapOptions != desiredMapOptions)
         {
-            InternalMapOptions = MapOptions;
+            InternalMapOptions = desiredMapOptions;
             await SetMapOptionsAsync();
+            _overlaySyncPending = true;
         }
 
         if (InternalTheme != Theme)
@@ -616,11 +632,12 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// </summary>
     protected virtual async Task InitializeMapAsync()
     {
-        MapOptionsCompositionValidator.Validate(MapOptions);
+        var desiredMapOptions = GetDesiredMapOptions();
+        MapOptionsCompositionValidator.Validate(desiredMapOptions);
 
         DotNetObjectReference = Microsoft.JSInterop.DotNetObjectReference.Create(this);
 
-        InternalMapOptions = MapOptions;
+        InternalMapOptions = desiredMapOptions;
 
         InternalControls = GetDesiredControls();
         ValidateControlIds(InternalControls);
@@ -751,6 +768,377 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             target.LayerIds.ToArray(),
             target.StyleId
         );
+
+    internal void RegisterOverlayDefinition(
+        string overlayId,
+        string label,
+        string? description,
+        bool initiallyVisible,
+        MapLegendSymbol? symbol,
+        int order
+    )
+    {
+        if (!_registeredOverlays.TryGetValue(overlayId, out var overlay))
+        {
+            overlay = new RegisteredOverlayDefinition(overlayId);
+            _registeredOverlays.Add(overlayId, overlay);
+        }
+
+        overlay.Label = label;
+        overlay.Description = description;
+        overlay.Symbol = symbol;
+        overlay.Order = order;
+
+        if (!overlay.Initialized)
+        {
+            overlay.Visible = initiallyVisible;
+            overlay.Initialized = true;
+        }
+
+        RequestOverlaySync(new MapOverlayChangedEventArgs(overlayId));
+    }
+
+    internal void UnregisterOverlayDefinition(string overlayId)
+    {
+        if (_registeredOverlays.Remove(overlayId))
+        {
+            _ = InvokeAsync(async () =>
+            {
+                try
+                {
+                    if (RuntimeIsReady)
+                    {
+                        await SceneRegistry.UnregisterOverlayAsync(overlayId);
+                        _registeredRuntimeOverlayIds.Remove(overlayId);
+                    }
+
+                    OverlayChanged?.Invoke(this, new MapOverlayChangedEventArgs(overlayId));
+                }
+                catch (Exception exception) when (!IsDisposing)
+                {
+                    _overlaySyncPending = true;
+                    Logger.Value.LogError(
+                        exception,
+                        "Failed to unregister overlay {OverlayId} in {Method}.",
+                        overlayId,
+                        nameof(UnregisterOverlayDefinition)
+                    );
+                }
+            });
+        }
+    }
+
+    internal void RegisterOverlayStyle(string overlayId, MapStyle style)
+    {
+        var overlay = GetOrCreateOverlay(overlayId);
+        overlay.Style = style;
+        RequestMapOptionsAndOverlaySync(new MapOverlayChangedEventArgs(overlayId));
+    }
+
+    internal void UnregisterOverlayStyle(string overlayId)
+    {
+        if (_registeredOverlays.TryGetValue(overlayId, out var overlay))
+        {
+            overlay.Style = null;
+            RequestMapOptionsAndOverlaySync(new MapOverlayChangedEventArgs(overlayId));
+        }
+    }
+
+    internal void RegisterOverlayPartDefinition(
+        string overlayId,
+        string partId,
+        string label,
+        string? description,
+        bool initiallyVisible,
+        MapLegendSymbol? symbol,
+        IReadOnlyList<string> layerIds
+    )
+    {
+        var overlay = GetOrCreateOverlay(overlayId);
+        if (!overlay.Parts.TryGetValue(partId, out var part))
+        {
+            part = new RegisteredOverlayPartDefinition(partId);
+            overlay.Parts.Add(partId, part);
+        }
+
+        part.Label = label;
+        part.Description = description;
+        part.Symbol = symbol;
+        part.LayerIds = [.. layerIds];
+
+        if (!part.Initialized)
+        {
+            part.Visible = initiallyVisible;
+            part.Initialized = true;
+        }
+
+        RequestOverlaySync(new MapOverlayChangedEventArgs(overlayId, partId));
+    }
+
+    internal void UnregisterOverlayPartDefinition(string overlayId, string partId)
+    {
+        if (_registeredOverlays.TryGetValue(overlayId, out var overlay) && overlay.Parts.Remove(partId))
+        {
+            RequestOverlaySync(new MapOverlayChangedEventArgs(overlayId, partId));
+        }
+    }
+
+    internal void RegisterOverlayPartRuntimeLayer(string overlayId, string partId, string layerId)
+    {
+        var overlay = GetOrCreateOverlay(overlayId);
+        var part = overlay.Parts.TryGetValue(partId, out var existing)
+            ? existing
+            : new RegisteredOverlayPartDefinition(partId);
+        overlay.Parts[partId] = part;
+
+        if (part.RuntimeLayerIds.Add(layerId))
+        {
+            RequestOverlaySync(new MapOverlayChangedEventArgs(overlayId, partId));
+        }
+    }
+
+    internal void UnregisterOverlayPartRuntimeLayer(string overlayId, string partId, string layerId)
+    {
+        if (
+            _registeredOverlays.TryGetValue(overlayId, out var overlay)
+            && overlay.Parts.TryGetValue(partId, out var part)
+            && part.RuntimeLayerIds.Remove(layerId)
+        )
+        {
+            RequestOverlaySync(new MapOverlayChangedEventArgs(overlayId, partId));
+        }
+    }
+
+    internal IReadOnlyList<MapOverlayItem> GetOverlayItems() =>
+        _registeredOverlays
+            .Values.OrderBy(overlay => overlay.Order)
+            .ThenBy(overlay => overlay.Id, StringComparer.Ordinal)
+            .Select(overlay => new MapOverlayItem(
+                overlay.Id,
+                overlay.Label ?? overlay.Id,
+                overlay.Visible,
+                overlay.Description,
+                overlay.Symbol,
+                overlay
+                    .Parts.Values.Where(part => part.HasDisplayDefinition)
+                    .OrderBy(part => part.Id, StringComparer.Ordinal)
+                    .Select(part => new MapOverlayPartItem(
+                        part.Id,
+                        part.Label ?? part.Id,
+                        part.Visible,
+                        part.Description,
+                        part.Symbol
+                    ))
+                    .ToArray()
+            ))
+            .ToArray();
+
+    internal void SetOverlayVisible(string overlayId, bool visible)
+    {
+        if (!_registeredOverlays.TryGetValue(overlayId, out var overlay))
+        {
+            throw new KeyNotFoundException($"Overlay '{overlayId}' was not found.");
+        }
+
+        if (overlay.Visible == visible)
+        {
+            return;
+        }
+
+        overlay.Visible = visible;
+        RequestOverlaySync(new MapOverlayChangedEventArgs(overlayId));
+    }
+
+    internal void SetOverlayPartVisible(string overlayId, string partId, bool visible)
+    {
+        if (!_registeredOverlays.TryGetValue(overlayId, out var overlay))
+        {
+            throw new KeyNotFoundException($"Overlay '{overlayId}' was not found.");
+        }
+
+        if (!overlay.Parts.TryGetValue(partId, out var part))
+        {
+            throw new KeyNotFoundException($"Overlay part '{partId}' was not found in overlay '{overlayId}'.");
+        }
+
+        if (part.Visible == visible)
+        {
+            return;
+        }
+
+        part.Visible = visible;
+        RequestOverlaySync(new MapOverlayChangedEventArgs(overlayId, partId));
+    }
+
+    private RegisteredOverlayDefinition GetOrCreateOverlay(string overlayId)
+    {
+        if (_registeredOverlays.TryGetValue(overlayId, out var overlay))
+        {
+            return overlay;
+        }
+
+        overlay = new RegisteredOverlayDefinition(overlayId);
+        _registeredOverlays.Add(overlayId, overlay);
+        return overlay;
+    }
+
+    private void RequestMapOptionsAndOverlaySync(MapOverlayChangedEventArgs args)
+    {
+        _overlaySyncPending = true;
+        _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                var desiredMapOptions = GetDesiredMapOptions();
+                if (IsInitialized && InternalMapOptions != desiredMapOptions)
+                {
+                    InternalMapOptions = desiredMapOptions;
+                    await SetMapOptionsAsync();
+                }
+
+                await SyncOverlayRegistrationsAsync();
+                OverlayChanged?.Invoke(this, args);
+            }
+            catch (Exception exception) when (!IsDisposing)
+            {
+                _overlaySyncPending = true;
+                Logger.Value.LogError(
+                    exception,
+                    "Failed to sync overlay map options in {Method} for overlay {OverlayId} and part {PartId}.",
+                    nameof(RequestMapOptionsAndOverlaySync),
+                    args.OverlayId,
+                    args.PartId
+                );
+            }
+        });
+    }
+
+    private void RequestOverlaySync(MapOverlayChangedEventArgs args)
+    {
+        _overlaySyncPending = true;
+        _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                await SyncOverlayRegistrationsAsync();
+                OverlayChanged?.Invoke(this, args);
+            }
+            catch (Exception exception) when (!IsDisposing)
+            {
+                _overlaySyncPending = true;
+                Logger.Value.LogError(
+                    exception,
+                    "Failed to sync overlay state in {Method} for overlay {OverlayId} and part {PartId}.",
+                    nameof(RequestOverlaySync),
+                    args.OverlayId,
+                    args.PartId
+                );
+            }
+        });
+    }
+
+    private async Task SyncOverlayRegistrationsAsync()
+    {
+        if (IsDisposing || !RuntimeIsReady)
+        {
+            _overlaySyncPending = true;
+            return;
+        }
+
+        var desiredOverlayIds = _registeredOverlays.Keys.ToHashSet(StringComparer.Ordinal);
+        var removedOverlayIds = _registeredRuntimeOverlayIds
+            .Except(desiredOverlayIds, StringComparer.Ordinal)
+            .ToArray();
+        foreach (var overlayId in removedOverlayIds)
+        {
+            await SceneRegistry.UnregisterOverlayAsync(overlayId);
+            _registeredRuntimeOverlayIds.Remove(overlayId);
+        }
+
+        foreach (var overlay in _registeredOverlays.Values)
+        {
+            await SceneRegistry.RegisterOverlayAsync(BuildOverlayDescriptor(overlay));
+            _registeredRuntimeOverlayIds.Add(overlay.Id);
+        }
+
+        _overlaySyncPending = false;
+    }
+
+    private static MapOverlayDescriptor BuildOverlayDescriptor(RegisteredOverlayDefinition overlay)
+    {
+        var styleTargets = overlay.Style is null
+            ? []
+            : new[]
+            {
+                new MapVisibilityGroupTargetDescriptor(
+                    MapVisibilityGroupTargetKind.StyleLayer,
+                    [],
+                    overlay.Style.Id ?? overlay.Id
+                ),
+            };
+
+        var parts = overlay.Parts.Values.Select(part =>
+        {
+            var targets = new List<MapVisibilityGroupTargetDescriptor>();
+            if (overlay.Style is not null && part.LayerIds.Count > 0)
+            {
+                targets.Add(
+                    new MapVisibilityGroupTargetDescriptor(
+                        MapVisibilityGroupTargetKind.StyleLayer,
+                        part.LayerIds,
+                        overlay.Style.Id ?? overlay.Id
+                    )
+                );
+            }
+
+            if (part.RuntimeLayerIds.Count > 0)
+            {
+                targets.Add(
+                    new MapVisibilityGroupTargetDescriptor(
+                        MapVisibilityGroupTargetKind.RuntimeLayer,
+                        part.RuntimeLayerIds.ToArray(),
+                        null
+                    )
+                );
+            }
+
+            return new MapOverlayPartDescriptor(part.Id, part.Visible, targets);
+        });
+
+        return new MapOverlayDescriptor(overlay.Id, overlay.Visible, styleTargets, parts.ToArray());
+    }
+
+    private MapOptions GetDesiredMapOptions()
+    {
+        var overlayStyles = _registeredOverlays
+            .Values.Where(overlay => overlay.Style is not null)
+            .OrderBy(overlay => overlay.Order)
+            .ThenBy(overlay => overlay.Id, StringComparer.Ordinal)
+            .Select(overlay => overlay.Style!)
+            .ToArray();
+
+        if (overlayStyles.Length == 0)
+        {
+            return MapOptions;
+        }
+
+        var baseStyles = MapOptions.Styles ?? [MapOptions.Style ?? MapStyle.OpenFreeMap.Liberty];
+        var resolvedBaseStyles = baseStyles.Select(
+            (style, index) =>
+            {
+                var resolved = style ?? MapStyle.OpenFreeMap.Liberty;
+                return string.IsNullOrWhiteSpace(resolved.Id)
+                    ? resolved.WithId(index == 0 ? "sgb-base-style" : $"sgb-base-style-{index}")
+                    : resolved;
+            }
+        );
+
+        return MapOptions with
+        {
+            Style = null,
+            Styles = [.. resolvedBaseStyles, .. overlayStyles],
+        };
+    }
 
     private async Task SyncFeaturesAsync()
     {
@@ -938,6 +1326,48 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         public string OwnerId { get; } = ownerId;
 
         public MapControlDefinition Control { get; set; } = control;
+    }
+
+    private sealed class RegisteredOverlayDefinition(string id)
+    {
+        public string Id { get; } = id;
+
+        public string? Label { get; set; }
+
+        public string? Description { get; set; }
+
+        public bool Visible { get; set; } = true;
+
+        public bool Initialized { get; set; }
+
+        public MapLegendSymbol? Symbol { get; set; }
+
+        public int Order { get; set; }
+
+        public MapStyle? Style { get; set; }
+
+        public Dictionary<string, RegisteredOverlayPartDefinition> Parts { get; } = new(StringComparer.Ordinal);
+    }
+
+    private sealed class RegisteredOverlayPartDefinition(string id)
+    {
+        public string Id { get; } = id;
+
+        public string? Label { get; set; }
+
+        public string? Description { get; set; }
+
+        public bool Visible { get; set; } = true;
+
+        public bool Initialized { get; set; }
+
+        public MapLegendSymbol? Symbol { get; set; }
+
+        public IReadOnlyList<string> LayerIds { get; set; } = [];
+
+        public HashSet<string> RuntimeLayerIds { get; } = new(StringComparer.Ordinal);
+
+        public bool HasDisplayDefinition => !string.IsNullOrWhiteSpace(Label);
     }
 
     private ValueTask SetMapOptionsAsync() =>

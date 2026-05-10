@@ -24,6 +24,9 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
     [CascadingParameter]
     public BaseMap? Map { get; set; }
 
+    [CascadingParameter]
+    internal MapOverlayPartContext? OverlayPart { get; set; }
+
     [Parameter, EditorRequired]
     public string Id { get; set; } = "";
 
@@ -171,6 +174,7 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
         _isInitialized = true;
         SnapshotState();
         _eventsRequireWire = _hasEvents;
+        RegisterOverlayPartLayer();
 
         await EnsureEventsWiredAsync();
     }
@@ -447,6 +451,14 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
         _previousOnMouseLeave = OnMouseLeave;
     }
 
+    private void RegisterOverlayPartLayer()
+    {
+        if (OverlayPart is not null)
+        {
+            OverlayPart.Map.RegisterOverlayPartRuntimeLayer(OverlayPart.OverlayId, OverlayPart.PartId, Id);
+        }
+    }
+
     [JSInvokable("OnLayerClickAsync")]
     public async Task OnLayerClickAsync(double latitude, double longitude, JsonElement? properties)
     {
@@ -493,6 +505,11 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
             else if (_isInitialized && Map is not null)
             {
                 await Map.SceneRegistry.UnregisterLayerAsync(Id);
+            }
+
+            if (OverlayPart is not null)
+            {
+                OverlayPart.Map.UnregisterOverlayPartRuntimeLayer(OverlayPart.OverlayId, OverlayPart.PartId, Id);
             }
         }
         catch (JSDisconnectedException) { }

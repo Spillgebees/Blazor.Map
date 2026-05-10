@@ -367,6 +367,7 @@ function initializeNamespace(): void {
     imageRegistrations: new Map<MapLibreMap, Map<string, RegisteredMapImage>>(),
     layerEventSubscriptions: new Map<MapLibreMap, Map<string, LayerEventSubscription>>(),
     visibilityGroups: new Map<MapLibreMap, Map<string, VisibilityGroupRegistration>>(),
+    overlayVisibility: new Map(),
     overlayStyleUrls: new Map<MapLibreMap, string[]>(),
     overlayStyleRequests: new Map<MapLibreMap, OverlayStyleRequestOptions[]>(),
     composedStyleLayerIds: new Map<MapLibreMap, Map<string, ComposedStyleLayerRegistration>>(),
@@ -1071,6 +1072,7 @@ export function createMap(
   window.Spillgebees.Map.imageRegistrations.set(map, new Map());
   window.Spillgebees.Map.layerEventSubscriptions.set(map, new Map());
   window.Spillgebees.Map.visibilityGroups.set(map, new Map());
+  window.Spillgebees.Map.overlayVisibility.set(map, new Map());
   window.Spillgebees.Map.overlayStyleUrls.set(map, [...overlayStyleUrls]);
   window.Spillgebees.Map.overlayStyleRequests.set(map, structuredClone(overlayStyles));
   window.Spillgebees.Map.composedStyleLayerIds.set(map, new Map());
@@ -1196,6 +1198,7 @@ export function disposeMap(mapElement: HTMLElement): void {
   window.Spillgebees.Map.imageRegistrations.delete(map);
   window.Spillgebees.Map.layerEventSubscriptions.delete(map);
   window.Spillgebees.Map.visibilityGroups.delete(map);
+  window.Spillgebees.Map.overlayVisibility.delete(map);
   window.Spillgebees.Map.overlayStyleUrls.delete(map);
   window.Spillgebees.Map.overlayStyleRequests.delete(map);
   window.Spillgebees.Map.composedStyleLayerIds.delete(map);

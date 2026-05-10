@@ -1,0 +1,77 @@
+@using Spillgebees.Blazor.Map.Models.Overlays
+@namespace Spillgebees.Blazor.Map.Components
+
+<PanelMapControl Id="@Id"
+                 Position="@Position"
+                 Order="@Order"
+                 Visible="@Visible"
+                 Class="@Class"
+                 Label="@Label"
+                 Title="@Title"
+                 InitiallyOpen="@InitiallyOpen"
+                 MaxWidth="@MaxWidth"
+                 PanelClass="@PanelClass">
+    <div class="sgb-map-layer-control-content">
+        @foreach (var overlay in Items)
+        {
+            @if (ItemTemplate is not null)
+            {
+                @ItemTemplate(BuildTemplateContext(overlay))
+            }
+            else
+            {
+                <div class="sgb-map-layer-control-item">
+                    <label class="sgb-map-layer-control-item">
+                        <span class="sgb-map-layer-control-copy">
+                            @RenderLegendSymbol(overlay.Symbol)
+                            <span class="sgb-map-layer-control-label">@overlay.Label</span>
+                            @if (!string.IsNullOrWhiteSpace(overlay.Description))
+                            {
+                                <span class="sgb-map-layer-control-description">@overlay.Description</span>
+                            }
+                        </span>
+                        <span class="sgb-map-legend-item-switch">
+                            <input type="checkbox"
+                                   role="switch"
+                                   aria-checked="@overlay.IsVisible.ToString().ToLowerInvariant()"
+                                   checked="@overlay.IsVisible"
+                                   data-testid="@($"map-overlay-toggle-{overlay.Id}")"
+                                   @onchange="@((ChangeEventArgs args) => ToggleOverlayAsync(overlay, args))" />
+                            <span class="sgb-map-legend-item-switch-track"></span>
+                        </span>
+                    </label>
+
+                    @foreach (var part in overlay.Parts)
+                    {
+                        @if (PartTemplate is not null)
+                        {
+                            @PartTemplate(BuildPartTemplateContext(overlay, part))
+                        }
+                        else
+                        {
+                            <label class="sgb-map-layer-control-item sgb-map-overlay-part-control-item">
+                                <span class="sgb-map-layer-control-copy">
+                                    @RenderLegendSymbol(part.Symbol)
+                                    <span class="sgb-map-layer-control-label">@part.Label</span>
+                                    @if (!string.IsNullOrWhiteSpace(part.Description))
+                                    {
+                                        <span class="sgb-map-layer-control-description">@part.Description</span>
+                                    }
+                                </span>
+                                <span class="sgb-map-legend-item-switch">
+                                    <input type="checkbox"
+                                           role="switch"
+                                           aria-checked="@part.IsVisible.ToString().ToLowerInvariant()"
+                                           checked="@part.IsVisible"
+                                           data-testid="@($"map-overlay-toggle-{overlay.Id}-{part.Id}")"
+                                           @onchange="@((ChangeEventArgs args) => TogglePartAsync(overlay, part, args))" />
+                                    <span class="sgb-map-legend-item-switch-track"></span>
+                                </span>
+                            </label>
+                        }
+                    }
+                </div>
+            }
+        }
+    </div>
+</PanelMapControl>

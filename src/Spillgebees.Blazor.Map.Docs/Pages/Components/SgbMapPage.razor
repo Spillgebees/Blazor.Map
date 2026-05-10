@@ -11,7 +11,7 @@
 <p>The main map component. Renders an interactive MapLibre GL JS map with configurable styles, structured child sections, controls, sources, overlays, and popups.</p>
 
 <h2 id="canonical_structure">// canonical_structure</h2>
-<p>Use three child content sections for component markup. Put controls in <code>MapControls</code>, MapLibre data sources in <code>MapSources</code>, and app overlays in <code>MapOverlays</code>. Sections make ownership clear and produce placement errors when components are nested in the wrong place.</p>
+<p>Use three child content sections for component markup. Put controls in <code>MapControls</code>, MapLibre data sources in <code>MapSources</code>, and app overlays in <code>MapFeatures</code>. Sections make ownership clear and produce placement errors when components are nested in the wrong place.</p>
 <CodeBlock Language="razor" Files="@_canonicalStructure" />
 
 <h2 id="basic_usage">// basic_usage</h2>
@@ -67,7 +67,7 @@
 
 <h2 id="entity_and_list_overlays">// entity_and_list_overlays</h2>
 <p>Use <code>TrackedEntityLayer</code> for moving, interactive entities that need stable IDs, feature-state driven hover or selection, popups, decorations, clustering, and diffed updates. Use <code>GeoJsonSource</code> for static or externally supplied GeoJSON where you want to define MapLibre layers directly.</p>
-<p>Use batch overlay components for app lists such as stations and tracks. They live in <code>MapOverlays</code> and adapt your items with selectors.</p>
+<p>Use batch overlay components for app lists such as stations and tracks. They live in <code>MapFeatures</code> and adapt your items with selectors.</p>
 <CodeBlock Language="razor" Files="@_overlaySections" />
 
 <h2 id="popups">// popups</h2>
@@ -99,22 +99,22 @@
                     </GeoJsonSource>
                 </MapSources>
 
-                <MapOverlays>
+                <MapFeatures>
                     <TrackedEntityLayer TItem="Train" Layer="@_trainLayer" />
                     <MapMarkers TItem="Station"
                                 Items="@_stations"
                                 IdSelector="station => station.Id"
                                 PositionSelector="station => station.Position"
                                 TitleSelector="station => station.Name" />
-                </MapOverlays>
+                </MapFeatures>
             </SgbMap>
             """,
     };
 
     private static readonly Dictionary<string, string> _overlaySections = new()
     {
-        ["MapOverlays.razor"] = """
-            <MapOverlays>
+        ["MapFeatures.razor"] = """
+            <MapFeatures>
                 <TrackedEntityLayer TItem="Train" Layer="@_trainLayer" />
 
                 <MapMarkers TItem="Station"
@@ -129,7 +129,7 @@
                               CoordinatesSelector="track => track.Coordinates"
                               ColorSelector="track => track.Color"
                               WidthSelector="track => 2.0" />
-            </MapOverlays>
+            </MapFeatures>
             """,
     };
 

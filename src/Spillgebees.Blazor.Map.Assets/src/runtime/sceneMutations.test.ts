@@ -690,4 +690,305 @@ describe.sequential("applySceneMutations", () => {
     // assert
     expect(mockMap.setLayoutProperty).toHaveBeenCalledWith("runtime-layer", "visibility", "none");
   });
+
+  it("should apply whole composed style visibility targets", () => {
+    // arrange
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitializedAsync",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControls(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+
+    const mockMap = getLatestMockMapInstance()!;
+    const composedStyleLayerIds = new Map();
+    window.Spillgebees.Map.composedStyleLayerIds.set(mockMap as unknown as MapLibreMap, composedStyleLayerIds);
+    composedStyleLayerIds.set("overlay-style\u0000layer-a", {
+      runtimeLayerId: "runtime-layer-a",
+      styleId: "overlay-style",
+      originalLayerId: "layer-a",
+    });
+    composedStyleLayerIds.set("overlay-style\u0000layer-b", {
+      runtimeLayerId: "runtime-layer-b",
+      styleId: "overlay-style",
+      originalLayerId: "layer-b",
+    });
+    composedStyleLayerIds.set("other-style\u0000layer-c", {
+      runtimeLayerId: "runtime-layer-c",
+      styleId: "other-style",
+      originalLayerId: "layer-c",
+    });
+    mockMap.getLayer.mockImplementation((id: string) =>
+      id === "runtime-layer-a" || id === "runtime-layer-b" || id === "runtime-layer-c" ? { id } : undefined,
+    );
+
+    // act
+    applySceneMutations(mapElement, {
+      mutations: [
+        {
+          kind: "setVisibilityGroup",
+          groupId: "overlay-group",
+          visible: false,
+          targets: [{ kind: "styleLayer", styleId: "overlay-style", layerIds: [] }],
+        },
+      ],
+    });
+
+    // assert
+    expect(mockMap.setLayoutProperty).toHaveBeenCalledWith("runtime-layer-a", "visibility", "none");
+    expect(mockMap.setLayoutProperty).toHaveBeenCalledWith("runtime-layer-b", "visibility", "none");
+    expect(mockMap.setLayoutProperty).not.toHaveBeenCalledWith("runtime-layer-c", "visibility", "none");
+  });
+
+  it("should apply overlay parent and part visibility while preserving original style visibility", () => {
+    // arrange
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitializedAsync",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControls(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+
+    const mockMap = getLatestMockMapInstance()!;
+    window.Spillgebees.Map.composedStyleLayerIds.set(
+      mockMap as unknown as MapLibreMap,
+      new Map([
+        [
+          "lux-railway\u0000tracks",
+          {
+            runtimeLayerId: "runtime-tracks",
+            styleId: "lux-railway",
+            originalLayerId: "tracks",
+            originalVisible: true,
+          },
+        ],
+        [
+          "lux-railway\u0000hidden-labels",
+          {
+            runtimeLayerId: "runtime-hidden-labels",
+            styleId: "lux-railway",
+            originalLayerId: "hidden-labels",
+            originalVisible: false,
+          },
+        ],
+        [
+          "other-style\u0000tracks",
+          {
+            runtimeLayerId: "other-tracks",
+            styleId: "other-style",
+            originalLayerId: "tracks",
+            originalVisible: true,
+          },
+        ],
+      ]),
+    );
+    mockMap.getLayer.mockImplementation((id: string) =>
+      ["runtime-tracks", "runtime-hidden-labels", "other-tracks"].includes(id) ? { id } : undefined,
+    );
+
+    // act
+    applySceneMutations(mapElement, {
+      mutations: [
+        {
+          kind: "setOverlay",
+          overlayId: "lux-railway",
+          visible: true,
+          overlayTargets: [{ kind: "styleLayer", styleId: "lux-railway", layerIds: [] }],
+          parts: [
+            {
+              partId: "tracks",
+              visible: false,
+              targets: [{ kind: "styleLayer", styleId: "lux-railway", layerIds: ["tracks"] }],
+            },
+          ],
+        },
+      ],
+    });
+
+    // assert
+    expect(mockMap.setLayoutProperty).toHaveBeenCalledWith("runtime-tracks", "visibility", "none");
+    expect(mockMap.setLayoutProperty).toHaveBeenCalledWith("runtime-hidden-labels", "visibility", "none");
+    expect(mockMap.setLayoutProperty).not.toHaveBeenCalledWith("other-tracks", "visibility", expect.anything());
+  });
+
+  it("should restore effective visibility when an overlay is removed", () => {
+    // arrange
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitializedAsync",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControls(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+
+    const mockMap = getLatestMockMapInstance()!;
+    window.Spillgebees.Map.composedStyleLayerIds.set(
+      mockMap as unknown as MapLibreMap,
+      new Map([
+        [
+          "lux-railway\u0000tracks",
+          {
+            runtimeLayerId: "runtime-tracks",
+            styleId: "lux-railway",
+            originalLayerId: "tracks",
+            originalVisible: true,
+          },
+        ],
+        [
+          "lux-railway\u0000stations",
+          {
+            runtimeLayerId: "runtime-stations",
+            styleId: "lux-railway",
+            originalLayerId: "stations",
+            originalVisible: true,
+          },
+        ],
+      ]),
+    );
+    mockMap.getLayer.mockImplementation((id: string) =>
+      ["runtime-tracks", "runtime-stations"].includes(id) ? { id } : undefined,
+    );
+
+    applySceneMutations(mapElement, {
+      mutations: [
+        {
+          kind: "setVisibilityGroup",
+          groupId: "stations",
+          visible: false,
+          targets: [{ kind: "styleLayer", styleId: "lux-railway", layerIds: ["stations"] }],
+        },
+        {
+          kind: "setOverlay",
+          overlayId: "lux-railway",
+          visible: false,
+          overlayTargets: [{ kind: "styleLayer", styleId: "lux-railway", layerIds: [] }],
+          parts: [],
+        },
+      ],
+    });
+    mockMap.setLayoutProperty.mockClear();
+
+    // act
+    applySceneMutations(mapElement, {
+      mutations: [{ kind: "removeOverlay", overlayId: "lux-railway" }],
+    });
+
+    // assert
+    expect(mockMap.setLayoutProperty).toHaveBeenCalledWith("runtime-tracks", "visibility", "visible");
+    expect(mockMap.setLayoutProperty).toHaveBeenCalledWith("runtime-stations", "visibility", "none");
+  });
+
+  it("should use runtime layer original visibility instead of mutated layout visibility", () => {
+    // arrange
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitializedAsync",
+      mapElement,
+      createDefaultMapOptions(),
+      createDefaultControls(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getLayer.mockImplementation((id: string) => (id === "runtime-layer" ? { id } : undefined));
+    applySceneMutations(mapElement, {
+      mutations: [
+        {
+          kind: "addLayer",
+          layerId: "runtime-layer",
+          layerSpec: {
+            id: "runtime-layer",
+            type: "line",
+            source: "runtime-source",
+            layout: { visibility: "visible" },
+          },
+          beforeLayerId: null,
+          ordering: {
+            declarationOrder: 0,
+            layerGroup: null,
+            beforeLayerGroup: null,
+            afterLayerGroup: null,
+          },
+        },
+      ],
+    });
+
+    applySceneMutations(mapElement, {
+      mutations: [
+        {
+          kind: "setOverlay",
+          overlayId: "runtime-overlay",
+          visible: false,
+          overlayTargets: [{ kind: "runtimeLayer", layerIds: ["runtime-layer"] }],
+          parts: [],
+        },
+      ],
+    });
+    mockMap.setLayoutProperty.mockClear();
+
+    // act
+    applySceneMutations(mapElement, {
+      mutations: [
+        {
+          kind: "setOverlay",
+          overlayId: "runtime-overlay",
+          visible: true,
+          overlayTargets: [{ kind: "runtimeLayer", layerIds: ["runtime-layer"] }],
+          parts: [],
+        },
+      ],
+    });
+
+    // assert
+    expect(mockMap.setLayoutProperty).toHaveBeenCalledWith("runtime-layer", "visibility", "visible");
+  });
 });

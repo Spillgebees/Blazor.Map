@@ -67,9 +67,9 @@ public sealed class MapPolylines<TItem> : ComponentBase, IAsyncDisposable
             throw new InvalidOperationException("MapPolylines must be placed inside SgbMap.");
         }
 
-        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
+        if (SectionContext?.Kind is not MapContentSectionKind.Features)
         {
-            throw new InvalidOperationException("MapPolylines must be placed inside MapOverlays.");
+            throw new InvalidOperationException("MapPolylines must be placed inside MapFeatures.");
         }
     }
 

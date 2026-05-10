@@ -77,7 +77,7 @@ public class MapSingleOverlayTests : BunitContext
             );
 
         // act & assert
-        action.Should().Throw<InvalidOperationException>().WithMessage("MapMarker must be placed inside MapOverlays.");
+        action.Should().Throw<InvalidOperationException>().WithMessage("MapMarker must be placed inside MapFeatures.");
     }
 
     [Test]
@@ -236,14 +236,14 @@ public class MapSingleOverlayTests : BunitContext
 
     private IRenderedComponent<SgbMap> RenderMarker(string id, Coordinate position) =>
         Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapMarker>(marker => marker.Add(m => m.Id, id).Add(m => m.Position, position))
             )
         );
 
     private static void RenderMarker(IRenderedComponent<SgbMap> cut, string id, Coordinate position) =>
         cut.Render(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapMarker>(marker => marker.Add(m => m.Id, id).Add(m => m.Position, position))
             )
         );
@@ -253,21 +253,21 @@ public class MapSingleOverlayTests : BunitContext
 
     private IRenderedComponent<SgbMap> RenderCircle(string id, Coordinate position) =>
         Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapCircle>(circle => circle.Add(c => c.Id, id).Add(c => c.Position, position))
             )
         );
 
     private static void RenderCircle(IRenderedComponent<SgbMap> cut, string id, Coordinate position) =>
         cut.Render(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapCircle>(circle => circle.Add(c => c.Id, id).Add(c => c.Position, position))
             )
         );
 
     private IRenderedComponent<SgbMap> RenderPolyline(string id, IReadOnlyList<Coordinate> coordinates) =>
         Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapPolyline>(polyline =>
                     polyline.Add(p => p.Id, id).Add(p => p.Coordinates, coordinates)
                 )
@@ -280,7 +280,7 @@ public class MapSingleOverlayTests : BunitContext
         IReadOnlyList<Coordinate> coordinates
     ) =>
         cut.Render(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapPolyline>(polyline =>
                     polyline.Add(p => p.Id, id).Add(p => p.Coordinates, coordinates)
                 )
@@ -317,7 +317,7 @@ public class MapSingleOverlayTests : BunitContext
         var assembly = typeof(SgbMap).Assembly;
         var sectionKindType = assembly.GetType("Spillgebees.Blazor.Map.Components.MapContentSectionKind")!;
         var sectionContextType = assembly.GetType("Spillgebees.Blazor.Map.Components.MapSectionContext")!;
-        var overlaySectionKind = Enum.Parse(sectionKindType, "Overlays");
+        var overlaySectionKind = Enum.Parse(sectionKindType, "Features");
         return Activator.CreateInstance(
             sectionContextType,
             BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,

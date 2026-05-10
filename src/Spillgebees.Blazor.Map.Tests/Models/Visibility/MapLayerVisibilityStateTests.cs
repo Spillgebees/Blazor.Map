@@ -39,6 +39,16 @@ public class MapLayerVisibilityStateTests
     }
 
     [Test]
+    public void Should_allow_whole_style_visibility_targets()
+    {
+        var target = MapLayerVisibilityTarget.Style("overlay-style");
+
+        target.Kind.Should().Be(MapLayerVisibilityTargetKind.StyleLayer);
+        target.StyleId.Should().Be("overlay-style");
+        target.LayerIds.Should().BeEmpty();
+    }
+
+    [Test]
     public void Should_snapshot_input_lists()
     {
         var layerIds = new List<string> { "layer-a" };

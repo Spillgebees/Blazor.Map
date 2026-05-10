@@ -66,9 +66,9 @@ public sealed class MapMarkers<TItem> : ComponentBase, IAsyncDisposable
             throw new InvalidOperationException("MapMarkers must be placed inside SgbMap.");
         }
 
-        if (SectionContext?.Kind is not MapContentSectionKind.Overlays)
+        if (SectionContext?.Kind is not MapContentSectionKind.Features)
         {
-            throw new InvalidOperationException("MapMarkers must be placed inside MapOverlays.");
+            throw new InvalidOperationException("MapMarkers must be placed inside MapFeatures.");
         }
     }
 

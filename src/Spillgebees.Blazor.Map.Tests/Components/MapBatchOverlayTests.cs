@@ -28,7 +28,7 @@ public class MapBatchOverlayTests : BunitContext
             new Station("bet", "Bettembourg", new Coordinate(49.518, 6.102)),
         };
         var cut = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapMarkers<Station>>(markers =>
                     markers
                         .Add(m => m.Items, items)
@@ -43,7 +43,7 @@ public class MapBatchOverlayTests : BunitContext
 
         // act
         cut.Render(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapMarkers<Station>>(markers =>
                     markers
                         .Add(m => m.Items, items.Take(1).ToArray())
@@ -63,7 +63,7 @@ public class MapBatchOverlayTests : BunitContext
     {
         // arrange
         var cut = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapCircles<Station>>(circles =>
                     circles
                         .Add(c => c.Items, null!)
@@ -98,7 +98,7 @@ public class MapBatchOverlayTests : BunitContext
         action
             .Should()
             .Throw<InvalidOperationException>()
-            .WithMessage("MapMarkers must be placed inside MapOverlays.");
+            .WithMessage("MapMarkers must be placed inside MapFeatures.");
     }
 
     public sealed record Station(string Id, string Name, Coordinate Position);

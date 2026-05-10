@@ -27,7 +27,7 @@ public class MapPopupTests : BunitContext
     {
         // arrange
         var component = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapPopup>(popup =>
                     popup.Add(p => p.Id, "details").Add(p => p.Position, new Coordinate(49.61, 6.13))
                 )
@@ -47,7 +47,7 @@ public class MapPopupTests : BunitContext
     {
         // arrange
         var component = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapPopup>(popup =>
                     popup.Add(p => p.Id, "details").Add(p => p.Position, new Coordinate(49.61, 6.13))
                 )
@@ -67,7 +67,7 @@ public class MapPopupTests : BunitContext
     {
         // arrange
         var component = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapPopup>(popup =>
                     popup.Add(p => p.Id, "details").Add(p => p.Position, new Coordinate(49.61, 6.13))
                 )
@@ -96,7 +96,7 @@ public class MapPopupTests : BunitContext
     {
         // arrange
         var component = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapPopup>(popup =>
                     popup.Add(p => p.Id, "details").Add(p => p.Position, new Coordinate(49.61, 6.13))
                 )
@@ -136,7 +136,7 @@ public class MapPopupTests : BunitContext
         // arrange
         var open = true;
         var component = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapPopup>(popup =>
                     popup
                         .Add(p => p.Id, "details")
@@ -162,7 +162,7 @@ public class MapPopupTests : BunitContext
     {
         // arrange
         var component = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapPopup>(popup =>
                     popup.Add(p => p.Id, "details").Add(p => p.Position, new Coordinate(49.61, 6.13))
                 )
@@ -191,7 +191,7 @@ public class MapPopupTests : BunitContext
     {
         // arrange
         var component = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapPopup>(popup =>
                     popup.Add(p => p.Id, "details").Add(p => p.Position, new Coordinate(49.61, 6.13))
                 )
@@ -216,7 +216,7 @@ public class MapPopupTests : BunitContext
     {
         // arrange
         var component = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapPopup>(popup =>
                     popup.Add(p => p.Id, "details").Add(p => p.Position, new Coordinate(49.61, 6.13))
                 )
@@ -237,7 +237,7 @@ public class MapPopupTests : BunitContext
     {
         // arrange & act
         Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<MapPopup>(popup =>
                     popup
                         .Add(p => p.Id, "details")
@@ -263,7 +263,7 @@ public class MapPopupTests : BunitContext
             );
 
         // act & assert
-        action.Should().Throw<InvalidOperationException>().WithMessage("MapPopup must be placed inside MapOverlays.");
+        action.Should().Throw<InvalidOperationException>().WithMessage("MapPopup must be placed inside MapFeatures.");
     }
 
     private static T? GetPrivateField<T>(object instance, string fieldName)
@@ -287,10 +287,10 @@ public class MapPopupTests : BunitContext
                 (RenderFragment)(
                     childBuilder =>
                     {
-                        childBuilder.OpenComponent<MapOverlays>(0);
+                        childBuilder.OpenComponent<MapFeatures>(0);
                         childBuilder.AddAttribute(
                             1,
-                            nameof(MapOverlays.ChildContent),
+                            nameof(MapFeatures.ChildContent),
                             (RenderFragment)(
                                 overlaysBuilder =>
                                 {

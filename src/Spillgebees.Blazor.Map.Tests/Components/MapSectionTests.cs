@@ -74,10 +74,10 @@ public class MapSectionTests : BunitContext
     public void Should_throw_when_section_is_outside_map()
     {
         // arrange
-        var action = () => Render<MapOverlays>();
+        var action = () => Render<MapFeatures>();
 
         // act & assert
-        action.Should().Throw<InvalidOperationException>().WithMessage("MapOverlays must be placed inside SgbMap.");
+        action.Should().Throw<InvalidOperationException>().WithMessage("MapFeatures must be placed inside SgbMap.");
     }
 
     [Test]
@@ -88,7 +88,7 @@ public class MapSectionTests : BunitContext
 
         // act
         var cut = Render<SgbMap>(parameters =>
-            parameters.AddChildContent<MapOverlays>(overlays =>
+            parameters.AddChildContent<MapFeatures>(overlays =>
                 overlays.AddChildContent<TrackedEntityLayer<TrackedEntityTestData.Vehicle>>(tracked =>
                     tracked.Add(t => t.Layer, layer)
                 )
@@ -115,6 +115,6 @@ public class MapSectionTests : BunitContext
         action
             .Should()
             .Throw<InvalidOperationException>()
-            .WithMessage("TrackedEntityLayer must be placed inside MapOverlays.");
+            .WithMessage("TrackedEntityLayer must be placed inside MapFeatures.");
     }
 }

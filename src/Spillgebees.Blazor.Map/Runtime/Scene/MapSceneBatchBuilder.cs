@@ -133,6 +133,16 @@ internal sealed class MapSceneBatchBuilder
         _mutations.Add(MapSceneMutation.RemoveVisibilityGroup(groupId));
     }
 
+    internal void SetOverlay(MapOverlayDescriptor descriptor)
+    {
+        _mutations.Add(MapSceneMutation.SetOverlay(descriptor));
+    }
+
+    internal void RemoveOverlay(string overlayId)
+    {
+        _mutations.Add(MapSceneMutation.RemoveOverlay(overlayId));
+    }
+
     private void QueueOrderingReconcile()
     {
         if (_orderingReconcileQueued)
@@ -157,7 +167,7 @@ internal sealed class MapSceneBatchBuilder
             or "setLayerZoomRange" => 2,
             "reconcileOrdering" => 3,
             "wireLayerEvents" or "unregisterLayerEvents" => 4,
-            "setVisibilityGroup" or "removeVisibilityGroup" => 5,
+            "setVisibilityGroup" or "removeVisibilityGroup" or "setOverlay" or "removeOverlay" => 5,
             _ => 6,
         };
 }

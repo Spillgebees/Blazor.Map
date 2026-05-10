@@ -1,16 +1,19 @@
 import {
   addMapLayer,
   addMapSource,
+  applyOverlay,
   applyVisibilityGroup,
   moveMapLayer,
   rebindLayerEvents,
   reconcileLayerOrdering,
   removeMapLayer,
   removeMapSource,
+  removeOverlay,
   removeVisibilityGroup,
   setFilter,
   setLayerZoomRange,
   setLayoutProperty,
+  setOverlay,
   setPaintProperty,
   setSourceData,
   setSourceDataAnimated,
@@ -18,7 +21,13 @@ import {
   unregisterLayerEvents,
   wireLayerEvents,
 } from "../sources/geojson";
-import { getLayerEventStore, getSceneLayerStore, getSceneSourceStore, getVisibilityGroupStore } from "./registry";
+import {
+  getLayerEventStore,
+  getOverlayStore,
+  getSceneLayerStore,
+  getSceneSourceStore,
+  getVisibilityGroupStore,
+} from "./registry";
 import type { SceneMutationBatch } from "./types";
 
 interface SceneReplayOptions {
@@ -106,9 +115,16 @@ export function applySceneMutations(mapElement: HTMLElement, batch: SceneMutatio
       case "removeVisibilityGroup":
         removeVisibilityGroup(mapElement, mutation.groupId);
         break;
+      case "setOverlay":
+        setOverlay(mapElement, mutation.overlayId, mutation.visible, mutation.overlayTargets, mutation.parts);
+        break;
+      case "removeOverlay":
+        removeOverlay(mapElement, mutation.overlayId);
+        break;
       case "reconcileOrdering":
         reconcileLayerOrdering(map);
         replayVisibilityGroups(mapElement);
+        replayOverlays(mapElement);
         break;
     }
   }
@@ -139,6 +155,7 @@ export function replaySceneRegistrations(mapElement: HTMLElement, options?: Scen
   }
 
   replayVisibilityGroups(mapElement);
+  replayOverlays(mapElement);
 }
 
 export function replayVisibilityGroups(mapElement: HTMLElement): void {
@@ -149,6 +166,17 @@ export function replayVisibilityGroups(mapElement: HTMLElement): void {
 
   for (const group of getVisibilityGroupStore(map).values()) {
     applyVisibilityGroup(mapElement, group);
+  }
+}
+
+export function replayOverlays(mapElement: HTMLElement): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return;
+  }
+
+  for (const overlay of getOverlayStore(map).values()) {
+    applyOverlay(mapElement, overlay);
   }
 }
 
@@ -168,5 +196,6 @@ export async function replayStyleReloadState(
   replaySceneRegistrations(mapElement, { includeVisibilityGroups: false });
   await options?.replayComposedOverlays?.();
   replayVisibilityGroups(mapElement);
+  replayOverlays(mapElement);
   await options?.onAfterReplay?.();
 }

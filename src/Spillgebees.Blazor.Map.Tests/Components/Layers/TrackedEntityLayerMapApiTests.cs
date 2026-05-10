@@ -558,10 +558,10 @@ public class TrackedEntityLayerMapApiTests : BunitContext
                 (RenderFragment)(
                     mapBuilder =>
                     {
-                        mapBuilder.OpenComponent<MapOverlays>(0);
+                        mapBuilder.OpenComponent<MapFeatures>(0);
                         mapBuilder.AddAttribute(
                             1,
-                            nameof(MapOverlays.ChildContent),
+                            nameof(MapFeatures.ChildContent),
                             (RenderFragment)(
                                 overlayBuilder =>
                                 {

@@ -5,11 +5,11 @@
     <MapControls>
         <NavigationMapControl />
     </MapControls>
-    <MapOverlays>
+    <MapFeatures>
         <MapPopup Id="component-popup" Position="@(new Coordinate(49.6160, 6.1250))">
             <button type="button" class="sample-btn" @onclick="IncrementClicks">Blazor popup clicks: @_clicks</button>
         </MapPopup>
-    </MapOverlays>
+    </MapFeatures>
 </SgbMap>
 
 @code {

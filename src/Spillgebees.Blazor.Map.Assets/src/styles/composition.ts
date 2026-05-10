@@ -55,6 +55,7 @@ export interface OverlayStyleState {
     styleId: string;
     originalLayerId: string;
     runtimeLayerId: string;
+    originalVisible: boolean;
   }>;
 }
 
@@ -154,7 +155,7 @@ export async function applyOverlayStyles(
 }
 
 function registerComposedLayerIds(
-  store: Map<string, { runtimeLayerId: string; styleId: string; originalLayerId: string }>,
+  store: Map<string, { runtimeLayerId: string; styleId: string; originalLayerId: string; originalVisible?: boolean }>,
   state: OverlayStyleState,
 ): void {
   for (const layer of state.composedLayerIds) {
@@ -245,7 +246,7 @@ async function mergeStyleIntoMap(
   const sourceIds: string[] = [];
   const layerIds: string[] = [];
   let imageIds: string[] = [];
-  const composedLayerIds: Array<{ styleId: string; originalLayerId: string; runtimeLayerId: string }> = [];
+  const composedLayerIds: OverlayStyleState["composedLayerIds"] = [];
 
   // Build a mapping from original source IDs to prefixed IDs
   const sourceIdMap = new Map<string, string>();
@@ -289,7 +290,12 @@ async function mergeStyleIntoMap(
       const prefixedLayerId = `${prefix}-${layer.id}`;
 
       if (map.getLayer(prefixedLayerId)) {
-        composedLayerIds.push({ styleId, originalLayerId: layer.id, runtimeLayerId: prefixedLayerId });
+        composedLayerIds.push({
+          styleId,
+          originalLayerId: layer.id,
+          runtimeLayerId: prefixedLayerId,
+          originalVisible: layer.layout?.visibility !== "none",
+        });
         continue;
       }
 
@@ -312,7 +318,12 @@ async function mergeStyleIntoMap(
       try {
         map.addLayer(remappedLayer as Parameters<MapLibreMap["addLayer"]>[0]);
         layerIds.push(prefixedLayerId);
-        composedLayerIds.push({ styleId, originalLayerId: layer.id, runtimeLayerId: prefixedLayerId });
+        composedLayerIds.push({
+          styleId,
+          originalLayerId: layer.id,
+          runtimeLayerId: prefixedLayerId,
+          originalVisible: layer.layout?.visibility !== "none",
+        });
       } catch (error) {
         // biome-ignore lint/suspicious/noConsole: library warning for developers
         console.warn(`[Spillgebees.Map] Failed to add overlay layer ${prefixedLayerId}:`, error);

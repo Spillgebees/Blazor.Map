@@ -19,9 +19,12 @@ public sealed record MapLayerVisibilityTarget
     {
         ArgumentNullException.ThrowIfNull(LayerIds);
 
-        if (LayerIds.Count == 0)
+        if (LayerIds.Count == 0 && Kind == MapLayerVisibilityTargetKind.RuntimeLayer)
         {
-            throw new ArgumentException("Visibility targets must declare at least one layer ID.", nameof(LayerIds));
+            throw new ArgumentException(
+                "RuntimeLayer visibility targets must declare at least one layer ID.",
+                nameof(LayerIds)
+            );
         }
 
         if (LayerIds.Any(string.IsNullOrWhiteSpace))
@@ -68,7 +71,8 @@ public sealed record MapLayerVisibilityTarget
     public string? StyleId { get; }
 
     /// <summary>
-    /// Creates a target for original layer IDs in a composed style.
+    /// Creates a target for original layer IDs in a composed style. When no layer IDs are supplied,
+    /// the target controls every layer registered for that style.
     /// </summary>
     public static MapLayerVisibilityTarget Style(string styleId, params string[] layerIds) =>
         new(MapLayerVisibilityTargetKind.StyleLayer, layerIds, styleId);
