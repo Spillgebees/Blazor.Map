@@ -105,7 +105,7 @@ export type SceneMutation =
       kind: "setOverlay";
       overlayId: string;
       visible: boolean;
-      targets: VisibilityGroupTargetRegistration[];
+      overlayTargets: VisibilityGroupTargetRegistration[];
       parts: OverlayPartRegistration[];
     }
   | {

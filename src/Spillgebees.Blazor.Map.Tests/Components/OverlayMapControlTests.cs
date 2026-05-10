@@ -42,8 +42,8 @@ public class OverlayMapControlTests : BunitContext
                 mutation.Kind == "setOverlay"
                 && mutation.OverlayId == "lux-railway"
                 && mutation.Visible == true
-                && mutation.Targets!.Single().StyleId == "lux-railway"
-                && mutation.Targets!.Single().LayerIds.Count == 0
+                && mutation.OverlayTargets!.Single().StyleId == "lux-railway"
+                && mutation.OverlayTargets!.Single().LayerIds.Count == 0
                 && mutation.Parts!.Count == 0
             );
     }
@@ -74,11 +74,15 @@ public class OverlayMapControlTests : BunitContext
     {
         var cut = RenderOverlayMap(includeParts: true);
         await cut.Instance.OnMapInitializedAsync();
+        var initialMutationCount = GetSceneMutations().Count;
 
         cut.Find("[data-testid='map-overlay-toggle-lux-railway']").Change(false);
         cut.Find("[data-testid='map-overlay-toggle-lux-railway']").Change(true);
 
+        cut.WaitForAssertion(() => GetSceneMutations().Count.Should().BeGreaterThan(initialMutationCount));
+
         var latestOverlay = GetSceneMutations()
+            .Skip(initialMutationCount)
             .Last(mutation => mutation.Kind == "setOverlay" && mutation.OverlayId == "lux-railway");
 
         latestOverlay.Visible.Should().BeTrue();

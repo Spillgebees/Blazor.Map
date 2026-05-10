@@ -165,9 +165,11 @@ export function addMapLayer(
 
   const layerStore = getSceneLayerStore(map);
   const existing = layerStore.get(layerSpec.id as string);
+  const originalVisible = existing?.originalVisible ?? isLayerSpecVisible(layerSpec);
   layerStore.set(layerSpec.id as string, {
     layerId: layerSpec.id as string,
     layerSpec: structuredClone(layerSpec),
+    originalVisible,
     beforeLayerId,
     imperativeBeforeLayerId: existing?.imperativeBeforeLayerId,
     ordering: ordering ??
@@ -183,6 +185,10 @@ export function addMapLayer(
   if (subscription) {
     bindLayerEventsForMap(map, layerSpec.id as string, subscription);
   }
+}
+
+function isLayerSpecVisible(layerSpec: Record<string, unknown>): boolean {
+  return (layerSpec.layout as { visibility?: string } | undefined)?.visibility !== "none";
 }
 
 export function removeMapLayer(mapElement: HTMLElement, layerId: string): void {
@@ -296,7 +302,15 @@ export function removeOverlay(mapElement: HTMLElement, overlayId: string): void 
     return;
   }
 
-  getOverlayStore(map).delete(overlayId);
+  const overlayStore = getOverlayStore(map);
+  const removedOverlay = overlayStore.get(overlayId);
+  if (!removedOverlay) {
+    return;
+  }
+
+  const affectedLayers = resolveOverlayTargetBaselines(mapElement, removedOverlay);
+  overlayStore.delete(overlayId);
+  recomputeLayerVisibility(mapElement, affectedLayers);
 }
 
 export function replayOverlays(mapElement: HTMLElement): void {
@@ -311,6 +325,13 @@ export function replayOverlays(mapElement: HTMLElement): void {
 }
 
 export function applyOverlay(mapElement: HTMLElement, overlay: OverlayRegistration): void {
+  const layerVisibility = resolveOverlayLayers(mapElement, overlay);
+  for (const [layerId, visible] of layerVisibility) {
+    setLayerVisibility(mapElement, layerId, visible);
+  }
+}
+
+function resolveOverlayLayers(mapElement: HTMLElement, overlay: OverlayRegistration): Map<string, boolean> {
   const layerVisibility = new Map<string, boolean>();
   for (const resolved of resolveTargets(mapElement, overlay.targets)) {
     layerVisibility.set(resolved.layerId, resolved.originalVisible && overlay.visible);
@@ -320,6 +341,48 @@ export function applyOverlay(mapElement: HTMLElement, overlay: OverlayRegistrati
     for (const resolved of resolveTargets(mapElement, part.targets)) {
       const previous = layerVisibility.get(resolved.layerId) ?? (resolved.originalVisible && overlay.visible);
       layerVisibility.set(resolved.layerId, previous && part.visible);
+    }
+  }
+
+  return layerVisibility;
+}
+
+function resolveOverlayTargetBaselines(mapElement: HTMLElement, overlay: OverlayRegistration): Map<string, boolean> {
+  const layerVisibility = new Map<string, boolean>();
+  for (const resolved of resolveTargets(mapElement, overlay.targets)) {
+    layerVisibility.set(resolved.layerId, resolved.originalVisible);
+  }
+
+  for (const part of overlay.parts) {
+    for (const resolved of resolveTargets(mapElement, part.targets)) {
+      layerVisibility.set(resolved.layerId, resolved.originalVisible);
+    }
+  }
+
+  return layerVisibility;
+}
+
+function recomputeLayerVisibility(mapElement: HTMLElement, layerVisibility: Map<string, boolean>): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map || layerVisibility.size === 0) {
+    return;
+  }
+
+  for (const group of getVisibilityGroupStore(map).values()) {
+    for (const resolved of resolveTargets(mapElement, group.targets)) {
+      const current = layerVisibility.get(resolved.layerId);
+      if (current !== undefined) {
+        layerVisibility.set(resolved.layerId, current && group.visible);
+      }
+    }
+  }
+
+  for (const overlay of getOverlayStore(map).values()) {
+    for (const [layerId, visible] of resolveOverlayLayers(mapElement, overlay)) {
+      const current = layerVisibility.get(layerId);
+      if (current !== undefined) {
+        layerVisibility.set(layerId, current && visible);
+      }
     }
   }
 
@@ -442,12 +505,11 @@ function getRuntimeLayerOriginalVisible(mapElement: HTMLElement, layerId: string
 
   const layerStore = getSceneLayerStore(map);
   const registeredLayer = layerStore.get(layerId);
-  const registeredVisibility = (registeredLayer?.layerSpec.layout as { visibility?: string } | undefined)?.visibility;
-  if (registeredVisibility) {
-    return registeredVisibility !== "none";
+  if (registeredLayer?.originalVisible !== undefined) {
+    return registeredLayer.originalVisible;
   }
 
-  return map.getLayoutProperty(layerId, "visibility") !== "none";
+  return true;
 }
 
 function resolveStyleLayerIds(mapElement: HTMLElement, styleId: string): string[] {

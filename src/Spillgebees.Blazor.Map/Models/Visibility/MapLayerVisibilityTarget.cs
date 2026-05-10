@@ -21,7 +21,10 @@ public sealed record MapLayerVisibilityTarget
 
         if (LayerIds.Count == 0 && Kind == MapLayerVisibilityTargetKind.RuntimeLayer)
         {
-            throw new ArgumentException("Visibility targets must declare at least one layer ID.", nameof(LayerIds));
+            throw new ArgumentException(
+                "RuntimeLayer visibility targets must declare at least one layer ID.",
+                nameof(LayerIds)
+            );
         }
 
         if (LayerIds.Any(string.IsNullOrWhiteSpace))

@@ -24,10 +24,10 @@ internal sealed record MapSceneMutation(
     bool? OnMouseLeave = null,
     string? GroupId = null,
     bool? GroupVisible = null,
-    IReadOnlyList<MapVisibilityGroupTargetDescriptor>? VisibilityTargets = null,
-    bool? Visible = null,
     IReadOnlyList<MapVisibilityGroupTargetDescriptor>? Targets = null,
+    bool? Visible = null,
     string? OverlayId = null,
+    IReadOnlyList<MapVisibilityGroupTargetDescriptor>? OverlayTargets = null,
     IReadOnlyList<MapOverlayPartDescriptor>? Parts = null
 )
 {
@@ -97,7 +97,6 @@ internal sealed record MapSceneMutation(
             "setVisibilityGroup",
             GroupId: descriptor.GroupId,
             GroupVisible: descriptor.Visible,
-            VisibilityTargets: descriptor.Targets,
             Visible: descriptor.Visible,
             Targets: descriptor.Targets
         );
@@ -110,7 +109,7 @@ internal sealed record MapSceneMutation(
             "setOverlay",
             OverlayId: descriptor.OverlayId,
             Visible: descriptor.Visible,
-            Targets: descriptor.Targets,
+            OverlayTargets: descriptor.Targets,
             Parts: descriptor.Parts
         );
 

@@ -116,7 +116,7 @@ export function applySceneMutations(mapElement: HTMLElement, batch: SceneMutatio
         removeVisibilityGroup(mapElement, mutation.groupId);
         break;
       case "setOverlay":
-        setOverlay(mapElement, mutation.overlayId, mutation.visible, mutation.targets, mutation.parts);
+        setOverlay(mapElement, mutation.overlayId, mutation.visible, mutation.overlayTargets, mutation.parts);
         break;
       case "removeOverlay":
         removeOverlay(mapElement, mutation.overlayId);

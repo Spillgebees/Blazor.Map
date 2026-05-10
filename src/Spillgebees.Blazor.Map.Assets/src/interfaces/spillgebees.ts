@@ -12,6 +12,7 @@ export interface RegisteredMapSource {
 export interface RegisteredMapLayer {
   layerId: string;
   layerSpec: Record<string, unknown>;
+  originalVisible?: boolean;
   beforeLayerId: string | null;
   imperativeBeforeLayerId?: string | null;
   ordering: {

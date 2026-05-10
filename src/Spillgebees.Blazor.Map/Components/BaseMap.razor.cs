@@ -804,13 +804,26 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         {
             _ = InvokeAsync(async () =>
             {
-                if (RuntimeIsReady)
+                try
                 {
-                    await SceneRegistry.UnregisterOverlayAsync(overlayId);
-                    _registeredRuntimeOverlayIds.Remove(overlayId);
-                }
+                    if (RuntimeIsReady)
+                    {
+                        await SceneRegistry.UnregisterOverlayAsync(overlayId);
+                        _registeredRuntimeOverlayIds.Remove(overlayId);
+                    }
 
-                OverlayChanged?.Invoke(this, new MapOverlayChangedEventArgs(overlayId));
+                    OverlayChanged?.Invoke(this, new MapOverlayChangedEventArgs(overlayId));
+                }
+                catch (Exception exception) when (!IsDisposing)
+                {
+                    _overlaySyncPending = true;
+                    Logger.Value.LogError(
+                        exception,
+                        "Failed to unregister overlay {OverlayId} in {Method}.",
+                        overlayId,
+                        nameof(UnregisterOverlayDefinition)
+                    );
+                }
             });
         }
     }
@@ -922,7 +935,11 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     internal void SetOverlayVisible(string overlayId, bool visible)
     {
-        var overlay = GetOrCreateOverlay(overlayId);
+        if (!_registeredOverlays.TryGetValue(overlayId, out var overlay))
+        {
+            throw new KeyNotFoundException($"Overlay '{overlayId}' was not found.");
+        }
+
         if (overlay.Visible == visible)
         {
             return;
@@ -934,7 +951,11 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     internal void SetOverlayPartVisible(string overlayId, string partId, bool visible)
     {
-        var overlay = GetOrCreateOverlay(overlayId);
+        if (!_registeredOverlays.TryGetValue(overlayId, out var overlay))
+        {
+            throw new KeyNotFoundException($"Overlay '{overlayId}' was not found.");
+        }
+
         if (!overlay.Parts.TryGetValue(partId, out var part))
         {
             throw new KeyNotFoundException($"Overlay part '{partId}' was not found in overlay '{overlayId}'.");
@@ -966,15 +987,29 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         _overlaySyncPending = true;
         _ = InvokeAsync(async () =>
         {
-            var desiredMapOptions = GetDesiredMapOptions();
-            if (IsInitialized && InternalMapOptions != desiredMapOptions)
+            try
             {
-                InternalMapOptions = desiredMapOptions;
-                await SetMapOptionsAsync();
-            }
+                var desiredMapOptions = GetDesiredMapOptions();
+                if (IsInitialized && InternalMapOptions != desiredMapOptions)
+                {
+                    InternalMapOptions = desiredMapOptions;
+                    await SetMapOptionsAsync();
+                }
 
-            await SyncOverlayRegistrationsAsync();
-            OverlayChanged?.Invoke(this, args);
+                await SyncOverlayRegistrationsAsync();
+                OverlayChanged?.Invoke(this, args);
+            }
+            catch (Exception exception) when (!IsDisposing)
+            {
+                _overlaySyncPending = true;
+                Logger.Value.LogError(
+                    exception,
+                    "Failed to sync overlay map options in {Method} for overlay {OverlayId} and part {PartId}.",
+                    nameof(RequestMapOptionsAndOverlaySync),
+                    args.OverlayId,
+                    args.PartId
+                );
+            }
         });
     }
 
@@ -983,8 +1018,22 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         _overlaySyncPending = true;
         _ = InvokeAsync(async () =>
         {
-            await SyncOverlayRegistrationsAsync();
-            OverlayChanged?.Invoke(this, args);
+            try
+            {
+                await SyncOverlayRegistrationsAsync();
+                OverlayChanged?.Invoke(this, args);
+            }
+            catch (Exception exception) when (!IsDisposing)
+            {
+                _overlaySyncPending = true;
+                Logger.Value.LogError(
+                    exception,
+                    "Failed to sync overlay state in {Method} for overlay {OverlayId} and part {PartId}.",
+                    nameof(RequestOverlaySync),
+                    args.OverlayId,
+                    args.PartId
+                );
+            }
         });
     }
 
