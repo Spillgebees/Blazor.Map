@@ -39,19 +39,15 @@ public class TrainTrackingExampleTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public void Should_define_shared_visibility_groups_for_toggleable_legend_items(CancellationToken cancellationToken)
+    public void Should_define_layer_visibility_groups_for_train_and_buildings_controls(
+        CancellationToken cancellationToken
+    )
     {
         var visibility = TrainTrackingPresentation.CreateLayerVisibility();
-        var legendGroupIds = TrainTrackingPresentation
-            .OverlayLegendDefinition.GetItems()
-            .Where(item => item.VisibilityGroupId is not null)
-            .Select(item => item.VisibilityGroupId)
-            .ToArray();
 
-        legendGroupIds.Should().AllSatisfy(groupId => visibility.Contains(groupId!).Should().BeTrue());
-        visibility.IsVisible("tram").Should().BeFalse();
-        visibility.IsVisible("infrastructure").Should().BeFalse();
-        visibility.IsVisible("tracks").Should().BeTrue();
+        visibility.Contains("trains").Should().BeTrue();
+        visibility.Contains("3d-buildings").Should().BeTrue();
+        visibility.Groups.Should().HaveCount(2);
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -63,16 +59,32 @@ public class TrainTrackingExampleTests : BunitContext
         await map.OnMapInitializedAsync();
 
         map.LayerVisibility.Should().NotBeNull();
-        map.LayerVisibility!.Contains("tracks").Should().BeTrue();
+        map.LayerVisibility!.Contains("trains").Should().BeTrue();
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public void Should_render_legend_items_as_visibility_group_bindings(CancellationToken cancellationToken)
+    public async Task Should_register_overlay_parts_and_allow_whole_overlay_toggle(CancellationToken cancellationToken)
     {
-        var items = TrainTrackingPresentation.OverlayLegendDefinition.GetItems();
+        var cut = Render<TrainTrackingExample>();
+        var map = cut.FindComponent<SgbMap>().Instance;
 
-        items.Should().Contain(item => item.Id == "tracks" && item.VisibilityGroupId == "tracks");
-        items.Should().Contain(item => item.Id == "trains" && item.VisibilityGroupId == "trains");
-        items.Should().OnlyContain(item => item.VisibilityGroupId != null);
+        await map.OnMapInitializedAsync();
+        var overlay = map.GetOverlayItems().Single(item => item.Id == TrainTrackingPresentation.RailwayOverlayId);
+
+        overlay.IsVisible.Should().BeTrue();
+        overlay.Parts.Select(part => part.Id).Should().BeEquivalentTo(
+            ["tracks", "tram", "stations", "platforms", "routes", "lifecycle", "infrastructure"]
+        );
+        overlay.Parts.Single(part => part.Id == "tram").IsVisible.Should().BeFalse();
+        overlay.Parts.Single(part => part.Id == "infrastructure").IsVisible.Should().BeFalse();
+
+        map.SetOverlayVisible(TrainTrackingPresentation.RailwayOverlayId, false);
+        map.GetOverlayItems()
+            .Single(item => item.Id == TrainTrackingPresentation.RailwayOverlayId)
+            .IsVisible.Should()
+            .BeFalse();
+
+        map.SetOverlayVisible(TrainTrackingPresentation.RailwayOverlayId, true);
+        map.GetOverlayItems().Single(item => item.Id == TrainTrackingPresentation.RailwayOverlayId).IsVisible.Should().BeTrue();
     }
 }

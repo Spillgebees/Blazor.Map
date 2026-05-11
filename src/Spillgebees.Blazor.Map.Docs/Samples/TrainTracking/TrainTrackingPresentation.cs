@@ -1,6 +1,4 @@
 using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.Controls;
-using Spillgebees.Blazor.Map.Models.Legends;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 using Spillgebees.Blazor.Map.Models.Visibility;
 
@@ -8,93 +6,32 @@ namespace Spillgebees.Blazor.Map.Docs.Samples.TrainTracking;
 
 public static class TrainTrackingPresentation
 {
+    public const string RailwayOverlayId = "railway-overlay";
     public const string OverlayStyleId = "sgb-train-tracking-overlay";
     public const string OverlayStyleUrlConfigurationKey = "Samples:TrainTracking:OverlayStyleUrl";
     public const string ComposedGlyphsUrlConfigurationKey = "Samples:TrainTracking:ComposedGlyphsUrl";
     public const string DefaultOverlayStyleUrl = "traintracking/style.json";
     public const string CodeSnippet =
         @"<SgbMap MapOptions=""@_mapOptions""
-         OnMoveEnd=""@HandleMapViewChangedAsync""
-         OnZoomEnd=""@HandleMapViewChangedAsync"">
-     <MapControls>
-         <NavigationMapControl />
-         <LegendMapControl Id=""overlay-legend""
-                           Position=""@ControlPosition.TopLeft""
-                           Title=""Legend""
-                           Definition=""@TrainTrackingPresentation.OverlayLegendDefinition"" />
-     </MapControls>
-     <MapFeatures>
-         <TrackedEntityLayer TItem=""TrainSampleState"" Layer=""@_trackedEntityLayer"" />
-     </MapFeatures>
-   </SgbMap>
+          OnMoveEnd=""@HandleMapViewChangedAsync""
+          OnZoomEnd=""@HandleMapViewChangedAsync"">
+      <MapControls>
+          <NavigationMapControl />
+          <LayerMapControl Id=""layers"" GroupIds=""@(new[] { ""trains"", ""3d-buildings"" })"" />
+          <OverlayMapControl Id=""overlays"" OverlayIds=""@(new[] { ""railway-overlay"" })"" />
+      </MapControls>
+      <MapOverlays>
+          <MapOverlay Id=""railway-overlay"" Label=""Railway overlay"">
+              <StyleOverlay Style='@MapStyle.FromUrl(""/traintracking/style.json"").WithId(""sgb-train-tracking-overlay"")' />
+              <MapOverlayPart Id=""tracks"" Label=""Tracks & tunnels"" LayerIds='@(new[] { ""railway-line-rail"" })' />
+          </MapOverlay>
+      </MapOverlays>
+      <MapFeatures>
+          <TrackedEntityLayer TItem=""TrainSampleState"" Layer=""@_trackedEntityLayer"" />
+      </MapFeatures>
+    </SgbMap>
 
 // hover and selection use feature-state, labels stay screen-facing, and supplementary labels stay hidden while clustered";
-
-    public static MapLegend OverlayLegendDefinition { get; } =
-        new(
-            [
-                new MapLegendSection(
-                    "Map layers",
-                    [
-                        new MapLegendItem(
-                            "3d-buildings",
-                            "3D Buildings",
-                            "Extruded building footprints.",
-                            "3d-buildings"
-                        ),
-                        new MapLegendItem(
-                            "trains",
-                            "Trains",
-                            "Live tracked train icons, labels, and clusters.",
-                            "trains"
-                        ),
-                    ]
-                ),
-                new MapLegendSection(
-                    "Railway overlay",
-                    [
-                        new MapLegendItem(
-                            "tracks",
-                            "Tracks & tunnels",
-                            "Rail lines, service tracks, tunnels, and railway areas.",
-                            "tracks"
-                        ),
-                        new MapLegendItem(
-                            "tram",
-                            "Tram & metro",
-                            "Tram lines, stops, subway entrances, and crossings.",
-                            "tram"
-                        ),
-                        new MapLegendItem(
-                            "stations",
-                            "Stations & borders",
-                            "Railway stations, border crossings, and labels.",
-                            "stations"
-                        ),
-                        new MapLegendItem(
-                            "platforms",
-                            "Platforms",
-                            "Platform areas, 3D extrusions, and labels.",
-                            "platforms"
-                        ),
-                        new MapLegendItem("routes", "Routes", "Named railway routes with color-coded lines.", "routes"),
-                        new MapLegendItem(
-                            "lifecycle",
-                            "Lifecycle",
-                            "Construction, proposed, disused, and preserved railways.",
-                            "lifecycle"
-                        ),
-                        new MapLegendItem(
-                            "infrastructure",
-                            "Infrastructure",
-                            "Signals, switches, crossings, and track furniture.",
-                            "infrastructure"
-                        ),
-                    ]
-                ),
-            ],
-            ClassName: "train-overlay-legend-content"
-        );
 
     public static MapLayerVisibilityState CreateLayerVisibility() =>
         new([
@@ -120,133 +57,14 @@ public static class TrainTrackingPresentation
                 ],
                 Label: "Trains"
             ),
-            new MapLayerVisibilityGroup(
-                "tracks",
-                [
-                    MapLayerVisibilityTarget.Style(
-                        OverlayStyleId,
-                        "railway-line-rail",
-                        "railway-line-light-rail",
-                        "railway-line-subway",
-                        "railway-line-narrow-gauge",
-                        "railway-line-funicular",
-                        "railway-line-monorail",
-                        "railway-line-miniature",
-                        "railway-line-service",
-                        "railway-line-tunnel",
-                        "railway-tunnel-label",
-                        "railway-areas-fill",
-                        "railway-areas-outline"
-                    ),
-                ],
-                Label: "Tracks & tunnels"
-            ),
-            new MapLayerVisibilityGroup(
-                "tram",
-                [
-                    MapLayerVisibilityTarget.Style(
-                        OverlayStyleId,
-                        "tram-line-fill",
-                        "tram-line-tunnel",
-                        "tram-stations-icon",
-                        "subway-entrance-icon",
-                        "tram-lifecycle-fill",
-                        "railway-tram-crossings-circle"
-                    ),
-                ],
-                IsVisible: false,
-                Label: "Tram & metro"
-            ),
-            new MapLayerVisibilityGroup(
-                "stations",
-                [
-                    MapLayerVisibilityTarget.Style(
-                        OverlayStyleId,
-                        "railway-stations-circle",
-                        "railway-stations-label",
-                        "railway-border-circle",
-                        "railway-border-label"
-                    ),
-                ],
-                Label: "Stations & borders"
-            ),
-            new MapLayerVisibilityGroup(
-                "platforms",
-                [
-                    MapLayerVisibilityTarget.Style(
-                        OverlayStyleId,
-                        "railway-platforms-fill",
-                        "railway-platforms-3d",
-                        "railway-platforms-label",
-                        "railway-platform-refs-label",
-                        "railway-platform-names-label"
-                    ),
-                ],
-                Label: "Platforms"
-            ),
-            new MapLayerVisibilityGroup(
-                "routes",
-                [
-                    MapLayerVisibilityTarget.Style(
-                        OverlayStyleId,
-                        "railway-routes-casing",
-                        "railway-routes",
-                        "railway-routes-label"
-                    ),
-                ],
-                Label: "Routes"
-            ),
-            new MapLayerVisibilityGroup(
-                "lifecycle",
-                [
-                    MapLayerVisibilityTarget.Style(
-                        OverlayStyleId,
-                        "railway-lifecycle-construction",
-                        "railway-lifecycle-proposed",
-                        "railway-lifecycle-disused",
-                        "railway-lifecycle-abandoned",
-                        "railway-lifecycle-preserved",
-                        "railway-lifecycle-razed"
-                    ),
-                ],
-                Label: "Lifecycle"
-            ),
-            new MapLayerVisibilityGroup(
-                "infrastructure",
-                [
-                    MapLayerVisibilityTarget.Style(
-                        OverlayStyleId,
-                        "railway-switches",
-                        "railway-signals",
-                        "railway-buffer-stops",
-                        "railway-milestones",
-                        "railway-turntables",
-                        "railway-derails",
-                        "railway-crossings-track",
-                        "railway-owner-change",
-                        "railway-crossings-circle"
-                    ),
-                ],
-                IsVisible: false,
-                Label: "Infrastructure"
-            ),
         ]);
 
-    public static MapOptions BuildMapOptions(string? overlayStyleUrl, string? composedGlyphsUrl)
+    public static MapOptions BuildMapOptions(string? composedGlyphsUrl)
     {
-        var resolvedOverlayStyleUrl = string.IsNullOrWhiteSpace(overlayStyleUrl)
-            ? DefaultOverlayStyleUrl
-            : overlayStyleUrl;
-        var styles = new[]
-        {
-            MapStyle.OpenFreeMap.Positron,
-            MapStyle.FromUrl(resolvedOverlayStyleUrl).WithId(OverlayStyleId),
-        };
-
         return new(
             Center: new Coordinate(49.75, 6.12),
             Zoom: 8,
-            Styles: styles,
+            Style: MapStyle.OpenFreeMap.Positron,
             ComposedGlyphsUrl: composedGlyphsUrl,
             Pitch: 45,
             WebFonts: ["11px 'Martian Mono'", "11px 'DM Sans'"]

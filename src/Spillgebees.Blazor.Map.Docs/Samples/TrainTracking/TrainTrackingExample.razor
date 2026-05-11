@@ -1,9 +1,7 @@
 @using Spillgebees.Blazor.Map.Components
 @using Spillgebees.Blazor.Map.Components.Layers
 @using Spillgebees.Blazor.Map.Models
-@using Spillgebees.Blazor.Map.Models.Events
 @using Spillgebees.Blazor.Map.Models.Expressions
-@using Spillgebees.Blazor.Map.Models.Legends
 @using Spillgebees.Blazor.Map.Models.TrackedEntities
 @using Spillgebees.Blazor.Map.Docs.Samples.TrainTracking
 
@@ -264,15 +262,57 @@
             Width="100%">
         <MapControls>
             <NavigationMapControl />
-            <LegendMapControl Id="overlay-legend"
-                              Position="ControlPosition.TopLeft"
-                              Order="500"
-                              Title="Legend"
-                              Collapsible="true"
-                              InitiallyOpen="true"
-                              Definition="TrainTrackingPresentation.OverlayLegendDefinition"
-                              ItemTemplate="_overlayLegendItemTemplate" />
+            <LayerMapControl Id="train-layers"
+                             Position="ControlPosition.TopLeft"
+                             Order="500"
+                             Label="Map layers"
+                             Title="Map layers"
+                             GroupIds='@(new[] { "trains", "3d-buildings" })'
+                             InitiallyOpen="true" />
+            <OverlayMapControl Id="train-overlays"
+                               Position="ControlPosition.TopLeft"
+                               Order="510"
+                               Label="Railway overlay"
+                               Title="Railway overlay"
+                               OverlayIds='@(new[] { TrainTrackingPresentation.RailwayOverlayId })'
+                               InitiallyOpen="true" />
         </MapControls>
+        <MapOverlays>
+            <MapOverlay Id="@TrainTrackingPresentation.RailwayOverlayId"
+                        Label="Luxembourg railway infrastructure">
+                <StyleOverlay Style="@MapStyle.FromUrl(_overlayStyleUrl).WithId(TrainTrackingPresentation.OverlayStyleId)" />
+                <MapOverlayPart Id="tracks"
+                                Label="Tracks & tunnels"
+                                Description="Rail lines, service tracks, tunnels, and railway areas."
+                                LayerIds='@(new[] { "railway-line-rail", "railway-line-light-rail", "railway-line-subway", "railway-line-narrow-gauge", "railway-line-funicular", "railway-line-monorail", "railway-line-miniature", "railway-line-service", "railway-line-tunnel", "railway-tunnel-label", "railway-areas-fill", "railway-areas-outline" })' />
+                <MapOverlayPart Id="tram"
+                                Label="Tram & metro"
+                                Description="Tram lines, stops, subway entrances, and crossings."
+                                InitiallyVisible="false"
+                                LayerIds='@(new[] { "tram-line-fill", "tram-line-tunnel", "tram-stations-icon", "subway-entrance-icon", "tram-lifecycle-fill", "railway-tram-crossings-circle" })' />
+                <MapOverlayPart Id="stations"
+                                Label="Stations & borders"
+                                Description="Railway stations, border crossings, and labels."
+                                LayerIds='@(new[] { "railway-stations-circle", "railway-stations-label", "railway-border-circle", "railway-border-label" })' />
+                <MapOverlayPart Id="platforms"
+                                Label="Platforms"
+                                Description="Platform areas, 3D extrusions, and labels."
+                                LayerIds='@(new[] { "railway-platforms-fill", "railway-platforms-3d", "railway-platforms-label", "railway-platform-refs-label", "railway-platform-names-label" })' />
+                <MapOverlayPart Id="routes"
+                                Label="Routes"
+                                Description="Named railway routes with color-coded lines."
+                                LayerIds='@(new[] { "railway-routes-casing", "railway-routes", "railway-routes-label" })' />
+                <MapOverlayPart Id="lifecycle"
+                                Label="Lifecycle"
+                                Description="Construction, proposed, disused, and preserved railways."
+                                LayerIds='@(new[] { "railway-lifecycle-construction", "railway-lifecycle-proposed", "railway-lifecycle-disused", "railway-lifecycle-abandoned", "railway-lifecycle-preserved", "railway-lifecycle-razed" })' />
+                <MapOverlayPart Id="infrastructure"
+                                Label="Infrastructure"
+                                Description="Signals, switches, crossings, and track furniture."
+                                InitiallyVisible="false"
+                                LayerIds='@(new[] { "railway-switches", "railway-signals", "railway-buffer-stops", "railway-milestones", "railway-turntables", "railway-derails", "railway-crossings-track", "railway-owner-change", "railway-crossings-circle" })' />
+            </MapOverlay>
+        </MapOverlays>
         <FillExtrusionLayer Id="sgb-buildings-3d"
                             SourceId="openmaptiles"
                             SourceLayerId="building"
@@ -291,102 +331,3 @@
 
     </SgbMap>
 </div>
-
-@code {
-    protected override void OnParametersSet()
-    {
-        _overlayLegendItemTemplate ??= OverlayLegendItemTemplate;
-    }
-
-    private RenderFragment<MapLegendItemTemplateContext> OverlayLegendItemTemplate => context => @<label class="train-overlay-legend-item" data-active="@context.IsVisible.ToString().ToLowerInvariant()">
-            <span class="@GetOverlayLegendSwatchClassName(context.Item)" aria-hidden="true">
-                <span class="train-overlay-swatch-art">
-                    @switch (context.Item.Id)
-                    {
-                        case "tracks":
-                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
-                                <rect class="tk-rail-top" x="6" y="18" width="32" height="3" />
-                                <rect class="tk-tie-top" x="10" y="24" width="24" height="2" />
-                            </svg>
-                            break;
-                        case "tram":
-                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
-                                <rect x="8" y="16" width="12" height="12" rx="3" ry="3" fill="#dc2626" stroke="#ffffff" stroke-width="1.5" />
-                                <polygon points="30,16 36,28 24,28" fill="#1d4ed8" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round" />
-                            </svg>
-                            break;
-                        case "stations":
-                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
-                                <circle cx="15" cy="22" fill="#c2410c" stroke="#fff" stroke-width="1.5" r="5" />
-                                <circle cx="30" cy="22" fill="#fff" stroke="#1e293b" stroke-width="1.5" r="5" />
-                            </svg>
-                            break;
-                        case "platforms":
-                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
-                                <polygon class="p-roof" points="12,26 22,20 32,26 22,32" />
-                            </svg>
-                            break;
-                        case "routes":
-                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
-                                <path class="rt-line" d="M8,26 L36,18" stroke="#3080d0" />
-                                <circle class="rt-station" cx="16" cy="24" r="2" />
-                                <circle class="rt-station" cx="30" cy="20" r="2" />
-                            </svg>
-                            break;
-                        case "lifecycle":
-                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
-                                <line x1="6" y1="16" x2="38" y2="16" stroke="#d97706" stroke-width="2" stroke-dasharray="4 3" stroke-linecap="round" />
-                                <line x1="6" y1="28" x2="38" y2="28" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 3" stroke-linecap="round" />
-                            </svg>
-                            break;
-                        case "infrastructure":
-                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
-                                <line class="sig-post" x1="22" y1="32" x2="22" y2="10" />
-                                <circle class="sig-red" cx="22" cy="16" r="3" />
-                            </svg>
-                            break;
-                        case "3d-buildings":
-                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
-                                <polygon class="b-roof" points="10,22 22,14 34,22 22,30" />
-                            </svg>
-                            break;
-                        case "trains":
-                            <svg class="train-overlay-swatch-svg" viewBox="0 0 44 44" aria-hidden="true">
-                                <path d="M36 22C32 18 26 14 20 14C14 14 10 18 10 22C10 26 14 30 20 30C26 30 32 26 36 22Z" fill="#2563eb" stroke="white" stroke-width="2" stroke-linejoin="round" />
-                            </svg>
-                            break;
-                    }
-                </span>
-                <span class="train-overlay-swatch-badge"></span>
-            </span>
-            <span class="train-overlay-legend-copy">
-                <span class="sgb-map-legend-item-label">@context.Item.Label</span>
-                @if (!string.IsNullOrWhiteSpace(context.Item.Description))
-                {
-                    <span class="sgb-map-legend-item-description">@context.Item.Description</span>
-                }
-            </span>
-            <input type="checkbox"
-                   data-testid="@($"map-legend-toggle-{context.Item.Id}")"
-                   checked="@context.IsVisible"
-                   @onchange="@(async args => await context.SetVisibleAsync(ResolveLegendToggleValue(args)))" />
-        </label>;
-
-    private static bool ResolveLegendToggleValue(ChangeEventArgs args)
-    {
-        return args.Value switch
-        {
-            bool boolValue => boolValue,
-            string stringValue when bool.TryParse(stringValue, out var parsed) => parsed,
-            null => throw new InvalidOperationException(
-                "ResolveLegendToggleValue expected ChangeEventArgs.Value to be a bool or parseable string, but ChangeEventArgs.Value was null."
-            ),
-            var value => throw new InvalidOperationException(
-                $"ResolveLegendToggleValue expected ChangeEventArgs.Value to be a bool or parseable string, but received type '{value.GetType().FullName}'."
-            ),
-        };
-    }
-
-    private static string GetOverlayLegendSwatchClassName(MapLegendItem item) =>
-        $"train-overlay-swatch train-overlay-swatch-{item.Id}";
-}

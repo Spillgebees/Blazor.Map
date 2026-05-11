@@ -4,7 +4,6 @@ using Spillgebees.Blazor.Map.Components;
 using Spillgebees.Blazor.Map.Components.Layers;
 using Spillgebees.Blazor.Map.Models;
 using Spillgebees.Blazor.Map.Models.Events;
-using Spillgebees.Blazor.Map.Models.Legends;
 using Spillgebees.Blazor.Map.Models.Options;
 using Spillgebees.Blazor.Map.Models.TrackedEntities;
 using Spillgebees.Blazor.Map.Models.Visibility;
@@ -21,9 +20,9 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private Task? _simulationTask;
     private string? _hoveredTrainId;
     private string? _selectedTrainId;
+    private string _overlayStyleUrl = TrainTrackingPresentation.DefaultOverlayStyleUrl;
     private readonly List<TrainSampleState> _trains = [];
     private readonly List<MapImage> _images;
-    private RenderFragment<MapLegendItemTemplateContext>? _overlayLegendItemTemplate;
 
     [CascadingParameter]
     public MapTheme GlobalTheme { get; set; }
@@ -125,8 +124,10 @@ public partial class TrainTrackingExample : IAsyncDisposable
 
     protected override void OnInitialized()
     {
+        _overlayStyleUrl =
+            Configuration[TrainTrackingPresentation.OverlayStyleUrlConfigurationKey]
+            ?? TrainTrackingPresentation.DefaultOverlayStyleUrl;
         _mapOptions = TrainTrackingPresentation.BuildMapOptions(
-            Configuration[TrainTrackingPresentation.OverlayStyleUrlConfigurationKey],
             Configuration[TrainTrackingPresentation.ComposedGlyphsUrlConfigurationKey]
         );
         _trains.AddRange(TrainSampleSimulation.CreateStates());
