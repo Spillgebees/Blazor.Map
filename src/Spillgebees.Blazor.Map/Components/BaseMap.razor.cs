@@ -909,7 +909,10 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         }
     }
 
-    internal IReadOnlyList<MapOverlayItem> GetOverlayItems() =>
+    /// <summary>
+    /// Gets the currently registered overlays and their visible state.
+    /// </summary>
+    public IReadOnlyList<MapOverlayItem> GetOverlayItems() =>
         _registeredOverlays
             .Values.OrderBy(overlay => overlay.Order)
             .ThenBy(overlay => overlay.Id, StringComparer.Ordinal)
@@ -933,7 +936,13 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             ))
             .ToArray();
 
-    internal void SetOverlayVisible(string overlayId, bool visible)
+    /// <summary>
+    /// Sets the visibility of the specified overlay.
+    /// </summary>
+    /// <param name="overlayId">Overlay id.</param>
+    /// <param name="visible">Target visibility state.</param>
+    /// <exception cref="KeyNotFoundException">Thrown when the overlay id is unknown.</exception>
+    public void SetOverlayVisible(string overlayId, bool visible)
     {
         if (!_registeredOverlays.TryGetValue(overlayId, out var overlay))
         {
@@ -949,7 +958,31 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         RequestOverlaySync(new MapOverlayChangedEventArgs(overlayId));
     }
 
-    internal void SetOverlayPartVisible(string overlayId, string partId, bool visible)
+    /// <summary>
+    /// Toggles visibility of the specified overlay.
+    /// </summary>
+    /// <param name="overlayId">Overlay id.</param>
+    /// <exception cref="KeyNotFoundException">Thrown when the overlay id is unknown.</exception>
+    public void ToggleOverlay(string overlayId)
+    {
+        if (!_registeredOverlays.TryGetValue(overlayId, out var overlay))
+        {
+            throw new KeyNotFoundException($"Overlay '{overlayId}' was not found.");
+        }
+
+        SetOverlayVisible(overlayId, !overlay.Visible);
+    }
+
+    /// <summary>
+    /// Sets the visibility of the specified overlay part.
+    /// </summary>
+    /// <param name="overlayId">Overlay id.</param>
+    /// <param name="partId">Part id within the overlay.</param>
+    /// <param name="visible">Target visibility state.</param>
+    /// <exception cref="KeyNotFoundException">
+    /// Thrown when the overlay id or part id is unknown.
+    /// </exception>
+    public void SetOverlayPartVisible(string overlayId, string partId, bool visible)
     {
         if (!_registeredOverlays.TryGetValue(overlayId, out var overlay))
         {
@@ -968,6 +1001,29 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
         part.Visible = visible;
         RequestOverlaySync(new MapOverlayChangedEventArgs(overlayId, partId));
+    }
+
+    /// <summary>
+    /// Toggles visibility of the specified overlay part.
+    /// </summary>
+    /// <param name="overlayId">Overlay id.</param>
+    /// <param name="partId">Part id within the overlay.</param>
+    /// <exception cref="KeyNotFoundException">
+    /// Thrown when the overlay id or part id is unknown.
+    /// </exception>
+    public void ToggleOverlayPart(string overlayId, string partId)
+    {
+        if (!_registeredOverlays.TryGetValue(overlayId, out var overlay))
+        {
+            throw new KeyNotFoundException($"Overlay '{overlayId}' was not found.");
+        }
+
+        if (!overlay.Parts.TryGetValue(partId, out var part))
+        {
+            throw new KeyNotFoundException($"Overlay part '{partId}' was not found in overlay '{overlayId}'.");
+        }
+
+        SetOverlayPartVisible(overlayId, partId, !part.Visible);
     }
 
     private RegisteredOverlayDefinition GetOrCreateOverlay(string overlayId)

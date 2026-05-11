@@ -65,6 +65,10 @@
 <p><code>LayerMapControl</code> renders <code>SgbMap.LayerVisibility</code> groups. Use <code>GroupIds</code> to choose and order a subset.</p>
 <CodeBlock Language="razor" Files="@_layerExamples" />
 
+<h2 id="overlay_map_controls">// overlay_map_controls</h2>
+<p><code>OverlayMapControl</code> renders toggles for entries declared in <code>MapOverlays</code>. Programmatic overlay methods on <code>SgbMap</code>/<code>BaseMap</code> use the same visibility behavior as the control UI.</p>
+<CodeBlock Language="razor" Files="@_overlayExamples" />
+
 <h2 id="legend_map_controls">// legend_map_controls</h2>
 <p><code>LegendMapControl</code> explains visual symbols. Use structured symbols for common swatches, lines, dashed lines, and circles; use templates only for bespoke legends.</p>
 <CodeBlock Language="razor" Files="@_legendExamples" />
@@ -196,6 +200,31 @@
                     <LayerMapControl Id="layers" InitiallyOpen="true" />
                 </MapControls>
             </SgbMap>
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _overlayExamples = new()
+    {
+        ["OverlayMapControl.razor"] = """
+            <SgbMap @ref="_map">
+                <MapControls>
+                    <OverlayMapControl Id="overlays" />
+                </MapControls>
+
+                <MapOverlays>
+                    <MapOverlay Id="lux-railway" Label="Lux railway infrastructure">
+                        <StyleOverlay Style='@MapStyle.FromUrl("traintracking/style.json").WithId("lux-railway")' />
+                        <MapOverlayPart Id="tracks" Label="Tracks" LayerIds='@(new[] { "railway-line-rail" })' />
+                    </MapOverlay>
+                </MapOverlays>
+            </SgbMap>
+
+            <button @onclick='() => _map?.ToggleOverlay("lux-railway")'>Toggle overlay</button>
+            <button @onclick='() => _map?.ToggleOverlayPart("lux-railway", "tracks")'>Toggle part</button>
+
+            @code {
+                private SgbMap? _map;
+            }
             """,
     };
 
