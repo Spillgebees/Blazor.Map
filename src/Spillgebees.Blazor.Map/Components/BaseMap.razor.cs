@@ -609,7 +609,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         }
 
         desiredMapOptions = GetDesiredMapOptions();
-        if (InternalMapOptions != desiredMapOptions)
+        if (!AreMapOptionsEquivalent(InternalMapOptions, desiredMapOptions))
         {
             InternalMapOptions = desiredMapOptions;
             await SetMapOptionsAsync();
@@ -1046,7 +1046,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             try
             {
                 var desiredMapOptions = GetDesiredMapOptions();
-                if (IsInitialized && InternalMapOptions != desiredMapOptions)
+                if (IsInitialized && !AreMapOptionsEquivalent(InternalMapOptions, desiredMapOptions))
                 {
                     InternalMapOptions = desiredMapOptions;
                     await SetMapOptionsAsync();
@@ -1428,6 +1428,50 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     private ValueTask SetMapOptionsAsync() =>
         MapJs.SetMapOptionsAsync(JsRuntime, Logger.Value, MapReference, InternalMapOptions);
+
+    private static bool AreMapOptionsEquivalent(MapOptions left, MapOptions right)
+    {
+        if (left == right)
+        {
+            return true;
+        }
+
+        return left with
+            {
+                Styles = null,
+                WebFonts = null,
+            }
+            == right with
+            {
+                Styles = null,
+                WebFonts = null,
+            }
+            && AreSequencesEqual(left.Styles, right.Styles)
+            && AreSequencesEqual(left.WebFonts, right.WebFonts);
+    }
+
+    private static bool AreSequencesEqual<T>(IReadOnlyList<T>? left, IReadOnlyList<T>? right)
+    {
+        if (ReferenceEquals(left, right))
+        {
+            return true;
+        }
+
+        if (left is null || right is null || left.Count != right.Count)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < left.Count; i++)
+        {
+            if (!EqualityComparer<T>.Default.Equals(left[i], right[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     private ValueTask SetThemeAsync() => MapJs.SetThemeAsync(JsRuntime, Logger.Value, MapReference, InternalTheme);
 

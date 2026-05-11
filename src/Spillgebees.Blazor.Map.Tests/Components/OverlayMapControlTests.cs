@@ -112,6 +112,20 @@ public class OverlayMapControlTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_not_set_map_options_again_when_overlay_style_is_unchanged_on_rerender(
+        CancellationToken cancellationToken
+    )
+    {
+        var cut = RenderOverlayMap(includeParts: false);
+        await cut.Instance.OnMapInitializedAsync();
+        var initialSetMapOptionsCount = JSInterop.Invocations[SetMapOptionsIdentifier].Count;
+
+        RerenderOverlayMap(cut, includeParts: false);
+
+        JSInterop.Invocations[SetMapOptionsIdentifier].Count.Should().Be(initialSetMapOptionsCount);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
     public async Task Should_toggle_overlay_part_programmatically_and_preserve_part_state_without_overlay_map_control(
         CancellationToken cancellationToken
     )
@@ -164,93 +178,101 @@ public class OverlayMapControlTests : BunitContext
 
     private IRenderedComponent<SgbMap> RenderOverlayMap(bool includeParts, bool includeOverlayControl = true) =>
         Render<SgbMap>(parameters =>
-            parameters.AddChildContent(
-                (RenderFragment)(
-                    builder =>
-                    {
-                        if (includeOverlayControl)
+            parameters.AddChildContent(BuildOverlayMapChildContent(includeParts, includeOverlayControl))
+        );
+
+    private static void RerenderOverlayMap(
+        IRenderedComponent<SgbMap> cut,
+        bool includeParts,
+        bool includeOverlayControl = true
+    ) =>
+        cut.Render(parameters =>
+            parameters.AddChildContent(BuildOverlayMapChildContent(includeParts, includeOverlayControl))
+        );
+
+    private static RenderFragment BuildOverlayMapChildContent(bool includeParts, bool includeOverlayControl) =>
+        builder =>
+        {
+            if (includeOverlayControl)
+            {
+                builder.OpenComponent<MapControls>(0);
+                builder.AddAttribute(
+                    1,
+                    nameof(MapControls.ChildContent),
+                    (RenderFragment)(
+                        controls =>
                         {
-                            builder.OpenComponent<MapControls>(0);
-                            builder.AddAttribute(
-                                1,
-                                nameof(MapControls.ChildContent),
-                                (RenderFragment)(
-                                    controls =>
-                                    {
-                                        controls.OpenComponent<OverlayMapControl>(0);
-                                        controls.AddAttribute(1, nameof(OverlayMapControl.Id), "overlays");
-                                        controls.CloseComponent();
-                                    }
-                                )
-                            );
-                            builder.CloseComponent();
+                            controls.OpenComponent<OverlayMapControl>(0);
+                            controls.AddAttribute(1, nameof(OverlayMapControl.Id), "overlays");
+                            controls.CloseComponent();
                         }
+                    )
+                );
+                builder.CloseComponent();
+            }
 
-                        builder.OpenComponent<MapOverlays>(2);
-                        builder.AddAttribute(
+            builder.OpenComponent<MapOverlays>(2);
+            builder.AddAttribute(
+                3,
+                nameof(MapOverlays.ChildContent),
+                (RenderFragment)(
+                    overlays =>
+                    {
+                        overlays.OpenComponent<MapOverlay>(0);
+                        overlays.AddAttribute(1, nameof(MapOverlay.Id), "lux-railway");
+                        overlays.AddAttribute(2, nameof(MapOverlay.Label), "Lux railway infrastructure");
+                        overlays.AddAttribute(
                             3,
-                            nameof(MapOverlays.ChildContent),
+                            nameof(MapOverlay.ChildContent),
                             (RenderFragment)(
-                                overlays =>
+                                overlay =>
                                 {
-                                    overlays.OpenComponent<MapOverlay>(0);
-                                    overlays.AddAttribute(1, nameof(MapOverlay.Id), "lux-railway");
-                                    overlays.AddAttribute(2, nameof(MapOverlay.Label), "Lux railway infrastructure");
-                                    overlays.AddAttribute(
-                                        3,
-                                        nameof(MapOverlay.ChildContent),
-                                        (RenderFragment)(
-                                            overlay =>
-                                            {
-                                                overlay.OpenComponent<StyleOverlay>(0);
-                                                overlay.AddAttribute(
-                                                    1,
-                                                    nameof(StyleOverlay.Style),
-                                                    MapStyle.FromUrl("traintracking/style.json").WithId("lux-railway")
-                                                );
-                                                overlay.CloseComponent();
-
-                                                if (!includeParts)
-                                                {
-                                                    return;
-                                                }
-
-                                                overlay.OpenComponent<MapOverlayPart>(2);
-                                                overlay.AddAttribute(3, nameof(MapOverlayPart.Id), "tracks");
-                                                overlay.AddAttribute(4, nameof(MapOverlayPart.Label), "Tracks");
-                                                overlay.AddAttribute(
-                                                    5,
-                                                    nameof(MapOverlayPart.LayerIds),
-                                                    new[] { "railway-line-rail" }
-                                                );
-                                                overlay.CloseComponent();
-
-                                                overlay.OpenComponent<MapOverlayPart>(6);
-                                                overlay.AddAttribute(7, nameof(MapOverlayPart.Id), "lifecycle");
-                                                overlay.AddAttribute(8, nameof(MapOverlayPart.Label), "Lifecycle");
-                                                overlay.AddAttribute(
-                                                    9,
-                                                    nameof(MapOverlayPart.LayerIds),
-                                                    new[] { "railway-lifecycle-disused" }
-                                                );
-                                                overlay.AddAttribute(
-                                                    10,
-                                                    nameof(MapOverlayPart.InitiallyVisible),
-                                                    false
-                                                );
-                                                overlay.CloseComponent();
-                                            }
-                                        )
+                                    overlay.OpenComponent<StyleOverlay>(0);
+                                    overlay.AddAttribute(
+                                        1,
+                                        nameof(StyleOverlay.Style),
+                                        MapStyle.FromUrl("traintracking/style.json").WithId("lux-railway")
                                     );
-                                    overlays.CloseComponent();
+                                    overlay.CloseComponent();
+
+                                    if (!includeParts)
+                                    {
+                                        return;
+                                    }
+
+                                    overlay.OpenComponent<MapOverlayPart>(2);
+                                    overlay.AddAttribute(3, nameof(MapOverlayPart.Id), "tracks");
+                                    overlay.AddAttribute(4, nameof(MapOverlayPart.Label), "Tracks");
+                                    overlay.AddAttribute(
+                                        5,
+                                        nameof(MapOverlayPart.LayerIds),
+                                        new[] { "railway-line-rail" }
+                                    );
+                                    overlay.CloseComponent();
+
+                                    overlay.OpenComponent<MapOverlayPart>(6);
+                                    overlay.AddAttribute(7, nameof(MapOverlayPart.Id), "lifecycle");
+                                    overlay.AddAttribute(8, nameof(MapOverlayPart.Label), "Lifecycle");
+                                    overlay.AddAttribute(
+                                        9,
+                                        nameof(MapOverlayPart.LayerIds),
+                                        new[] { "railway-lifecycle-disused" }
+                                    );
+                                    overlay.AddAttribute(
+                                        10,
+                                        nameof(MapOverlayPart.InitiallyVisible),
+                                        false
+                                    );
+                                    overlay.CloseComponent();
                                 }
                             )
                         );
-                        builder.CloseComponent();
+                        overlays.CloseComponent();
                     }
                 )
-            )
-        );
+            );
+            builder.CloseComponent();
+        };
 
     private IReadOnlyList<MapSceneMutation> GetSceneMutations() =>
         JSInterop
