@@ -109,11 +109,10 @@ public partial class OverlayMapControl : ComponentBase, IDisposable
         MapOverlayPartItem part
     ) => new(overlay, part, visible => SetPartVisibleAsync(overlay.Id, part.Id, visible));
 
-    private Task ToggleOverlayAsync(MapOverlayItem overlay, ChangeEventArgs args) =>
-        SetOverlayVisibleAsync(overlay.Id, ResolveToggleValue(args));
+    private Task ToggleOverlayAsync(MapOverlayItem overlay, ChangeEventArgs _) => ToggleOverlayAsync(overlay.Id);
 
-    private Task TogglePartAsync(MapOverlayItem overlay, MapOverlayPartItem part, ChangeEventArgs args) =>
-        SetPartVisibleAsync(overlay.Id, part.Id, ResolveToggleValue(args));
+    private Task TogglePartAsync(MapOverlayItem overlay, MapOverlayPartItem part, ChangeEventArgs _) =>
+        TogglePartAsync(overlay.Id, part.Id);
 
     private Task SetOverlayVisibleAsync(string overlayId, bool visible)
     {
@@ -127,16 +126,20 @@ public partial class OverlayMapControl : ComponentBase, IDisposable
         return Task.CompletedTask;
     }
 
+    private Task ToggleOverlayAsync(string overlayId)
+    {
+        Map!.ToggleOverlay(overlayId);
+        return Task.CompletedTask;
+    }
+
+    private Task TogglePartAsync(string overlayId, string partId)
+    {
+        Map!.ToggleOverlayPart(overlayId, partId);
+        return Task.CompletedTask;
+    }
+
     private void HandleOverlayChanged(object? sender, MapOverlayChangedEventArgs args) =>
         _ = InvokeAsync(StateHasChanged);
-
-    private static bool ResolveToggleValue(ChangeEventArgs args) =>
-        args.Value switch
-        {
-            bool boolValue => boolValue,
-            string stringValue when bool.TryParse(stringValue, out var parsed) => parsed,
-            _ => throw new InvalidOperationException("Overlay toggle expected a bool or parseable string value."),
-        };
 
     private static RenderFragment RenderLegendSymbol(MapLegendSymbol? symbol) =>
         builder =>
