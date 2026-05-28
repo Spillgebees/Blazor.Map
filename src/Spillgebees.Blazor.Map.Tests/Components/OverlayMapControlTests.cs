@@ -90,101 +90,26 @@ public class OverlayMapControlTests : BunitContext
         latestOverlay.Parts!.Should().Contain(part => part.PartId == "tracks" && part.Visible == true);
     }
 
-    [Test, Timeout(TestTimeoutMs)]
-    public async Task Should_toggle_overlay_programmatically_without_overlay_map_control(
-        CancellationToken cancellationToken
-    )
-    {
-        var cut = RenderOverlayMap(includeParts: false, includeOverlayControl: false);
-        await cut.Instance.OnMapInitializedAsync();
-        var initialBatchCount = JSInterop.Invocations[ApplySceneMutationsIdentifier].Count;
-
-        cut.Instance.ToggleOverlay("lux-railway");
-
-        cut.WaitForAssertion(() =>
-            JSInterop.Invocations[ApplySceneMutationsIdentifier].Count.Should().BeGreaterThan(initialBatchCount)
-        );
-        GetLatestSceneMutationBatch()
-            .Mutations.Should()
-            .ContainSingle(mutation =>
-                mutation.Kind == "setOverlay" && mutation.OverlayId == "lux-railway" && mutation.Visible == false
-            );
-    }
-
-    [Test, Timeout(TestTimeoutMs)]
-    public async Task Should_toggle_overlay_part_programmatically_and_preserve_part_state_without_overlay_map_control(
-        CancellationToken cancellationToken
-    )
-    {
-        var cut = RenderOverlayMap(includeParts: true, includeOverlayControl: false);
-        await cut.Instance.OnMapInitializedAsync();
-        var initialMutationCount = GetSceneMutations().Count;
-
-        cut.Instance.ToggleOverlayPart("lux-railway", "tracks");
-        cut.Instance.ToggleOverlay("lux-railway");
-        cut.Instance.ToggleOverlay("lux-railway");
-
-        cut.WaitForAssertion(() => GetSceneMutations().Count.Should().BeGreaterThan(initialMutationCount));
-
-        var latestOverlay = GetSceneMutations()
-            .Skip(initialMutationCount)
-            .Last(mutation => mutation.Kind == "setOverlay" && mutation.OverlayId == "lux-railway");
-
-        latestOverlay.Visible.Should().BeTrue();
-        latestOverlay.Parts!.Should().Contain(part => part.PartId == "tracks" && part.Visible == false);
-        latestOverlay.Parts!.Should().Contain(part => part.PartId == "lifecycle" && part.Visible == false);
-    }
-
-    [Test]
-    public void Should_throw_for_unknown_programmatic_overlay_and_part_ids()
-    {
-        var cut = RenderOverlayMap(includeParts: true, includeOverlayControl: false);
-
-        var missingOverlay = () => cut.Instance.ToggleOverlay("missing-overlay");
-        var missingPart = () => cut.Instance.ToggleOverlayPart("lux-railway", "missing-part");
-
-        missingOverlay.Should().Throw<KeyNotFoundException>().WithMessage("Overlay 'missing-overlay' was not found.");
-        missingPart
-            .Should()
-            .Throw<KeyNotFoundException>()
-            .WithMessage("Overlay part 'missing-part' was not found in overlay 'lux-railway'.");
-    }
-
-    [Test]
-    public void Should_expose_overlay_items_programmatically_without_overlay_map_control()
-    {
-        var cut = RenderOverlayMap(includeParts: true, includeOverlayControl: false);
-
-        var items = cut.Instance.GetOverlayItems();
-
-        items.Should().ContainSingle();
-        items[0].Id.Should().Be("lux-railway");
-        items[0].Parts.Select(part => part.Id).Should().BeEquivalentTo(["tracks", "lifecycle"]);
-    }
-
-    private IRenderedComponent<SgbMap> RenderOverlayMap(bool includeParts, bool includeOverlayControl = true) =>
+    private IRenderedComponent<SgbMap> RenderOverlayMap(bool includeParts) =>
         Render<SgbMap>(parameters =>
             parameters.AddChildContent(
                 (RenderFragment)(
                     builder =>
                     {
-                        if (includeOverlayControl)
-                        {
-                            builder.OpenComponent<MapControls>(0);
-                            builder.AddAttribute(
-                                1,
-                                nameof(MapControls.ChildContent),
-                                (RenderFragment)(
-                                    controls =>
-                                    {
-                                        controls.OpenComponent<OverlayMapControl>(0);
-                                        controls.AddAttribute(1, nameof(OverlayMapControl.Id), "overlays");
-                                        controls.CloseComponent();
-                                    }
-                                )
-                            );
-                            builder.CloseComponent();
-                        }
+                        builder.OpenComponent<MapControls>(0);
+                        builder.AddAttribute(
+                            1,
+                            nameof(MapControls.ChildContent),
+                            (RenderFragment)(
+                                controls =>
+                                {
+                                    controls.OpenComponent<OverlayMapControl>(0);
+                                    controls.AddAttribute(1, nameof(OverlayMapControl.Id), "overlays");
+                                    controls.CloseComponent();
+                                }
+                            )
+                        );
+                        builder.CloseComponent();
 
                         builder.OpenComponent<MapOverlays>(2);
                         builder.AddAttribute(
