@@ -3,13 +3,8 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": [
-      "ESNext",
-      "DOM"
-    ],
-    "types": [
-      "node"
-    ],
+    "lib": ["ESNext", "DOM"],
+    "types": ["node"],
     "sourceMap": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -19,11 +14,5 @@
     "exactOptionalPropertyTypes": false,
     "noUncheckedIndexedAccess": false
   },
-  "include": [
-    "src/**/*.ts",
-    "test/**/*.ts",
-    "tests/**/*.ts",
-    "playwright.config.ts",
-    "vite.config.ts"
-  ]
+  "include": ["src/**/*.ts", "test/**/*.ts", "tests/**/*.ts", "playwright.config.ts", "vite.config.ts"]
 }
