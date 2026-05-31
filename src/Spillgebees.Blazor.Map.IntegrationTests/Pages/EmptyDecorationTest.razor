@@ -1,0 +1,68 @@
+﻿@attribute [Route(Constants.Routes.EmptyDecorationTest)]
+
+<button type="button" data-testid="apply-selected-state" @onclick="ApplySelectedStateAsync">
+    Apply selected state
+</button>
+
+<SgbMap MapOptions="@_mapOptions" Images="@_images" Height="400px" Width="600px">
+    <MapFeatures>
+        <TrackedEntityLayer @ref="_trackedLayer" TItem="@TrackedItem" Layer="@_layer" />
+    </MapFeatures>
+</SgbMap>
+
+@code {
+    private readonly MapOptions _mapOptions = new(
+        Center: new Coordinate(49.6117, 6.1319),
+        Zoom: 12,
+        Style: MapStyle.FromRasterUrl(
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII=",
+            string.Empty));
+
+    private readonly List<MapImage> _images =
+    [
+        new(
+            "entity-dot",
+            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='8' fill='%232563eb'/%3E%3C/svg%3E",
+            24,
+            24)
+    ];
+
+    private readonly TrackedEntityLayerDefinition<TrackedItem> _layer = new(
+        Id: "tracked-empty-decoration",
+        Items: [new TrackedItem("entity-1", new Coordinate(49.6117, 6.1319), null)],
+        IdOptions: new TrackedEntityIdOptions<TrackedItem>(item => item.Id),
+        Visual: new TrackedEntityVisualOptions<TrackedItem>(
+            Symbol: new TrackedEntitySymbolOptions<TrackedItem>(
+                PositionSelector: item => item.Position,
+                IconImageSelector: _ => "entity-dot"),
+            Decorations:
+            [
+                new TrackedEntityDecorationOptions<TrackedItem>(
+                    "label",
+                    TextSelector: item => item.DecorationText)
+            ],
+            Cluster: new TrackedEntityClusterOptions(),
+            Animation: null,
+            Visible: true,
+            PrimaryIconOpacity: null),
+        Behavior: new TrackedEntityBehaviorOptions<TrackedItem>(
+            new TrackedEntityInteractionOptions<TrackedItem>(
+                IsSelected: _ => true)),
+        Callbacks: new TrackedEntityCallbacks<TrackedItem>());
+
+    private TrackedEntityLayer<TrackedItem>? _trackedLayer;
+
+    private async Task ApplySelectedStateAsync()
+    {
+        if (_trackedLayer is null)
+        {
+            return;
+        }
+
+        await _trackedLayer.SetFeatureStateAsync(
+                "entity-1",
+                TrackedEntityFeatureStates.Selected.Set(true));
+    }
+
+    private sealed record TrackedItem(string Id, Coordinate Position, string? DecorationText);
+}

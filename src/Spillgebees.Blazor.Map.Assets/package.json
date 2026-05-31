@@ -26,6 +26,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:browser": "playwright test",
+    "test:browser:docs": "playwright test --project docs",
+    "test:browser:integration": "playwright test --project integration",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },

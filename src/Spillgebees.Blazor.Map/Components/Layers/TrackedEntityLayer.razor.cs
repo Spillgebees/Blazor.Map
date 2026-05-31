@@ -392,7 +392,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
             throw new InvalidOperationException("Tracked entity feature state requires a parent map.");
         }
 
-        return Map.SetTrackedEntityFeatureStateAsync(SourceId, DecorationSourceId, entityId, state);
+        return Map.SetTrackedEntityFeatureStateAsync(SourceId, HasDecorations ? DecorationSourceId : null, entityId, state);
     }
 
     public ValueTask SetFeatureStateAsync(string entityId, KeyValuePair<string, object> state)
