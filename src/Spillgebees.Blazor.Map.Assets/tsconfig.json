@@ -14,5 +14,11 @@
     "exactOptionalPropertyTypes": false,
     "noUncheckedIndexedAccess": false
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "tests/**/*.ts", "playwright.config.ts", "vite.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "tests/browser/integration/**/*.ts",
+    "playwright.config.ts",
+    "vite.config.ts"
+  ]
 }

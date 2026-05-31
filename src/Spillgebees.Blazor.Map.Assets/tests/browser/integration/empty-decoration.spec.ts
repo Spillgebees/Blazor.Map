@@ -43,7 +43,12 @@ test("tracked entity decorations with null text do not log browser errors", asyn
   });
 
   await page.evaluate(() => {
-    const map = Array.from(window.Spillgebees.Map.maps.values())[0];
+    const maps = window.Spillgebees?.Map?.maps;
+    if (!maps || maps.size === 0) {
+      return;
+    }
+
+    const map = Array.from(maps.values())[0];
     map?.on("error", (event) => {
       console.error(`[maplibre:error] ${event.error?.message ?? String(event.error)}`);
     });
