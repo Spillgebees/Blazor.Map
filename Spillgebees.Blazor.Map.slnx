@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Spillgebees.Blazor.Map/Spillgebees.Blazor.Map.csproj" />
     <Project Path="src/Spillgebees.Blazor.Map.Assets/Spillgebees.Blazor.Map.Assets.csproj" />
+    <Project Path="src/Spillgebees.Blazor.Map.IntegrationTests/Spillgebees.Blazor.Map.IntegrationTests.csproj" />
     <Project Path="src/Spillgebees.Blazor.Map.Tests/Spillgebees.Blazor.Map.Tests.csproj" />
     <Project Path="src/Spillgebees.Blazor.Map.Docs/Spillgebees.Blazor.Map.Docs.csproj" />
   </Folder>

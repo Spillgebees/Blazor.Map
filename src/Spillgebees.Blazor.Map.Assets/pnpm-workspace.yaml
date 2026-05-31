@@ -1,2 +1,3 @@
 allowBuilds:
-  '@parcel/watcher': false
+  "@parcel/watcher": false
+  core-js: true
