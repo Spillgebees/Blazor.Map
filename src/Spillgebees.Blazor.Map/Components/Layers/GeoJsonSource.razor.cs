@@ -96,6 +96,13 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
     [Parameter]
     public IDictionary<string, object>? ClusterProperties { get; set; }
 
+    /// <summary>
+    /// Shared source-level clustering options. When provided, this supersedes the legacy
+    /// cluster parameters on this component.
+    /// </summary>
+    [Parameter]
+    public ClusterOptions? ClusterOptions { get; set; }
+
     // Options
 
     /// <summary>
@@ -261,32 +268,33 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
 
     private async Task AddSourceToMapAsync()
     {
+        var clusterOptions = GetEffectiveClusterOptions();
         var sourceSpec = new Dictionary<string, object?>
         {
             ["type"] = "geojson",
             ["data"] = Data,
             ["maxzoom"] = MaxZoom,
-            ["cluster"] = Cluster ? true : null,
+            ["cluster"] = clusterOptions.Enabled ? true : null,
             ["generateId"] = GenerateId ? true : null,
             ["lineMetrics"] = LineMetrics ? true : null,
         };
 
-        if (Cluster)
+        if (clusterOptions.Enabled)
         {
-            sourceSpec["clusterRadius"] = ClusterRadius;
-            if (ClusterMaxZoom.HasValue)
+            sourceSpec["clusterRadius"] = clusterOptions.Radius;
+            if (clusterOptions.MaxZoom.HasValue)
             {
-                sourceSpec["clusterMaxZoom"] = ClusterMaxZoom.Value;
+                sourceSpec["clusterMaxZoom"] = clusterOptions.MaxZoom.Value;
             }
 
-            if (ClusterMinPoints.HasValue)
+            if (clusterOptions.MinPoints.HasValue)
             {
-                sourceSpec["clusterMinPoints"] = ClusterMinPoints.Value;
+                sourceSpec["clusterMinPoints"] = clusterOptions.MinPoints.Value;
             }
 
-            if (ClusterProperties is not null)
+            if (clusterOptions.Properties is not null)
             {
-                sourceSpec["clusterProperties"] = ClusterProperties;
+                sourceSpec["clusterProperties"] = clusterOptions.Properties;
             }
         }
 
@@ -306,6 +314,26 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
         _previousData = Data;
         _previousOrderOptions = OrderOptions;
         await Map!.SceneRegistry.RegisterSourceAsync(new MapSourceDescriptor(Id, cleanSpec));
+    }
+
+    private ClusterOptions GetEffectiveClusterOptions()
+    {
+        if (ClusterOptions is not null)
+        {
+            return ClusterOptions;
+        }
+
+        if (!Cluster)
+        {
+            return Spillgebees.Blazor.Map.ClusterOptions.None;
+        }
+
+        return Spillgebees.Blazor.Map.ClusterOptions.Create(
+            ClusterRadius,
+            ClusterMaxZoom,
+            ClusterMinPoints,
+            ClusterProperties is null ? null : new Dictionary<string, object>(ClusterProperties, StringComparer.Ordinal)
+        );
     }
 
     private async Task AddLayerToMapAsync(LayerBase layer)
