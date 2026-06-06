@@ -71,25 +71,25 @@
 <CodeBlock Language="razor" Files="@_overlaySections" />
 
 <h2 id="geojson_clustering">// geojson_clustering</h2>
-<p><code>ClusterOptions</code> enables MapLibre source clustering for point features. Source clustering and visual layers are separate: <code>ClusterOptions</code> configures the source, <code>ClusterLayerSet</code> chooses generated cluster layers, and <code>GeoJsonSource.Layers</code> adds regular <code>MapLayer</code> definitions for unclustered features.</p>
+<p>Use <code>ClusterOptions</code> to group dense GeoJSON point data. Clustering belongs to the source, while <code>ClusterLayerSet</code> controls the generated cluster circles and count labels. Use <code>GeoJsonSource.Layers</code> for the individual points that appear after clusters dissolve.</p>
 <p>This live example aggregates incident severity for cluster styling and shows individual incident points after clusters dissolve.</p>
 <ExampleView TComponent="GeoJsonClusteringExample">
     <GeoJsonClusteringExample />
 </ExampleView>
-<h3 id="geojson_clustering_default">default GeoJSON clustering</h3>
-<p>Use <code>ClusterOptions.Default</code> for standard cluster circles, count labels, and zoom-to-dissolve click behavior. Filter point layers with <code>!has point_count</code> so they only render unclustered features.</p>
+<h3 id="geojson_clustering_enable">enable clustering</h3>
+<p>Use <code>ClusterOptions.Default</code> for standard cluster circles, count labels, and click-to-zoom behavior. Filter regular point layers with <code>!has point_count</code> so they only render unclustered features.</p>
 <CodeBlock Language="razor" Files="@_geoJsonDefaultClusteringExample" />
-<h3 id="geojson_clustering_custom_layers">custom cluster layers</h3>
-<p>Pass <code>ClusterLayerSet.Custom</code> when the generated cluster circles or symbols need custom paint, sizing, or IDs.</p>
+<h3 id="geojson_clustering_appearance">customize appearance</h3>
+<p>Use <code>ClusterOptions.Create</code> with <code>ClusterLayerSet.Custom</code> when cluster circles or labels need custom colors, sizes, or expressions. Custom suffixes must be unique within the source.</p>
 <CodeBlock Language="razor" Files="@_geoJsonCustomClusterLayersExample" />
-<h3 id="geojson_clustering_properties">cluster properties and data-driven styling</h3>
-<p>Use <code>ClusterOptions.Create(properties: ...)</code> to aggregate feature values into cluster properties. Those properties can drive custom cluster layer colors while <code>GeoJsonSource.Layers</code> styles individual points from their own feature properties.</p>
+<h3 id="geojson_clustering_properties">aggregate values</h3>
+<p>Use <code>properties</code> to aggregate values from child points into each cluster. Aggregated values can drive cluster colors, sizes, or labels.</p>
 <CodeBlock Language="razor" Files="@_geoJsonClusterPropertiesExample" />
-<h3 id="geojson_clustering_source_only">source clustering without generated layers</h3>
-<p>Use <code>ClusterLayerSet.None</code> when another component or custom JavaScript owns cluster rendering, but the source should still expose clustered GeoJSON data.</p>
+<h3 id="geojson_clustering_custom_behavior">custom rendering and behavior</h3>
+<p>Use <code>ClusterLayerSet.None</code> when another component or custom JavaScript renders clusters. Set <code>clickBehavior: ClusterClickBehavior.None</code> when you want to handle cluster clicks yourself instead of using the built-in zoom-to-dissolve behavior.</p>
 <CodeBlock Language="razor" Files="@_geoJsonSourceOnlyClusteringExample" />
 <h3 id="geojson_clustering_limits">clustering limits</h3>
-<p>MapLibre applies one clustering algorithm per GeoJSON source. Use multiple sources when the same data needs different radius, max zoom, minimum points, or aggregate properties.</p>
+<p>MapLibre applies one clustering algorithm per GeoJSON source. Use multiple sources when the same data needs different radius, max zoom, minimum points, or aggregate properties. Changing clustering rules rebuilds the source; data and style changes are lighter-weight.</p>
 <CodeBlock Language="razor" Files="@_geoJsonClusteringLimitsExample" />
 
 <h2 id="popups">// popups</h2>

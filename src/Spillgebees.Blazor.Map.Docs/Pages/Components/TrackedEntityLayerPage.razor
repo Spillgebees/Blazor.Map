@@ -29,9 +29,9 @@
 </ul>
 
 <h2 id="tracked_entity_clustering">// tracked_entity_clustering</h2>
-<p><code>TrackedEntityLayer</code> uses the same source-level <code>ClusterOptions</code> model as <code>GeoJsonSource</code>. The cluster settings control the MapLibre GeoJSON source; the <code>ClusterLayerSet</code> controls only the generated visual cluster layers. Use <code>TrackedEntitySourceOptions</code> when you also need to change the tracked cluster click behavior.</p>
+<p><code>TrackedEntityLayer</code> uses the same <code>ClusterOptions</code> model as <code>GeoJsonSource</code>. Use <code>ClusterOptions.Default</code> for standard cluster circles and click-to-zoom behavior, or use <code>ClusterOptions.Create</code> when you need custom radius, max zoom, aggregate values, visuals, or click behavior.</p>
+<p>The GeoJSON clustering section shows the same practical patterns for custom cluster layers, aggregate properties, custom rendering, and practical limits. Apply those patterns through <code>TrackedEntitySourceOptions</code> or the <code>Cluster</code> constructor overload on <code>TrackedEntityVisualOptions</code>.</p>
 <CodeBlock Language="razor" Files="@_trackedClusteringExamples" />
-<p>MapLibre runs one clustering algorithm per GeoJSON source. If two views need different radii, max zooms, or aggregate properties at the same time, model them as separate sources or tracked layers.</p>
 
 <ExampleView TComponent="TrainTrackingExample"
              AdditionalSources="@([typeof(TrainTrackingPresentation), typeof(TrainSampleSimulation)])">
