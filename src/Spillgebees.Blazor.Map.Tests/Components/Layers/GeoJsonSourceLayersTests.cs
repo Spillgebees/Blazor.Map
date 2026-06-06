@@ -174,6 +174,94 @@ public class GeoJsonSourceLayersTests : BunitContext
         });
     }
 
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_not_reregister_equivalent_recreated_parameter_layers(CancellationToken cancellationToken)
+    {
+        // arrange
+        static IReadOnlyList<MapLayerDefinition> CreateLayers() =>
+            [
+                MapLayer.Circle(
+                    "clusters",
+                    color: new object[] { "step", new object[] { "get", "point_count" }, "#51bbd6", 100, "#f1f075" },
+                    radius: new object[]
+                    {
+                        "interpolate",
+                        new object[] { "linear" },
+                        new object[] { "zoom" },
+                        4,
+                        12,
+                        12,
+                        24,
+                    },
+                    filter: new List<object> { "has", "point_count" }
+                ),
+                MapLayer.Symbol(
+                    "cluster-count",
+                    textField: Expr.Get("point_count_abbreviated"),
+                    textFont: new[] { "Open Sans Regular", "Arial Unicode MS Regular" },
+                    textOffset: new[] { 0d, 1.25d }
+                ),
+            ];
+        var cut = Render<GeoJsonLayersSourceHarness>(parameters => parameters.Add(p => p.Layers, CreateLayers()));
+        await cut.Instance.Map.OnMapInitializedAsync();
+        cut.WaitForAssertion(() => GetAddLayerMutations().Should().HaveCount(2));
+
+        // act
+        cut.SetParametersAndRender(parameters => parameters.Add(p => p.Layers, CreateLayers()));
+
+        // assert
+        await Task.Delay(50, cancellationToken);
+        GetRemoveLayerMutations().Should().BeEmpty();
+        GetAddLayerMutations().Should().HaveCount(2);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_detect_structural_changes_in_parameter_layer_expressions(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        IReadOnlyList<MapLayerDefinition> initialLayers =
+        [
+            MapLayer.Circle("clusters", radius: new object[] { "get", "small_radius" }),
+        ];
+        IReadOnlyList<MapLayerDefinition> updatedLayers =
+        [
+            MapLayer.Circle("clusters", radius: new object[] { "get", "large_radius" }),
+        ];
+        var cut = Render<GeoJsonLayersSourceHarness>(parameters => parameters.Add(p => p.Layers, initialLayers));
+        await cut.Instance.Map.OnMapInitializedAsync();
+        cut.WaitForAssertion(() => GetAddLayerMutations().Should().HaveCount(1));
+
+        // act
+        cut.SetParametersAndRender(parameters => parameters.Add(p => p.Layers, updatedLayers));
+
+        // assert
+        cut.WaitForAssertion(() =>
+        {
+            GetRemoveLayerMutations().Should().Contain(mutation => mutation.LayerId == "geojson-source-clusters");
+            GetAddLayerMutations().Should().HaveCount(2);
+        });
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_fail_clearly_for_duplicate_user_layer_ids(CancellationToken cancellationToken)
+    {
+        // arrange
+        IReadOnlyList<MapLayerDefinition> layers =
+        [
+            MapLayer.Circle("duplicate", radius: 10),
+            MapLayer.Symbol("duplicate", textField: "Station"),
+        ];
+
+        // act
+        var act = () => Render<GeoJsonLayersSourceHarness>(parameters => parameters.Add(p => p.Layers, layers));
+
+        // assert
+        act.Should().Throw<InvalidOperationException>().WithMessage("*duplicate*geojson-source-duplicate*");
+        await Task.CompletedTask;
+    }
+
     private IReadOnlyDictionary<string, object?> GetLayerSpec(string layerId)
     {
         var layerSpec = GetAddLayerMutations().Single(mutation => mutation.LayerId == layerId).LayerSpec;

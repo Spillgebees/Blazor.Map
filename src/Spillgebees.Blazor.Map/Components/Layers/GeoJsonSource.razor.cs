@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -217,6 +218,9 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
     {
         if (firstRender && Map is not null)
         {
+            var layerDefinitions = GetCurrentLayerDefinitions();
+            ValidateUniqueDefinitionLayerIds(layerDefinitions);
+
             // Wait for map to be ready
             var mapReady = await Map.WhenReadyAsync();
             if (!mapReady)
@@ -227,7 +231,7 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
             await AddSourceToMapAsync();
             _isInitialized = true;
 
-            await RegisterDefinitionLayersAsync(GetCurrentLayerDefinitions());
+            await RegisterDefinitionLayersAsync(layerDefinitions);
 
             // Add any layers that registered before the source was ready
             if (_pendingLayers.Count > 0)
@@ -255,6 +259,9 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
     protected override async Task OnParametersSetAsync()
     {
         var currentSourceConfiguration = BuildSourceConfiguration();
+        var currentLayerDefinitions = GetCurrentLayerDefinitions();
+        ValidateUniqueDefinitionLayerIds(currentLayerDefinitions);
+
         if (_isInitialized && !SourceConfigurationsEqual(_previousSourceConfiguration, currentSourceConfiguration))
         {
             await ReplaceSourceAsync(currentSourceConfiguration);
@@ -272,7 +279,7 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
         if (_isInitialized && _previousOrderOptions != OrderOptions)
         {
             await Map!.SceneRegistry.RegisterLayersAsync(
-                BuildDefinitionLayerDescriptors(GetCurrentLayerDefinitions())
+                BuildDefinitionLayerDescriptors(currentLayerDefinitions)
                     .Concat(
                         _registeredLayers.Select(layer => new MapLayerDescriptor(
                             layer.Id,
@@ -291,9 +298,9 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
             _previousOrderOptions = OrderOptions;
         }
 
-        if (_isInitialized && !LayerDefinitionsEqual(_previousLayerDefinitions, GetCurrentLayerDefinitions()))
+        if (_isInitialized && !LayerDefinitionsEqual(_previousLayerDefinitions, currentLayerDefinitions))
         {
-            await ReplaceDefinitionLayersAsync(GetCurrentLayerDefinitions());
+            await ReplaceDefinitionLayersAsync(currentLayerDefinitions);
         }
 
         if (
@@ -753,7 +760,98 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
     private static bool LayerDefinitionsEqual(
         IReadOnlyList<MapLayerDefinition> previous,
         IReadOnlyList<MapLayerDefinition> current
-    ) => previous.SequenceEqual(current);
+    ) =>
+        previous.Count == current.Count
+        && previous.Zip(current).All(values => LayerDefinitionsEqual(values.First, values.Second));
+
+    private static bool LayerDefinitionsEqual(MapLayerDefinition previous, MapLayerDefinition current) =>
+        previous.GetType() == current.GetType()
+        && previous.Type == current.Type
+        && previous.IdSuffix == current.IdSuffix
+        && previous.Key == current.Key
+        && ValuesEqual(previous.Filter, current.Filter)
+        && previous.MinZoom == current.MinZoom
+        && previous.MaxZoom == current.MaxZoom
+        && previous.Visible == current.Visible
+        && previous.BeforeLayerId == current.BeforeLayerId
+        && previous.LayerGroup == current.LayerGroup
+        && previous.BeforeLayerGroup == current.BeforeLayerGroup
+        && previous.AfterLayerGroup == current.AfterLayerGroup
+        && LayerDefinitionPropertiesEqual(previous, current);
+
+    private static bool LayerDefinitionPropertiesEqual(MapLayerDefinition previous, MapLayerDefinition current) =>
+        (previous, current) switch
+        {
+            (CircleLayerDefinition previousCircle, CircleLayerDefinition currentCircle) => StyleValuesEqual(
+                previousCircle.Color,
+                currentCircle.Color
+            )
+                && StyleValuesEqual(previousCircle.Radius, currentCircle.Radius)
+                && StyleValuesEqual(previousCircle.Opacity, currentCircle.Opacity)
+                && StyleValuesEqual(previousCircle.StrokeWidth, currentCircle.StrokeWidth)
+                && StyleValuesEqual(previousCircle.StrokeColor, currentCircle.StrokeColor)
+                && StyleValuesEqual(previousCircle.StrokeOpacity, currentCircle.StrokeOpacity)
+                && previousCircle.PitchAlignment == currentCircle.PitchAlignment,
+            (SymbolLayerDefinition previousSymbol, SymbolLayerDefinition currentSymbol) => StyleValuesEqual(
+                previousSymbol.TextField,
+                currentSymbol.TextField
+            )
+                && StyleValuesEqual(previousSymbol.TextSize, currentSymbol.TextSize)
+                && ValuesEqual(previousSymbol.TextFont, currentSymbol.TextFont)
+                && previousSymbol.TextAnchor == currentSymbol.TextAnchor
+                && ValuesEqual(previousSymbol.TextOffset, currentSymbol.TextOffset)
+                && StyleValuesEqual(previousSymbol.TextRotate, currentSymbol.TextRotate)
+                && previousSymbol.TextPitchAlignment == currentSymbol.TextPitchAlignment
+                && previousSymbol.TextRotationAlignment == currentSymbol.TextRotationAlignment
+                && previousSymbol.TextTransform == currentSymbol.TextTransform
+                && previousSymbol.TextMaxWidth == currentSymbol.TextMaxWidth
+                && previousSymbol.TextAllowOverlap == currentSymbol.TextAllowOverlap
+                && StyleValuesEqual(previousSymbol.TextColor, currentSymbol.TextColor)
+                && StyleValuesEqual(previousSymbol.TextHaloColor, currentSymbol.TextHaloColor)
+                && StyleValuesEqual(previousSymbol.TextHaloWidth, currentSymbol.TextHaloWidth)
+                && StyleValuesEqual(previousSymbol.TextOpacity, currentSymbol.TextOpacity)
+                && StyleValuesEqual(previousSymbol.IconImage, currentSymbol.IconImage)
+                && StyleValuesEqual(previousSymbol.IconSize, currentSymbol.IconSize)
+                && StyleValuesEqual(previousSymbol.IconRotate, currentSymbol.IconRotate)
+                && ValuesEqual(previousSymbol.IconOffset, currentSymbol.IconOffset)
+                && StyleValuesEqual(previousSymbol.IconAnchor, currentSymbol.IconAnchor)
+                && previousSymbol.IconAllowOverlap == currentSymbol.IconAllowOverlap
+                && previousSymbol.IconTextFit == currentSymbol.IconTextFit
+                && ValuesEqual(previousSymbol.IconTextFitPadding, currentSymbol.IconTextFitPadding)
+                && previousSymbol.RotationAlignment == currentSymbol.RotationAlignment
+                && StyleValuesEqual(previousSymbol.IconOpacity, currentSymbol.IconOpacity)
+                && StyleValuesEqual(previousSymbol.IconColor, currentSymbol.IconColor)
+                && previousSymbol.Placement == currentSymbol.Placement
+                && previousSymbol.Spacing == currentSymbol.Spacing
+                && StyleValuesEqual(previousSymbol.SymbolSortKey, currentSymbol.SymbolSortKey),
+            _ => false,
+        };
+
+    private static bool StyleValuesEqual<T>(StyleValue<T>? previous, StyleValue<T>? current) =>
+        (previous, current) switch
+        {
+            (null, null) => true,
+            (null, _) or (_, null) => false,
+            _ => ValuesEqual(previous.Value.ToSerializable(), current.Value.ToSerializable()),
+        };
+
+    private void ValidateUniqueDefinitionLayerIds(IReadOnlyList<MapLayerDefinition> layerDefinitions)
+    {
+        var duplicateLayerIds = layerDefinitions
+            .Select(layerDefinition => layerDefinition.ResolveId(Id))
+            .GroupBy(layerId => layerId, StringComparer.Ordinal)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToArray();
+
+        if (duplicateLayerIds.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"GeoJsonSource '{Id}' has duplicate resolved layer id(s): {string.Join(", ", duplicateLayerIds)}. "
+                    + "Generated cluster layers and parameter layer definitions must resolve to unique layer ids."
+            );
+        }
+    }
 
     private static bool ClusterLayerEventRegistrationsEqual(
         IReadOnlyList<string> registeredLayerIds,
@@ -774,17 +872,18 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
     private static object? CloneValue(object? value) =>
         value switch
         {
-            IReadOnlyDictionary<string, object> dictionary => dictionary.ToDictionary(
+            IReadOnlyDictionary<string, object?> dictionary => dictionary.ToDictionary(
                 kv => kv.Key,
-                kv => CloneValue(kv.Value)!,
+                kv => CloneValue(kv.Value),
                 StringComparer.Ordinal
             ),
-            IDictionary<string, object> dictionary => dictionary.ToDictionary(
+            IDictionary<string, object?> dictionary => dictionary.ToDictionary(
                 kv => kv.Key,
-                kv => CloneValue(kv.Value)!,
+                kv => CloneValue(kv.Value),
                 StringComparer.Ordinal
             ),
-            object[] array => array.Select(CloneValue).ToArray(),
+            string => value,
+            System.Collections.IEnumerable enumerable => enumerable.Cast<object?>().Select(CloneValue).ToArray(),
             _ => value,
         };
 
@@ -794,26 +893,44 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
             (null, null) => true,
             (null, _) or (_, null) => false,
             (
-                IReadOnlyDictionary<string, object> previousDictionary,
-                IReadOnlyDictionary<string, object> currentDictionary
+                IReadOnlyDictionary<string, object?> previousDictionary,
+                IReadOnlyDictionary<string, object?> currentDictionary
             ) => SourceObjectDictionariesEqual(previousDictionary, currentDictionary),
-            (IDictionary<string, object> previousDictionary, IDictionary<string, object> currentDictionary) =>
+            (IDictionary<string, object?> previousDictionary, IDictionary<string, object?> currentDictionary) =>
                 SourceObjectDictionariesEqual(previousDictionary, currentDictionary),
-            (object[] previousArray, object[] currentArray) => previousArray.Length == currentArray.Length
-                && previousArray.Zip(currentArray).All(values => ValuesEqual(values.First, values.Second)),
+            (string, string) => Equals(previous, current),
+            (System.Collections.IEnumerable previousEnumerable, System.Collections.IEnumerable currentEnumerable) =>
+                EnumerablesEqual(previousEnumerable, currentEnumerable),
+            _ when IsNumber(previous) && IsNumber(current) => Convert.ToDouble(previous, CultureInfo.InvariantCulture)
+                == Convert.ToDouble(current, CultureInfo.InvariantCulture),
             _ => Equals(previous, current),
         };
 
+    private static bool EnumerablesEqual(
+        System.Collections.IEnumerable previous,
+        System.Collections.IEnumerable current
+    )
+    {
+        var previousValues = previous.Cast<object?>().ToArray();
+        var currentValues = current.Cast<object?>().ToArray();
+
+        return previousValues.Length == currentValues.Length
+            && previousValues.Zip(currentValues).All(values => ValuesEqual(values.First, values.Second));
+    }
+
+    private static bool IsNumber(object value) =>
+        value is byte or sbyte or short or ushort or int or uint or long or ulong or float or double or decimal;
+
     private static bool SourceObjectDictionariesEqual(
-        IReadOnlyDictionary<string, object> previous,
-        IReadOnlyDictionary<string, object> current
+        IReadOnlyDictionary<string, object?> previous,
+        IReadOnlyDictionary<string, object?> current
     ) =>
         previous.Count == current.Count
         && previous.All(kv => current.TryGetValue(kv.Key, out var value) && ValuesEqual(kv.Value, value));
 
     private static bool SourceObjectDictionariesEqual(
-        IDictionary<string, object> previous,
-        IDictionary<string, object> current
+        IDictionary<string, object?> previous,
+        IDictionary<string, object?> current
     ) =>
         previous.Count == current.Count
         && previous.All(kv => current.TryGetValue(kv.Key, out var value) && ValuesEqual(kv.Value, value));

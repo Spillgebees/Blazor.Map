@@ -497,6 +497,26 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_fail_clearly_for_duplicate_generated_and_user_layer_ids(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+
+        // act
+        var act = () =>
+            Render<GeoJsonClusterSourceHarness>(parameters =>
+                parameters
+                    .Add(p => p.ClusterOptions, ClusterOptions.Default)
+                    .Add(p => p.Layers, [MapLayer.Circle("clusters", radius: 10)])
+            );
+
+        // assert
+        act.Should().Throw<InvalidOperationException>().WithMessage("*duplicate*geojson-source-clusters*");
+        await Task.CompletedTask;
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
     public async Task Should_replace_cluster_visual_layers_when_cluster_layer_set_changes(
         CancellationToken cancellationToken
     )
@@ -699,6 +719,42 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
             sourceSpec["clusterMinPoints"].Should().Be(3);
             sourceSpec["clusterProperties"].Should().BeSameAs(updatedProperties);
         });
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_not_replace_source_for_equivalent_recreated_list_cluster_properties(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        static ClusterOptions CreateOptions() =>
+            ClusterOptions.Create(
+                properties: new Dictionary<string, object>
+                {
+                    ["total"] = new List<object> { "+", new object[] { "get", "count" } },
+                    ["maximum"] = new Dictionary<string, object>
+                    {
+                        ["accumulator"] = new object[]
+                        {
+                            "max",
+                            new List<object> { "get", "count" },
+                        },
+                    },
+                }
+            );
+        var cut = Render<GeoJsonClusterSourceHarness>(parameters =>
+            parameters.Add(p => p.ClusterOptions, CreateOptions())
+        );
+        await cut.Instance.Map.OnMapInitializedAsync();
+        cut.WaitForAssertion(() => GetSourceSpecs("geojson-source").Should().HaveCount(1));
+
+        // act
+        cut.SetParametersAndRender(parameters => parameters.Add(p => p.ClusterOptions, CreateOptions()));
+
+        // assert
+        await Task.Delay(50, cancellationToken);
+        GetRemoveSourceMutations().Should().BeEmpty();
+        GetSourceSpecs("geojson-source").Should().HaveCount(1);
     }
 
     [Test, Timeout(TestTimeoutMs)]
