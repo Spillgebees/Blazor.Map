@@ -6,18 +6,15 @@
                @ref="_primarySource"
                AllowOutsideMapSources="true"
                Data="@_primaryData"
-                LayerGroup="@LayerGroup"
-                BeforeLayerGroup="@BeforeLayerGroup"
-                AfterLayerGroup="@AfterLayerGroup"
-               Cluster="@Cluster.Enabled"
-               ClusterRadius="@Cluster.Radius"
-               ClusterMaxZoom="@Cluster.MaxZoom"
-               ClusterMinPoints="@Cluster.MinPoints"
+               LayerGroup="@LayerGroup"
+               BeforeLayerGroup="@BeforeLayerGroup"
+               AfterLayerGroup="@AfterLayerGroup"
+               ClusterOptions="@GetPrimarySourceClusterOptions()"
                ClusterProperties="@GetClusterProperties()"
                MaxZoom="@MaxZoom"
                Attribution="@Attribution"
                Animation="@Animation">
-    @if (Cluster.Enabled)
+    @if (ShouldRenderClusterHitArea())
     {
         <CircleLayer Id="@ClusterHitAreaLayerId"
                      SourceId="@SourceId"
@@ -25,34 +22,59 @@
                      Radius="@ClusterHitAreaRadiusValue"
                      Color="@("#000000")"
                      Opacity="0"
-                      PitchAlignment="CirclePitchAlignment.Viewport"
-                      LayerGroup="@ClusterHitAreaLayerId"
+                     PitchAlignment="CirclePitchAlignment.Viewport"
+                     LayerGroup="@ClusterHitAreaLayerId"
                      Visible="@Visible"
-                     OnClick="@HandleGeneratedClusterClickAsync" />
-        <CircleLayer Id="@ClusterLayerId"
-                     SourceId="@SourceId"
-                     Filter="@ClusterFilter"
-                     Radius="@ClusterRadiusValue"
-                     Color="@("#2563eb")"
-                     Opacity="0.9"
-                     StrokeColor="@("#dbeafe")"
-                     StrokeWidth="2"
-                      PitchAlignment="CirclePitchAlignment.Viewport"
-                      AfterLayerGroup="@ClusterHitAreaLayerId"
-                     Visible="@Visible"
-                     OnClick="@HandleGeneratedClusterClickAsync" />
-        <SymbolLayer Id="@ClusterCountLayerId"
-                     SourceId="@SourceId"
-                     Filter="@ClusterFilter"
-                     TextField="@ClusterCountTextField"
-                     TextSize="14"
-                     TextColor="@("#ffffff")"
-                      TextPitchAlignment="MapAlignment.Viewport"
-                      TextRotationAlignment="MapAlignment.Viewport"
-                     TextAllowOverlap="true"
-                      AfterLayerGroup="@ClusterLayerId"
-                     Visible="@Visible"
-                     OnClick="@HandleGeneratedClusterClickAsync" />
+                     OnClick="@GetGeneratedClusterClickCallback()" />
+    }
+    @* tracked cluster layers render as child components so they can attach generated callbacks and hit-area ordering. *@
+    @{ var clusterLayerDefinitions = GetClusterLayerDefinitions(); }
+    @for (var clusterLayerIndex = 0; clusterLayerIndex < clusterLayerDefinitions.Count; clusterLayerIndex++)
+    {
+        var clusterLayer = clusterLayerDefinitions[clusterLayerIndex];
+        var clusterLayerId = GetClusterLayerId(clusterLayer);
+        var afterLayerGroup = GetClusterLayerAfterLayerGroup(clusterLayerIndex);
+
+        @if (clusterLayer is ClusterCircleLayerDefinition circleLayer)
+        {
+            <CircleLayer Id="@clusterLayerId"
+                         SourceId="@SourceId"
+                         Filter="@ClusterFilter"
+                         Radius="@circleLayer.Radius"
+                         Color="@circleLayer.Color"
+                         Opacity="@circleLayer.Opacity"
+                         StrokeColor="@circleLayer.StrokeColor"
+                         StrokeWidth="@circleLayer.StrokeWidth"
+                         MinZoom="@circleLayer.MinZoom"
+                         MaxZoom="@circleLayer.MaxZoom"
+                         BeforeLayerId="@circleLayer.BeforeLayerId"
+                         LayerGroup="@circleLayer.LayerGroup"
+                         BeforeLayerGroup="@circleLayer.BeforeLayerGroup"
+                         AfterLayerGroup="@afterLayerGroup"
+                         PitchAlignment="CirclePitchAlignment.Viewport"
+                         Visible="@(Visible && circleLayer.Visible)"
+                         OnClick="@GetGeneratedClusterClickCallback(circleLayer.Interactive)" />
+        }
+        else if (clusterLayer is ClusterSymbolLayerDefinition symbolLayer)
+        {
+            <SymbolLayer Id="@clusterLayerId"
+                         SourceId="@SourceId"
+                         Filter="@ClusterFilter"
+                         TextField="@GetClusterSymbolTextField(symbolLayer)"
+                         TextSize="@symbolLayer.TextSize"
+                         TextColor="@symbolLayer.TextColor"
+                         MinZoom="@symbolLayer.MinZoom"
+                         MaxZoom="@symbolLayer.MaxZoom"
+                         BeforeLayerId="@symbolLayer.BeforeLayerId"
+                         LayerGroup="@symbolLayer.LayerGroup"
+                         BeforeLayerGroup="@symbolLayer.BeforeLayerGroup"
+                         AfterLayerGroup="@afterLayerGroup"
+                         TextPitchAlignment="MapAlignment.Viewport"
+                         TextRotationAlignment="MapAlignment.Viewport"
+                         TextAllowOverlap="true"
+                         Visible="@(Visible && symbolLayer.Visible)"
+                         OnClick="@GetGeneratedClusterClickCallback(symbolLayer.Interactive)" />
+        }
     }
 
     <SymbolLayer Id="@PrimaryLayerId"
@@ -65,9 +87,9 @@
                  IconOffset="@PrimaryIconOffsetValue"
                  IconAnchor="@PrimaryIconAnchorValue"
                  IconAllowOverlap="true"
-                  RotationAlignment="MapAlignment.Map"
+                 RotationAlignment="MapAlignment.Map"
                  SymbolSortKey="@RenderOrderSortKeyValue"
-                  AfterLayerGroup="@PrimaryAfterLayerGroup"
+                 AfterLayerGroup="@PrimaryAfterLayerGroup"
                  Visible="@Visible"
                  OnClick="@HandleGeneratedItemClickAsync"
                  OnMouseEnter="@HandleGeneratedItemMouseEnterAsync"
@@ -79,8 +101,8 @@
                  Radius="24"
                  Color="@("#000000")"
                  Opacity="0"
-                  PitchAlignment="CirclePitchAlignment.Viewport"
-                  AfterLayerGroup="@PrimaryLayerId"
+                 PitchAlignment="CirclePitchAlignment.Viewport"
+                 AfterLayerGroup="@PrimaryLayerId"
                  Visible="@Visible"
                  OnClick="@HandleGeneratedItemClickAsync"
                  OnMouseEnter="@HandleGeneratedItemMouseEnterAsync"
@@ -92,13 +114,10 @@
     <GeoJsonSource Id="@DecorationSourceId"
                    AllowOutsideMapSources="true"
                    Data="@_decorationData"
-                    LayerGroup="@LayerGroup"
-                    BeforeLayerGroup="@BeforeLayerGroup"
-                    AfterLayerGroup="@AfterLayerGroup"
-                   Cluster="@Cluster.Enabled"
-                   ClusterRadius="@Cluster.Radius"
-                   ClusterMaxZoom="@Cluster.MaxZoom"
-                   ClusterMinPoints="@DecorationClusterMinPoints"
+                   LayerGroup="@LayerGroup"
+                   BeforeLayerGroup="@BeforeLayerGroup"
+                   AfterLayerGroup="@AfterLayerGroup"
+                   ClusterOptions="@GetDecorationClusterOptions()"
                    PromoteId="entityId"
                    MaxZoom="@MaxZoom">
         @foreach (var decorationLayer in DecorationLayers)
@@ -113,8 +132,8 @@
                          TextAnchor="@GetResolvedAnchor(decorationLayer.Anchor)"
                          TextOffset="@GetDecorationTextOffsetValue(decorationLayer.Decoration)"
                          TextMaxWidth="999"
-                          TextPitchAlignment="MapAlignment.Viewport"
-                          TextRotationAlignment="MapAlignment.Viewport"
+                         TextPitchAlignment="MapAlignment.Viewport"
+                         TextRotationAlignment="MapAlignment.Viewport"
                          TextAllowOverlap="true"
                          TextHaloColor="@DecorationHaloColorValue"
                          TextHaloWidth="@DecorationHaloWidthValue"
@@ -123,15 +142,15 @@
                          IconSize="@(decorationLayer.HasIcon ? (StyleValue<double>?)DecorationIconSizeValue : null)"
                          IconRotate="@(decorationLayer.HasIcon ? (StyleValue<double>?)DecorationIconRotateValue : null)"
                          IconOffset="@(decorationLayer.HasIcon && decorationLayer.IconTextFit is null ? (StyleValue<double[]>?)DecorationIconOffsetValue : null)"
-                          IconAnchor="@(decorationLayer.HasIcon ? (StyleValue<SymbolAnchor>?)GetResolvedAnchor(decorationLayer.Anchor) : null)"
+                         IconAnchor="@(decorationLayer.HasIcon ? (StyleValue<SymbolAnchor>?)GetResolvedAnchor(decorationLayer.Anchor) : null)"
                          IconAllowOverlap="@(decorationLayer.HasIcon)"
                          IconOpacity="@(decorationLayer.HasIcon ? (StyleValue<double>?)DecorationVisibilityOpacityValue : null)"
                          IconColor="@(decorationLayer.HasIcon ? (StyleValue<string>?)DecorationIconColorValue : null)"
                          IconTextFit="@decorationLayer.IconTextFit"
                          IconTextFitPadding="@decorationLayer.IconTextFitPadding"
-                          RotationAlignment="MapAlignment.Map"
+                         RotationAlignment="MapAlignment.Map"
                          SymbolSortKey="@RenderOrderSortKeyValue"
-                          AfterLayerGroup="@PrimaryHitAreaLayerId"
+                         AfterLayerGroup="@PrimaryHitAreaLayerId"
                          Visible="@Visible"
                          OnClick="@HandleGeneratedItemClickAsync"
                          OnMouseEnter="@HandleGeneratedItemMouseEnterAsync"

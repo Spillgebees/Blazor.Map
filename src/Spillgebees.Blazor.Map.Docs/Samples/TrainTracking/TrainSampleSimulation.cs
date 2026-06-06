@@ -112,7 +112,7 @@ public static class TrainSampleSimulation
                         RenderOrderSelector: _ => 108
                     ),
                 ],
-                new TrackedEntityClusterOptions(),
+                TrackedEntitySourceOptions.Default,
                 null,
                 true,
                 null

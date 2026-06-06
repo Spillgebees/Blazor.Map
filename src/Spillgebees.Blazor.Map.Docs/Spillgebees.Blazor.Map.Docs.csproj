@@ -8,9 +8,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference
-      Include="..\Spillgebees.Blazor.Map\Spillgebees.Blazor.Map.csproj"
-      DocsApi="true"
-    />
+    <ProjectReference Include="..\Spillgebees.Blazor.Map\Spillgebees.Blazor.Map.csproj" DocsApi="true" />
   </ItemGroup>
 </Project>
