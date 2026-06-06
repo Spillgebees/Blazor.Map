@@ -1,8 +1,6 @@
-using Spillgebees.Blazor.Map.Models.Options;
-using Spillgebees.Blazor.Map.Models.Popups;
-using Spillgebees.Blazor.Map.Models.TrackedEntities;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Primary symbol selectors for high-level tracked entity items, including optional popup configuration.

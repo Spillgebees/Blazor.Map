@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models.Events;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Event arguments for a marker drag end event.

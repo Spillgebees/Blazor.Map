@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using Spillgebees.Blazor.Map.Utilities;
 
-namespace Spillgebees.Blazor.Map.Models.Popups;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// The anchor position of a popup relative to its feature.

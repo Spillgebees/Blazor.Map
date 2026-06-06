@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components;
 
-namespace Spillgebees.Blazor.Map.Components;
+namespace Spillgebees.Blazor.Map;
 
 public sealed class MapOverlays : ComponentBase
 {

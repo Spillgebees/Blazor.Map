@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
 using AwesomeAssertions;
-using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.Layers;
+using Spillgebees.Blazor.Map;
 using Spillgebees.Blazor.Map.Utilities;
 
 namespace Spillgebees.Blazor.Map.Tests.Utilities;

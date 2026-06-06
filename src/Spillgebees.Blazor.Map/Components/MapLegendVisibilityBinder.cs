@@ -1,9 +1,8 @@
 using BlazorComponentUtilities;
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map.Models.Legends;
-using Spillgebees.Blazor.Map.Models.Visibility;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Components;
+namespace Spillgebees.Blazor.Map;
 
 internal sealed class MapLegendVisibilityBinder : IDisposable
 {

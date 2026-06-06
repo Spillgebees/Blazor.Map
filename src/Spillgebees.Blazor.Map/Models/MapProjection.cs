@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using Spillgebees.Blazor.Map.Utilities;
 
-namespace Spillgebees.Blazor.Map.Models;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// The map projection to use for rendering.

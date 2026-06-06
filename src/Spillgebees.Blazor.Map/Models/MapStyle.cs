@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Defines the visual appearance of the map (tiles + styling rules).
@@ -212,7 +212,7 @@ public record MapStyle
             FromRasterUrl(
                     "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
                     "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors",
-                    referrerPolicy: Models.ReferrerPolicy.Origin
+                    referrerPolicy: global::Spillgebees.Blazor.Map.ReferrerPolicy.Origin
                 )
                 .WithId("sgb-openstreetmap-standard");
     }

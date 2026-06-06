@@ -1,11 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
-using Spillgebees.Blazor.Map.Components;
-using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.Controls;
-using Spillgebees.Blazor.Map.Models.Layers;
-using Spillgebees.Blazor.Map.Models.Popups;
+using Spillgebees.Blazor.Map;
 using Spillgebees.Blazor.Map.Runtime.Scene;
 using Spillgebees.Blazor.Map.Utilities;
 

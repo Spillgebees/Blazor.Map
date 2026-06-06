@@ -1,8 +1,7 @@
 using System.Collections;
 using System.Reflection;
 using AwesomeAssertions;
-using Spillgebees.Blazor.Map.Components;
-using Spillgebees.Blazor.Map.Models;
+using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map.Tests.Components;
 
@@ -315,8 +314,8 @@ public class MapSingleOverlayTests : BunitContext
     private static object CreateOverlaySectionContext()
     {
         var assembly = typeof(SgbMap).Assembly;
-        var sectionKindType = assembly.GetType("Spillgebees.Blazor.Map.Components.MapContentSectionKind")!;
-        var sectionContextType = assembly.GetType("Spillgebees.Blazor.Map.Components.MapSectionContext")!;
+        var sectionKindType = assembly.GetType("Spillgebees.Blazor.Map.MapContentSectionKind")!;
+        var sectionContextType = assembly.GetType("Spillgebees.Blazor.Map.MapSectionContext")!;
         var overlaySectionKind = Enum.Parse(sectionKindType, "Features");
         return Activator.CreateInstance(
             sectionContextType,

@@ -1,6 +1,6 @@
-using Spillgebees.Blazor.Map.Models.Expressions;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Common feature-state keys used with tracked entity layers.

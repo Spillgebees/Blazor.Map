@@ -1,6 +1,6 @@
-using Spillgebees.Blazor.Map.Models.TrackedEntities;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Materializes raw tracked items into low-level tracked entities.

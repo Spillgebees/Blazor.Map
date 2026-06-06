@@ -1,6 +1,6 @@
-using Spillgebees.Blazor.Map.Models.Controls;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Components;
+namespace Spillgebees.Blazor.Map;
 
 internal sealed class MapControlComponentRegistration
 {

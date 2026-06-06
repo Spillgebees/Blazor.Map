@@ -1,7 +1,7 @@
-namespace Spillgebees.Blazor.Map.Models.Controls;
+namespace Spillgebees.Blazor.Map;
 
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map.Models.Legends;
+using Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Shared placement options for map controls.
@@ -132,7 +132,13 @@ public sealed record PanelControlDefinition(
 /// <param name="InitiallyOpen">Whether the panel is initially open when uncontrolled.</param>
 /// <param name="IsOpen">Controlled open state. Null leaves panel state owned by the JavaScript shell.</param>
 /// <param name="MaxWidth">Optional CSS max-width for the panel.</param>
-public sealed record PanelChromeOptions(string Label, string? Title, bool InitiallyOpen, bool? IsOpen, string? MaxWidth);
+public sealed record PanelChromeOptions(
+    string Label,
+    string? Title,
+    bool InitiallyOpen,
+    bool? IsOpen,
+    string? MaxWidth
+);
 
 /// <summary>
 /// A content control shell entry. The visual content is provided by child components.

@@ -1,9 +1,7 @@
 using System.Reflection;
 using AwesomeAssertions;
-using Spillgebees.Blazor.Map.Components;
-using Spillgebees.Blazor.Map.Components.Layers;
+using Spillgebees.Blazor.Map;
 using Spillgebees.Blazor.Map.Docs.Samples;
-using Spillgebees.Blazor.Map.Models;
 
 namespace Spillgebees.Blazor.Map.Tests.Samples;
 

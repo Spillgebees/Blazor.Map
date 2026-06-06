@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
-using Spillgebees.Blazor.Map.Models.Options;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Models.Expressions;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// A styling value that can be either a literal or a MapLibre expression.

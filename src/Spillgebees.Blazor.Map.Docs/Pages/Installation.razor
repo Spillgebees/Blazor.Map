@@ -1,4 +1,4 @@
-@page "/installation"
+﻿@page "/installation"
 
 <PageTitle>Installation | Spillgebees.Blazor.Map</PageTitle>
 
@@ -9,15 +9,17 @@
 <p>Add the package to your project:</p>
 
 <CodeBlock Language="bash" Files="@(new Dictionary<string, string>
-{
-    ["Terminal"] = "dotnet add package Spillgebees.Blazor.Map",
-})" />
+           {
+               ["Terminal"] = "dotnet add package Spillgebees.Blazor.Map",
+           })" />
 
 <h2>JavaScript Module</h2>
 
 <p>
     No script tags are required. The library ships with a <code>lib.module.js</code> file that Blazor
-    loads automatically via the standard <a href="https://learn.microsoft.com/aspnet/core/blazor/javascript-interoperability/javascript-isolation" target="_blank" rel="noopener">JS module isolation</a> convention.
+    loads automatically via the standard <a
+    href="https://learn.microsoft.com/aspnet/core/blazor/javascript-interoperability/javascript-isolation"
+    target="_blank" rel="noopener">JS module isolation</a> convention.
     The MapLibre GL JS bundle is included, so no CDN reference is needed.
 </p>
 
@@ -42,8 +44,7 @@
     private static readonly Dictionary<string, string> _minimalUsage = new()
     {
         ["MyPage.razor"] = """
-            @using Spillgebees.Blazor.Map.Components
-            @using Spillgebees.Blazor.Map.Models
+            @using Spillgebees.Blazor.Map
 
             <SgbMap MapOptions="@_mapOptions" Height="500px" />
 
@@ -73,7 +74,8 @@
 }
 
 <p>
-    Other built-in presets are <code>MapStyle.OpenFreeMap.Positron</code> and <code>MapStyle.OpenStreetMap.Standard</code>.
+    Other built-in presets are <code>MapStyle.OpenFreeMap.Positron</code> and
+    <code>MapStyle.OpenStreetMap.Standard</code>.
     For any other source use <code>MapStyle.FromUrl</code>, <code>MapStyle.FromWmsUrl</code>,
     <code>MapStyle.FromWmtsUrl</code>, or <code>MapStyle.FromArcGisMapServer</code>.
     See the <a href="components/sgb-map#styles">Styles</a> example for more detail.

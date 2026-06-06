@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using Spillgebees.Blazor.Map.Utilities;
 
-namespace Spillgebees.Blazor.Map.Models.Controls;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// The unit system for the scale control.

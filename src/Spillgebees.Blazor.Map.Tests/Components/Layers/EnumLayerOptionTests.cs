@@ -1,7 +1,5 @@
 using AwesomeAssertions;
-using Spillgebees.Blazor.Map.Components.Layers;
-using Spillgebees.Blazor.Map.Models.Expressions;
-using Spillgebees.Blazor.Map.Models.Options;
+using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map.Tests.Components.Layers;
 
@@ -124,7 +122,7 @@ public class EnumLayerOptionTests
     }
 
     [Test]
-    public void Should_expose_layer_option_enums_from_models_options_namespace()
+    public void Should_expose_layer_option_enums_from_root_namespace()
     {
         // arrange
         var enumType = typeof(SymbolAnchor);
@@ -133,6 +131,6 @@ public class EnumLayerOptionTests
         var enumNamespace = enumType.Namespace;
 
         // assert
-        enumNamespace.Should().Be("Spillgebees.Blazor.Map.Models.Options");
+        enumNamespace.Should().Be("Spillgebees.Blazor.Map");
     }
 }

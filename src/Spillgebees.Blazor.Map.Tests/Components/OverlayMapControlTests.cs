@@ -1,7 +1,6 @@
 using AwesomeAssertions;
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map.Components;
-using Spillgebees.Blazor.Map.Models;
+using Spillgebees.Blazor.Map;
 using Spillgebees.Blazor.Map.Runtime.Scene;
 
 namespace Spillgebees.Blazor.Map.Tests.Components;

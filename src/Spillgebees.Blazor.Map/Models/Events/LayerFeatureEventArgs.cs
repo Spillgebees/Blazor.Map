@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace Spillgebees.Blazor.Map.Models.Events;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Event arguments for interactions with features in a map layer.

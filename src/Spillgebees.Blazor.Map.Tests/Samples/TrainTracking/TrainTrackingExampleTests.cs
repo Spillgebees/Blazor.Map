@@ -1,7 +1,7 @@
 using AwesomeAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Spillgebees.Blazor.Map.Components;
+using Spillgebees.Blazor.Map;
 using Spillgebees.Blazor.Map.Docs.Samples.TrainTracking;
 
 namespace Spillgebees.Blazor.Map.Tests.Samples.TrainTracking;

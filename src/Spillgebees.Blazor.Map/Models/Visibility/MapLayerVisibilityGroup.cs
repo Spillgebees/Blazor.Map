@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models.Visibility;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Defines a named set of layers controlled by one visibility value.

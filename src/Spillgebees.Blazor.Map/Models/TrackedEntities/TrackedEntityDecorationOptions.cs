@@ -1,7 +1,6 @@
-using Spillgebees.Blazor.Map.Models.Options;
-using Spillgebees.Blazor.Map.Models.TrackedEntities;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Decoration selectors for high-level tracked entity items.

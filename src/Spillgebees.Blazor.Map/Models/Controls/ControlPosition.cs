@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Spillgebees.Blazor.Map.Models.Controls;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Position of a control on the map.

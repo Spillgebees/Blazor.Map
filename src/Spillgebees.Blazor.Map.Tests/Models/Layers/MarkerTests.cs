@@ -1,10 +1,6 @@
 using System.Text.Json;
 using AwesomeAssertions;
-using Spillgebees.Blazor.Map.Components.Layers;
-using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.Layers;
-using Spillgebees.Blazor.Map.Models.Options;
-using Spillgebees.Blazor.Map.Models.Popups;
+using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map.Tests.Models.Layers;
 

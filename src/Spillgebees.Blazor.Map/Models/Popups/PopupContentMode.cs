@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Spillgebees.Blazor.Map.Models.Popups;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Defines how popup content is applied to the MapLibre popup.

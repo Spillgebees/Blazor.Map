@@ -1,10 +1,7 @@
 using AwesomeAssertions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
-using Spillgebees.Blazor.Map.Components;
-using Spillgebees.Blazor.Map.Components.Layers;
-using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.Popups;
+using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map.Tests;
 
@@ -441,7 +438,7 @@ public class SgbMapTests : BunitContext
                                     sourceBuilder.AddAttribute(
                                         2,
                                         nameof(SymbolLayer.TextField),
-                                        (Spillgebees.Blazor.Map.Models.Expressions.StyleValue<string>)"a"
+                                        (Spillgebees.Blazor.Map.StyleValue<string>)"a"
                                     );
                                     sourceBuilder.CloseComponent();
 
@@ -450,7 +447,7 @@ public class SgbMapTests : BunitContext
                                     sourceBuilder.AddAttribute(
                                         5,
                                         nameof(SymbolLayer.TextField),
-                                        (Spillgebees.Blazor.Map.Models.Expressions.StyleValue<string>)"b"
+                                        (Spillgebees.Blazor.Map.StyleValue<string>)"b"
                                     );
                                     sourceBuilder.CloseComponent();
                                 }
@@ -692,7 +689,7 @@ public class SgbMapTests : BunitContext
                                         sourceBuilder.AddAttribute(
                                             2,
                                             nameof(SymbolLayer.TextField),
-                                            (Spillgebees.Blazor.Map.Models.Expressions.StyleValue<string>)"a"
+                                            (Spillgebees.Blazor.Map.StyleValue<string>)"a"
                                         );
                                         sourceBuilder.CloseComponent();
                                     }
@@ -702,7 +699,7 @@ public class SgbMapTests : BunitContext
                                     sourceBuilder.AddAttribute(
                                         5,
                                         nameof(SymbolLayer.TextField),
-                                        (Spillgebees.Blazor.Map.Models.Expressions.StyleValue<string>)"b"
+                                        (Spillgebees.Blazor.Map.StyleValue<string>)"b"
                                     );
                                     sourceBuilder.CloseComponent();
                                 }

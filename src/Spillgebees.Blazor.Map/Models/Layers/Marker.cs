@@ -1,7 +1,6 @@
-using Spillgebees.Blazor.Map.Models.Options;
-using Spillgebees.Blazor.Map.Models.Popups;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Models.Layers;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// A marker placed at a specific coordinate on the map.

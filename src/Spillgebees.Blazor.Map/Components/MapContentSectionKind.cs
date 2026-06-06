@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Components;
+namespace Spillgebees.Blazor.Map;
 
 internal enum MapContentSectionKind
 {

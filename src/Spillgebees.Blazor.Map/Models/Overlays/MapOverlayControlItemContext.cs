@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models.Overlays;
+namespace Spillgebees.Blazor.Map;
 
 public sealed record MapOverlayControlItemContext(
     MapOverlayItem Overlay,

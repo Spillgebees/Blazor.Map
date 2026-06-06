@@ -1,11 +1,7 @@
 using AwesomeAssertions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
-using Spillgebees.Blazor.Map.Components;
-using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.Controls;
-using Spillgebees.Blazor.Map.Models.Legends;
-using Spillgebees.Blazor.Map.Models.Visibility;
+using Spillgebees.Blazor.Map;
 using Spillgebees.Blazor.Map.Runtime.Scene;
 
 namespace Spillgebees.Blazor.Map.Tests.Components;
@@ -126,14 +122,12 @@ public class LegendMapControlTests : BunitContext
     [Test, Timeout(TestTimeoutMs)]
     public async Task Should_sanitize_icon_symbol_css_class(CancellationToken cancellationToken)
     {
-        var definition = new MapLegend(
-            [
-                new MapLegendSection(
-                    "Static",
-                    [new MapLegendItem("icon", "Icon item", Symbol: MapLegendSymbol.Icon("valid_class invalid<script>"))]
-                ),
-            ]
-        );
+        var definition = new MapLegend([
+            new MapLegendSection(
+                "Static",
+                [new MapLegendItem("icon", "Icon item", Symbol: MapLegendSymbol.Icon("valid_class invalid<script>"))]
+            ),
+        ]);
         var cut = Render<SgbMap>(parameters =>
             parameters.AddChildContent<MapControls>(controls =>
                 controls.AddChildContent<LegendMapControl>(control => control.Add(c => c.Definition, definition))

@@ -1,8 +1,8 @@
-namespace Spillgebees.Blazor.Map.Models;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Options for smooth position interpolation when GeoJSON source data changes.
-/// When applied to a <see cref="Components.Layers.GeoJsonSource"/>, position updates
+/// When applied to a <see cref="GeoJsonSource"/>, position updates
 /// are animated over the specified duration instead of jumping instantly.
 /// </summary>
 /// <param name="Duration">The animation duration in milliseconds. Default is 2000.</param>

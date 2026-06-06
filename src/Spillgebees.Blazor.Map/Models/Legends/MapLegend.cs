@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models.Legends;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Defines the content rendered inside a map legend control.

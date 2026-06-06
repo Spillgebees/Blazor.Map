@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Components.Layers;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Declarative ordering metadata for custom sources and layers.

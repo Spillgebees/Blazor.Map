@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Components.Layers;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Interface for map source components that can host child layer components.

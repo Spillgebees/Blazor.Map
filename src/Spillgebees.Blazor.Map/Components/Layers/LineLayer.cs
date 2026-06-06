@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map.Models.Expressions;
-using Spillgebees.Blazor.Map.Models.Options;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Components.Layers;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// A MapLibre line layer that renders line geometry from a GeoJSON source.

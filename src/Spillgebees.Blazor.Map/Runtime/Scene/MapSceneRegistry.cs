@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map.Components;
-using Spillgebees.Blazor.Map.Components.Layers;
+using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map.Runtime.Scene;
 

@@ -1,5 +1,4 @@
-using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.TrackedEntities;
+using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map.Tests.Components;
 

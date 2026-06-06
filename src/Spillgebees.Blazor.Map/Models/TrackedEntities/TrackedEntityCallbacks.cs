@@ -1,7 +1,6 @@
-using Spillgebees.Blazor.Map.Models.Events;
-using Spillgebees.Blazor.Map.Models.TrackedEntities;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Callback delegates for tracked entity interactions.

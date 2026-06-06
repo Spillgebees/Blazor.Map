@@ -1,3 +1,3 @@
-namespace Spillgebees.Blazor.Map.Models.Overlays;
+namespace Spillgebees.Blazor.Map;
 
 public sealed record MapOverlayChangedEventArgs(string OverlayId, string? PartId = null);

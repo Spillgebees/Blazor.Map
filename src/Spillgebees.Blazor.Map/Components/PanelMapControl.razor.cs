@@ -1,9 +1,9 @@
 using BlazorComponentUtilities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
-using Spillgebees.Blazor.Map.Models.Controls;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Components;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Renders custom Blazor content inside a collapsible map panel control.

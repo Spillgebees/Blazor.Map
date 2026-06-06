@@ -1,10 +1,7 @@
 using AwesomeAssertions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
-using Spillgebees.Blazor.Map.Components;
-using Spillgebees.Blazor.Map.Components.Layers;
-using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.Events;
+using Spillgebees.Blazor.Map;
 using Spillgebees.Blazor.Map.Runtime.Scene;
 
 namespace Spillgebees.Blazor.Map.Tests.Runtime.Scene;
@@ -209,7 +206,7 @@ public class MapSceneInteropCompatibilityTests : BunitContext
                                     sourceBuilder.AddAttribute(
                                         2,
                                         "TextField",
-                                        (Spillgebees.Blazor.Map.Models.Expressions.StyleValue<string>)"label"
+                                        (Spillgebees.Blazor.Map.StyleValue<string>)"label"
                                     );
                                     sourceBuilder.AddAttribute(
                                         3,
@@ -291,7 +288,7 @@ public class MapSceneInteropCompatibilityTests : BunitContext
                                     sourceBuilder.AddAttribute(
                                         2,
                                         "TextField",
-                                        (Spillgebees.Blazor.Map.Models.Expressions.StyleValue<string>)"label"
+                                        (Spillgebees.Blazor.Map.StyleValue<string>)"label"
                                     );
                                     sourceBuilder.AddAttribute(3, "Visible", _visible);
                                     sourceBuilder.CloseComponent();

@@ -1,4 +1,4 @@
-using Spillgebees.Blazor.Map.Models;
+using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map.Docs.Samples.TrainTracking;
 

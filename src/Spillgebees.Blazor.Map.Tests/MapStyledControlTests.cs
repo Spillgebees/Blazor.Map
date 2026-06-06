@@ -1,9 +1,7 @@
 using AwesomeAssertions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using Spillgebees.Blazor.Map.Components;
-using Spillgebees.Blazor.Map.Models.Controls;
-using Spillgebees.Blazor.Map.Models.Visibility;
+using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map.Tests;
 
@@ -69,7 +67,10 @@ public class MapStyledControlTests : BunitContext
                         .Add(c => c.Label, "Toggle stations")
                         .Add(c => c.Text, "Stations")
                         .Add(c => c.IsOn, true)
-                        .Add(c => c.IsOnChanged, EventCallback.Factory.Create<bool>(this, value => changedValue = value))
+                        .Add(
+                            c => c.IsOnChanged,
+                            EventCallback.Factory.Create<bool>(this, value => changedValue = value)
+                        )
                 )
             )
         );
@@ -150,10 +151,7 @@ public class MapStyledControlTests : BunitContext
             );
 
         // act & assert
-        action
-            .Should()
-            .Throw<InvalidOperationException>()
-            .WithMessage("MapButton requires non-empty Text or Icon.");
+        action.Should().Throw<InvalidOperationException>().WithMessage("MapButton requires non-empty Text or Icon.");
     }
 
     [Test]
@@ -270,21 +268,21 @@ public class MapStyledControlTests : BunitContext
     public void Should_render_layer_visibility_control_and_bind_switches()
     {
         // arrange
-        var visibility = new MapLayerVisibilityState(
-            [
-                new MapLayerVisibilityGroup("routes", [MapLayerVisibilityTarget.Layer("routes-layer")], Label: "Routes"),
-                new MapLayerVisibilityGroup("stations", [MapLayerVisibilityTarget.Layer("stations-layer")], Label: "Stations"),
-            ]
-        );
+        var visibility = new MapLayerVisibilityState([
+            new MapLayerVisibilityGroup("routes", [MapLayerVisibilityTarget.Layer("routes-layer")], Label: "Routes"),
+            new MapLayerVisibilityGroup(
+                "stations",
+                [MapLayerVisibilityTarget.Layer("stations-layer")],
+                Label: "Stations"
+            ),
+        ]);
 
         var cut = Render<SgbMap>(parameters =>
             parameters
                 .Add(map => map.LayerVisibility, visibility)
                 .AddChildContent<MapControls>(controls =>
                     controls.AddChildContent<LayerMapControl>(control =>
-                        control
-                            .Add(c => c.Id, "layers")
-                            .Add(c => c.GroupIds, ["stations"])
+                        control.Add(c => c.Id, "layers").Add(c => c.GroupIds, ["stations"])
                     )
                 )
         );

@@ -1,6 +1,6 @@
 using System.Text.Json;
 using AwesomeAssertions;
-using Spillgebees.Blazor.Map.Models.Popups;
+using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map.Tests.Models.Popups;
 
