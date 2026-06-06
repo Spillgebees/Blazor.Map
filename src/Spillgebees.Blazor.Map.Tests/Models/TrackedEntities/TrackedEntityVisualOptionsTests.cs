@@ -10,7 +10,7 @@ public class TrackedEntityVisualOptionsTests
     {
         // arrange
         var cluster = ClusterOptions.Create(radius: 64, maxZoom: 12, minPoints: 3);
-        var source = new TrackedEntitySourceOptions(cluster, TrackedEntityClusterClickBehavior.None);
+        var source = new TrackedEntitySourceOptions(cluster, ClusterClickBehavior.None);
 
         // act
         var options = CreateVisualOptions(source);
@@ -18,7 +18,7 @@ public class TrackedEntityVisualOptionsTests
         // assert
         options.Source.Should().Be(source);
         options.Cluster.Should().BeSameAs(cluster);
-        options.Source.ClusterClickBehavior.Should().Be(TrackedEntityClusterClickBehavior.None);
+        options.Source.ClusterClickBehavior.Should().Be(ClusterClickBehavior.None);
     }
 
     [Test]
@@ -54,7 +54,7 @@ public class TrackedEntityVisualOptionsTests
         options.Cluster.MaxZoom.Should().Be(10);
         options.Cluster.MinPoints.Should().Be(4);
         options.Cluster.Properties.Should().BeSameAs(properties);
-        options.Source.ClusterClickBehavior.Should().Be(TrackedEntityClusterClickBehavior.None);
+        options.Source.ClusterClickBehavior.Should().Be(ClusterClickBehavior.None);
     }
 
     private static TrackedEntityVisualOptions<TestVehicle> CreateVisualOptions(TrackedEntitySourceOptions source) =>

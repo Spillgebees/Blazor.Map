@@ -16,7 +16,8 @@ public sealed record ClusterCircleLayerDefinition(
     string? BeforeLayerId = null,
     string? LayerGroup = null,
     string? BeforeLayerGroup = null,
-    string? AfterLayerGroup = null
+    string? AfterLayerGroup = null,
+    bool Interactive = true
 )
     : ClusterLayerDefinition(
         IdSuffix,
@@ -26,5 +27,6 @@ public sealed record ClusterCircleLayerDefinition(
         BeforeLayerId,
         LayerGroup,
         BeforeLayerGroup,
-        AfterLayerGroup
+        AfterLayerGroup,
+        Interactive
     );

@@ -25,7 +25,7 @@
                       PitchAlignment="CirclePitchAlignment.Viewport"
                       LayerGroup="@ClusterHitAreaLayerId"
                       Visible="@Visible"
-                      OnClick="@HandleGeneratedClusterClickAsync" />
+                      OnClick="@GetGeneratedClusterClickCallback()" />
     }
     @for (var clusterLayerIndex = 0; clusterLayerIndex < GetClusterLayerDefinitions().Count; clusterLayerIndex++)
     {
@@ -51,7 +51,7 @@
                          AfterLayerGroup="@afterLayerGroup"
                          PitchAlignment="CirclePitchAlignment.Viewport"
                          Visible="@(Visible && circleLayer.Visible)"
-                         OnClick="@HandleGeneratedClusterClickAsync" />
+                          OnClick="@GetGeneratedClusterClickCallback(circleLayer.Interactive)" />
         }
         else if (clusterLayer is ClusterSymbolLayerDefinition symbolLayer)
         {
@@ -71,7 +71,7 @@
                          TextRotationAlignment="MapAlignment.Viewport"
                          TextAllowOverlap="true"
                          Visible="@(Visible && symbolLayer.Visible)"
-                         OnClick="@HandleGeneratedClusterClickAsync" />
+                          OnClick="@GetGeneratedClusterClickCallback(symbolLayer.Interactive)" />
         }
     }
 

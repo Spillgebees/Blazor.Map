@@ -125,6 +125,7 @@ public class PublicApiCleanupTests
             "Spillgebees.Blazor.Map.AnimationEasing",
             "Spillgebees.Blazor.Map.AnimationOptions",
             "Spillgebees.Blazor.Map.ClusterCircleLayerDefinition",
+            "Spillgebees.Blazor.Map.ClusterClickBehavior",
             "Spillgebees.Blazor.Map.ClusterLayerDefinition",
             "Spillgebees.Blazor.Map.ClusterLayerSet",
             "Spillgebees.Blazor.Map.ClusterOptions",

@@ -5,9 +5,12 @@ namespace Spillgebees.Blazor.Map;
 /// </summary>
 public sealed record TrackedEntitySourceOptions(
     ClusterOptions Cluster,
-    TrackedEntityClusterClickBehavior ClusterClickBehavior = TrackedEntityClusterClickBehavior.ZoomToDissolve
+    ClusterClickBehavior ClusterClickBehavior = ClusterClickBehavior.ZoomToDissolve
 )
 {
+    public TrackedEntitySourceOptions(ClusterOptions Cluster, TrackedEntityClusterClickBehavior ClusterClickBehavior)
+        : this(Cluster, ClusterClickBehavior.ToClusterClickBehavior()) { }
+
     /// <summary>
     /// Default tracked entity source options with clustering disabled.
     /// </summary>
@@ -20,6 +23,9 @@ public sealed record TrackedEntitySourceOptions(
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        return new TrackedEntitySourceOptions(options.ToClusterOptions(), options.ClickBehavior);
+        return new TrackedEntitySourceOptions(
+            options.ToClusterOptions(),
+            options.ClickBehavior.ToClusterClickBehavior()
+        );
     }
 }

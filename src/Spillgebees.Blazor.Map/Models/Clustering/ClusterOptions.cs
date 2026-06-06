@@ -13,7 +13,8 @@ public sealed record ClusterOptions
         int? maxZoom,
         int? minPoints,
         IReadOnlyDictionary<string, object>? properties,
-        ClusterLayerSet layerSet
+        ClusterLayerSet layerSet,
+        ClusterClickBehavior clickBehavior
     )
     {
         Enabled = enabled;
@@ -22,17 +23,20 @@ public sealed record ClusterOptions
         MinPoints = minPoints;
         Properties = properties;
         LayerSet = layerSet;
+        ClickBehavior = clickBehavior;
     }
 
     /// <summary>
     /// Disables source clustering.
     /// </summary>
-    public static ClusterOptions None { get; } = new(false, DefaultRadius, null, null, null, ClusterLayerSet.None);
+    public static ClusterOptions None { get; } =
+        new(false, DefaultRadius, null, null, null, ClusterLayerSet.None, ClusterClickBehavior.None);
 
     /// <summary>
     /// Enables source clustering with MapLibre-compatible default values.
     /// </summary>
-    public static ClusterOptions Default { get; } = new(true, DefaultRadius, null, null, null, ClusterLayerSet.Default);
+    public static ClusterOptions Default { get; } =
+        new(true, DefaultRadius, null, null, null, ClusterLayerSet.Default, ClusterClickBehavior.ZoomToDissolve);
 
     /// <summary>
     /// Whether point features should be clustered by the source.
@@ -65,6 +69,11 @@ public sealed record ClusterOptions
     public ClusterLayerSet LayerSet { get; }
 
     /// <summary>
+    /// Built-in click behavior for generated interactive cluster layers.
+    /// </summary>
+    public ClusterClickBehavior ClickBehavior { get; }
+
+    /// <summary>
     /// Creates enabled source clustering options.
     /// </summary>
     public static ClusterOptions Create(
@@ -72,7 +81,8 @@ public sealed record ClusterOptions
         int? maxZoom = null,
         int? minPoints = null,
         IReadOnlyDictionary<string, object>? properties = null,
-        ClusterLayerSet? layerSet = null
+        ClusterLayerSet? layerSet = null,
+        ClusterClickBehavior clickBehavior = ClusterClickBehavior.ZoomToDissolve
     )
     {
         if (radius <= 0)
@@ -94,6 +104,14 @@ public sealed record ClusterOptions
             );
         }
 
-        return new ClusterOptions(true, radius, maxZoom, minPoints, properties, layerSet ?? ClusterLayerSet.Default);
+        return new ClusterOptions(
+            true,
+            radius,
+            maxZoom,
+            minPoints,
+            properties,
+            layerSet ?? ClusterLayerSet.Default,
+            clickBehavior
+        );
     }
 }

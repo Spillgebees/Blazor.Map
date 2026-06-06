@@ -55,7 +55,7 @@ public sealed record TrackedEntityVisualOptions<TItem>
         : this(
             Symbol,
             Decorations,
-            new TrackedEntitySourceOptions(Cluster, ClusterClickBehavior),
+            new TrackedEntitySourceOptions(Cluster, ClusterClickBehavior.ToClusterClickBehavior()),
             Animation,
             Visible,
             PrimaryIconOpacity,

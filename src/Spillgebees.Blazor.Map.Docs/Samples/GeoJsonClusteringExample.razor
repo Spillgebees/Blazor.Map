@@ -1,0 +1,99 @@
+<p>Click any visible incident cluster to zoom until it dissolves into individual incidents.</p>
+
+<SgbMap MapOptions="@_mapOptions" Height="420px" Width="100%">
+    <MapControls>
+        <NavigationMapControl />
+    </MapControls>
+
+    <MapSources>
+        <GeoJsonSource Id="incidents"
+                       Data="@_incidentGeoJson"
+                       ClusterOptions="@_incidentClusters"
+                       Layers="@_incidentLayers" />
+    </MapSources>
+</SgbMap>
+
+@code {
+    private static readonly object[] _unclusteredOnlyFilter = Expr.Not(Expr.Has("point_count"));
+
+    private static readonly MapOptions _mapOptions = new(
+        Style: MapStyle.OpenStreetMap.Standard,
+        Center: new Coordinate(49.62, 6.13),
+        Zoom: 11
+    );
+
+    private static readonly ClusterOptions _incidentClusters = ClusterOptions.Create(
+        radius: 58,
+        maxZoom: 14,
+        minPoints: 2,
+        properties: new Dictionary<string, object>
+        {
+            ["maxSeverity"] = new object[] { "max", Expr.Get("severity") },
+            ["affectedTotal"] = new object[] { "+", Expr.Get("affected") },
+        },
+        layerSet: ClusterLayerSet.Custom(
+            ClusterLayerDefinition.Circle(
+                "cluster-halo",
+                color: Expr.Step("maxSeverity", "#22c55e", 3, "#f97316", 5, "#dc2626"),
+                radius: Expr.Step("point_count", 28, 4, 36, 8, 44),
+                opacity: 0.22),
+            ClusterLayerDefinition.Circle(
+                "cluster-bubble",
+                color: Expr.Step("maxSeverity", "#16a34a", 3, "#ea580c", 5, "#b91c1c"),
+                radius: Expr.Step("point_count", 17, 4, 23, 8, 29),
+                strokeColor: "#ffffff",
+                strokeWidth: 2),
+            ClusterLayerDefinition.Symbol(
+                "cluster-count",
+                textField: Expr.Get("point_count_abbreviated"),
+                textColor: "#ffffff",
+                textSize: 13))
+    );
+
+    private static readonly IReadOnlyList<MapLayerDefinition> _incidentLayers =
+    [
+        MapLayer.Circle(
+            "unclustered-points",
+            color: Expr.Step("severity", "#22c55e", 3, "#f97316", 5, "#dc2626"),
+            radius: Expr.Step("severity", 6, 3, 8, 5, 10),
+            opacity: 0.9,
+            strokeColor: "#ffffff",
+            strokeWidth: 2,
+            filter: _unclusteredOnlyFilter),
+        MapLayer.Symbol(
+            "unclustered-labels",
+            textField: new object[] { "to-string", Expr.Get("severity") },
+            textSize: 11,
+            textColor: "#ffffff",
+            textHaloColor: "#111827",
+            textHaloWidth: 1,
+            filter: _unclusteredOnlyFilter),
+    ];
+
+    private static readonly object _incidentGeoJson = new
+    {
+        type = "FeatureCollection",
+        features = new object[]
+        {
+            Incident("incident-1", 6.1286, 49.6112, "Central dispatch", 5, 18),
+            Incident("incident-2", 6.1368, 49.6141, "Bridge blockage", 4, 11),
+            Incident("incident-3", 6.1218, 49.6077, "Station crowding", 3, 7),
+            Incident("incident-4", 6.1461, 49.6194, "Tunnel inspection", 2, 3),
+            Incident("incident-5", 6.1113, 49.6197, "Road closure", 4, 9),
+            Incident("incident-6", 6.0986, 49.6047, "Signal fault", 5, 15),
+            Incident("incident-7", 6.1732, 49.6304, "Power alarm", 3, 6),
+            Incident("incident-8", 6.1884, 49.6027, "Medical assist", 2, 2),
+            Incident("incident-9", 6.0666, 49.5870, "Depot delay", 1, 1),
+            Incident("incident-10", 6.1511, 49.5861, "Platform closure", 4, 8),
+        },
+    };
+
+    private static object Incident(string id, double longitude, double latitude, string name, int severity, int affected) =>
+        new
+        {
+            type = "Feature",
+            id,
+            geometry = new { type = "Point", coordinates = new[] { longitude, latitude } },
+            properties = new { name, severity, affected },
+        };
+}

@@ -13,7 +13,8 @@ public abstract record ClusterLayerDefinition
         string? beforeLayerId = null,
         string? layerGroup = null,
         string? beforeLayerGroup = null,
-        string? afterLayerGroup = null
+        string? afterLayerGroup = null,
+        bool interactive = true
     )
     {
         if (string.IsNullOrWhiteSpace(idSuffix))
@@ -32,6 +33,7 @@ public abstract record ClusterLayerDefinition
         LayerGroup = layerGroup;
         BeforeLayerGroup = beforeLayerGroup;
         AfterLayerGroup = afterLayerGroup;
+        Interactive = interactive;
     }
 
     /// <summary>
@@ -53,6 +55,8 @@ public abstract record ClusterLayerDefinition
 
     public string? AfterLayerGroup { get; }
 
+    public bool Interactive { get; }
+
     /// <summary>
     /// Creates a circle layer definition for cluster bubbles.
     /// </summary>
@@ -69,7 +73,8 @@ public abstract record ClusterLayerDefinition
         string? beforeLayerId = null,
         string? layerGroup = null,
         string? beforeLayerGroup = null,
-        string? afterLayerGroup = null
+        string? afterLayerGroup = null,
+        bool interactive = true
     ) =>
         new(
             idSuffix,
@@ -84,7 +89,8 @@ public abstract record ClusterLayerDefinition
             beforeLayerId,
             layerGroup,
             beforeLayerGroup,
-            afterLayerGroup
+            afterLayerGroup,
+            interactive
         );
 
     /// <summary>
@@ -101,7 +107,8 @@ public abstract record ClusterLayerDefinition
         string? beforeLayerId = null,
         string? layerGroup = null,
         string? beforeLayerGroup = null,
-        string? afterLayerGroup = null
+        string? afterLayerGroup = null,
+        bool interactive = true
     ) =>
         new(
             idSuffix,
@@ -114,6 +121,7 @@ public abstract record ClusterLayerDefinition
             beforeLayerId,
             layerGroup,
             beforeLayerGroup,
-            afterLayerGroup
+            afterLayerGroup,
+            interactive
         );
 }

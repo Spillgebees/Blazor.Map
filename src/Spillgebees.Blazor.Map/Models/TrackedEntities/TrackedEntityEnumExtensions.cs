@@ -2,6 +2,14 @@ namespace Spillgebees.Blazor.Map;
 
 internal static class TrackedEntityEnumExtensions
 {
+    internal static ClusterClickBehavior ToClusterClickBehavior(this TrackedEntityClusterClickBehavior behavior) =>
+        behavior switch
+        {
+            TrackedEntityClusterClickBehavior.None => ClusterClickBehavior.None,
+            TrackedEntityClusterClickBehavior.ZoomToDissolve => ClusterClickBehavior.ZoomToDissolve,
+            _ => ClusterClickBehavior.None,
+        };
+
     internal static string ToMapLibreValue(this TrackedEntityDecorationDisplayMode displayMode) =>
         displayMode switch
         {

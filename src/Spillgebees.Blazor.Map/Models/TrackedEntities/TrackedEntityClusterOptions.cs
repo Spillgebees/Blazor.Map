@@ -19,7 +19,14 @@ public sealed record TrackedEntityClusterOptions(
     /// </summary>
     public ClusterOptions ToClusterOptions() =>
         Enabled
-            ? ClusterOptions.Create(Radius, MaxZoom, MinPoints, Properties, ClusterLayerSet.Default)
+            ? ClusterOptions.Create(
+                Radius,
+                MaxZoom,
+                MinPoints,
+                Properties,
+                ClusterLayerSet.Default,
+                ClickBehavior.ToClusterClickBehavior()
+            )
             : ClusterOptions.None;
 
     public static implicit operator TrackedEntitySourceOptions(TrackedEntityClusterOptions options) =>

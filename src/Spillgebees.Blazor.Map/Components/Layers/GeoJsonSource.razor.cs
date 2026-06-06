@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Spillgebees.Blazor.Map;
@@ -154,10 +155,12 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
     private readonly List<LayerBase> _pendingLayers = [];
     private readonly List<LayerBase> _registeredLayers = [];
     private readonly List<string> _registeredDefinitionLayerIds = [];
+    private readonly List<string> _registeredClusterEventLayerIds = [];
     private MapLayerOrderOptions _previousOrderOptions = MapLayerOrderOptions.Empty;
     private IReadOnlyList<MapLayerDefinition> _previousLayerDefinitions = [];
     private IReadOnlyDictionary<string, object?> _previousSourceConfiguration = new Dictionary<string, object?>();
     private static readonly object[] ClusterLayerFilter = ["has", "point_count"];
+    private DotNetObjectReference<GeoJsonSource>? _dotNetRef;
 
     /// <inheritdoc/>
     MapLayerOrderOptions IMapSource.OrderOptions => new(LayerGroup, BeforeLayerGroup, AfterLayerGroup);
@@ -292,6 +295,17 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
         {
             await ReplaceDefinitionLayersAsync(GetCurrentLayerDefinitions());
         }
+
+        if (
+            _isInitialized
+            && !ClusterLayerEventRegistrationsEqual(
+                _registeredClusterEventLayerIds,
+                GetCurrentInteractiveClusterLayerIds()
+            )
+        )
+        {
+            await RewireClusterLayerEventsAsync();
+        }
     }
 
     private async Task AddSourceToMapAsync()
@@ -375,6 +389,11 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
             .ToArray();
         var batch = Map!.SceneRegistry.CreateBatchBuilder();
 
+        foreach (var layerId in _registeredClusterEventLayerIds)
+        {
+            batch.UnregisterLayerEvents(layerId);
+        }
+
         batch.RemoveSource(Id);
         batch.AddSource(new MapSourceDescriptor(Id, BuildSourceSpec(sourceConfiguration)));
         foreach (var descriptor in definitionLayerDescriptors.Concat(childLayerDescriptors))
@@ -398,8 +417,10 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
         _previousData = Data;
         _previousOrderOptions = OrderOptions;
         _previousSourceConfiguration = CloneSourceConfiguration(sourceConfiguration);
+        _registeredClusterEventLayerIds.Clear();
         _registeredDefinitionLayerIds.Clear();
         _registeredDefinitionLayerIds.AddRange(definitionLayerDescriptors.Select(descriptor => descriptor.LayerId));
+        await RewireClusterLayerEventsAsync();
         _previousLayerDefinitions = layerDefinitions.ToArray();
 
         foreach (var layer in _registeredLayers)
@@ -481,7 +502,56 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
 
         _registeredDefinitionLayerIds.Clear();
         _registeredDefinitionLayerIds.AddRange(descriptors.Select(descriptor => descriptor.LayerId));
+        await RewireClusterLayerEventsAsync();
         _previousLayerDefinitions = layerDefinitions.ToArray();
+    }
+
+    private async Task RewireClusterLayerEventsAsync()
+    {
+        if (Map is null)
+        {
+            return;
+        }
+
+        foreach (var layerId in _registeredClusterEventLayerIds.ToArray())
+        {
+            await Map.SceneRegistry.UnregisterLayerEventsAsync(layerId);
+        }
+
+        _registeredClusterEventLayerIds.Clear();
+
+        var interactiveLayerIds = GetCurrentInteractiveClusterLayerIds().ToArray();
+        if (interactiveLayerIds.Length == 0)
+        {
+            _dotNetRef?.Dispose();
+            _dotNetRef = null;
+            return;
+        }
+
+        _dotNetRef ??= DotNetObjectReference.Create(this);
+        foreach (var layerId in interactiveLayerIds)
+        {
+            await Map.SceneRegistry.WireLayerEventsAsync(
+                new LayerEventDescriptor(layerId, _dotNetRef, true, false, false)
+            );
+            _registeredClusterEventLayerIds.Add(layerId);
+        }
+    }
+
+    private IEnumerable<string> GetCurrentInteractiveClusterLayerIds()
+    {
+        if (
+            ClusterOptions
+            is not { Enabled: true, LayerSet.Enabled: true, ClickBehavior: ClusterClickBehavior.ZoomToDissolve }
+        )
+        {
+            yield break;
+        }
+
+        foreach (var definition in ClusterOptions.LayerSet.Layers.Where(definition => definition.Interactive))
+        {
+            yield return $"{Id}-{definition.IdSuffix}";
+        }
     }
 
     private IEnumerable<MapLayerDescriptor> BuildDefinitionLayerDescriptors(
@@ -685,6 +755,11 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
         IReadOnlyList<MapLayerDefinition> current
     ) => previous.SequenceEqual(current);
 
+    private static bool ClusterLayerEventRegistrationsEqual(
+        IReadOnlyList<string> registeredLayerIds,
+        IEnumerable<string> currentLayerIds
+    ) => registeredLayerIds.SequenceEqual(currentLayerIds);
+
     private static bool SourceConfigurationsEqual(
         IReadOnlyDictionary<string, object?> previous,
         IReadOnlyDictionary<string, object?> current
@@ -759,6 +834,39 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
         );
     }
 
+    [JSInvokable("OnLayerClickAsync")]
+    public async Task OnLayerClickAsync(double latitude, double longitude, JsonElement? properties)
+    {
+        if (Map is null || GetEffectiveClusterOptions().ClickBehavior != ClusterClickBehavior.ZoomToDissolve)
+        {
+            return;
+        }
+
+        if (!TryGetClusterId(properties, out var clusterId))
+        {
+            return;
+        }
+
+        var zoom = await GetClusterExpansionZoomAsync(clusterId);
+        await Map.FlyToAsync(new Coordinate(latitude, longitude), (int)Math.Ceiling(zoom));
+    }
+
+    private static bool TryGetClusterId(JsonElement? properties, out int clusterId)
+    {
+        clusterId = 0;
+        if (properties is null || !properties.Value.TryGetProperty("cluster_id", out var clusterIdProperty))
+        {
+            return false;
+        }
+
+        return clusterIdProperty.ValueKind switch
+        {
+            JsonValueKind.Number => clusterIdProperty.TryGetInt32(out clusterId),
+            JsonValueKind.String => int.TryParse(clusterIdProperty.GetString(), out clusterId),
+            _ => false,
+        };
+    }
+
     /// <inheritdoc/>
     public async ValueTask DisposeAsync()
     {
@@ -771,6 +879,8 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
             catch (JSDisconnectedException) { }
             catch (ObjectDisposedException) { }
         }
+
+        _dotNetRef?.Dispose();
 
         GC.SuppressFinalize(this);
     }

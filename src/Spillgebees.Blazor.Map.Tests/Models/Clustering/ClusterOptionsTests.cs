@@ -20,6 +20,7 @@ public class ClusterOptionsTests
         options.MaxZoom.Should().BeNull();
         options.MinPoints.Should().BeNull();
         options.Properties.Should().BeNull();
+        options.ClickBehavior.Should().Be(ClusterClickBehavior.None);
     }
 
     [Test]
@@ -37,6 +38,7 @@ public class ClusterOptionsTests
         options.MaxZoom.Should().BeNull();
         options.MinPoints.Should().BeNull();
         options.Properties.Should().BeNull();
+        options.ClickBehavior.Should().Be(ClusterClickBehavior.ZoomToDissolve);
     }
 
     [Test]
@@ -57,6 +59,20 @@ public class ClusterOptionsTests
         options.MaxZoom.Should().Be(12);
         options.MinPoints.Should().Be(3);
         options.Properties.Should().BeSameAs(properties);
+        options.ClickBehavior.Should().Be(ClusterClickBehavior.ZoomToDissolve);
+    }
+
+    [Test]
+    public void Should_allow_disabling_cluster_click_behavior()
+    {
+        // arrange
+        var clickBehavior = ClusterClickBehavior.None;
+
+        // act
+        var options = ClusterOptions.Create(clickBehavior: clickBehavior);
+
+        // assert
+        options.ClickBehavior.Should().Be(ClusterClickBehavior.None);
     }
 
     [Test]

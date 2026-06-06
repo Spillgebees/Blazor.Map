@@ -14,7 +14,8 @@ public sealed record ClusterSymbolLayerDefinition(
     string? BeforeLayerId = null,
     string? LayerGroup = null,
     string? BeforeLayerGroup = null,
-    string? AfterLayerGroup = null
+    string? AfterLayerGroup = null,
+    bool Interactive = true
 )
     : ClusterLayerDefinition(
         IdSuffix,
@@ -24,5 +25,6 @@ public sealed record ClusterSymbolLayerDefinition(
         BeforeLayerId,
         LayerGroup,
         BeforeLayerGroup,
-        AfterLayerGroup
+        AfterLayerGroup,
+        Interactive
     );
