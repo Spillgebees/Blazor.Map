@@ -42,6 +42,13 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
+    /// <summary>
+    /// Parameter-based layer definitions rendered against this GeoJSON source.
+    /// These layers are registered before child layer components for deterministic ordering.
+    /// </summary>
+    [Parameter]
+    public IReadOnlyList<MapLayerDefinition>? Layers { get; set; }
+
     [Parameter]
     public bool AllowOutsideMapSources { get; set; }
 
@@ -146,7 +153,9 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
     private object? _previousData;
     private readonly List<LayerBase> _pendingLayers = [];
     private readonly List<LayerBase> _registeredLayers = [];
+    private readonly List<string> _registeredDefinitionLayerIds = [];
     private MapLayerOrderOptions _previousOrderOptions = MapLayerOrderOptions.Empty;
+    private IReadOnlyList<MapLayerDefinition> _previousLayerDefinitions = [];
 
     /// <inheritdoc/>
     MapLayerOrderOptions IMapSource.OrderOptions => new(LayerGroup, BeforeLayerGroup, AfterLayerGroup);
@@ -213,6 +222,8 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
             await AddSourceToMapAsync();
             _isInitialized = true;
 
+            await RegisterDefinitionLayersAsync(GetCurrentLayerDefinitions());
+
             // Add any layers that registered before the source was ready
             if (_pendingLayers.Count > 0)
             {
@@ -249,12 +260,15 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
         if (_isInitialized && _previousOrderOptions != OrderOptions)
         {
             await Map!.SceneRegistry.RegisterLayersAsync(
-                _registeredLayers.Select(layer => new MapLayerDescriptor(
-                    layer.Id,
-                    layer.BuildLayerSpec(),
-                    layer.BeforeLayerId,
-                    layer.GetLayerOrderRegistration()
-                ))
+                BuildDefinitionLayerDescriptors(GetCurrentLayerDefinitions())
+                    .Concat(
+                        _registeredLayers.Select(layer => new MapLayerDescriptor(
+                            layer.Id,
+                            layer.BuildLayerSpec(),
+                            layer.BeforeLayerId,
+                            layer.GetLayerOrderRegistration()
+                        ))
+                    )
             );
 
             foreach (var layer in _registeredLayers)
@@ -263,6 +277,11 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
             }
 
             _previousOrderOptions = OrderOptions;
+        }
+
+        if (_isInitialized && !LayerDefinitionsEqual(_previousLayerDefinitions, GetCurrentLayerDefinitions()))
+        {
+            await ReplaceDefinitionLayersAsync(GetCurrentLayerDefinitions());
         }
     }
 
@@ -348,6 +367,191 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
         );
         await layer.NotifyLayerAddedAsync();
     }
+
+    private async Task ReplaceDefinitionLayersAsync(IReadOnlyList<MapLayerDefinition> layerDefinitions)
+    {
+        if (_registeredDefinitionLayerIds.Count > 0)
+        {
+            var registeredDefinitionLayerIds = _registeredDefinitionLayerIds.ToArray();
+            _registeredDefinitionLayerIds.Clear();
+
+            try
+            {
+                foreach (var layerId in registeredDefinitionLayerIds)
+                {
+                    await Map!.SceneRegistry.UnregisterLayerAsync(layerId);
+                }
+            }
+            catch (JSDisconnectedException)
+            {
+                return;
+            }
+            catch (ObjectDisposedException)
+            {
+                return;
+            }
+        }
+
+        await RegisterDefinitionLayersAsync(layerDefinitions);
+    }
+
+    private async Task RegisterDefinitionLayersAsync(IReadOnlyList<MapLayerDefinition> layerDefinitions)
+    {
+        if (layerDefinitions.Count == 0)
+        {
+            _previousLayerDefinitions = [];
+            return;
+        }
+
+        var descriptors = BuildDefinitionLayerDescriptors(layerDefinitions).ToArray();
+        await Map!.SceneRegistry.RegisterLayersAsync(descriptors);
+
+        _registeredDefinitionLayerIds.Clear();
+        _registeredDefinitionLayerIds.AddRange(descriptors.Select(descriptor => descriptor.LayerId));
+        _previousLayerDefinitions = layerDefinitions.ToArray();
+    }
+
+    private IEnumerable<MapLayerDescriptor> BuildDefinitionLayerDescriptors(
+        IReadOnlyList<MapLayerDefinition> layerDefinitions
+    )
+    {
+        foreach (var layerDefinition in layerDefinitions)
+        {
+            var layerId = layerDefinition.ResolveId(Id);
+            yield return new MapLayerDescriptor(
+                layerId,
+                BuildDefinitionLayerSpec(layerDefinition, layerId),
+                layerDefinition.BeforeLayerId,
+                GetDefinitionLayerOrderRegistration(layerDefinition)
+            );
+        }
+    }
+
+    private Dictionary<string, object?> BuildDefinitionLayerSpec(MapLayerDefinition layerDefinition, string layerId)
+    {
+        var spec = new Dictionary<string, object?>
+        {
+            ["id"] = layerId,
+            ["type"] = layerDefinition.Type,
+            ["source"] = Id,
+        };
+
+        if (layerDefinition.Filter is not null)
+        {
+            spec["filter"] = layerDefinition.Filter;
+        }
+
+        if (layerDefinition.MinZoom.HasValue)
+        {
+            spec["minzoom"] = layerDefinition.MinZoom.Value;
+        }
+
+        if (layerDefinition.MaxZoom.HasValue)
+        {
+            spec["maxzoom"] = layerDefinition.MaxZoom.Value;
+        }
+
+        var paint = GetDefinitionPaintProperties(layerDefinition)
+            .Where(kv => kv.Value is not null)
+            .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
+        if (paint.Count > 0)
+        {
+            spec["paint"] = paint;
+        }
+
+        var layout = GetDefinitionLayoutProperties(layerDefinition)
+            .Where(kv => kv.Value is not null)
+            .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
+        layout["visibility"] = layerDefinition.Visible ? "visible" : "none";
+        if (layout.Count > 0)
+        {
+            spec["layout"] = layout;
+        }
+
+        return spec;
+    }
+
+    private static Dictionary<string, object?> GetDefinitionPaintProperties(MapLayerDefinition layerDefinition) =>
+        layerDefinition switch
+        {
+            CircleLayerDefinition circle => new Dictionary<string, object?>
+            {
+                ["circle-radius"] = circle.Radius?.ToSerializable(),
+                ["circle-color"] = circle.Color?.ToSerializable(),
+                ["circle-opacity"] = circle.Opacity?.ToSerializable(),
+                ["circle-stroke-width"] = circle.StrokeWidth?.ToSerializable(),
+                ["circle-stroke-color"] = circle.StrokeColor?.ToSerializable(),
+                ["circle-stroke-opacity"] = circle.StrokeOpacity?.ToSerializable(),
+                ["circle-pitch-alignment"] = circle.PitchAlignment?.ToJsonName(),
+            },
+            SymbolLayerDefinition symbol => new Dictionary<string, object?>
+            {
+                ["text-color"] = symbol.TextColor?.ToSerializable(),
+                ["text-halo-color"] = symbol.TextHaloColor?.ToSerializable(),
+                ["text-halo-width"] = symbol.TextHaloWidth?.ToSerializable(),
+                ["text-opacity"] = symbol.TextOpacity?.ToSerializable(),
+                ["icon-opacity"] = symbol.IconOpacity?.ToSerializable(),
+                ["icon-color"] = symbol.IconColor?.ToSerializable(),
+            },
+            _ => throw new NotSupportedException(
+                $"Layer definition type '{layerDefinition.GetType().Name}' is not supported by GeoJsonSource."
+            ),
+        };
+
+    private static Dictionary<string, object?> GetDefinitionLayoutProperties(MapLayerDefinition layerDefinition) =>
+        layerDefinition switch
+        {
+            CircleLayerDefinition => [],
+            SymbolLayerDefinition symbol => new Dictionary<string, object?>
+            {
+                ["text-field"] = symbol.TextField?.ToSerializable(),
+                ["text-size"] = symbol.TextSize?.ToSerializable(),
+                ["text-font"] = symbol.TextFont,
+                ["text-anchor"] = symbol.TextAnchor?.ToJsonName(),
+                ["text-offset"] = symbol.TextOffset,
+                ["text-rotate"] = symbol.TextRotate?.ToSerializable(),
+                ["text-pitch-alignment"] = symbol.TextPitchAlignment?.ToJsonName(),
+                ["text-rotation-alignment"] = symbol.TextRotationAlignment?.ToJsonName(),
+                ["text-transform"] = symbol.TextTransform?.ToJsonName(),
+                ["text-max-width"] = symbol.TextMaxWidth,
+                ["text-allow-overlap"] = symbol.TextAllowOverlap ? true : null,
+                ["icon-image"] = symbol.IconImage?.ToSerializable(),
+                ["icon-size"] = symbol.IconSize?.ToSerializable(),
+                ["icon-rotate"] = symbol.IconRotate?.ToSerializable(),
+                ["icon-offset"] = symbol.IconOffset,
+                ["icon-anchor"] = symbol.IconAnchor?.ToSerializable(),
+                ["icon-allow-overlap"] = symbol.IconAllowOverlap ? true : null,
+                ["icon-text-fit"] = symbol.IconTextFit?.ToJsonName(),
+                ["icon-text-fit-padding"] = symbol.IconTextFitPadding,
+                ["icon-rotation-alignment"] = symbol.RotationAlignment?.ToJsonName(),
+                ["symbol-placement"] = symbol.Placement?.ToJsonName(),
+                ["symbol-spacing"] = symbol.Spacing,
+                ["symbol-sort-key"] = symbol.SymbolSortKey?.ToSerializable(),
+            },
+            _ => throw new NotSupportedException(
+                $"Layer definition type '{layerDefinition.GetType().Name}' is not supported by GeoJsonSource."
+            ),
+        };
+
+    private LayerOrderRegistration GetDefinitionLayerOrderRegistration(MapLayerDefinition layerDefinition)
+    {
+        return Map!.SceneRegistry.ReserveLayerOrderRegistration(
+            $"layer-definition:{Id}:{layerDefinition.Key}",
+            new MapLayerOrderOptions(
+                layerDefinition.LayerGroup,
+                layerDefinition.BeforeLayerGroup,
+                layerDefinition.AfterLayerGroup
+            ),
+            OrderOptions
+        );
+    }
+
+    private IReadOnlyList<MapLayerDefinition> GetCurrentLayerDefinitions() => Layers ?? [];
+
+    private static bool LayerDefinitionsEqual(
+        IReadOnlyList<MapLayerDefinition> previous,
+        IReadOnlyList<MapLayerDefinition> current
+    ) => previous.SequenceEqual(current);
 
     /// <summary>
     /// Gets the zoom level at which a cluster expands into its children.
