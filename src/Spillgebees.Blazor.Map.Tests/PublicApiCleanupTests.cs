@@ -128,6 +128,7 @@ public class PublicApiCleanupTests
             "Spillgebees.Blazor.Map.ClusterLayerSet",
             "Spillgebees.Blazor.Map.ClusterOptions",
             "Spillgebees.Blazor.Map.ClusterSymbolLayerDefinition",
+            "Spillgebees.Blazor.Map.CircleLayerDefinition",
             "Spillgebees.Blazor.Map.CenterControlDefinition",
             "Spillgebees.Blazor.Map.ContentControlDefinition",
             "Spillgebees.Blazor.Map.ControlPosition",
@@ -228,6 +229,9 @@ public class PublicApiCleanupTests
             "Spillgebees.Blazor.Map.MapLayerVisibilityState",
             "Spillgebees.Blazor.Map.MapLayerVisibilityTarget",
             "Spillgebees.Blazor.Map.MapLayerVisibilityTargetKind",
+            "Spillgebees.Blazor.Map.MapLayer",
+            "Spillgebees.Blazor.Map.MapLayerDefinition",
+            "Spillgebees.Blazor.Map.SymbolLayerDefinition",
             "Spillgebees.Blazor.Map.WmsTileSource",
         };
 
