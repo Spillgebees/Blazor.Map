@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Display mode intent for a tracked entity decoration.

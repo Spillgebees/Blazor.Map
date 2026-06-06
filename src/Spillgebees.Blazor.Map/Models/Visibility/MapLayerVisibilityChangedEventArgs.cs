@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models.Visibility;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Provides data for a map layer visibility state change.

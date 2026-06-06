@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models.Controls;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Visual variant for first-class map control buttons.

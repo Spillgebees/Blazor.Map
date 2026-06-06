@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Feature role produced by the tracked entity GeoJSON builder.

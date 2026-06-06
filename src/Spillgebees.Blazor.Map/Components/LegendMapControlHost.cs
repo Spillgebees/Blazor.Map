@@ -4,12 +4,10 @@ using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
+using Spillgebees.Blazor.Map;
 using Spillgebees.Blazor.Map.Interop;
-using Spillgebees.Blazor.Map.Models.Controls;
-using Spillgebees.Blazor.Map.Models.Legends;
-using Spillgebees.Blazor.Map.Models.Visibility;
 
-namespace Spillgebees.Blazor.Map.Components;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Renders and wires one declarative legend control entry.

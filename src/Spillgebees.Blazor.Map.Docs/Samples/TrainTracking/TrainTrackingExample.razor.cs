@@ -1,13 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Configuration;
-using Spillgebees.Blazor.Map.Components;
-using Spillgebees.Blazor.Map.Components.Layers;
-using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.Events;
-using Spillgebees.Blazor.Map.Models.Legends;
-using Spillgebees.Blazor.Map.Models.Options;
-using Spillgebees.Blazor.Map.Models.TrackedEntities;
-using Spillgebees.Blazor.Map.Models.Visibility;
+using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map.Docs.Samples.TrainTracking;
 

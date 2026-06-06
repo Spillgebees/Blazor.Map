@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
 
-namespace Spillgebees.Blazor.Map.Models.Options;
+namespace Spillgebees.Blazor.Map;
 
 public static class EnumJsonName
 {

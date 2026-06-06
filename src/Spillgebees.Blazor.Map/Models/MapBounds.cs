@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// A geographic bounding box defined by its southwest and northeast corners.

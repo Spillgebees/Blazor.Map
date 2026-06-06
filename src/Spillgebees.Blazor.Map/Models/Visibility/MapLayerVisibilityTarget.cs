@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models.Visibility;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Defines the layers controlled by a visibility group target.

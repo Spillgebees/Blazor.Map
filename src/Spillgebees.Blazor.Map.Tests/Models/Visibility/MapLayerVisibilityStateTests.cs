@@ -1,5 +1,5 @@
 using AwesomeAssertions;
-using Spillgebees.Blazor.Map.Models.Visibility;
+using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map.Tests.Models.Visibility;
 

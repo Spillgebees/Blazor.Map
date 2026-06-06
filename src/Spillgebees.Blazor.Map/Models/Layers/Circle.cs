@@ -1,6 +1,6 @@
-using Spillgebees.Blazor.Map.Models.Popups;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Models.Layers;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// A circle rendered at a specific coordinate on the map via a GPU-rendered circle layer.

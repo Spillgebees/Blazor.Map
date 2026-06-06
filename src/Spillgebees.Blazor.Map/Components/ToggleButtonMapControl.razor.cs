@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map.Models.Controls;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Components;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Renders a first-class styled map toggle button control.

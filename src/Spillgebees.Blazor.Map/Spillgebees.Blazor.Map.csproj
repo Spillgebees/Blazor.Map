@@ -2,6 +2,7 @@
   <Import Project="../General.targets" />
 
   <PropertyGroup>
+    <RootNamespace>Spillgebees.Blazor.Map</RootNamespace>
     <Authors>Jason Rebelo Neves (igotinfected)</Authors>
     <Company>Spillgebees</Company>
     <Description>Spillgebees.Blazor.Map is a Blazor map component powered by MapLibre GL JS.</Description>

@@ -1,7 +1,6 @@
 using AwesomeAssertions;
+using Spillgebees.Blazor.Map;
 using Spillgebees.Blazor.Map.Docs.Samples.TrainTracking;
-using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.TrackedEntities;
 
 namespace Spillgebees.Blazor.Map.Tests.Samples.TrainTracking;
 

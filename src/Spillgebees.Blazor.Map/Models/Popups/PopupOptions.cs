@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models.Popups;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Options for configuring a popup on a feature.

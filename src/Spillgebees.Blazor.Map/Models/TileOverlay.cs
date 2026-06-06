@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// A raster tile layer rendered on top of the base map style.

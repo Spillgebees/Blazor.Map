@@ -1,11 +1,10 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
-using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.Events;
+using Spillgebees.Blazor.Map;
 using Spillgebees.Blazor.Map.Runtime.Scene;
 
-namespace Spillgebees.Blazor.Map.Components.Layers;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Base class for MapLibre layer components. Layers can either be nested inside a

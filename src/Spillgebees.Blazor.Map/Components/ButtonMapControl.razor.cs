@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using Spillgebees.Blazor.Map.Models.Controls;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Components;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Renders a first-class styled map action button control.

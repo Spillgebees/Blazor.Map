@@ -1,9 +1,7 @@
 using AwesomeAssertions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
-using Spillgebees.Blazor.Map.Components;
-using Spillgebees.Blazor.Map.Components.Layers;
-using Spillgebees.Blazor.Map.Models.Events;
+using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map.Tests.Components.Layers;
 
@@ -177,7 +175,7 @@ public class LayerBaseEventRewireTests : BunitContext
                                     sourceBuilder.AddAttribute(
                                         2,
                                         "TextField",
-                                        (Spillgebees.Blazor.Map.Models.Expressions.StyleValue<string>)"label"
+                                        (Spillgebees.Blazor.Map.StyleValue<string>)"label"
                                     );
                                     sourceBuilder.AddAttribute(3, "OnClick", OnClick);
                                     sourceBuilder.CloseComponent();
@@ -229,7 +227,7 @@ public class LayerBaseEventRewireTests : BunitContext
                                     sourceBuilder.AddAttribute(
                                         2,
                                         "TextField",
-                                        (Spillgebees.Blazor.Map.Models.Expressions.StyleValue<string>)"label"
+                                        (Spillgebees.Blazor.Map.StyleValue<string>)"label"
                                     );
                                     sourceBuilder.AddAttribute(
                                         3,
@@ -281,7 +279,7 @@ public class LayerBaseEventRewireTests : BunitContext
                                     sourceBuilder.AddAttribute(
                                         3,
                                         "TextField",
-                                        (Spillgebees.Blazor.Map.Models.Expressions.StyleValue<string>)"label"
+                                        (Spillgebees.Blazor.Map.StyleValue<string>)"label"
                                     );
                                     sourceBuilder.AddAttribute(
                                         4,

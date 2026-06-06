@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models.Visibility;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Template context for <c>LayerMapControl</c> items.

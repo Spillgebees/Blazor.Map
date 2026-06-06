@@ -1,6 +1,6 @@
-namespace Spillgebees.Blazor.Map.Models.Legends;
+namespace Spillgebees.Blazor.Map;
 
-using Spillgebees.Blazor.Map.Models.Visibility;
+using Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Default legend item template context.

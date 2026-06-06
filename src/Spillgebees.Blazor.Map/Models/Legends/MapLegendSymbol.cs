@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models.Legends;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Describes the visual symbol rendered for a legend item.
@@ -26,7 +26,8 @@ public abstract record MapLegendSymbol
 
     public static MapLegendSymbol DashedLine(string color, double width = 3) => new LineSymbol(color, width, true);
 
-    public static MapLegendSymbol Circle(string color, string? strokeColor = null) => new CircleSymbol(color, strokeColor);
+    public static MapLegendSymbol Circle(string color, string? strokeColor = null) =>
+        new CircleSymbol(color, strokeColor);
 
     public static MapLegendSymbol Icon(string cssClass) => new IconSymbol(cssClass);
 }

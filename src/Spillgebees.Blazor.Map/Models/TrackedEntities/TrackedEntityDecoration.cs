@@ -1,6 +1,6 @@
-using Spillgebees.Blazor.Map.Models.Options;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// A decoration that follows a tracked entity using the same position with relative offsets.

@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
-using Spillgebees.Blazor.Map.Models.Popups;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Models.Layers;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// A polyline (connected line segments) rendered on the map via a GPU-rendered line layer.

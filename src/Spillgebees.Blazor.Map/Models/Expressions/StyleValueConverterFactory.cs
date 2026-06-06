@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Spillgebees.Blazor.Map.Models.Expressions;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// JSON converter factory for <see cref="StyleValue{T}"/>.

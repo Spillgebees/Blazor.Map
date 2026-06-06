@@ -1,14 +1,9 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.Events;
-using Spillgebees.Blazor.Map.Models.Expressions;
-using Spillgebees.Blazor.Map.Models.Options;
-using Spillgebees.Blazor.Map.Models.Popups;
-using Spillgebees.Blazor.Map.Models.TrackedEntities;
+using Spillgebees.Blazor.Map;
 using Spillgebees.Blazor.Map.Utilities;
 
-namespace Spillgebees.Blazor.Map.Components.Layers;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// High-level declarative tracked entity layer for rendering moving entities on a map.
@@ -392,7 +387,12 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
             throw new InvalidOperationException("Tracked entity feature state requires a parent map.");
         }
 
-        return Map.SetTrackedEntityFeatureStateAsync(SourceId, HasDecorations ? DecorationSourceId : null, entityId, state);
+        return Map.SetTrackedEntityFeatureStateAsync(
+            SourceId,
+            HasDecorations ? DecorationSourceId : null,
+            entityId,
+            state
+        );
     }
 
     public ValueTask SetFeatureStateAsync(string entityId, KeyValuePair<string, object> state)

@@ -1,12 +1,7 @@
 using System.Text.Json;
 using AwesomeAssertions;
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map.Components;
-using Spillgebees.Blazor.Map.Components.Layers;
-using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.Controls;
-using Spillgebees.Blazor.Map.Models.Layers;
-using Spillgebees.Blazor.Map.Models.Options;
+using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map.Tests.Interop;
 

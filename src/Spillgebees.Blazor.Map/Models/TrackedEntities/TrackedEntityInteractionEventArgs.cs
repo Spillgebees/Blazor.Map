@@ -1,6 +1,6 @@
-using Spillgebees.Blazor.Map.Models.Events;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Typed interaction details for a tracked entity feature.

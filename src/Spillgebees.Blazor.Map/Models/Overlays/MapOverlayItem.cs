@@ -1,6 +1,6 @@
-using Spillgebees.Blazor.Map.Models.Legends;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Models.Overlays;
+namespace Spillgebees.Blazor.Map;
 
 public sealed record MapOverlayItem(
     string Id,

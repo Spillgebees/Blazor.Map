@@ -1,9 +1,5 @@
 using AwesomeAssertions;
-using Spillgebees.Blazor.Map.Components;
-using Spillgebees.Blazor.Map.Components.Layers;
-using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.Controls;
-using Spillgebees.Blazor.Map.Models.TrackedEntities;
+using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map.Tests;
 
@@ -16,18 +12,18 @@ public class PublicApiCleanupTests
         var assembly = typeof(SgbMap).Assembly;
         var expectedTypeNames = new[]
         {
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityLayerDefinition`1",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.ITrackedEntityLayerDefinition",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityIdOptions`1",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityVisualOptions`1",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityVisualDefaults",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntitySymbolOptions`1",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityDecorationOptions`1",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityClusterOptions",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityBehaviorOptions`1",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityInteractionOptions`1",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityCallbacks`1",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityInteractionEventArgs`1",
+            "Spillgebees.Blazor.Map.TrackedEntityLayerDefinition`1",
+            "Spillgebees.Blazor.Map.ITrackedEntityLayerDefinition",
+            "Spillgebees.Blazor.Map.TrackedEntityIdOptions`1",
+            "Spillgebees.Blazor.Map.TrackedEntityVisualOptions`1",
+            "Spillgebees.Blazor.Map.TrackedEntityVisualDefaults",
+            "Spillgebees.Blazor.Map.TrackedEntitySymbolOptions`1",
+            "Spillgebees.Blazor.Map.TrackedEntityDecorationOptions`1",
+            "Spillgebees.Blazor.Map.TrackedEntityClusterOptions",
+            "Spillgebees.Blazor.Map.TrackedEntityBehaviorOptions`1",
+            "Spillgebees.Blazor.Map.TrackedEntityInteractionOptions`1",
+            "Spillgebees.Blazor.Map.TrackedEntityCallbacks`1",
+            "Spillgebees.Blazor.Map.TrackedEntityInteractionEventArgs`1",
         };
 
         // act
@@ -44,25 +40,25 @@ public class PublicApiCleanupTests
         var assembly = typeof(SgbMap).Assembly;
         var accidentalTypeNames = new[]
         {
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityMaterializer",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityGeoJsonBuilder",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntity`1",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntitySymbol",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityDecoration",
+            "Spillgebees.Blazor.Map.TrackedEntityMaterializer",
+            "Spillgebees.Blazor.Map.TrackedEntityGeoJsonBuilder",
+            "Spillgebees.Blazor.Map.TrackedEntity`1",
+            "Spillgebees.Blazor.Map.TrackedEntitySymbol",
+            "Spillgebees.Blazor.Map.TrackedEntityDecoration",
             "Spillgebees.Blazor.Map.Utilities.FeatureDiffer",
             "Spillgebees.Blazor.Map.Utilities.FeatureDiffResult`1",
-            "Spillgebees.Blazor.Map.Components.Layers.IMapSource",
-            "Spillgebees.Blazor.Map.Components.Layers.MapLayerOrderOptions",
+            "Spillgebees.Blazor.Map.IMapSource",
+            "Spillgebees.Blazor.Map.MapLayerOrderOptions",
             "Spillgebees.Blazor.Map.Utilities.LowerCaseJsonStringEnumConverter",
             "Spillgebees.Blazor.Map.Utilities.LowercaseNamingPolicy",
-            "Spillgebees.Blazor.Map.Models.Expressions.StyleValueConverterFactory",
-            "Spillgebees.Blazor.Map.Components.MapButtonGroupContext",
-            "Spillgebees.Blazor.Map.Components.MapControlComponentRegistration",
-            "Spillgebees.Blazor.Map.Components.MapControlRegistryContext",
-            "Spillgebees.Blazor.Map.Components.StyledContentMapControlRegistration",
-            "Spillgebees.Blazor.Map.Components.MapOverlayComponentBase",
-            "Spillgebees.Blazor.Map.Components.MapSectionBase",
-            "Spillgebees.Blazor.Map.Components.LegendMapControlHost",
+            "Spillgebees.Blazor.Map.StyleValueConverterFactory",
+            "Spillgebees.Blazor.Map.MapButtonGroupContext",
+            "Spillgebees.Blazor.Map.MapControlComponentRegistration",
+            "Spillgebees.Blazor.Map.MapControlRegistryContext",
+            "Spillgebees.Blazor.Map.StyledContentMapControlRegistration",
+            "Spillgebees.Blazor.Map.MapOverlayComponentBase",
+            "Spillgebees.Blazor.Map.MapSectionBase",
+            "Spillgebees.Blazor.Map.LegendMapControlHost",
         };
 
         // act
@@ -84,150 +80,150 @@ public class PublicApiCleanupTests
         // arrange
         var expectedTypeNames = new[]
         {
-            "Spillgebees.Blazor.Map.Components.BaseMap",
-            "Spillgebees.Blazor.Map.Components.Layers.CircleLayer",
-            "Spillgebees.Blazor.Map.Components.Layers.FillExtrusionLayer",
-            "Spillgebees.Blazor.Map.Components.Layers.FillLayer",
-            "Spillgebees.Blazor.Map.Components.Layers.GeoJsonSource",
-            "Spillgebees.Blazor.Map.Components.Layers.LayerBase",
-            "Spillgebees.Blazor.Map.Components.Layers.LineLayer",
-            "Spillgebees.Blazor.Map.Components.Layers.SymbolLayer",
-            "Spillgebees.Blazor.Map.Components.Layers.TrackedEntityLayer`1",
-            "Spillgebees.Blazor.Map.Components.Layers.VectorTileSource",
-            "Spillgebees.Blazor.Map.Components.ButtonMapControl",
-            "Spillgebees.Blazor.Map.Components.CenterMapControl",
-            "Spillgebees.Blazor.Map.Components.MapCircle",
-            "Spillgebees.Blazor.Map.Components.MapCircles`1",
-            "Spillgebees.Blazor.Map.Components.MapButton",
-            "Spillgebees.Blazor.Map.Components.ButtonGroupMapControl",
-            "Spillgebees.Blazor.Map.Components.MapToggleButton",
-            "Spillgebees.Blazor.Map.Components.MapControls",
-            "Spillgebees.Blazor.Map.Components.CustomMapControl",
-            "Spillgebees.Blazor.Map.Components.FullscreenMapControl",
-            "Spillgebees.Blazor.Map.Components.GeolocateMapControl",
-            "Spillgebees.Blazor.Map.Components.LayerMapControl",
-            "Spillgebees.Blazor.Map.Components.LegendMapControl",
-            "Spillgebees.Blazor.Map.Components.MapFeatures",
-            "Spillgebees.Blazor.Map.Components.MapMarker",
-            "Spillgebees.Blazor.Map.Components.MapMarkers`1",
-            "Spillgebees.Blazor.Map.Components.NavigationMapControl",
-            "Spillgebees.Blazor.Map.Components.OverlayMapControl",
-            "Spillgebees.Blazor.Map.Components.PanelMapControl",
-            "Spillgebees.Blazor.Map.Components.MapOverlay",
-            "Spillgebees.Blazor.Map.Components.MapOverlays",
-            "Spillgebees.Blazor.Map.Components.MapOverlayPart",
-            "Spillgebees.Blazor.Map.Components.MapPolyline",
-            "Spillgebees.Blazor.Map.Components.MapPolylines`1",
-            "Spillgebees.Blazor.Map.Components.MapPopup",
-            "Spillgebees.Blazor.Map.Components.ScaleMapControl",
-            "Spillgebees.Blazor.Map.Components.StyleOverlay",
-            "Spillgebees.Blazor.Map.Components.MapSources",
-            "Spillgebees.Blazor.Map.Components.TerrainMapControl",
-            "Spillgebees.Blazor.Map.Components.ToggleButtonMapControl",
-            "Spillgebees.Blazor.Map.Components.SgbMap",
-            "Spillgebees.Blazor.Map.Models.AnimationEasing",
-            "Spillgebees.Blazor.Map.Models.AnimationOptions",
-            "Spillgebees.Blazor.Map.Models.Controls.CenterControlDefinition",
-            "Spillgebees.Blazor.Map.Models.Controls.ContentControlDefinition",
-            "Spillgebees.Blazor.Map.Models.Controls.ControlPosition",
-            "Spillgebees.Blazor.Map.Models.Controls.FullscreenControlDefinition",
-            "Spillgebees.Blazor.Map.Models.Controls.GeolocateControlDefinition",
-            "Spillgebees.Blazor.Map.Models.Controls.LegendChromeOptions",
-            "Spillgebees.Blazor.Map.Models.Controls.LegendContentOptions",
-            "Spillgebees.Blazor.Map.Models.Controls.LegendControlDefinition",
-            "Spillgebees.Blazor.Map.Models.Controls.MapControlDefinition",
-            "Spillgebees.Blazor.Map.Models.Controls.MapButtonSize",
-            "Spillgebees.Blazor.Map.Models.Controls.MapButtonVariant",
-            "Spillgebees.Blazor.Map.Models.Controls.MapControlPlacement",
-            "Spillgebees.Blazor.Map.Models.Controls.NavigationControlDefinition",
-            "Spillgebees.Blazor.Map.Models.Controls.PanelChromeOptions",
-            "Spillgebees.Blazor.Map.Models.Controls.PanelControlDefinition",
-            "Spillgebees.Blazor.Map.Models.Controls.ScaleControlDefinition",
-            "Spillgebees.Blazor.Map.Models.Controls.ScaleUnit",
-            "Spillgebees.Blazor.Map.Models.Controls.TerrainControlDefinition",
-            "Spillgebees.Blazor.Map.Models.Coordinate",
-            "Spillgebees.Blazor.Map.Models.Events.LayerFeatureEventArgs",
-            "Spillgebees.Blazor.Map.Models.Events.MapClickEventArgs",
-            "Spillgebees.Blazor.Map.Models.Events.MapViewEventArgs",
-            "Spillgebees.Blazor.Map.Models.Events.MarkerClickEventArgs",
-            "Spillgebees.Blazor.Map.Models.Events.MarkerDragEventArgs",
-            "Spillgebees.Blazor.Map.Models.Expressions.Expr",
-            "Spillgebees.Blazor.Map.Models.Expressions.FeatureState",
-            "Spillgebees.Blazor.Map.Models.Expressions.FeatureStateKey`1",
-            "Spillgebees.Blazor.Map.Models.Expressions.StyleValue`1",
-            "Spillgebees.Blazor.Map.Models.FitBoundsOptions",
-            "Spillgebees.Blazor.Map.Models.Layers.Circle",
-            "Spillgebees.Blazor.Map.Models.Layers.Marker",
-            "Spillgebees.Blazor.Map.Models.Layers.MarkerIcon",
-            "Spillgebees.Blazor.Map.Models.Layers.Polyline",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegend",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendItem",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendItemTemplateContext",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendSection",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendSymbol",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendSymbol+CircleSymbol",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendSymbol+ColorSwatchSymbol",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendSymbol+IconSymbol",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendSymbol+LineSymbol",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendSymbol+NoneSymbol",
-            "Spillgebees.Blazor.Map.Models.MapBounds",
-            "Spillgebees.Blazor.Map.Models.MapImage",
-            "Spillgebees.Blazor.Map.Models.MapOptions",
-            "Spillgebees.Blazor.Map.Models.Overlays.MapOverlayChangedEventArgs",
-            "Spillgebees.Blazor.Map.Models.Overlays.MapOverlayControlItemContext",
-            "Spillgebees.Blazor.Map.Models.Overlays.MapOverlayItem",
-            "Spillgebees.Blazor.Map.Models.Overlays.MapOverlayPartControlItemContext",
-            "Spillgebees.Blazor.Map.Models.Overlays.MapOverlayPartItem",
-            "Spillgebees.Blazor.Map.Models.MapPixelRatioMode",
-            "Spillgebees.Blazor.Map.Models.MapProjection",
-            "Spillgebees.Blazor.Map.Models.MapStyle",
-            "Spillgebees.Blazor.Map.Models.MapStyle+OpenFreeMap",
-            "Spillgebees.Blazor.Map.Models.MapStyle+OpenStreetMap",
-            "Spillgebees.Blazor.Map.Models.MapTheme",
-            "Spillgebees.Blazor.Map.Models.Options.CirclePitchAlignment",
-            "Spillgebees.Blazor.Map.Models.Options.EnumJsonName",
-            "Spillgebees.Blazor.Map.Models.Options.IconTextFit",
-            "Spillgebees.Blazor.Map.Models.Options.LayerOptionEnumExtensions",
-            "Spillgebees.Blazor.Map.Models.Options.LineCap",
-            "Spillgebees.Blazor.Map.Models.Options.LineJoin",
-            "Spillgebees.Blazor.Map.Models.Options.MapAlignment",
-            "Spillgebees.Blazor.Map.Models.Options.SymbolAnchor",
-            "Spillgebees.Blazor.Map.Models.Options.SymbolPlacement",
-            "Spillgebees.Blazor.Map.Models.Options.TextTransform",
-            "Spillgebees.Blazor.Map.Models.PixelPoint",
-            "Spillgebees.Blazor.Map.Models.Popups.PopupAnchor",
-            "Spillgebees.Blazor.Map.Models.Popups.PopupContentMode",
-            "Spillgebees.Blazor.Map.Models.Popups.PopupOptions",
-            "Spillgebees.Blazor.Map.Models.Popups.PopupTrigger",
-            "Spillgebees.Blazor.Map.Models.RasterTileSource",
-            "Spillgebees.Blazor.Map.Models.ReferrerPolicy",
-            "Spillgebees.Blazor.Map.Models.TileOverlay",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.ITrackedEntityLayerDefinition",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityBehaviorOptions`1",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityCallbacks`1",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityClusterClickBehavior",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityClusterOptions",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityDecorationDisplayMode",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityDecorationOptions`1",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityFeatureKind",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityFeatureProperties",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityFeatureStates",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityHoverIntent",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityIdOptions`1",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityInteractionEventArgs`1",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityInteractionOptions`1",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityLayerDefinition`1",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntitySymbolOptions`1",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityVisualDefaults",
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityVisualOptions`1",
-            "Spillgebees.Blazor.Map.Models.Visibility.MapLayerVisibilityChangeKind",
-            "Spillgebees.Blazor.Map.Models.Visibility.MapLayerVisibilityChangedEventArgs",
-            "Spillgebees.Blazor.Map.Models.Visibility.MapLayerControlItemContext",
-            "Spillgebees.Blazor.Map.Models.Visibility.MapLayerVisibilityGroup",
-            "Spillgebees.Blazor.Map.Models.Visibility.MapLayerVisibilityState",
-            "Spillgebees.Blazor.Map.Models.Visibility.MapLayerVisibilityTarget",
-            "Spillgebees.Blazor.Map.Models.Visibility.MapLayerVisibilityTargetKind",
-            "Spillgebees.Blazor.Map.Models.WmsTileSource",
+            "Spillgebees.Blazor.Map.BaseMap",
+            "Spillgebees.Blazor.Map.CircleLayer",
+            "Spillgebees.Blazor.Map.FillExtrusionLayer",
+            "Spillgebees.Blazor.Map.FillLayer",
+            "Spillgebees.Blazor.Map.GeoJsonSource",
+            "Spillgebees.Blazor.Map.LayerBase",
+            "Spillgebees.Blazor.Map.LineLayer",
+            "Spillgebees.Blazor.Map.SymbolLayer",
+            "Spillgebees.Blazor.Map.TrackedEntityLayer`1",
+            "Spillgebees.Blazor.Map.VectorTileSource",
+            "Spillgebees.Blazor.Map.ButtonMapControl",
+            "Spillgebees.Blazor.Map.CenterMapControl",
+            "Spillgebees.Blazor.Map.MapCircle",
+            "Spillgebees.Blazor.Map.MapCircles`1",
+            "Spillgebees.Blazor.Map.MapButton",
+            "Spillgebees.Blazor.Map.ButtonGroupMapControl",
+            "Spillgebees.Blazor.Map.MapToggleButton",
+            "Spillgebees.Blazor.Map.MapControls",
+            "Spillgebees.Blazor.Map.CustomMapControl",
+            "Spillgebees.Blazor.Map.FullscreenMapControl",
+            "Spillgebees.Blazor.Map.GeolocateMapControl",
+            "Spillgebees.Blazor.Map.LayerMapControl",
+            "Spillgebees.Blazor.Map.LegendMapControl",
+            "Spillgebees.Blazor.Map.MapFeatures",
+            "Spillgebees.Blazor.Map.MapMarker",
+            "Spillgebees.Blazor.Map.MapMarkers`1",
+            "Spillgebees.Blazor.Map.NavigationMapControl",
+            "Spillgebees.Blazor.Map.OverlayMapControl",
+            "Spillgebees.Blazor.Map.PanelMapControl",
+            "Spillgebees.Blazor.Map.MapOverlay",
+            "Spillgebees.Blazor.Map.MapOverlays",
+            "Spillgebees.Blazor.Map.MapOverlayPart",
+            "Spillgebees.Blazor.Map.MapPolyline",
+            "Spillgebees.Blazor.Map.MapPolylines`1",
+            "Spillgebees.Blazor.Map.MapPopup",
+            "Spillgebees.Blazor.Map.ScaleMapControl",
+            "Spillgebees.Blazor.Map.StyleOverlay",
+            "Spillgebees.Blazor.Map.MapSources",
+            "Spillgebees.Blazor.Map.TerrainMapControl",
+            "Spillgebees.Blazor.Map.ToggleButtonMapControl",
+            "Spillgebees.Blazor.Map.SgbMap",
+            "Spillgebees.Blazor.Map.AnimationEasing",
+            "Spillgebees.Blazor.Map.AnimationOptions",
+            "Spillgebees.Blazor.Map.CenterControlDefinition",
+            "Spillgebees.Blazor.Map.ContentControlDefinition",
+            "Spillgebees.Blazor.Map.ControlPosition",
+            "Spillgebees.Blazor.Map.FullscreenControlDefinition",
+            "Spillgebees.Blazor.Map.GeolocateControlDefinition",
+            "Spillgebees.Blazor.Map.LegendChromeOptions",
+            "Spillgebees.Blazor.Map.LegendContentOptions",
+            "Spillgebees.Blazor.Map.LegendControlDefinition",
+            "Spillgebees.Blazor.Map.MapControlDefinition",
+            "Spillgebees.Blazor.Map.MapButtonSize",
+            "Spillgebees.Blazor.Map.MapButtonVariant",
+            "Spillgebees.Blazor.Map.MapControlPlacement",
+            "Spillgebees.Blazor.Map.NavigationControlDefinition",
+            "Spillgebees.Blazor.Map.PanelChromeOptions",
+            "Spillgebees.Blazor.Map.PanelControlDefinition",
+            "Spillgebees.Blazor.Map.ScaleControlDefinition",
+            "Spillgebees.Blazor.Map.ScaleUnit",
+            "Spillgebees.Blazor.Map.TerrainControlDefinition",
+            "Spillgebees.Blazor.Map.Coordinate",
+            "Spillgebees.Blazor.Map.LayerFeatureEventArgs",
+            "Spillgebees.Blazor.Map.MapClickEventArgs",
+            "Spillgebees.Blazor.Map.MapViewEventArgs",
+            "Spillgebees.Blazor.Map.MarkerClickEventArgs",
+            "Spillgebees.Blazor.Map.MarkerDragEventArgs",
+            "Spillgebees.Blazor.Map.Expr",
+            "Spillgebees.Blazor.Map.FeatureState",
+            "Spillgebees.Blazor.Map.FeatureStateKey`1",
+            "Spillgebees.Blazor.Map.StyleValue`1",
+            "Spillgebees.Blazor.Map.FitBoundsOptions",
+            "Spillgebees.Blazor.Map.Circle",
+            "Spillgebees.Blazor.Map.Marker",
+            "Spillgebees.Blazor.Map.MarkerIcon",
+            "Spillgebees.Blazor.Map.Polyline",
+            "Spillgebees.Blazor.Map.MapLegend",
+            "Spillgebees.Blazor.Map.MapLegendItem",
+            "Spillgebees.Blazor.Map.MapLegendItemTemplateContext",
+            "Spillgebees.Blazor.Map.MapLegendSection",
+            "Spillgebees.Blazor.Map.MapLegendSymbol",
+            "Spillgebees.Blazor.Map.MapLegendSymbol+CircleSymbol",
+            "Spillgebees.Blazor.Map.MapLegendSymbol+ColorSwatchSymbol",
+            "Spillgebees.Blazor.Map.MapLegendSymbol+IconSymbol",
+            "Spillgebees.Blazor.Map.MapLegendSymbol+LineSymbol",
+            "Spillgebees.Blazor.Map.MapLegendSymbol+NoneSymbol",
+            "Spillgebees.Blazor.Map.MapBounds",
+            "Spillgebees.Blazor.Map.MapImage",
+            "Spillgebees.Blazor.Map.MapOptions",
+            "Spillgebees.Blazor.Map.MapOverlayChangedEventArgs",
+            "Spillgebees.Blazor.Map.MapOverlayControlItemContext",
+            "Spillgebees.Blazor.Map.MapOverlayItem",
+            "Spillgebees.Blazor.Map.MapOverlayPartControlItemContext",
+            "Spillgebees.Blazor.Map.MapOverlayPartItem",
+            "Spillgebees.Blazor.Map.MapPixelRatioMode",
+            "Spillgebees.Blazor.Map.MapProjection",
+            "Spillgebees.Blazor.Map.MapStyle",
+            "Spillgebees.Blazor.Map.MapStyle+OpenFreeMap",
+            "Spillgebees.Blazor.Map.MapStyle+OpenStreetMap",
+            "Spillgebees.Blazor.Map.MapTheme",
+            "Spillgebees.Blazor.Map.CirclePitchAlignment",
+            "Spillgebees.Blazor.Map.EnumJsonName",
+            "Spillgebees.Blazor.Map.IconTextFit",
+            "Spillgebees.Blazor.Map.LayerOptionEnumExtensions",
+            "Spillgebees.Blazor.Map.LineCap",
+            "Spillgebees.Blazor.Map.LineJoin",
+            "Spillgebees.Blazor.Map.MapAlignment",
+            "Spillgebees.Blazor.Map.SymbolAnchor",
+            "Spillgebees.Blazor.Map.SymbolPlacement",
+            "Spillgebees.Blazor.Map.TextTransform",
+            "Spillgebees.Blazor.Map.PixelPoint",
+            "Spillgebees.Blazor.Map.PopupAnchor",
+            "Spillgebees.Blazor.Map.PopupContentMode",
+            "Spillgebees.Blazor.Map.PopupOptions",
+            "Spillgebees.Blazor.Map.PopupTrigger",
+            "Spillgebees.Blazor.Map.RasterTileSource",
+            "Spillgebees.Blazor.Map.ReferrerPolicy",
+            "Spillgebees.Blazor.Map.TileOverlay",
+            "Spillgebees.Blazor.Map.ITrackedEntityLayerDefinition",
+            "Spillgebees.Blazor.Map.TrackedEntityBehaviorOptions`1",
+            "Spillgebees.Blazor.Map.TrackedEntityCallbacks`1",
+            "Spillgebees.Blazor.Map.TrackedEntityClusterClickBehavior",
+            "Spillgebees.Blazor.Map.TrackedEntityClusterOptions",
+            "Spillgebees.Blazor.Map.TrackedEntityDecorationDisplayMode",
+            "Spillgebees.Blazor.Map.TrackedEntityDecorationOptions`1",
+            "Spillgebees.Blazor.Map.TrackedEntityFeatureKind",
+            "Spillgebees.Blazor.Map.TrackedEntityFeatureProperties",
+            "Spillgebees.Blazor.Map.TrackedEntityFeatureStates",
+            "Spillgebees.Blazor.Map.TrackedEntityHoverIntent",
+            "Spillgebees.Blazor.Map.TrackedEntityIdOptions`1",
+            "Spillgebees.Blazor.Map.TrackedEntityInteractionEventArgs`1",
+            "Spillgebees.Blazor.Map.TrackedEntityInteractionOptions`1",
+            "Spillgebees.Blazor.Map.TrackedEntityLayerDefinition`1",
+            "Spillgebees.Blazor.Map.TrackedEntitySymbolOptions`1",
+            "Spillgebees.Blazor.Map.TrackedEntityVisualDefaults",
+            "Spillgebees.Blazor.Map.TrackedEntityVisualOptions`1",
+            "Spillgebees.Blazor.Map.MapLayerVisibilityChangeKind",
+            "Spillgebees.Blazor.Map.MapLayerVisibilityChangedEventArgs",
+            "Spillgebees.Blazor.Map.MapLayerControlItemContext",
+            "Spillgebees.Blazor.Map.MapLayerVisibilityGroup",
+            "Spillgebees.Blazor.Map.MapLayerVisibilityState",
+            "Spillgebees.Blazor.Map.MapLayerVisibilityTarget",
+            "Spillgebees.Blazor.Map.MapLayerVisibilityTargetKind",
+            "Spillgebees.Blazor.Map.WmsTileSource",
         };
 
         // act
@@ -249,7 +245,7 @@ public class PublicApiCleanupTests
 
         // act
         var trackedEntityLayerDefinitionType = assembly.GetType(
-            "Spillgebees.Blazor.Map.Models.TrackedEntities.TrackedEntityLayerDefinition`1"
+            "Spillgebees.Blazor.Map.TrackedEntityLayerDefinition`1"
         );
 
         // assert
@@ -263,18 +259,18 @@ public class PublicApiCleanupTests
         var assembly = typeof(SgbMap).Assembly;
         var legacyTypeNames = new[]
         {
-            "Spillgebees.Blazor.Map.Models.TrackedData.TrackedDataLayer`1",
-            "Spillgebees.Blazor.Map.Models.TrackedData.ITrackedDataLayer",
-            "Spillgebees.Blazor.Map.Models.TrackedData.TrackedDataIdOptions`1",
-            "Spillgebees.Blazor.Map.Models.TrackedData.TrackedDataVisualOptions`1",
-            "Spillgebees.Blazor.Map.Models.TrackedData.TrackedDataVisualDefaults",
-            "Spillgebees.Blazor.Map.Models.TrackedData.TrackedDataSymbolOptions`1",
-            "Spillgebees.Blazor.Map.Models.TrackedData.TrackedDataDecorationOptions`1",
-            "Spillgebees.Blazor.Map.Models.TrackedData.TrackedDataClusterOptions",
-            "Spillgebees.Blazor.Map.Models.TrackedData.TrackedDataBehaviorOptions`1",
-            "Spillgebees.Blazor.Map.Models.TrackedData.TrackedDataInteractionOptions`1",
-            "Spillgebees.Blazor.Map.Models.TrackedData.TrackedDataCallbacks`1",
-            "Spillgebees.Blazor.Map.Models.TrackedData.TrackedDataEntityMaterializer",
+            "Spillgebees.Blazor.Map.TrackedDataLayer`1",
+            "Spillgebees.Blazor.Map.ITrackedDataLayer",
+            "Spillgebees.Blazor.Map.TrackedDataIdOptions`1",
+            "Spillgebees.Blazor.Map.TrackedDataVisualOptions`1",
+            "Spillgebees.Blazor.Map.TrackedDataVisualDefaults",
+            "Spillgebees.Blazor.Map.TrackedDataSymbolOptions`1",
+            "Spillgebees.Blazor.Map.TrackedDataDecorationOptions`1",
+            "Spillgebees.Blazor.Map.TrackedDataClusterOptions",
+            "Spillgebees.Blazor.Map.TrackedDataBehaviorOptions`1",
+            "Spillgebees.Blazor.Map.TrackedDataInteractionOptions`1",
+            "Spillgebees.Blazor.Map.TrackedDataCallbacks`1",
+            "Spillgebees.Blazor.Map.TrackedDataEntityMaterializer",
         };
 
         // act
@@ -291,11 +287,11 @@ public class PublicApiCleanupTests
         var assembly = typeof(SgbMap).Assembly;
         var expectedTypeNames = new[]
         {
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegend",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendSection",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendItem",
-            "Spillgebees.Blazor.Map.Models.MapImage",
-            "Spillgebees.Blazor.Map.Models.Visibility.MapLayerVisibilityState",
+            "Spillgebees.Blazor.Map.MapLegend",
+            "Spillgebees.Blazor.Map.MapLegendSection",
+            "Spillgebees.Blazor.Map.MapLegendItem",
+            "Spillgebees.Blazor.Map.MapImage",
+            "Spillgebees.Blazor.Map.MapLayerVisibilityState",
         };
 
         // act
@@ -312,11 +308,11 @@ public class PublicApiCleanupTests
         var assembly = typeof(SgbMap).Assembly;
         var legacyTypeNames = new[]
         {
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendDefinition",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendSectionDefinition",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendItemDefinition",
-            "Spillgebees.Blazor.Map.Models.Legends.MapLegendTargetDefinition",
-            "Spillgebees.Blazor.Map.Models.MapImageDefinition",
+            "Spillgebees.Blazor.Map.MapLegendDefinition",
+            "Spillgebees.Blazor.Map.MapLegendSectionDefinition",
+            "Spillgebees.Blazor.Map.MapLegendItemDefinition",
+            "Spillgebees.Blazor.Map.MapLegendTargetDefinition",
+            "Spillgebees.Blazor.Map.MapImageDefinition",
         };
 
         // act
@@ -331,7 +327,7 @@ public class PublicApiCleanupTests
     {
         // arrange
         var assembly = typeof(SgbMap).Assembly;
-        var mapImageType = assembly.GetType("Spillgebees.Blazor.Map.Models.MapImage");
+        var mapImageType = assembly.GetType("Spillgebees.Blazor.Map.MapImage");
 
         // act
         var publicPropertyNames = mapImageType
@@ -343,16 +339,16 @@ public class PublicApiCleanupTests
     }
 
     [Test]
-    public void Should_not_expose_legacy_map_legend_component_type()
+    public void Should_expose_map_legend_model_from_root_namespace()
     {
         // arrange
         var assembly = typeof(SgbMap).Assembly;
 
         // act
-        var legacyMapLegendType = assembly.GetType("Spillgebees.Blazor.Map.Components.MapLegend");
+        var mapLegendType = assembly.GetType("Spillgebees.Blazor.Map.MapLegend");
 
         // assert
-        legacyMapLegendType.Should().BeNull();
+        mapLegendType.Should().Be(typeof(MapLegend));
     }
 
     [Test]
@@ -362,7 +358,7 @@ public class PublicApiCleanupTests
         var assembly = typeof(SgbMap).Assembly;
 
         // act
-        var trackedDataSourceType = assembly.GetType("Spillgebees.Blazor.Map.Components.Layers.TrackedDataSource`1");
+        var trackedDataSourceType = assembly.GetType("Spillgebees.Blazor.Map.TrackedDataSource`1");
 
         // assert
         trackedDataSourceType.Should().BeNull();
@@ -388,8 +384,8 @@ public class PublicApiCleanupTests
         var assembly = typeof(SgbMap).Assembly;
 
         // act
-        var pixelPointType = assembly.GetType("Spillgebees.Blazor.Map.Models.PixelPoint");
-        var pointType = assembly.GetType("Spillgebees.Blazor.Map.Models.Point");
+        var pixelPointType = assembly.GetType("Spillgebees.Blazor.Map.PixelPoint");
+        var pointType = assembly.GetType("Spillgebees.Blazor.Map.Point");
 
         // assert
         pixelPointType.Should().Be(typeof(PixelPoint));
@@ -499,7 +495,7 @@ public class PublicApiCleanupTests
     private static Type GetTrackedEntityLayerType()
     {
         var assembly = typeof(SgbMap).Assembly;
-        var trackedEntityLayerType = assembly.GetType("Spillgebees.Blazor.Map.Components.Layers.TrackedEntityLayer`1");
+        var trackedEntityLayerType = assembly.GetType("Spillgebees.Blazor.Map.TrackedEntityLayer`1");
 
         trackedEntityLayerType.Should().NotBeNull();
         return trackedEntityLayerType!;

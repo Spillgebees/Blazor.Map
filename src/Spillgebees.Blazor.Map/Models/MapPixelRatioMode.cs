@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Controls how the MapLibre canvas pixel ratio is resolved for a map instance.

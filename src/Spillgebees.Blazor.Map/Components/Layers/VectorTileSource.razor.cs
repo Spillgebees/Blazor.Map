@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
-using Spillgebees.Blazor.Map.Models;
+using Spillgebees.Blazor.Map;
 using Spillgebees.Blazor.Map.Runtime.Scene;
 
-namespace Spillgebees.Blazor.Map.Components.Layers;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// A vector tile source component that loads tiles from a TileJSON URL.

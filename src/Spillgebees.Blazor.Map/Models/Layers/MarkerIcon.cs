@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models.Layers;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Represents a custom icon for a map marker.

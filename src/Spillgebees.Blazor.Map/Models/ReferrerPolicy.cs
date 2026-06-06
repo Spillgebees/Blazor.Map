@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Spillgebees.Blazor.Map.Models;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Controls the referrer information sent with network requests.

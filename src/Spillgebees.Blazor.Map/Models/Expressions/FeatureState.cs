@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Models.Expressions;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Factory for creating typed feature state keys.

@@ -4,21 +4,12 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
-using Spillgebees.Blazor.Map.Components.Layers;
+using Spillgebees.Blazor.Map;
 using Spillgebees.Blazor.Map.Interop;
-using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.Controls;
-using Spillgebees.Blazor.Map.Models.Events;
-using Spillgebees.Blazor.Map.Models.Layers;
-using Spillgebees.Blazor.Map.Models.Legends;
-using Spillgebees.Blazor.Map.Models.Overlays;
-using Spillgebees.Blazor.Map.Models.Popups;
-using Spillgebees.Blazor.Map.Models.TrackedEntities;
-using Spillgebees.Blazor.Map.Models.Visibility;
 using Spillgebees.Blazor.Map.Runtime.Scene;
 using Spillgebees.Blazor.Map.Utilities;
 
-namespace Spillgebees.Blazor.Map.Components;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Base map component providing core map functionality.
@@ -127,7 +118,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 
     /// <summary>
     /// Child content rendered inside the map's cascading value scope.
-    /// Use this to place <see cref="Layers.GeoJsonSource"/> and layer components.
+    /// Use this to place <see cref="GeoJsonSource"/> and layer components.
     /// </summary>
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
@@ -399,7 +390,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// </summary>
     /// <param name="sourceId">The source containing the feature.</param>
     /// <param name="featureId">The feature's ID (from the GeoJSON <c>id</c> field or <c>promoteId</c>).</param>
-    /// <param name="state">A single state entry created via <see cref="Models.Expressions.FeatureStateKey{T}.Set"/>.</param>
+    /// <param name="state">A single state entry created via <see cref="FeatureStateKey{T}.Set"/>.</param>
     /// <param name="sourceLayerId">The source layer ID (required for vector tile sources).</param>
     public async ValueTask SetFeatureStateAsync(
         string sourceId,

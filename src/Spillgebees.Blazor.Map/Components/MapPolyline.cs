@@ -1,10 +1,8 @@
 using System.Collections.Immutable;
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map.Models;
-using Spillgebees.Blazor.Map.Models.Layers;
-using Spillgebees.Blazor.Map.Models.Popups;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Components;
+namespace Spillgebees.Blazor.Map;
 
 public sealed class MapPolyline : ComponentBase, IAsyncDisposable
 {

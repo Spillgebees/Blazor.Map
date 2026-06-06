@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 
-namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// A high-frequency tracked entity with a stable ID, primary symbol, and optional companion decorations.

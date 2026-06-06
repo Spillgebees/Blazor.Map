@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map.Models.Expressions;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Components.Layers;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// A MapLibre fill-extrusion layer that renders 3D extruded polygons.

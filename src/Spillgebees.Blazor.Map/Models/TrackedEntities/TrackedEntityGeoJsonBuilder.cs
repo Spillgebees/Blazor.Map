@@ -1,6 +1,6 @@
-using Spillgebees.Blazor.Map.Models.Options;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Builds diff-friendly GeoJSON feature collections for tracked entities.

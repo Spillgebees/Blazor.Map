@@ -1,3 +1,3 @@
-namespace Spillgebees.Blazor.Map.Components;
+namespace Spillgebees.Blazor.Map;
 
 public partial class SgbMap : BaseMap;

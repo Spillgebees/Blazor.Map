@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map.Models.Controls;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Components;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Registers a geolocate control subcomponent.
@@ -38,5 +38,6 @@ public sealed class GeolocateMapControl : ComponentBase, IAsyncDisposable
 
     public ValueTask DisposeAsync() => _registration.DisposeAsync(Registry);
 
-    private MapControlDefinition BuildControl() => new GeolocateControlDefinition(Id, Visible, Position, TrackUser, Order);
+    private MapControlDefinition BuildControl() =>
+        new GeolocateControlDefinition(Id, Visible, Position, TrackUser, Order);
 }

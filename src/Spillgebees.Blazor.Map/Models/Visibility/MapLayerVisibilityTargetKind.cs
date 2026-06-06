@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Spillgebees.Blazor.Map.Models.Visibility;
+namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// Identifies how a layer visibility target should be resolved.

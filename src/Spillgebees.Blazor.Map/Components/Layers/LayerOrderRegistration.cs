@@ -1,4 +1,4 @@
-namespace Spillgebees.Blazor.Map.Components.Layers;
+namespace Spillgebees.Blazor.Map;
 
 internal sealed record LayerOrderRegistration(
     int DeclarationOrder,

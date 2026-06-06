@@ -1,6 +1,6 @@
-using Spillgebees.Blazor.Map.Models.Expressions;
+using Spillgebees.Blazor.Map;
 
-namespace Spillgebees.Blazor.Map.Models.TrackedEntities;
+namespace Spillgebees.Blazor.Map;
 
 public static class TrackedEntityVisualDefaults
 {
