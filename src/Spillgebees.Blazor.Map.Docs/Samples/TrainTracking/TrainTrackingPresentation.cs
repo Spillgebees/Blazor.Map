@@ -251,14 +251,12 @@ public static class TrainTrackingPresentation
 
     public static AnimationOptions TrainAnimation { get; } = new(Duration: 2000, Easing: AnimationEasing.EaseInOut);
 
-    public static TrackedEntityClusterOptions TrackedTrainClusterOptions { get; } =
-        new(
-            Enabled: true,
-            Radius: 64,
-            MaxZoom: 12,
-            MinPoints: 1,
-            ClickBehavior: TrackedEntityClusterClickBehavior.ZoomToDissolve,
-            Properties: new Dictionary<string, object>
+    public static ClusterOptions TrackedTrainClusterOptions { get; } =
+        ClusterOptions.Create(
+            radius: 64,
+            maxZoom: 12,
+            minPoints: 1,
+            properties: new Dictionary<string, object>
             {
                 ["internationalPresence"] = new object[] { "max", new object[] { "get", "internationalPresence" } },
             }

@@ -26,8 +26,10 @@ public partial class TrainTrackingExample : IAsyncDisposable
 
     private MapOptions _mapOptions = null!;
     private readonly AnimationOptions _trainAnimation = TrainTrackingPresentation.TrainAnimation;
-    private readonly TrackedEntityClusterOptions _trainClusterOptions =
-        TrainTrackingPresentation.TrackedTrainClusterOptions;
+    private readonly TrackedEntitySourceOptions _trainSourceOptions = new(
+        TrainTrackingPresentation.TrackedTrainClusterOptions,
+        TrackedEntityClusterClickBehavior.ZoomToDissolve
+    );
     private readonly TrackedEntityBehaviorOptions<TrainSampleState> _trainBehavior;
     private readonly TrackedEntityCallbacks<TrainSampleState> _trainCallbacks;
     private readonly object[] _trainIconOpacityExpr = TrainTrackingPresentation.TrainIconOpacityExpression;
@@ -300,7 +302,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
             Visual: new TrackedEntityVisualOptions<TrainSampleState>(
                 Symbol: _trainSymbol,
                 Decorations: _trainDecorations,
-                Cluster: _trainClusterOptions,
+                Source: _trainSourceOptions,
                 Animation: _trainAnimation,
                 Visible: _visibility.IsVisible("trains"),
                 PrimaryIconOpacity: _trainIconOpacityExpr

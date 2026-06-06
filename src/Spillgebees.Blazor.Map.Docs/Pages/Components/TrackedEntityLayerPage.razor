@@ -20,7 +20,7 @@
     <li><code>TrackedEntitySymbolOptions</code> for icon, position, rotation, and color selectors</li>
     <li>Optional tracked popups via <code>TrackedEntitySymbolOptions.PopupSelector</code> (click and hover triggers)</li>
     <li>Multi-layer decorations with conditional display modes (always, hover, selected)</li>
-    <li>Zoom-to-dissolve clustering via <code>TrackedEntityClusterOptions</code></li>
+    <li>Zoom-to-dissolve clustering via shared <code>ClusterOptions</code> and <code>TrackedEntitySourceOptions</code></li>
     <li>Hover and select interaction through feature-state</li>
     <li>Smooth position interpolation via <code>AnimationOptions</code></li>
     <li>SVG-to-data-URI custom icon registration via the map <code>Images</code> parameter</li>
@@ -28,7 +28,91 @@
     <li>Interactive <a href="/components/controls#legend_map_controls">LegendMapControl</a> inside <code>MapControls</code>, with custom swatch templates</li>
 </ul>
 
+<h2 id="tracked_entity_clustering">// tracked_entity_clustering</h2>
+<p><code>TrackedEntityLayer</code> uses the same source-level <code>ClusterOptions</code> model as <code>GeoJsonSource</code>. The cluster settings control the MapLibre GeoJSON source; the <code>ClusterLayerSet</code> controls only the generated visual cluster layers. Use <code>TrackedEntitySourceOptions</code> when you also need to change the tracked cluster click behavior.</p>
+<CodeBlock Language="razor" Files="@_trackedClusteringExamples" />
+<p>MapLibre runs one clustering algorithm per GeoJSON source. If two views need different radii, max zooms, or aggregate properties at the same time, model them as separate sources or tracked layers.</p>
+
 <ExampleView TComponent="TrainTrackingExample"
              AdditionalSources="@([typeof(TrainTrackingPresentation), typeof(TrainSampleSimulation)])">
     <TrainTrackingExample />
 </ExampleView>
+
+@code {
+    private static readonly Dictionary<string, string> _trackedClusteringExamples = new()
+    {
+        ["DefaultTrackedEntityClustering.razor"] = """
+            @code {
+                private IReadOnlyList<Train> _trains = [];
+                private TrackedEntityLayerDefinition<Train>? _trackedLayer;
+
+                protected override void OnInitialized()
+                {
+                    _trains = LoadTrains();
+
+                    _trackedLayer = new TrackedEntityLayerDefinition<Train>(
+                        Id: "trains",
+                        Items: _trains,
+                        IdOptions: new(train => train.Id),
+                        Visual: new TrackedEntityVisualOptions<Train>(
+                            Symbol: CreateTrainSymbol(),
+                            Decorations: [],
+                            Cluster: ClusterOptions.Default,
+                            Animation: null,
+                            Visible: true,
+                            PrimaryIconOpacity: null),
+                        Behavior: new TrackedEntityBehaviorOptions<Train>(),
+                        Callbacks: new TrackedEntityCallbacks<Train>());
+                }
+            }
+            """,
+        ["CustomTrackedEntityClusters.razor"] = """
+            @code {
+                private static readonly ClusterOptions _trainClusters = ClusterOptions.Create(
+                    radius: 64,
+                    maxZoom: 12,
+                    minPoints: 2,
+                    properties: new Dictionary<string, object>
+                    {
+                        ["internationalPresence"] = new object[] { "max", new object[] { "get", "internationalPresence" } },
+                    },
+                    layerSet: ClusterLayerSet.Custom(
+                        ClusterLayerDefinition.Circle(
+                            "cluster-halo",
+                            color: "#f97316",
+                            radius: Expr.Step("point_count", 28, 10, 36, 50, 44),
+                            opacity: 0.22),
+                        ClusterLayerDefinition.Circle(
+                            "clusters",
+                            color: Expr.Step("internationalPresence", "#2563eb", 1, "#dc2626"),
+                            radius: Expr.Step("point_count", 18, 10, 24, 50, 30),
+                            strokeColor: "#ffffff",
+                            strokeWidth: 2),
+                        ClusterLayerDefinition.Symbol(
+                            "cluster-count",
+                            textField: Expr.Get("point_count_abbreviated"),
+                            textColor: "#ffffff",
+                            textSize: 13)));
+
+                private static readonly TrackedEntitySourceOptions _source = new(
+                    _trainClusters,
+                    TrackedEntityClusterClickBehavior.ZoomToDissolve);
+
+                private TrackedEntityLayerDefinition<Train> CreateTrackedLayer(IReadOnlyList<Train> trains) =>
+                    new(
+                        Id: "trains",
+                        Items: trains,
+                        IdOptions: new(train => train.Id),
+                        Visual: new TrackedEntityVisualOptions<Train>(
+                            Symbol: CreateTrainSymbol(),
+                            Decorations: [],
+                            Source: _source,
+                            Animation: null,
+                            Visible: true,
+                            PrimaryIconOpacity: null),
+                        Behavior: new TrackedEntityBehaviorOptions<Train>(),
+                        Callbacks: new TrackedEntityCallbacks<Train>());
+            }
+            """,
+    };
+}

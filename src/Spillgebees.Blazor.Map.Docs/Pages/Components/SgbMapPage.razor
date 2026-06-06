@@ -70,6 +70,11 @@
 <p>Use batch overlay components for app lists such as stations and tracks. They live in <code>MapFeatures</code> and adapt your items with selectors.</p>
 <CodeBlock Language="razor" Files="@_overlaySections" />
 
+<h2 id="geojson_clustering">// geojson_clustering</h2>
+<p><code>ClusterOptions</code> enables MapLibre source clustering for point features. Source clustering and visual layers are separate: <code>ClusterOptions</code> configures the GeoJSON source, while <code>ClusterLayerSet</code> chooses the generated cluster circles and labels. Keep unclustered feature layers filtered with <code>!has point_count</code> when the source also renders clusters.</p>
+<CodeBlock Language="razor" Files="@_geoJsonClusteringExamples" />
+<p><strong>MapLibre limitation:</strong> a GeoJSON source has one clustering algorithm. Use multiple sources as an advanced escape hatch when the same data needs different cluster radius, max zoom, minimum points, or aggregate properties.</p>
+
 <h2 id="popups">// popups</h2>
 <p>Three trigger modes: click, hover, and permanent. Attach a <code>PopupOptions</code> record to any <code>Marker</code> or <code>Circle</code> via its <code>Popup</code> property. Set <code>CloseButton: false</code> on permanent popups for a cleaner look.</p>
 <p><strong>Popup safety:</strong> use <code>PopupOptions.FromText</code> by default. Use <code>PopupOptions.FromRawHtml</code> only with trusted or sanitized HTML.</p>
@@ -158,6 +163,94 @@
                                  IsOn="@_alertsVisible"
                                  IsOnChanged="value => _alertsVisible = value" />
             </ButtonGroupMapControl>
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _geoJsonClusteringExamples = new()
+    {
+        ["DefaultGeoJsonClustering.razor"] = """
+            <GeoJsonSource Id="stations"
+                           Data="@_stationGeoJson"
+                           ClusterOptions="@ClusterOptions.Default"
+                           Layers="@_stationLayers" />
+
+            @code {
+                private static readonly IReadOnlyList<MapLayerDefinition> _stationLayers =
+                [
+                    MapLayer.Circle(
+                        "station-points",
+                        color: "#0f172a",
+                        radius: 5,
+                        filter: new object[] { "!", new object[] { "has", "point_count" } }),
+                ];
+            }
+            """,
+        ["CustomClusterLayers.razor"] = """
+            <GeoJsonSource Id="stations"
+                           Data="@_stationGeoJson"
+                           ClusterOptions="@_clusterOptions"
+                           Layers="@_stationLayers" />
+
+            @code {
+                private static readonly ClusterOptions _clusterOptions = ClusterOptions.Create(
+                    radius: 70,
+                    maxZoom: 13,
+                    layerSet: ClusterLayerSet.Custom(
+                        ClusterLayerDefinition.Circle(
+                            "cluster-outer",
+                            color: "#38bdf8",
+                            radius: Expr.Step("point_count", 26, 25, 34, 100, 44),
+                            opacity: 0.25),
+                        ClusterLayerDefinition.Circle(
+                            "cluster-inner",
+                            color: "#0369a1",
+                            radius: Expr.Step("point_count", 16, 25, 22, 100, 28),
+                            strokeColor: "#ffffff",
+                            strokeWidth: 2),
+                        ClusterLayerDefinition.Symbol(
+                            "cluster-count",
+                            textField: Expr.Get("point_count_abbreviated"),
+                            textColor: "#ffffff",
+                            textSize: 13)));
+            }
+            """,
+        ["SourceClusteringWithoutVisualLayers.razor"] = """
+            <GeoJsonSource Id="stations"
+                           Data="@_stationGeoJson"
+                           ClusterOptions="@ClusterOptions.Create(layerSet: ClusterLayerSet.None)"
+                           Layers="@_stationLayers" />
+            """,
+        ["ClusterPropertiesAndStyling.razor"] = """
+            <GeoJsonSource Id="incidents"
+                           Data="@_incidentGeoJson"
+                           ClusterOptions="@_incidentClusters"
+                           Layers="@_incidentLayers" />
+
+            @code {
+                private static readonly ClusterOptions _incidentClusters = ClusterOptions.Create(
+                    properties: new Dictionary<string, object>
+                    {
+                        ["maxSeverity"] = new object[] { "max", new object[] { "get", "severity" } },
+                    },
+                    layerSet: ClusterLayerSet.Custom(
+                        ClusterLayerDefinition.Circle(
+                            "clusters",
+                            color: Expr.Step("maxSeverity", "#22c55e", 2, "#f59e0b", 4, "#ef4444"),
+                            radius: Expr.Step("point_count", 18, 10, 26, 50, 34)),
+                        ClusterLayerDefinition.Symbol(
+                            "cluster-count",
+                            textField: Expr.Get("point_count_abbreviated"),
+                            textColor: "#ffffff")));
+
+                private static readonly IReadOnlyList<MapLayerDefinition> _incidentLayers =
+                [
+                    MapLayer.Circle(
+                        "incident-points",
+                        color: Expr.Step("severity", "#22c55e", 2, "#f59e0b", 4, "#ef4444"),
+                        radius: 6,
+                        filter: new object[] { "!", new object[] { "has", "point_count" } }),
+                ];
+            }
             """,
     };
 }
