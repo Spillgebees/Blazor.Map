@@ -98,7 +98,7 @@ internal sealed class MapSceneBatchBuilder
         _mutations.Add(MapSceneMutation.SetFilter(layerId, filter));
     }
 
-    internal void SetLayerZoomRange(string layerId, int minZoom, int maxZoom)
+    internal void SetLayerZoomRange(string layerId, double minZoom, double maxZoom)
     {
         _registry.SetLayerZoomRange(layerId, minZoom, maxZoom);
         _mutations.Add(MapSceneMutation.SetLayerZoomRange(layerId, minZoom, maxZoom));

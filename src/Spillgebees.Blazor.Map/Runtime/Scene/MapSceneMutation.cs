@@ -16,8 +16,8 @@ internal sealed record MapSceneMutation(
     string? PropertyName = null,
     object? PropertyValue = null,
     object? Filter = null,
-    int? MinZoom = null,
-    int? MaxZoom = null,
+    double? MinZoom = null,
+    double? MaxZoom = null,
     object? DotNetRef = null,
     bool? OnClick = null,
     bool? OnMouseEnter = null,
@@ -73,7 +73,7 @@ internal sealed record MapSceneMutation(
     internal static MapSceneMutation SetFilter(string layerId, object? filter) =>
         new("setFilter", LayerId: layerId, Filter: filter);
 
-    internal static MapSceneMutation SetLayerZoomRange(string layerId, int minZoom, int maxZoom) =>
+    internal static MapSceneMutation SetLayerZoomRange(string layerId, double minZoom, double maxZoom) =>
         new("setLayerZoomRange", LayerId: layerId, MinZoom: minZoom, MaxZoom: maxZoom);
 
     internal static MapSceneMutation MoveLayer(string layerId, string? beforeLayerId) =>

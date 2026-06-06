@@ -241,6 +241,184 @@ public class TrackedEntityLayerMapApiTests : BunitContext
         JSInterop.VerifyInvoke(FlyToIdentifier);
     }
 
+    [Test]
+    public void Should_render_default_tracked_cluster_layers_with_existing_ids_and_order()
+    {
+        // arrange
+        var cut = Render<MapTrackedEntityHarness>(parameters =>
+            parameters.Add(p => p.ClusterOptions, ClusterOptions.Default)
+        );
+
+        // act
+        var hitArea = cut.FindComponents<CircleLayer>()
+            .Single(layer => layer.Instance.Id == "tracked-data-cluster-hit-area")
+            .Instance;
+        var cluster = cut.FindComponents<CircleLayer>()
+            .Single(layer => layer.Instance.Id == "tracked-data-clusters")
+            .Instance;
+        var count = cut.FindComponents<SymbolLayer>()
+            .Single(layer => layer.Instance.Id == "tracked-data-cluster-count")
+            .Instance;
+
+        // assert
+        cluster.AfterLayerGroup.Should().Be(hitArea.Id);
+        count.AfterLayerGroup.Should().Be(cluster.Id);
+        GetPaintValue(GetLayerSpec(cluster), "circle-color").Should().Be("#2563eb");
+        GetLayoutValue(GetLayerSpec(count), "text-field")
+            .Should()
+            .BeEquivalentTo(new object[] { "get", "point_count_abbreviated" });
+    }
+
+    [Test]
+    public void Should_render_custom_tracked_cluster_circle_and_count_layers()
+    {
+        // arrange
+        var clusterOptions = ClusterOptions.Create(
+            layerSet: ClusterLayerSet.Custom(
+                ClusterLayerDefinition.Circle("outer", color: "#111827", radius: 36),
+                ClusterLayerDefinition.Circle("inner", color: "#60a5fa", radius: 18),
+                ClusterLayerDefinition.Symbol("count", textColor: "#f8fafc", textSize: 12)
+            )
+        );
+
+        // act
+        var cut = Render<MapTrackedEntityHarness>(parameters => parameters.Add(p => p.ClusterOptions, clusterOptions));
+
+        // assert
+        cut.FindComponents<CircleLayer>().Should().Contain(layer => layer.Instance.Id == "tracked-data-outer");
+        cut.FindComponents<CircleLayer>().Should().Contain(layer => layer.Instance.Id == "tracked-data-inner");
+        cut.FindComponents<SymbolLayer>().Should().Contain(layer => layer.Instance.Id == "tracked-data-count");
+        cut.FindComponents<CircleLayer>()
+            .Should()
+            .NotContain(layer => layer.Instance.Id == "tracked-data-cluster-hit-area");
+    }
+
+    [Test]
+    public void Should_enable_tracked_source_clustering_without_visual_layers()
+    {
+        // arrange
+        var clusterOptions = ClusterOptions.Create(
+            radius: 64,
+            maxZoom: 12,
+            minPoints: 3,
+            layerSet: ClusterLayerSet.None
+        );
+
+        // act
+        var cut = Render<MapTrackedEntityHarness>(parameters => parameters.Add(p => p.ClusterOptions, clusterOptions));
+        var source = cut.FindComponents<GeoJsonSource>().First(source => source.Instance.Id == "tracked-data").Instance;
+
+        // assert
+        source.ClusterOptions!.Enabled.Should().BeTrue();
+        source.ClusterOptions.LayerSet.Should().Be(ClusterLayerSet.None);
+        source.ClusterOptions.Radius.Should().Be(clusterOptions.Radius);
+        cut.FindComponents<CircleLayer>()
+            .Should()
+            .NotContain(layer => layer.Instance.Id.Contains("cluster", StringComparison.Ordinal));
+        cut.FindComponents<SymbolLayer>()
+            .Should()
+            .NotContain(layer => layer.Instance.Id.Contains("cluster", StringComparison.Ordinal));
+    }
+
+    [Test]
+    public void Should_pass_shared_cluster_source_options_to_tracked_source()
+    {
+        // arrange
+        var properties = new Dictionary<string, object>
+        {
+            ["sum"] = new object[] { "+", new object[] { "get", "value" } },
+        };
+        var clusterOptions = ClusterOptions.Create(radius: 72, maxZoom: 10, minPoints: 4, properties: properties);
+
+        // act
+        var cut = Render<MapTrackedEntityHarness>(parameters => parameters.Add(p => p.ClusterOptions, clusterOptions));
+        var source = cut.FindComponents<GeoJsonSource>().First(source => source.Instance.Id == "tracked-data").Instance;
+
+        // assert
+        source.ClusterOptions.Should().NotBeSameAs(clusterOptions);
+        source.ClusterOptions!.Radius.Should().Be(72);
+        source.ClusterOptions.MaxZoom.Should().Be(10);
+        source.ClusterOptions.MinPoints.Should().Be(4);
+        source.ClusterOptions.Properties.Should().BeSameAs(properties);
+        source.ClusterOptions.LayerSet.Should().Be(ClusterLayerSet.None);
+    }
+
+    [Test]
+    public void Should_not_pass_primary_cluster_properties_to_decoration_source()
+    {
+        // arrange
+        var properties = new Dictionary<string, object>
+        {
+            ["sum"] = new object[] { "+", new object[] { "get", "value" } },
+        };
+        var clusterOptions = ClusterOptions.Create(radius: 72, minPoints: 4, properties: properties);
+
+        // act
+        var cut = Render<MapTrackedEntityHarness>(parameters => parameters.Add(p => p.ClusterOptions, clusterOptions));
+        var decorationSource = cut.FindComponents<GeoJsonSource>()
+            .First(source => source.Instance.Id == "tracked-data-decorations")
+            .Instance;
+
+        // assert
+        decorationSource.ClusterOptions!.Enabled.Should().BeTrue();
+        decorationSource.ClusterOptions.Properties.Should().BeNull();
+    }
+
+    [Test]
+    public void Should_preserve_fractional_custom_cluster_layer_zoom_ranges()
+    {
+        // arrange
+        var clusterOptions = ClusterOptions.Create(
+            layerSet: ClusterLayerSet.Custom(
+                ClusterLayerDefinition.Circle("outer", minZoom: 4.25, maxZoom: 10.75),
+                ClusterLayerDefinition.Symbol("count", minZoom: 5.5, maxZoom: 12.25)
+            )
+        );
+
+        // act
+        var cut = Render<MapTrackedEntityHarness>(parameters => parameters.Add(p => p.ClusterOptions, clusterOptions));
+        var circle = cut.FindComponents<CircleLayer>()
+            .Single(layer => layer.Instance.Id == "tracked-data-outer")
+            .Instance;
+        var symbol = cut.FindComponents<SymbolLayer>()
+            .Single(layer => layer.Instance.Id == "tracked-data-count")
+            .Instance;
+
+        // assert
+        circle.MinZoom.Should().Be(4.25);
+        circle.MaxZoom.Should().Be(10.75);
+        GetLayerSpec(circle)["minzoom"].Should().Be(4.25);
+        GetLayerSpec(circle)["maxzoom"].Should().Be(10.75);
+        symbol.MinZoom.Should().Be(5.5);
+        symbol.MaxZoom.Should().Be(12.25);
+        GetLayerSpec(symbol)["minzoom"].Should().Be(5.5);
+        GetLayerSpec(symbol)["maxzoom"].Should().Be(12.25);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_zoom_to_dissolve_when_custom_interactive_cluster_layer_is_clicked(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        cancellationToken.ThrowIfCancellationRequested();
+        var clusterOptions = ClusterOptions.Create(
+            layerSet: ClusterLayerSet.Custom(ClusterLayerDefinition.Circle("custom-cluster", color: "#000000"))
+        );
+        var cut = Render<MapTrackedEntityHarness>(parameters => parameters.Add(p => p.ClusterOptions, clusterOptions));
+        await cut.Instance.Map.OnMapInitializedAsync();
+        var customCluster = cut.FindComponents<CircleLayer>()
+            .Single(layer => layer.Instance.Id == "tracked-data-custom-cluster")
+            .Instance;
+
+        // act
+        await cut.InvokeAsync(() => customCluster.OnClick.InvokeAsync(CreateClusterFeatureEvent()));
+
+        // assert
+        JSInterop.VerifyInvoke(GetClusterExpansionZoomIdentifier);
+        JSInterop.VerifyInvoke(FlyToIdentifier);
+    }
+
     [Test, Timeout(TestTimeoutMs)]
     public async Task Should_apply_and_diff_hover_and_selected_feature_state(CancellationToken cancellationToken)
     {
@@ -494,6 +672,9 @@ public class TrackedEntityLayerMapApiTests : BunitContext
         public bool EnableCluster { get; set; }
 
         [Parameter]
+        public ClusterOptions? ClusterOptions { get; set; }
+
+        [Parameter]
         public Func<TestVehicle, PopupOptions?>? PopupSelector { get; set; }
 
         [Parameter]
@@ -524,9 +705,14 @@ public class TrackedEntityLayerMapApiTests : BunitContext
                         PopupSelector: PopupSelector
                     ),
                     Decorations: Decorations,
-                    Cluster: EnableCluster
-                        ? new TrackedEntityClusterOptions(Enabled: true, MinPoints: 1)
-                        : new TrackedEntityClusterOptions(),
+                    Source: new TrackedEntitySourceOptions(
+                        ClusterOptions
+                            ?? (
+                                EnableCluster
+                                    ? Spillgebees.Blazor.Map.ClusterOptions.Create(minPoints: 1)
+                                    : Spillgebees.Blazor.Map.ClusterOptions.None
+                            )
+                    ),
                     Animation: null,
                     Visible: true,
                     PrimaryIconOpacity: null

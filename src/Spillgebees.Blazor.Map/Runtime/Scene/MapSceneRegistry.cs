@@ -218,7 +218,7 @@ internal sealed class MapSceneRegistry
         _layers[layerId] = layer with { LayerSpec = layerSpec };
     }
 
-    internal void SetLayerZoomRange(string layerId, int minZoom, int maxZoom)
+    internal void SetLayerZoomRange(string layerId, double minZoom, double maxZoom)
     {
         if (!_layers.TryGetValue(layerId, out var layer))
         {

@@ -174,7 +174,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
 
     private IReadOnlyList<TrackedEntityDecorationOptions<TItem>> Decorations { get; set; } = [];
 
-    private TrackedEntityClusterOptions Cluster { get; set; } = new();
+    private TrackedEntitySourceOptions Source { get; set; } = TrackedEntitySourceOptions.Default;
 
     private TrackedEntityInteractionOptions<TItem> Interaction { get; set; } = new();
 
@@ -209,7 +209,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
 
     internal string PrimaryLayerId => $"{SourceId}-symbols";
 
-    internal string? PrimaryAfterLayerGroup => Cluster.Enabled ? ClusterCountLayerId : null;
+    internal string? PrimaryAfterLayerGroup => GetLastClusterLayerId();
 
     private bool HasDecorations => _entities.Any(e => e.Decorations.Count > 0);
 
@@ -283,7 +283,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
         IdOptions = Layer.IdOptions;
         Symbol = Layer.Visual.Symbol;
         Decorations = Layer.Visual.Decorations;
-        Cluster = Layer.Visual.Cluster;
+        Source = Layer.Visual.Source;
         Interaction = Layer.Behavior.Interaction;
         Animation = Layer.Visual.Animation;
         Visible = Layer.Visual.Visible;
@@ -462,7 +462,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
 
     private async Task HandleGeneratedClusterClickAsync(LayerFeatureEventArgs featureEvent)
     {
-        if (Cluster.ClickBehavior != TrackedEntityClusterClickBehavior.ZoomToDissolve)
+        if (Source.ClusterClickBehavior != TrackedEntityClusterClickBehavior.ZoomToDissolve)
         {
             return;
         }
@@ -603,7 +603,68 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
         _hoverLeaveCancellationTokenSource = null;
     }
 
-    private IDictionary<string, object>? GetClusterProperties() => Cluster.Properties?.ToDictionary();
+    private IDictionary<string, object>? GetClusterProperties() => Source.Cluster.Properties?.ToDictionary();
+
+    private ClusterOptions GetPrimarySourceClusterOptions() =>
+        GetSourceClusterOptions(Source.Cluster.MinPoints, Source.Cluster.Properties);
+
+    private ClusterOptions GetDecorationClusterOptions() =>
+        GetSourceClusterOptions(DecorationClusterMinPoints, properties: null);
+
+    private ClusterOptions GetSourceClusterOptions(int? minPoints, IReadOnlyDictionary<string, object>? properties) =>
+        Source.Cluster.Enabled
+            ? ClusterOptions.Create(
+                Source.Cluster.Radius,
+                Source.Cluster.MaxZoom,
+                minPoints,
+                properties,
+                ClusterLayerSet.None
+            )
+            : ClusterOptions.None;
+
+    private IReadOnlyList<ClusterLayerDefinition> GetClusterLayerDefinitions() =>
+        Source.Cluster is { Enabled: true, LayerSet.Enabled: true } ? Source.Cluster.LayerSet.Layers : [];
+
+    private bool ShouldRenderClusterHitArea() =>
+        Source.Cluster is { Enabled: true, LayerSet.Enabled: true }
+        && Source.Cluster.LayerSet == ClusterLayerSet.Default;
+
+    private string GetClusterLayerId(ClusterLayerDefinition definition) => $"{SourceId}-{definition.IdSuffix}";
+
+    private string? GetClusterLayerAfterLayerGroup(int index)
+    {
+        var definitions = GetClusterLayerDefinitions();
+        if (definitions.Count == 0)
+        {
+            return null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(definitions[index].AfterLayerGroup))
+        {
+            return definitions[index].AfterLayerGroup;
+        }
+
+        if (index > 0)
+        {
+            return GetClusterLayerId(definitions[index - 1]);
+        }
+
+        return ShouldRenderClusterHitArea() ? ClusterHitAreaLayerId : null;
+    }
+
+    private string? GetLastClusterLayerId()
+    {
+        var definitions = GetClusterLayerDefinitions();
+        if (definitions.Count > 0)
+        {
+            return GetClusterLayerId(definitions[^1]);
+        }
+
+        return ShouldRenderClusterHitArea() ? ClusterHitAreaLayerId : null;
+    }
+
+    private static StyleValue<string>? GetClusterSymbolTextField(ClusterSymbolLayerDefinition definition) =>
+        definition.TextField ?? Expr.Get("point_count_abbreviated");
 
     private async Task HandlePopupOnClickAsync(TrackedEntityInteractionEventArgs<TItem> interaction)
     {

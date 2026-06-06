@@ -39,10 +39,10 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
     public object? Filter { get; set; }
 
     [Parameter]
-    public int? MinZoom { get; set; }
+    public double? MinZoom { get; set; }
 
     [Parameter]
-    public int? MaxZoom { get; set; }
+    public double? MaxZoom { get; set; }
 
     [Parameter]
     public string? BeforeLayerId { get; set; }
@@ -75,8 +75,8 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
     private Dictionary<string, object?>? _previousPaint;
     private Dictionary<string, object?>? _previousLayout;
     private object? _previousFilter;
-    private int? _previousMinZoom;
-    private int? _previousMaxZoom;
+    private double? _previousMinZoom;
+    private double? _previousMaxZoom;
     private bool _previousVisible;
     private EventCallback<LayerFeatureEventArgs> _previousOnClick;
     private EventCallback<LayerFeatureEventArgs> _previousOnMouseEnter;
