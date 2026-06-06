@@ -156,6 +156,8 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
     private readonly List<string> _registeredDefinitionLayerIds = [];
     private MapLayerOrderOptions _previousOrderOptions = MapLayerOrderOptions.Empty;
     private IReadOnlyList<MapLayerDefinition> _previousLayerDefinitions = [];
+    private IReadOnlyDictionary<string, object?> _previousSourceConfiguration = new Dictionary<string, object?>();
+    private static readonly object[] ClusterLayerFilter = ["has", "point_count"];
 
     /// <inheritdoc/>
     MapLayerOrderOptions IMapSource.OrderOptions => new(LayerGroup, BeforeLayerGroup, AfterLayerGroup);
@@ -249,6 +251,13 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
     /// <inheritdoc/>
     protected override async Task OnParametersSetAsync()
     {
+        var currentSourceConfiguration = BuildSourceConfiguration();
+        if (_isInitialized && !SourceConfigurationsEqual(_previousSourceConfiguration, currentSourceConfiguration))
+        {
+            await ReplaceSourceAsync(currentSourceConfiguration);
+            return;
+        }
+
         if (_isInitialized && Data != _previousData && Data is not null)
         {
             _previousData = Data;
@@ -287,11 +296,21 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
 
     private async Task AddSourceToMapAsync()
     {
+        var sourceConfiguration = BuildSourceConfiguration();
+        var cleanSpec = BuildSourceSpec(sourceConfiguration);
+
+        _previousData = Data;
+        _previousOrderOptions = OrderOptions;
+        _previousSourceConfiguration = CloneSourceConfiguration(sourceConfiguration);
+        await Map!.SceneRegistry.RegisterSourceAsync(new MapSourceDescriptor(Id, cleanSpec));
+    }
+
+    private IReadOnlyDictionary<string, object?> BuildSourceConfiguration()
+    {
         var clusterOptions = GetEffectiveClusterOptions();
-        var sourceSpec = new Dictionary<string, object?>
+        var sourceConfiguration = new Dictionary<string, object?>
         {
             ["type"] = "geojson",
-            ["data"] = Data,
             ["maxzoom"] = MaxZoom,
             ["cluster"] = clusterOptions.Enabled ? true : null,
             ["generateId"] = GenerateId ? true : null,
@@ -300,39 +319,93 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
 
         if (clusterOptions.Enabled)
         {
-            sourceSpec["clusterRadius"] = clusterOptions.Radius;
+            sourceConfiguration["clusterRadius"] = clusterOptions.Radius;
             if (clusterOptions.MaxZoom.HasValue)
             {
-                sourceSpec["clusterMaxZoom"] = clusterOptions.MaxZoom.Value;
+                sourceConfiguration["clusterMaxZoom"] = clusterOptions.MaxZoom.Value;
             }
 
             if (clusterOptions.MinPoints.HasValue)
             {
-                sourceSpec["clusterMinPoints"] = clusterOptions.MinPoints.Value;
+                sourceConfiguration["clusterMinPoints"] = clusterOptions.MinPoints.Value;
             }
 
             if (clusterOptions.Properties is not null)
             {
-                sourceSpec["clusterProperties"] = clusterOptions.Properties;
+                sourceConfiguration["clusterProperties"] = clusterOptions.Properties;
             }
         }
 
         if (PromoteId is not null)
         {
-            sourceSpec["promoteId"] = PromoteId;
+            sourceConfiguration["promoteId"] = PromoteId;
         }
 
         if (Attribution is not null)
         {
-            sourceSpec["attribution"] = Attribution;
+            sourceConfiguration["attribution"] = Attribution;
         }
 
-        // Remove null entries
-        var cleanSpec = sourceSpec.Where(kv => kv.Value is not null).ToDictionary(kv => kv.Key, kv => kv.Value);
+        return sourceConfiguration
+            .Where(kv => kv.Value is not null)
+            .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
+    }
+
+    private Dictionary<string, object?> BuildSourceSpec(IReadOnlyDictionary<string, object?> sourceConfiguration)
+    {
+        var sourceSpec = new Dictionary<string, object?>(sourceConfiguration, StringComparer.Ordinal)
+        {
+            ["data"] = Data,
+        };
+
+        return sourceSpec;
+    }
+
+    private async Task ReplaceSourceAsync(IReadOnlyDictionary<string, object?> sourceConfiguration)
+    {
+        var layerDefinitions = GetCurrentLayerDefinitions();
+        var definitionLayerDescriptors = BuildDefinitionLayerDescriptors(layerDefinitions).ToArray();
+        var childLayerDescriptors = _registeredLayers
+            .Select(layer => new MapLayerDescriptor(
+                layer.Id,
+                layer.BuildLayerSpec(),
+                layer.BeforeLayerId,
+                layer.GetLayerOrderRegistration()
+            ))
+            .ToArray();
+        var batch = Map!.SceneRegistry.CreateBatchBuilder();
+
+        batch.RemoveSource(Id);
+        batch.AddSource(new MapSourceDescriptor(Id, BuildSourceSpec(sourceConfiguration)));
+        foreach (var descriptor in definitionLayerDescriptors.Concat(childLayerDescriptors))
+        {
+            batch.AddLayer(descriptor);
+        }
+
+        try
+        {
+            await Map.SceneRegistry.ApplyBatchAsync(batch);
+        }
+        catch (JSDisconnectedException)
+        {
+            return;
+        }
+        catch (ObjectDisposedException)
+        {
+            return;
+        }
 
         _previousData = Data;
         _previousOrderOptions = OrderOptions;
-        await Map!.SceneRegistry.RegisterSourceAsync(new MapSourceDescriptor(Id, cleanSpec));
+        _previousSourceConfiguration = CloneSourceConfiguration(sourceConfiguration);
+        _registeredDefinitionLayerIds.Clear();
+        _registeredDefinitionLayerIds.AddRange(definitionLayerDescriptors.Select(descriptor => descriptor.LayerId));
+        _previousLayerDefinitions = layerDefinitions.ToArray();
+
+        foreach (var layer in _registeredLayers)
+        {
+            await layer.NotifyLayerAddedAsync();
+        }
     }
 
     private ClusterOptions GetEffectiveClusterOptions()
@@ -546,12 +619,129 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
         );
     }
 
-    private IReadOnlyList<MapLayerDefinition> GetCurrentLayerDefinitions() => Layers ?? [];
+    private IReadOnlyList<MapLayerDefinition> GetCurrentLayerDefinitions()
+    {
+        var clusterLayerDefinitions = GetCurrentClusterLayerDefinitions();
+        if (clusterLayerDefinitions.Count == 0)
+        {
+            return Layers ?? [];
+        }
+
+        return Layers is { Count: > 0 } ? clusterLayerDefinitions.Concat(Layers).ToArray() : clusterLayerDefinitions;
+    }
+
+    private IReadOnlyList<MapLayerDefinition> GetCurrentClusterLayerDefinitions()
+    {
+        if (ClusterOptions is not { Enabled: true, LayerSet.Enabled: true })
+        {
+            return [];
+        }
+
+        return ClusterOptions.LayerSet.Layers.Select(MapClusterLayerDefinition).ToArray();
+    }
+
+    private static MapLayerDefinition MapClusterLayerDefinition(ClusterLayerDefinition layerDefinition) =>
+        layerDefinition switch
+        {
+            ClusterCircleLayerDefinition circle => new CircleLayerDefinition(
+                circle.IdSuffix,
+                circle.Color,
+                circle.Radius,
+                circle.Opacity,
+                circle.StrokeWidth,
+                circle.StrokeColor,
+                key: $"cluster:{circle.IdSuffix}",
+                filter: ClusterLayerFilter,
+                minZoom: circle.MinZoom,
+                maxZoom: circle.MaxZoom,
+                visible: circle.Visible,
+                beforeLayerId: circle.BeforeLayerId,
+                layerGroup: circle.LayerGroup,
+                beforeLayerGroup: circle.BeforeLayerGroup,
+                afterLayerGroup: circle.AfterLayerGroup
+            ),
+            ClusterSymbolLayerDefinition symbol => new SymbolLayerDefinition(
+                symbol.IdSuffix,
+                symbol.TextField ?? Expr.Get("point_count_abbreviated"),
+                symbol.TextSize,
+                textColor: symbol.TextColor,
+                key: $"cluster:{symbol.IdSuffix}",
+                filter: ClusterLayerFilter,
+                minZoom: symbol.MinZoom,
+                maxZoom: symbol.MaxZoom,
+                visible: symbol.Visible,
+                beforeLayerId: symbol.BeforeLayerId,
+                layerGroup: symbol.LayerGroup,
+                beforeLayerGroup: symbol.BeforeLayerGroup,
+                afterLayerGroup: symbol.AfterLayerGroup
+            ),
+            _ => throw new NotSupportedException(
+                $"Cluster layer definition type '{layerDefinition.GetType().Name}' is not supported by GeoJsonSource."
+            ),
+        };
 
     private static bool LayerDefinitionsEqual(
         IReadOnlyList<MapLayerDefinition> previous,
         IReadOnlyList<MapLayerDefinition> current
     ) => previous.SequenceEqual(current);
+
+    private static bool SourceConfigurationsEqual(
+        IReadOnlyDictionary<string, object?> previous,
+        IReadOnlyDictionary<string, object?> current
+    ) =>
+        previous.Count == current.Count
+        && previous.All(kv => current.TryGetValue(kv.Key, out var value) && ValuesEqual(kv.Value, value));
+
+    private static Dictionary<string, object?> CloneSourceConfiguration(
+        IReadOnlyDictionary<string, object?> sourceConfiguration
+    ) => sourceConfiguration.ToDictionary(kv => kv.Key, kv => CloneValue(kv.Value), StringComparer.Ordinal);
+
+    private static object? CloneValue(object? value) =>
+        value switch
+        {
+            IReadOnlyDictionary<string, object> dictionary => dictionary.ToDictionary(
+                kv => kv.Key,
+                kv => CloneValue(kv.Value)!,
+                StringComparer.Ordinal
+            ),
+            IDictionary<string, object> dictionary => dictionary.ToDictionary(
+                kv => kv.Key,
+                kv => CloneValue(kv.Value)!,
+                StringComparer.Ordinal
+            ),
+            object[] array => array.Select(CloneValue).ToArray(),
+            _ => value,
+        };
+
+    private static bool ValuesEqual(object? previous, object? current) =>
+        (previous, current) switch
+        {
+            (null, null) => true,
+            (null, _) or (_, null) => false,
+            (
+                IReadOnlyDictionary<string, object> previousDictionary,
+                IReadOnlyDictionary<string, object> currentDictionary
+            ) => SourceObjectDictionariesEqual(previousDictionary, currentDictionary),
+            (IDictionary<string, object> previousDictionary, IDictionary<string, object> currentDictionary) =>
+                SourceObjectDictionariesEqual(previousDictionary, currentDictionary),
+            (object[] previousArray, object[] currentArray) => previousArray.Length == currentArray.Length
+                && previousArray.Zip(currentArray).All(values => ValuesEqual(values.First, values.Second)),
+            _ => Equals(previous, current),
+        };
+
+    private static bool SourceObjectDictionariesEqual(
+        IReadOnlyDictionary<string, object> previous,
+        IReadOnlyDictionary<string, object> current
+    ) =>
+        previous.Count == current.Count
+        && previous.All(kv => current.TryGetValue(kv.Key, out var value) && ValuesEqual(kv.Value, value));
+
+    private static bool SourceObjectDictionariesEqual(
+        IDictionary<string, object> previous,
+        IDictionary<string, object> current
+    ) =>
+        previous.Count == current.Count
+        && previous.All(kv => current.TryGetValue(kv.Key, out var value) && ValuesEqual(kv.Value, value));
 
     /// <summary>
     /// Gets the zoom level at which a cluster expands into its children.

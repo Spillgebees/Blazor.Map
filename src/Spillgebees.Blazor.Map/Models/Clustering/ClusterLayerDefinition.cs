@@ -5,7 +5,16 @@ namespace Spillgebees.Blazor.Map;
 /// </summary>
 public abstract record ClusterLayerDefinition
 {
-    protected ClusterLayerDefinition(string idSuffix)
+    protected ClusterLayerDefinition(
+        string idSuffix,
+        double? minZoom = null,
+        double? maxZoom = null,
+        bool visible = true,
+        string? beforeLayerId = null,
+        string? layerGroup = null,
+        string? beforeLayerGroup = null,
+        string? afterLayerGroup = null
+    )
     {
         if (string.IsNullOrWhiteSpace(idSuffix))
         {
@@ -16,12 +25,33 @@ public abstract record ClusterLayerDefinition
         }
 
         IdSuffix = idSuffix;
+        MinZoom = minZoom;
+        MaxZoom = maxZoom;
+        Visible = visible;
+        BeforeLayerId = beforeLayerId;
+        LayerGroup = layerGroup;
+        BeforeLayerGroup = beforeLayerGroup;
+        AfterLayerGroup = afterLayerGroup;
     }
 
     /// <summary>
     /// The suffix appended to the source id when generating the layer id.
     /// </summary>
     public string IdSuffix { get; }
+
+    public double? MinZoom { get; }
+
+    public double? MaxZoom { get; }
+
+    public bool Visible { get; }
+
+    public string? BeforeLayerId { get; }
+
+    public string? LayerGroup { get; }
+
+    public string? BeforeLayerGroup { get; }
+
+    public string? AfterLayerGroup { get; }
 
     /// <summary>
     /// Creates a circle layer definition for cluster bubbles.
@@ -32,8 +62,30 @@ public abstract record ClusterLayerDefinition
         StyleValue<double>? radius = null,
         StyleValue<double>? opacity = null,
         StyleValue<string>? strokeColor = null,
-        StyleValue<double>? strokeWidth = null
-    ) => new(idSuffix, color, radius, opacity, strokeColor, strokeWidth);
+        StyleValue<double>? strokeWidth = null,
+        double? minZoom = null,
+        double? maxZoom = null,
+        bool visible = true,
+        string? beforeLayerId = null,
+        string? layerGroup = null,
+        string? beforeLayerGroup = null,
+        string? afterLayerGroup = null
+    ) =>
+        new(
+            idSuffix,
+            color,
+            radius,
+            opacity,
+            strokeColor,
+            strokeWidth,
+            minZoom,
+            maxZoom,
+            visible,
+            beforeLayerId,
+            layerGroup,
+            beforeLayerGroup,
+            afterLayerGroup
+        );
 
     /// <summary>
     /// Creates a symbol layer definition for cluster labels.
@@ -42,6 +94,26 @@ public abstract record ClusterLayerDefinition
         string idSuffix,
         StyleValue<string>? textField = null,
         StyleValue<double>? textSize = null,
-        StyleValue<string>? textColor = null
-    ) => new(idSuffix, textField, textSize, textColor);
+        StyleValue<string>? textColor = null,
+        double? minZoom = null,
+        double? maxZoom = null,
+        bool visible = true,
+        string? beforeLayerId = null,
+        string? layerGroup = null,
+        string? beforeLayerGroup = null,
+        string? afterLayerGroup = null
+    ) =>
+        new(
+            idSuffix,
+            textField,
+            textSize,
+            textColor,
+            minZoom,
+            maxZoom,
+            visible,
+            beforeLayerId,
+            layerGroup,
+            beforeLayerGroup,
+            afterLayerGroup
+        );
 }

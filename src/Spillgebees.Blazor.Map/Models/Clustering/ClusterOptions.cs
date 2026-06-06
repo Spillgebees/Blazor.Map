@@ -12,7 +12,8 @@ public sealed record ClusterOptions
         int radius,
         int? maxZoom,
         int? minPoints,
-        IReadOnlyDictionary<string, object>? properties
+        IReadOnlyDictionary<string, object>? properties,
+        ClusterLayerSet layerSet
     )
     {
         Enabled = enabled;
@@ -20,17 +21,18 @@ public sealed record ClusterOptions
         MaxZoom = maxZoom;
         MinPoints = minPoints;
         Properties = properties;
+        LayerSet = layerSet;
     }
 
     /// <summary>
     /// Disables source clustering.
     /// </summary>
-    public static ClusterOptions None { get; } = new(false, DefaultRadius, null, null, null);
+    public static ClusterOptions None { get; } = new(false, DefaultRadius, null, null, null, ClusterLayerSet.None);
 
     /// <summary>
     /// Enables source clustering with MapLibre-compatible default values.
     /// </summary>
-    public static ClusterOptions Default { get; } = new(true, DefaultRadius, null, null, null);
+    public static ClusterOptions Default { get; } = new(true, DefaultRadius, null, null, null, ClusterLayerSet.Default);
 
     /// <summary>
     /// Whether point features should be clustered by the source.
@@ -58,13 +60,19 @@ public sealed record ClusterOptions
     public IReadOnlyDictionary<string, object>? Properties { get; }
 
     /// <summary>
+    /// Visual layers generated for clustered features.
+    /// </summary>
+    public ClusterLayerSet LayerSet { get; }
+
+    /// <summary>
     /// Creates enabled source clustering options.
     /// </summary>
     public static ClusterOptions Create(
         int radius = DefaultRadius,
         int? maxZoom = null,
         int? minPoints = null,
-        IReadOnlyDictionary<string, object>? properties = null
+        IReadOnlyDictionary<string, object>? properties = null,
+        ClusterLayerSet? layerSet = null
     )
     {
         if (radius <= 0)
@@ -86,6 +94,6 @@ public sealed record ClusterOptions
             );
         }
 
-        return new ClusterOptions(true, radius, maxZoom, minPoints, properties);
+        return new ClusterOptions(true, radius, maxZoom, minPoints, properties, layerSet ?? ClusterLayerSet.Default);
     }
 }

@@ -9,5 +9,22 @@ public sealed record ClusterCircleLayerDefinition(
     StyleValue<double>? Radius = null,
     StyleValue<double>? Opacity = null,
     StyleValue<string>? StrokeColor = null,
-    StyleValue<double>? StrokeWidth = null
-) : ClusterLayerDefinition(IdSuffix);
+    StyleValue<double>? StrokeWidth = null,
+    double? MinZoom = null,
+    double? MaxZoom = null,
+    bool Visible = true,
+    string? BeforeLayerId = null,
+    string? LayerGroup = null,
+    string? BeforeLayerGroup = null,
+    string? AfterLayerGroup = null
+)
+    : ClusterLayerDefinition(
+        IdSuffix,
+        MinZoom,
+        MaxZoom,
+        Visible,
+        BeforeLayerId,
+        LayerGroup,
+        BeforeLayerGroup,
+        AfterLayerGroup
+    );

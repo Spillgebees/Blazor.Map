@@ -47,6 +47,43 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_register_default_cluster_visual_layers_for_default_cluster_options(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        var cut = Render<GeoJsonClusterSourceHarness>(parameters =>
+            parameters.Add(p => p.ClusterOptions, ClusterOptions.Default)
+        );
+
+        // act
+        await cut.Instance.Map.OnMapInitializedAsync();
+
+        // assert
+        cut.WaitForAssertion(() => GetAddLayerMutations().Should().HaveCount(2));
+        var circleSpec = GetLayerSpec("geojson-source-clusters");
+        circleSpec["type"].Should().Be("circle");
+        circleSpec["source"].Should().Be("geojson-source");
+        circleSpec["filter"].Should().BeEquivalentTo(new object[] { "has", "point_count" });
+        circleSpec["paint"].Should().BeAssignableTo<IReadOnlyDictionary<string, object?>>();
+
+        var symbolSpec = GetLayerSpec("geojson-source-cluster-count");
+        symbolSpec["type"].Should().Be("symbol");
+        symbolSpec["source"].Should().Be("geojson-source");
+        symbolSpec["filter"].Should().BeEquivalentTo(new object[] { "has", "point_count" });
+        symbolSpec["layout"]
+            .Should()
+            .BeEquivalentTo(
+                new Dictionary<string, object?>
+                {
+                    ["text-field"] = new object[] { "get", "point_count_abbreviated" },
+                    ["text-size"] = 14d,
+                    ["visibility"] = "visible",
+                }
+            );
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
     public async Task Should_emit_none_cluster_options_source_spec(CancellationToken cancellationToken)
     {
         // arrange
@@ -67,6 +104,346 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
         sourceSpec.Should().NotContainKey("clusterMaxZoom");
         sourceSpec.Should().NotContainKey("clusterMinPoints");
         sourceSpec.Should().NotContainKey("clusterProperties");
+        GetAddLayerMutations().Should().BeEmpty();
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_not_register_cluster_visual_layers_for_legacy_cluster_parameters(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        var cut = Render<GeoJsonClusterSourceHarness>(parameters => parameters.Add(p => p.Cluster, true));
+
+        // act
+        await cut.Instance.Map.OnMapInitializedAsync();
+
+        // assert
+        cut.WaitForAssertion(() => GetSourceSpec("geojson-source")["cluster"].Should().Be(true));
+        GetAddLayerMutations().Should().BeEmpty();
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_not_register_cluster_visual_layers_for_none_cluster_layer_set(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        var cut = Render<GeoJsonClusterSourceHarness>(parameters =>
+            parameters.Add(p => p.ClusterOptions, ClusterOptions.Create(layerSet: ClusterLayerSet.None))
+        );
+
+        // act
+        await cut.Instance.Map.OnMapInitializedAsync();
+
+        // assert
+        cut.WaitForAssertion(() => GetSourceSpec("geojson-source")["cluster"].Should().Be(true));
+        GetAddLayerMutations().Should().BeEmpty();
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_register_custom_cluster_visual_layers_with_options(CancellationToken cancellationToken)
+    {
+        // arrange
+        var options = ClusterOptions.Create(
+            layerSet: ClusterLayerSet.Custom(
+                ClusterLayerDefinition.Circle(
+                    "outer",
+                    color: "#0f172a",
+                    radius: 28,
+                    opacity: 0.4,
+                    strokeColor: "#f8fafc",
+                    strokeWidth: 3,
+                    minZoom: 2,
+                    maxZoom: 12,
+                    visible: false
+                ),
+                ClusterLayerDefinition.Circle("inner", color: "#38bdf8", radius: 18),
+                ClusterLayerDefinition.Symbol("count", textSize: 16, textColor: "#ffffff")
+            )
+        );
+        var cut = Render<GeoJsonClusterSourceHarness>(parameters => parameters.Add(p => p.ClusterOptions, options));
+
+        // act
+        await cut.Instance.Map.OnMapInitializedAsync();
+
+        // assert
+        cut.WaitForAssertion(() => GetAddLayerMutations().Should().HaveCount(3));
+        GetAddLayerMutations()
+            .Select(mutation => mutation.LayerId)
+            .Should()
+            .Equal("geojson-source-outer", "geojson-source-inner", "geojson-source-count");
+        var outerSpec = GetLayerSpec("geojson-source-outer");
+        outerSpec["filter"].Should().BeEquivalentTo(new object[] { "has", "point_count" });
+        outerSpec["minzoom"].Should().Be(2d);
+        outerSpec["maxzoom"].Should().Be(12d);
+        outerSpec["layout"].Should().BeEquivalentTo(new Dictionary<string, object?> { ["visibility"] = "none" });
+        outerSpec["paint"]
+            .Should()
+            .BeEquivalentTo(
+                new Dictionary<string, object?>
+                {
+                    ["circle-color"] = "#0f172a",
+                    ["circle-radius"] = 28d,
+                    ["circle-opacity"] = 0.4d,
+                    ["circle-stroke-color"] = "#f8fafc",
+                    ["circle-stroke-width"] = 3d,
+                }
+            );
+
+        var countSpec = GetLayerSpec("geojson-source-count");
+        countSpec["layout"]
+            .Should()
+            .BeEquivalentTo(
+                new Dictionary<string, object?>
+                {
+                    ["text-field"] = new object[] { "get", "point_count_abbreviated" },
+                    ["text-size"] = 16d,
+                    ["visibility"] = "visible",
+                }
+            );
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_register_cluster_visual_layers_before_parameter_and_child_layers(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        var cut = Render<GeoJsonClusterSourceHarness>(parameters =>
+            parameters
+                .Add(p => p.ClusterOptions, ClusterOptions.Default)
+                .Add(
+                    p => p.Layers,
+                    [
+                        MapLayer.Circle(
+                            "unclustered",
+                            filter: new object[] { "!", new object[] { "has", "point_count" } }
+                        ),
+                    ]
+                )
+                .Add(p => p.IncludeChildLayer, true)
+        );
+
+        // act
+        await cut.Instance.Map.OnMapInitializedAsync();
+
+        // assert
+        cut.WaitForAssertion(() => GetAddLayerMutations().Should().HaveCount(4));
+        GetAddLayerMutations()
+            .Select(mutation => mutation.LayerId)
+            .Should()
+            .Equal(
+                "geojson-source-clusters",
+                "geojson-source-cluster-count",
+                "geojson-source-unclustered",
+                "child-layer"
+            );
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_replace_cluster_visual_layers_when_cluster_layer_set_changes(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        var cut = Render<GeoJsonClusterSourceHarness>(parameters =>
+            parameters.Add(p => p.ClusterOptions, ClusterOptions.Default)
+        );
+        await cut.Instance.Map.OnMapInitializedAsync();
+        cut.WaitForAssertion(() => GetAddLayerMutations().Should().HaveCount(2));
+
+        // act
+        cut.SetParametersAndRender(parameters =>
+            parameters.Add(
+                p => p.ClusterOptions,
+                ClusterOptions.Create(layerSet: ClusterLayerSet.Custom(ClusterLayerDefinition.Symbol("custom-count")))
+            )
+        );
+
+        // assert
+        cut.WaitForAssertion(() =>
+        {
+            GetRemoveLayerMutations().Select(mutation => mutation.LayerId).Should().Contain("geojson-source-clusters");
+            GetRemoveLayerMutations()
+                .Select(mutation => mutation.LayerId)
+                .Should()
+                .Contain("geojson-source-cluster-count");
+            GetAddLayerMutations().Select(mutation => mutation.LayerId).Should().Contain("geojson-source-custom-count");
+        });
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_replace_source_when_cluster_options_change_from_none_to_default(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        var cut = Render<GeoJsonClusterSourceHarness>(parameters =>
+            parameters.Add(p => p.ClusterOptions, ClusterOptions.None)
+        );
+        await cut.Instance.Map.OnMapInitializedAsync();
+        cut.WaitForAssertion(() => GetSourceSpecs("geojson-source").Should().HaveCount(1));
+
+        // act
+        cut.SetParametersAndRender(parameters => parameters.Add(p => p.ClusterOptions, ClusterOptions.Default));
+
+        // assert
+        cut.WaitForAssertion(() =>
+        {
+            GetRemoveSourceMutations().Select(mutation => mutation.SourceId).Should().Contain("geojson-source");
+            var sourceSpecs = GetSourceSpecs("geojson-source");
+            sourceSpecs.Should().HaveCount(2);
+            sourceSpecs[^1]["cluster"].Should().Be(true);
+            GetAddLayerMutations()
+                .Select(mutation => mutation.LayerId)
+                .Should()
+                .Contain(["geojson-source-clusters", "geojson-source-cluster-count"]);
+        });
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_reregister_cluster_parameter_and_child_layers_when_replacing_source(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        var cut = Render<GeoJsonClusterSourceHarness>(parameters =>
+            parameters
+                .Add(p => p.ClusterOptions, ClusterOptions.None)
+                .Add(
+                    p => p.Layers,
+                    [
+                        MapLayer.Circle(
+                            "unclustered",
+                            filter: new object[] { "!", new object[] { "has", "point_count" } }
+                        ),
+                    ]
+                )
+                .Add(p => p.IncludeChildLayer, true)
+        );
+        await cut.Instance.Map.OnMapInitializedAsync();
+        cut.WaitForAssertion(() => GetAddLayerMutations().Should().HaveCount(2));
+
+        // act
+        cut.SetParametersAndRender(parameters => parameters.Add(p => p.ClusterOptions, ClusterOptions.Default));
+
+        // assert
+        cut.WaitForAssertion(() =>
+        {
+            GetRemoveSourceMutations().Select(mutation => mutation.SourceId).Should().Contain("geojson-source");
+            var layerIds = GetAddLayerMutations().Select(mutation => mutation.LayerId).ToArray();
+            layerIds[^4..]
+                .Should()
+                .Equal(
+                    "geojson-source-clusters",
+                    "geojson-source-cluster-count",
+                    "geojson-source-unclustered",
+                    "child-layer"
+                );
+        });
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_replace_source_when_cluster_options_change_from_default_to_none(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        var cut = Render<GeoJsonClusterSourceHarness>(parameters =>
+            parameters.Add(p => p.ClusterOptions, ClusterOptions.Default)
+        );
+        await cut.Instance.Map.OnMapInitializedAsync();
+        cut.WaitForAssertion(() => GetAddLayerMutations().Should().HaveCount(2));
+
+        // act
+        cut.SetParametersAndRender(parameters => parameters.Add(p => p.ClusterOptions, ClusterOptions.None));
+
+        // assert
+        cut.WaitForAssertion(() =>
+        {
+            GetRemoveSourceMutations().Select(mutation => mutation.SourceId).Should().Contain("geojson-source");
+            var sourceSpecs = GetSourceSpecs("geojson-source");
+            sourceSpecs.Should().HaveCount(2);
+            sourceSpecs[^1].Should().NotContainKey("cluster");
+        });
+        GetAddLayerMutations().Should().HaveCount(2);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_replace_visual_layers_when_enabled_cluster_layer_set_changes(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        var cut = Render<GeoJsonClusterSourceHarness>(parameters =>
+            parameters.Add(p => p.ClusterOptions, ClusterOptions.Default)
+        );
+        await cut.Instance.Map.OnMapInitializedAsync();
+        cut.WaitForAssertion(() => GetAddLayerMutations().Should().HaveCount(2));
+
+        // act
+        cut.SetParametersAndRender(parameters =>
+            parameters.Add(
+                p => p.ClusterOptions,
+                ClusterOptions.Create(layerSet: ClusterLayerSet.Custom(ClusterLayerDefinition.Symbol("custom-count")))
+            )
+        );
+
+        // assert
+        cut.WaitForAssertion(() =>
+        {
+            GetRemoveLayerMutations().Select(mutation => mutation.LayerId).Should().Contain("geojson-source-clusters");
+            GetRemoveLayerMutations()
+                .Select(mutation => mutation.LayerId)
+                .Should()
+                .Contain("geojson-source-cluster-count");
+            GetAddLayerMutations().Select(mutation => mutation.LayerId).Should().Contain("geojson-source-custom-count");
+        });
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_replace_source_when_enabled_cluster_source_options_change(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        var initialProperties = new Dictionary<string, object>
+        {
+            ["total"] = new object[] { "+", new object[] { "get", "count" } },
+        };
+        var updatedProperties = new Dictionary<string, object>
+        {
+            ["maximum"] = new object[] { "max", new object[] { "get", "count" } },
+        };
+        var cut = Render<GeoJsonClusterSourceHarness>(parameters =>
+            parameters.Add(
+                p => p.ClusterOptions,
+                ClusterOptions.Create(radius: 48, maxZoom: 10, minPoints: 2, properties: initialProperties)
+            )
+        );
+        await cut.Instance.Map.OnMapInitializedAsync();
+        cut.WaitForAssertion(() => GetSourceSpecs("geojson-source").Should().HaveCount(1));
+
+        // act
+        cut.SetParametersAndRender(parameters =>
+            parameters.Add(
+                p => p.ClusterOptions,
+                ClusterOptions.Create(radius: 64, maxZoom: 12, minPoints: 3, properties: updatedProperties)
+            )
+        );
+
+        // assert
+        cut.WaitForAssertion(() =>
+        {
+            GetRemoveSourceMutations().Select(mutation => mutation.SourceId).Should().Contain("geojson-source");
+            var sourceSpecs = GetSourceSpecs("geojson-source");
+            var sourceSpec = sourceSpecs[^1];
+            sourceSpec["clusterRadius"].Should().Be(64);
+            sourceSpec["clusterMaxZoom"].Should().Be(12);
+            sourceSpec["clusterMinPoints"].Should().Be(3);
+            sourceSpec["clusterProperties"].Should().BeSameAs(updatedProperties);
+        });
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -126,17 +503,48 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
     {
         JSInterop.Invocations[ApplySceneMutationsIdentifier].Count.Should().BeGreaterThan(0);
 
-        var sourceSpec = JSInterop
-            .Invocations[ApplySceneMutationsIdentifier]
-            .Select(invocation => invocation.Arguments[1])
-            .OfType<MapSceneMutationBatch>()
-            .SelectMany(batch => batch.Mutations)
-            .Single(mutation => mutation.Kind == "addSource" && mutation.SourceId == sourceId)
-            .SourceSpec;
+        var sourceSpec = GetSourceSpecs(sourceId).Single();
 
         sourceSpec.Should().NotBeNull();
 
         return sourceSpec!;
+    }
+
+    private IReadOnlyList<IReadOnlyDictionary<string, object?>> GetSourceSpecs(string sourceId) =>
+        JSInterop
+            .Invocations[ApplySceneMutationsIdentifier]
+            .Select(invocation => invocation.Arguments[1])
+            .OfType<MapSceneMutationBatch>()
+            .SelectMany(batch => batch.Mutations)
+            .Where(mutation => mutation.Kind == "addSource" && mutation.SourceId == sourceId)
+            .Select(mutation => mutation.SourceSpec!)
+            .ToArray();
+
+    private IReadOnlyDictionary<string, object?> GetLayerSpec(string layerId)
+    {
+        var layerSpec = GetAddLayerMutations().Single(mutation => mutation.LayerId == layerId).LayerSpec;
+        layerSpec.Should().NotBeNull();
+
+        return layerSpec!;
+    }
+
+    private IReadOnlyList<MapSceneMutation> GetAddLayerMutations() => GetMutations("addLayer");
+
+    private IReadOnlyList<MapSceneMutation> GetRemoveLayerMutations() => GetMutations("removeLayer");
+
+    private IReadOnlyList<MapSceneMutation> GetRemoveSourceMutations() => GetMutations("removeSource");
+
+    private IReadOnlyList<MapSceneMutation> GetMutations(string kind)
+    {
+        JSInterop.Invocations[ApplySceneMutationsIdentifier].Count.Should().BeGreaterThan(0);
+
+        return JSInterop
+            .Invocations[ApplySceneMutationsIdentifier]
+            .Select(invocation => invocation.Arguments[1])
+            .OfType<MapSceneMutationBatch>()
+            .SelectMany(batch => batch.Mutations)
+            .Where(mutation => mutation.Kind == kind)
+            .ToArray();
     }
 
     public sealed class GeoJsonClusterSourceHarness : ComponentBase
@@ -157,6 +565,12 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
 
         [Parameter]
         public ClusterOptions? ClusterOptions { get; set; }
+
+        [Parameter]
+        public IReadOnlyList<MapLayerDefinition>? Layers { get; set; }
+
+        [Parameter]
+        public bool IncludeChildLayer { get; set; }
 
         protected override void BuildRenderTree(RenderTreeBuilder builder)
         {
@@ -184,6 +598,28 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
                         mapBuilder.AddAttribute(6, nameof(GeoJsonSource.ClusterMaxZoom), ClusterMaxZoom);
                         mapBuilder.AddAttribute(7, nameof(GeoJsonSource.ClusterMinPoints), ClusterMinPoints);
                         mapBuilder.AddAttribute(8, nameof(GeoJsonSource.ClusterOptions), ClusterOptions);
+                        mapBuilder.AddAttribute(9, nameof(GeoJsonSource.Layers), Layers);
+                        if (IncludeChildLayer)
+                        {
+                            mapBuilder.AddAttribute(
+                                10,
+                                nameof(GeoJsonSource.ChildContent),
+                                (RenderFragment)(
+                                    sourceBuilder =>
+                                    {
+                                        sourceBuilder.OpenComponent<CircleLayer>(0);
+                                        sourceBuilder.AddAttribute(1, nameof(CircleLayer.Id), "child-layer");
+                                        sourceBuilder.AddAttribute(
+                                            2,
+                                            nameof(CircleLayer.Radius),
+                                            (StyleValue<double>)12
+                                        );
+                                        sourceBuilder.CloseComponent();
+                                    }
+                                )
+                            );
+                        }
+
                         mapBuilder.CloseComponent();
                     }
                 )

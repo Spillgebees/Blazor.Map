@@ -67,6 +67,18 @@ public sealed record ClusterLayerSet
             throw new ArgumentException("A custom cluster layer set must not contain null layers.", nameof(layers));
         }
 
+        var duplicateIdSuffix = layers
+            .GroupBy(layer => layer.IdSuffix, StringComparer.Ordinal)
+            .FirstOrDefault(group => group.Count() > 1)
+            ?.Key;
+        if (duplicateIdSuffix is not null)
+        {
+            throw new ArgumentException(
+                $"A custom cluster layer set must not contain duplicate id suffix '{duplicateIdSuffix}'.",
+                nameof(layers)
+            );
+        }
+
         return new ClusterLayerSet(true, layers.ToArray());
     }
 }

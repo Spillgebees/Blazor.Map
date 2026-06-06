@@ -97,6 +97,20 @@ public class ClusterLayerSetTests
     }
 
     [Test]
+    public void Should_reject_duplicate_custom_layer_id_suffixes()
+    {
+        // arrange
+        var circle = ClusterLayerDefinition.Circle("cluster", color: "#2563eb", radius: 24);
+        var symbol = ClusterLayerDefinition.Symbol("cluster", textField: Expr.Get("point_count_abbreviated"));
+
+        // act
+        var act = () => ClusterLayerSet.Custom(circle, symbol);
+
+        // assert
+        act.Should().Throw<ArgumentException>().WithMessage("*duplicate*id suffix*");
+    }
+
+    [Test]
     public void Should_reject_invalid_layer_id_suffix()
     {
         // arrange
