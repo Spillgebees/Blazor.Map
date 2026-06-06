@@ -49,40 +49,12 @@ public sealed record TrackedEntityVisualOptions<TItem>
         string? Attribution = null,
         string? LayerGroup = null,
         string? BeforeLayerGroup = null,
-        string? AfterLayerGroup = null,
-        TrackedEntityClusterClickBehavior ClusterClickBehavior = TrackedEntityClusterClickBehavior.ZoomToDissolve
-    )
-        : this(
-            Symbol,
-            Decorations,
-            new TrackedEntitySourceOptions(Cluster, ClusterClickBehavior.ToClusterClickBehavior()),
-            Animation,
-            Visible,
-            PrimaryIconOpacity,
-            MaxZoom,
-            Attribution,
-            LayerGroup,
-            BeforeLayerGroup,
-            AfterLayerGroup
-        ) { }
-
-    public TrackedEntityVisualOptions(
-        TrackedEntitySymbolOptions<TItem> Symbol,
-        IReadOnlyList<TrackedEntityDecorationOptions<TItem>> Decorations,
-        TrackedEntityClusterOptions Cluster,
-        AnimationOptions? Animation,
-        bool Visible,
-        StyleValue<double>? PrimaryIconOpacity,
-        int MaxZoom = TrackedEntityVisualDefaults.DefaultMaxZoom,
-        string? Attribution = null,
-        string? LayerGroup = null,
-        string? BeforeLayerGroup = null,
         string? AfterLayerGroup = null
     )
         : this(
             Symbol,
             Decorations,
-            TrackedEntitySourceOptions.FromLegacy(Cluster),
+            new TrackedEntitySourceOptions(Cluster),
             Animation,
             Visible,
             PrimaryIconOpacity,
@@ -98,7 +70,7 @@ public sealed record TrackedEntityVisualOptions<TItem>
     public IReadOnlyList<TrackedEntityDecorationOptions<TItem>> Decorations { get; init; }
 
     /// <summary>
-    /// Source-level options, including shared <see cref="ClusterOptions" /> and cluster click behavior.
+    /// Source-level options, including shared <see cref="ClusterOptions" />.
     /// </summary>
     public TrackedEntitySourceOptions Source { get; init; }
 

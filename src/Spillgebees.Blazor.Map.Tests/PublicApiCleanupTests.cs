@@ -20,7 +20,6 @@ public class PublicApiCleanupTests
             "Spillgebees.Blazor.Map.TrackedEntitySymbolOptions`1",
             "Spillgebees.Blazor.Map.TrackedEntityDecorationOptions`1",
             "Spillgebees.Blazor.Map.TrackedEntitySourceOptions",
-            "Spillgebees.Blazor.Map.TrackedEntityClusterOptions",
             "Spillgebees.Blazor.Map.TrackedEntityBehaviorOptions`1",
             "Spillgebees.Blazor.Map.TrackedEntityInteractionOptions`1",
             "Spillgebees.Blazor.Map.TrackedEntityCallbacks`1",
@@ -60,6 +59,8 @@ public class PublicApiCleanupTests
             "Spillgebees.Blazor.Map.MapOverlayComponentBase",
             "Spillgebees.Blazor.Map.MapSectionBase",
             "Spillgebees.Blazor.Map.LegendMapControlHost",
+            "Spillgebees.Blazor.Map.TrackedEntityClusterClickBehavior",
+            "Spillgebees.Blazor.Map.TrackedEntityClusterOptions",
         };
 
         // act
@@ -209,8 +210,6 @@ public class PublicApiCleanupTests
             "Spillgebees.Blazor.Map.ITrackedEntityLayerDefinition",
             "Spillgebees.Blazor.Map.TrackedEntityBehaviorOptions`1",
             "Spillgebees.Blazor.Map.TrackedEntityCallbacks`1",
-            "Spillgebees.Blazor.Map.TrackedEntityClusterClickBehavior",
-            "Spillgebees.Blazor.Map.TrackedEntityClusterOptions",
             "Spillgebees.Blazor.Map.TrackedEntityDecorationDisplayMode",
             "Spillgebees.Blazor.Map.TrackedEntityDecorationOptions`1",
             "Spillgebees.Blazor.Map.TrackedEntityFeatureKind",

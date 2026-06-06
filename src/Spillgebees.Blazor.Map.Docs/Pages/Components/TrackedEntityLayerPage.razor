@@ -92,11 +92,10 @@
                             "cluster-count",
                             textField: Expr.Get("point_count_abbreviated"),
                             textColor: "#ffffff",
-                            textSize: 13)));
+                            textSize: 13)),
+                    clickBehavior: ClusterClickBehavior.ZoomToDissolve);
 
-                private static readonly TrackedEntitySourceOptions _source = new(
-                    _trainClusters,
-                    TrackedEntityClusterClickBehavior.ZoomToDissolve);
+                private static readonly TrackedEntitySourceOptions _source = new(_trainClusters);
 
                 private TrackedEntityLayerDefinition<Train> CreateTrackedLayer(IReadOnlyList<Train> trains) =>
                     new(

@@ -241,6 +241,28 @@ public class TrackedEntityLayerMapApiTests : BunitContext
         JSInterop.VerifyInvoke(FlyToIdentifier);
     }
 
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_not_zoom_to_dissolve_when_cluster_click_behavior_is_none(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        cancellationToken.ThrowIfCancellationRequested();
+        var clusterOptions = ClusterOptions.Create(minPoints: 1, clickBehavior: ClusterClickBehavior.None);
+        var cut = Render<MapTrackedEntityHarness>(parameters => parameters.Add(p => p.ClusterOptions, clusterOptions));
+        await cut.Instance.Map.OnMapInitializedAsync();
+        var clusterCount = cut.FindComponents<SymbolLayer>()
+            .Single(layer => layer.Instance.Id == "tracked-data-cluster-count")
+            .Instance;
+
+        // act
+        await cut.InvokeAsync(() => clusterCount.OnClick.InvokeAsync(CreateClusterFeatureEvent()));
+
+        // assert
+        JSInterop.Invocations[GetClusterExpansionZoomIdentifier].Should().BeEmpty();
+        JSInterop.Invocations[FlyToIdentifier].Should().BeEmpty();
+    }
+
     [Test]
     public void Should_render_default_tracked_cluster_layers_with_existing_ids_and_order()
     {

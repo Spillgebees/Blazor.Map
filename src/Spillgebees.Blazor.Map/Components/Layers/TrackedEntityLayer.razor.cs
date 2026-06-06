@@ -462,7 +462,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
 
     private async Task HandleGeneratedClusterClickAsync(LayerFeatureEventArgs featureEvent)
     {
-        if (Source.ClusterClickBehavior != ClusterClickBehavior.ZoomToDissolve)
+        if (Source.Cluster.ClickBehavior != ClusterClickBehavior.ZoomToDissolve)
         {
             return;
         }
@@ -471,7 +471,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
     }
 
     private EventCallback<LayerFeatureEventArgs> GetGeneratedClusterClickCallback(bool interactive = true) =>
-        interactive && Source.ClusterClickBehavior == ClusterClickBehavior.ZoomToDissolve
+        interactive && Source.Cluster.ClickBehavior == ClusterClickBehavior.ZoomToDissolve
             ? EventCallback.Factory.Create<LayerFeatureEventArgs>(this, HandleGeneratedClusterClickAsync)
             : default;
 
@@ -624,7 +624,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
                 minPoints,
                 properties,
                 ClusterLayerSet.None,
-                Source.ClusterClickBehavior
+                Source.Cluster.ClickBehavior
             )
             : ClusterOptions.None;
 

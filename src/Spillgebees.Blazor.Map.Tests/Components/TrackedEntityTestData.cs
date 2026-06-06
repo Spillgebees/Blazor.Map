@@ -20,7 +20,7 @@ internal static class TrackedEntityTestData
                     vehicle => vehicle.IconImage
                 ),
                 Decorations: [],
-                Cluster: new TrackedEntityClusterOptions(),
+                Cluster: ClusterOptions.None,
                 Animation: null,
                 Visible: true,
                 PrimaryIconOpacity: null

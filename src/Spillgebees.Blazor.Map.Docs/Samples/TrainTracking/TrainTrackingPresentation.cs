@@ -259,7 +259,8 @@ public static class TrainTrackingPresentation
             properties: new Dictionary<string, object>
             {
                 ["internationalPresence"] = new object[] { "max", new object[] { "get", "internationalPresence" } },
-            }
+            },
+            clickBehavior: ClusterClickBehavior.ZoomToDissolve
         );
 
     public static object[] TrainIconOpacityExpression { get; } =

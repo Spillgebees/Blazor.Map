@@ -27,8 +27,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private MapOptions _mapOptions = null!;
     private readonly AnimationOptions _trainAnimation = TrainTrackingPresentation.TrainAnimation;
     private readonly TrackedEntitySourceOptions _trainSourceOptions = new(
-        TrainTrackingPresentation.TrackedTrainClusterOptions,
-        ClusterClickBehavior.ZoomToDissolve
+        TrainTrackingPresentation.TrackedTrainClusterOptions
     );
     private readonly TrackedEntityBehaviorOptions<TrainSampleState> _trainBehavior;
     private readonly TrackedEntityCallbacks<TrainSampleState> _trainCallbacks;
