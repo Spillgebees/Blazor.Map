@@ -25,6 +25,8 @@ public abstract record ClusterLayerDefinition
             );
         }
 
+        ValidateZoomRange(minZoom, maxZoom);
+
         IdSuffix = idSuffix;
         MinZoom = minZoom;
         MaxZoom = maxZoom;
@@ -56,6 +58,33 @@ public abstract record ClusterLayerDefinition
     public string? AfterLayerGroup { get; }
 
     public bool Interactive { get; }
+
+    protected static void ValidateZoomRange(double? minZoom, double? maxZoom)
+    {
+        ValidateMinZoom(minZoom);
+        ValidateMaxZoom(maxZoom);
+
+        if (minZoom.HasValue && maxZoom.HasValue && minZoom.Value > maxZoom.Value)
+        {
+            throw new ArgumentException("Minimum zoom must be less than or equal to maximum zoom.", nameof(minZoom));
+        }
+    }
+
+    private static void ValidateMinZoom(double? minZoom)
+    {
+        if (minZoom is < 0 or > 24)
+        {
+            throw new ArgumentOutOfRangeException(nameof(minZoom), "Minimum zoom must be between 0 and 24.");
+        }
+    }
+
+    private static void ValidateMaxZoom(double? maxZoom)
+    {
+        if (maxZoom is < 0 or > 24)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maxZoom), "Maximum zoom must be between 0 and 24.");
+        }
+    }
 
     /// <summary>
     /// Creates a circle layer definition for cluster bubbles.

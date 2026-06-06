@@ -69,39 +69,66 @@ public class MapLayerDefinitionTests
     }
 
     [Test]
-    public void Should_reject_invalid_zoom_range_from_object_initializer()
+    public void Should_create_valid_zoom_range_with_constructor_parameters()
+    {
+        // arrange
+        var original = new CircleLayerDefinition("clusters", maxZoom: 4);
+
+        // act
+        var replacement = new CircleLayerDefinition(
+            original.IdSuffix,
+            color: original.Color,
+            radius: original.Radius,
+            opacity: original.Opacity,
+            strokeWidth: original.StrokeWidth,
+            strokeColor: original.StrokeColor,
+            strokeOpacity: original.StrokeOpacity,
+            pitchAlignment: original.PitchAlignment,
+            key: original.Key,
+            filter: original.Filter,
+            minZoom: 5,
+            maxZoom: 10,
+            visible: original.Visible,
+            beforeLayerId: original.BeforeLayerId,
+            layerGroup: original.LayerGroup,
+            beforeLayerGroup: original.BeforeLayerGroup,
+            afterLayerGroup: original.AfterLayerGroup
+        );
+
+        // assert
+        replacement.MinZoom.Should().Be(5);
+        replacement.MaxZoom.Should().Be(10);
+    }
+
+    [Test]
+    public void Should_keep_zoom_bounds_immutable_after_construction()
+    {
+        // arrange
+        var layer = new SymbolLayerDefinition("cluster-count", minZoom: 2, maxZoom: 4);
+        var minZoomProperty = typeof(MapLayerDefinition).GetProperty(nameof(MapLayerDefinition.MinZoom));
+        var maxZoomProperty = typeof(MapLayerDefinition).GetProperty(nameof(MapLayerDefinition.MaxZoom));
+
+        // act
+        var replacement = layer with
+        {
+            TextColor = "#ffffff",
+        };
+
+        // assert
+        minZoomProperty?.SetMethod.Should().BeNull();
+        maxZoomProperty?.SetMethod.Should().BeNull();
+        replacement.MinZoom.Should().Be(2);
+        replacement.MaxZoom.Should().Be(4);
+    }
+
+    [Test]
+    public void Should_reject_out_of_range_zoom_from_constructor()
     {
         // arrange
         var idSuffix = "clusters";
 
         // act
-        var act = () => new CircleLayerDefinition(idSuffix) { MinZoom = 12, MaxZoom = 10 };
-
-        // assert
-        act.Should().Throw<ArgumentException>().WithParameterName("minZoom");
-    }
-
-    [Test]
-    public void Should_reject_invalid_zoom_range_from_with_expression()
-    {
-        // arrange
-        var layer = new SymbolLayerDefinition("cluster-count", maxZoom: 10);
-
-        // act
-        var act = () => layer with { MinZoom = 12 };
-
-        // assert
-        act.Should().Throw<ArgumentException>().WithParameterName("minZoom");
-    }
-
-    [Test]
-    public void Should_reject_out_of_range_zoom_from_object_initializer()
-    {
-        // arrange
-        var idSuffix = "clusters";
-
-        // act
-        var act = () => new CircleLayerDefinition(idSuffix) { MaxZoom = 25 };
+        var act = () => new CircleLayerDefinition(idSuffix, maxZoom: 25);
 
         // assert
         act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("maxZoom");

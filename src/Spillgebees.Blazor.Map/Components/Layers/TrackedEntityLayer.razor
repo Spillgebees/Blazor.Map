@@ -6,9 +6,9 @@
                @ref="_primarySource"
                AllowOutsideMapSources="true"
                Data="@_primaryData"
-                LayerGroup="@LayerGroup"
-                BeforeLayerGroup="@BeforeLayerGroup"
-                AfterLayerGroup="@AfterLayerGroup"
+               LayerGroup="@LayerGroup"
+               BeforeLayerGroup="@BeforeLayerGroup"
+               AfterLayerGroup="@AfterLayerGroup"
                ClusterOptions="@GetPrimarySourceClusterOptions()"
                ClusterProperties="@GetClusterProperties()"
                MaxZoom="@MaxZoom"
@@ -22,11 +22,12 @@
                      Radius="@ClusterHitAreaRadiusValue"
                      Color="@("#000000")"
                      Opacity="0"
-                      PitchAlignment="CirclePitchAlignment.Viewport"
-                      LayerGroup="@ClusterHitAreaLayerId"
-                      Visible="@Visible"
-                      OnClick="@GetGeneratedClusterClickCallback()" />
+                     PitchAlignment="CirclePitchAlignment.Viewport"
+                     LayerGroup="@ClusterHitAreaLayerId"
+                     Visible="@Visible"
+                     OnClick="@GetGeneratedClusterClickCallback()" />
     }
+    @* tracked cluster layers render as child components so they can attach generated callbacks and hit-area ordering. *@
     @for (var clusterLayerIndex = 0; clusterLayerIndex < GetClusterLayerDefinitions().Count; clusterLayerIndex++)
     {
         var clusterLayer = GetClusterLayerDefinitions()[clusterLayerIndex];
@@ -43,15 +44,15 @@
                          Opacity="@circleLayer.Opacity"
                          StrokeColor="@circleLayer.StrokeColor"
                          StrokeWidth="@circleLayer.StrokeWidth"
-                          MinZoom="@circleLayer.MinZoom"
-                          MaxZoom="@circleLayer.MaxZoom"
+                         MinZoom="@circleLayer.MinZoom"
+                         MaxZoom="@circleLayer.MaxZoom"
                          BeforeLayerId="@circleLayer.BeforeLayerId"
                          LayerGroup="@circleLayer.LayerGroup"
                          BeforeLayerGroup="@circleLayer.BeforeLayerGroup"
                          AfterLayerGroup="@afterLayerGroup"
                          PitchAlignment="CirclePitchAlignment.Viewport"
                          Visible="@(Visible && circleLayer.Visible)"
-                          OnClick="@GetGeneratedClusterClickCallback(circleLayer.Interactive)" />
+                         OnClick="@GetGeneratedClusterClickCallback(circleLayer.Interactive)" />
         }
         else if (clusterLayer is ClusterSymbolLayerDefinition symbolLayer)
         {
@@ -61,8 +62,8 @@
                          TextField="@GetClusterSymbolTextField(symbolLayer)"
                          TextSize="@symbolLayer.TextSize"
                          TextColor="@symbolLayer.TextColor"
-                          MinZoom="@symbolLayer.MinZoom"
-                          MaxZoom="@symbolLayer.MaxZoom"
+                         MinZoom="@symbolLayer.MinZoom"
+                         MaxZoom="@symbolLayer.MaxZoom"
                          BeforeLayerId="@symbolLayer.BeforeLayerId"
                          LayerGroup="@symbolLayer.LayerGroup"
                          BeforeLayerGroup="@symbolLayer.BeforeLayerGroup"
@@ -71,7 +72,7 @@
                          TextRotationAlignment="MapAlignment.Viewport"
                          TextAllowOverlap="true"
                          Visible="@(Visible && symbolLayer.Visible)"
-                          OnClick="@GetGeneratedClusterClickCallback(symbolLayer.Interactive)" />
+                         OnClick="@GetGeneratedClusterClickCallback(symbolLayer.Interactive)" />
         }
     }
 
@@ -85,9 +86,9 @@
                  IconOffset="@PrimaryIconOffsetValue"
                  IconAnchor="@PrimaryIconAnchorValue"
                  IconAllowOverlap="true"
-                  RotationAlignment="MapAlignment.Map"
+                 RotationAlignment="MapAlignment.Map"
                  SymbolSortKey="@RenderOrderSortKeyValue"
-                  AfterLayerGroup="@PrimaryAfterLayerGroup"
+                 AfterLayerGroup="@PrimaryAfterLayerGroup"
                  Visible="@Visible"
                  OnClick="@HandleGeneratedItemClickAsync"
                  OnMouseEnter="@HandleGeneratedItemMouseEnterAsync"
@@ -99,8 +100,8 @@
                  Radius="24"
                  Color="@("#000000")"
                  Opacity="0"
-                  PitchAlignment="CirclePitchAlignment.Viewport"
-                  AfterLayerGroup="@PrimaryLayerId"
+                 PitchAlignment="CirclePitchAlignment.Viewport"
+                 AfterLayerGroup="@PrimaryLayerId"
                  Visible="@Visible"
                  OnClick="@HandleGeneratedItemClickAsync"
                  OnMouseEnter="@HandleGeneratedItemMouseEnterAsync"
@@ -112,9 +113,9 @@
     <GeoJsonSource Id="@DecorationSourceId"
                    AllowOutsideMapSources="true"
                    Data="@_decorationData"
-                    LayerGroup="@LayerGroup"
-                    BeforeLayerGroup="@BeforeLayerGroup"
-                    AfterLayerGroup="@AfterLayerGroup"
+                   LayerGroup="@LayerGroup"
+                   BeforeLayerGroup="@BeforeLayerGroup"
+                   AfterLayerGroup="@AfterLayerGroup"
                    ClusterOptions="@GetDecorationClusterOptions()"
                    PromoteId="entityId"
                    MaxZoom="@MaxZoom">
@@ -130,8 +131,8 @@
                          TextAnchor="@GetResolvedAnchor(decorationLayer.Anchor)"
                          TextOffset="@GetDecorationTextOffsetValue(decorationLayer.Decoration)"
                          TextMaxWidth="999"
-                          TextPitchAlignment="MapAlignment.Viewport"
-                          TextRotationAlignment="MapAlignment.Viewport"
+                         TextPitchAlignment="MapAlignment.Viewport"
+                         TextRotationAlignment="MapAlignment.Viewport"
                          TextAllowOverlap="true"
                          TextHaloColor="@DecorationHaloColorValue"
                          TextHaloWidth="@DecorationHaloWidthValue"
@@ -140,15 +141,15 @@
                          IconSize="@(decorationLayer.HasIcon ? (StyleValue<double>?)DecorationIconSizeValue : null)"
                          IconRotate="@(decorationLayer.HasIcon ? (StyleValue<double>?)DecorationIconRotateValue : null)"
                          IconOffset="@(decorationLayer.HasIcon && decorationLayer.IconTextFit is null ? (StyleValue<double[]>?)DecorationIconOffsetValue : null)"
-                          IconAnchor="@(decorationLayer.HasIcon ? (StyleValue<SymbolAnchor>?)GetResolvedAnchor(decorationLayer.Anchor) : null)"
+                         IconAnchor="@(decorationLayer.HasIcon ? (StyleValue<SymbolAnchor>?)GetResolvedAnchor(decorationLayer.Anchor) : null)"
                          IconAllowOverlap="@(decorationLayer.HasIcon)"
                          IconOpacity="@(decorationLayer.HasIcon ? (StyleValue<double>?)DecorationVisibilityOpacityValue : null)"
                          IconColor="@(decorationLayer.HasIcon ? (StyleValue<string>?)DecorationIconColorValue : null)"
                          IconTextFit="@decorationLayer.IconTextFit"
                          IconTextFitPadding="@decorationLayer.IconTextFitPadding"
-                          RotationAlignment="MapAlignment.Map"
+                         RotationAlignment="MapAlignment.Map"
                          SymbolSortKey="@RenderOrderSortKeyValue"
-                          AfterLayerGroup="@PrimaryHitAreaLayerId"
+                         AfterLayerGroup="@PrimaryHitAreaLayerId"
                          Visible="@Visible"
                          OnClick="@HandleGeneratedItemClickAsync"
                          OnMouseEnter="@HandleGeneratedItemMouseEnterAsync"

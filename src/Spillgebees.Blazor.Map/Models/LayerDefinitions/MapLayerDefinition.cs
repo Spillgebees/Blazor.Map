@@ -5,9 +5,6 @@ namespace Spillgebees.Blazor.Map;
 /// </summary>
 public abstract record MapLayerDefinition
 {
-    private double? _minZoom;
-    private double? _maxZoom;
-
     protected MapLayerDefinition(
         string idSuffix,
         string? key = null,
@@ -59,28 +56,12 @@ public abstract record MapLayerDefinition
     /// <summary>
     /// Optional minimum zoom at which this layer is visible.
     /// </summary>
-    public double? MinZoom
-    {
-        get => _minZoom;
-        init
-        {
-            ValidateZoomRange(value, _maxZoom);
-            _minZoom = value;
-        }
-    }
+    public double? MinZoom { get; }
 
     /// <summary>
     /// Optional maximum zoom at which this layer is visible.
     /// </summary>
-    public double? MaxZoom
-    {
-        get => _maxZoom;
-        init
-        {
-            ValidateZoomRange(_minZoom, value);
-            _maxZoom = value;
-        }
-    }
+    public double? MaxZoom { get; }
 
     /// <summary>
     /// Whether the generated layer is visible.
@@ -122,19 +103,28 @@ public abstract record MapLayerDefinition
 
     protected static void ValidateZoomRange(double? minZoom, double? maxZoom)
     {
-        if (minZoom is < 0 or > 24)
-        {
-            throw new ArgumentOutOfRangeException(nameof(minZoom), "Minimum zoom must be between 0 and 24.");
-        }
-
-        if (maxZoom is < 0 or > 24)
-        {
-            throw new ArgumentOutOfRangeException(nameof(maxZoom), "Maximum zoom must be between 0 and 24.");
-        }
+        ValidateMinZoom(minZoom);
+        ValidateMaxZoom(maxZoom);
 
         if (minZoom.HasValue && maxZoom.HasValue && minZoom.Value > maxZoom.Value)
         {
             throw new ArgumentException("Minimum zoom must be less than or equal to maximum zoom.", nameof(minZoom));
+        }
+    }
+
+    private static void ValidateMinZoom(double? minZoom)
+    {
+        if (minZoom is < 0 or > 24)
+        {
+            throw new ArgumentOutOfRangeException(nameof(minZoom), "Minimum zoom must be between 0 and 24.");
+        }
+    }
+
+    private static void ValidateMaxZoom(double? maxZoom)
+    {
+        if (maxZoom is < 0 or > 24)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maxZoom), "Maximum zoom must be between 0 and 24.");
         }
     }
 

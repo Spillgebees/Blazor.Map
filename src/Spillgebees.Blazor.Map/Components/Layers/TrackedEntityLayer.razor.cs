@@ -633,7 +633,9 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
 
     private bool ShouldRenderClusterHitArea() =>
         Source.Cluster is { Enabled: true, LayerSet.Enabled: true }
-        && Source.Cluster.LayerSet == ClusterLayerSet.Default;
+        && Source.Cluster.LayerSet == ClusterLayerSet.Default
+        && Source.Cluster.ClickBehavior == ClusterClickBehavior.ZoomToDissolve
+        && GetClusterLayerDefinitions().Any(layer => layer.Interactive);
 
     private string GetClusterLayerId(ClusterLayerDefinition definition) => $"{SourceId}-{definition.IdSuffix}";
 
@@ -669,8 +671,8 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
         return ShouldRenderClusterHitArea() ? ClusterHitAreaLayerId : null;
     }
 
-    private static StyleValue<string>? GetClusterSymbolTextField(ClusterSymbolLayerDefinition definition) =>
-        definition.TextField ?? Expr.Get("point_count_abbreviated");
+    private static StyleValue<string> GetClusterSymbolTextField(ClusterSymbolLayerDefinition definition) =>
+        ClusterLayerDefinitionHelpers.GetSymbolTextField(definition);
 
     private async Task HandlePopupOnClickAsync(TrackedEntityInteractionEventArgs<TItem> interaction)
     {

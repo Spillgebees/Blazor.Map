@@ -124,4 +124,118 @@ public class ClusterLayerSetTests
         // assert
         assertions.Should().AllSatisfy(assertion => assertion.WithMessage("*id suffix*"));
     }
+
+    [Test]
+    public void Should_reject_invalid_cluster_layer_zoom_ranges_from_factory()
+    {
+        // arrange
+        var invalidFactories = new Action[]
+        {
+            () => ClusterLayerDefinition.Circle("cluster", minZoom: -1),
+            () => ClusterLayerDefinition.Circle("cluster", maxZoom: 25),
+            () => ClusterLayerDefinition.Symbol("cluster", minZoom: 12, maxZoom: 10),
+        };
+
+        // act
+        var assertions = invalidFactories.Select(factory => factory.Should().Throw<Exception>());
+
+        // assert
+        assertions.Should().AllSatisfy(assertion => assertion.WithMessage("*zoom*"));
+    }
+
+    [Test]
+    public void Should_create_cluster_layer_with_factory_zoom_bounds()
+    {
+        // arrange
+        var original = ClusterLayerDefinition.Circle("cluster", color: "#2563eb", maxZoom: 4);
+
+        // act
+        var replacement = ClusterLayerDefinition.Circle(
+            original.IdSuffix,
+            color: original.Color,
+            radius: original.Radius,
+            opacity: original.Opacity,
+            strokeColor: original.StrokeColor,
+            strokeWidth: original.StrokeWidth,
+            minZoom: 5,
+            maxZoom: 10,
+            visible: original.Visible,
+            beforeLayerId: original.BeforeLayerId,
+            layerGroup: original.LayerGroup,
+            beforeLayerGroup: original.BeforeLayerGroup,
+            afterLayerGroup: original.AfterLayerGroup,
+            interactive: original.Interactive
+        );
+
+        // assert
+        replacement.MinZoom.Should().Be(5);
+        replacement.MaxZoom.Should().Be(10);
+    }
+
+    [Test]
+    public void Should_keep_cluster_layer_zoom_bounds_immutable_after_construction()
+    {
+        // arrange
+        var layer = new ClusterSymbolLayerDefinition("cluster", minZoom: 2, maxZoom: 4);
+        var minZoomProperty = typeof(ClusterLayerDefinition).GetProperty(nameof(ClusterLayerDefinition.MinZoom));
+        var maxZoomProperty = typeof(ClusterLayerDefinition).GetProperty(nameof(ClusterLayerDefinition.MaxZoom));
+
+        // act
+        var replacement = layer with
+        {
+            TextColor = "#ffffff",
+        };
+
+        // assert
+        minZoomProperty?.SetMethod.Should().BeNull();
+        maxZoomProperty?.SetMethod.Should().BeNull();
+        replacement.MinZoom.Should().Be(2);
+        replacement.MaxZoom.Should().Be(4);
+    }
+
+    [Test]
+    public void Should_create_cluster_circle_with_constructor_parameters()
+    {
+        // arrange
+        var idSuffix = "cluster";
+
+        // act
+        var layer = new ClusterCircleLayerDefinition(idSuffix, color: "#2563eb", radius: 24, minZoom: 4, maxZoom: 10);
+
+        // assert
+        layer.IdSuffix.Should().Be("cluster");
+        layer.Color.Should().NotBeNull();
+        layer.Radius.Should().NotBeNull();
+        layer.MinZoom.Should().Be(4);
+        layer.MaxZoom.Should().Be(10);
+        layer.Visible.Should().BeTrue();
+        layer.Interactive.Should().BeTrue();
+    }
+
+    [Test]
+    public void Should_create_cluster_symbol_with_constructor_parameters()
+    {
+        // arrange
+        var idSuffix = "cluster-count";
+
+        // act
+        var layer = new ClusterSymbolLayerDefinition(
+            idSuffix,
+            textField: Expr.Get("point_count_abbreviated"),
+            textSize: 14,
+            textColor: "#ffffff",
+            minZoom: 4,
+            maxZoom: 10
+        );
+
+        // assert
+        layer.IdSuffix.Should().Be("cluster-count");
+        layer.TextField.Should().NotBeNull();
+        layer.TextSize.Should().NotBeNull();
+        layer.TextColor.Should().NotBeNull();
+        layer.MinZoom.Should().Be(4);
+        layer.MaxZoom.Should().Be(10);
+        layer.Visible.Should().BeTrue();
+        layer.Interactive.Should().BeTrue();
+    }
 }

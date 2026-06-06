@@ -3,30 +3,50 @@ namespace Spillgebees.Blazor.Map;
 /// <summary>
 /// Visual definition for a circle layer that renders cluster bubbles.
 /// </summary>
-public sealed record ClusterCircleLayerDefinition(
-    string IdSuffix,
-    StyleValue<string>? Color = null,
-    StyleValue<double>? Radius = null,
-    StyleValue<double>? Opacity = null,
-    StyleValue<string>? StrokeColor = null,
-    StyleValue<double>? StrokeWidth = null,
-    double? MinZoom = null,
-    double? MaxZoom = null,
-    bool Visible = true,
-    string? BeforeLayerId = null,
-    string? LayerGroup = null,
-    string? BeforeLayerGroup = null,
-    string? AfterLayerGroup = null,
-    bool Interactive = true
-)
-    : ClusterLayerDefinition(
-        IdSuffix,
-        MinZoom,
-        MaxZoom,
-        Visible,
-        BeforeLayerId,
-        LayerGroup,
-        BeforeLayerGroup,
-        AfterLayerGroup,
-        Interactive
-    );
+public sealed record ClusterCircleLayerDefinition : ClusterLayerDefinition
+{
+    public ClusterCircleLayerDefinition(
+        string idSuffix,
+        StyleValue<string>? color = null,
+        StyleValue<double>? radius = null,
+        StyleValue<double>? opacity = null,
+        StyleValue<string>? strokeColor = null,
+        StyleValue<double>? strokeWidth = null,
+        double? minZoom = null,
+        double? maxZoom = null,
+        bool visible = true,
+        string? beforeLayerId = null,
+        string? layerGroup = null,
+        string? beforeLayerGroup = null,
+        string? afterLayerGroup = null,
+        bool interactive = true
+    )
+        : base(
+            idSuffix,
+            minZoom,
+            maxZoom,
+            visible,
+            beforeLayerId,
+            layerGroup,
+            beforeLayerGroup,
+            afterLayerGroup,
+            interactive
+        )
+    {
+        Color = color;
+        Radius = radius;
+        Opacity = opacity;
+        StrokeColor = strokeColor;
+        StrokeWidth = strokeWidth;
+    }
+
+    public StyleValue<string>? Color { get; init; }
+
+    public StyleValue<double>? Radius { get; init; }
+
+    public StyleValue<double>? Opacity { get; init; }
+
+    public StyleValue<string>? StrokeColor { get; init; }
+
+    public StyleValue<double>? StrokeWidth { get; init; }
+}

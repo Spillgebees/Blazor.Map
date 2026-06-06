@@ -264,6 +264,36 @@ public class TrackedEntityLayerMapApiTests : BunitContext
     }
 
     [Test]
+    public void Should_not_render_tracked_cluster_hit_area_when_cluster_click_behavior_is_none()
+    {
+        // arrange
+        var clusterOptions = ClusterOptions.Create(clickBehavior: ClusterClickBehavior.None);
+
+        // act
+        var cut = Render<MapTrackedEntityHarness>(parameters => parameters.Add(p => p.ClusterOptions, clusterOptions));
+
+        // assert
+        cut.FindComponents<CircleLayer>()
+            .Should()
+            .NotContain(layer => layer.Instance.Id == "tracked-data-cluster-hit-area");
+    }
+
+    [Test]
+    public void Should_render_tracked_cluster_hit_area_when_default_cluster_click_behavior_is_interactive()
+    {
+        // arrange
+        var clusterOptions = ClusterOptions.Create(clickBehavior: ClusterClickBehavior.ZoomToDissolve);
+
+        // act
+        var cut = Render<MapTrackedEntityHarness>(parameters => parameters.Add(p => p.ClusterOptions, clusterOptions));
+
+        // assert
+        cut.FindComponents<CircleLayer>()
+            .Should()
+            .Contain(layer => layer.Instance.Id == "tracked-data-cluster-hit-area");
+    }
+
+    [Test]
     public void Should_render_default_tracked_cluster_layers_with_existing_ids_and_order()
     {
         // arrange

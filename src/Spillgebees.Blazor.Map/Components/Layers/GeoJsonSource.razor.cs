@@ -739,7 +739,7 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
             ),
             ClusterSymbolLayerDefinition symbol => new SymbolLayerDefinition(
                 symbol.IdSuffix,
-                symbol.TextField ?? Expr.Get("point_count_abbreviated"),
+                ClusterLayerDefinitionHelpers.GetSymbolTextField(symbol),
                 symbol.TextSize,
                 textColor: symbol.TextColor,
                 key: $"cluster:{symbol.IdSuffix}",
