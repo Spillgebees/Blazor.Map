@@ -57,8 +57,22 @@ public class TrackedEntityVisualOptionsTests
         options.Cluster.Radius.Should().Be(72);
         options.Cluster.MaxZoom.Should().Be(10);
         options.Cluster.MinPoints.Should().Be(4);
-        options.Cluster.Properties.Should().BeSameAs(properties);
+        options.Cluster.Properties.Should().NotBeSameAs(properties);
+        options.Cluster.Properties.Should().Equal(properties);
         options.Cluster.ClickBehavior.Should().Be(ClusterClickBehavior.None);
+    }
+
+    [Test]
+    public void Should_reject_null_source_options()
+    {
+        // arrange
+        TrackedEntitySourceOptions source = null!;
+
+        // act
+        var act = () => CreateVisualOptions(source);
+
+        // assert
+        act.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("Source");
     }
 
     private static TrackedEntityVisualOptions<TestVehicle> CreateVisualOptions(TrackedEntitySourceOptions source) =>

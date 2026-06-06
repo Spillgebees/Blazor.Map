@@ -2,6 +2,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 using Microsoft.JSInterop.Infrastructure;
 using Spillgebees.Blazor.Map.Runtime.Scene;
@@ -17,6 +18,7 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
     private const string ApplySceneMutationsIdentifier = "Spillgebees.Map.mapFunctions.applySceneMutations";
     private const string GetClusterExpansionZoomIdentifier = "Spillgebees.Map.mapFunctions.getClusterExpansionZoom";
     private const string FlyToIdentifier = "Spillgebees.Map.mapFunctions.flyTo";
+    private readonly JSRuntimeInvocationHandler _applySceneMutations;
 
     public GeoJsonSourceClusterOptionsTests()
     {
@@ -25,7 +27,8 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
         JSInterop.SetupVoid(CreateMapIdentifier);
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
-        JSInterop.SetupVoid(ApplySceneMutationsIdentifier);
+        _applySceneMutations = JSInterop.SetupVoid(ApplySceneMutationsIdentifier);
+        _applySceneMutations.SetVoidResult();
         JSInterop.Setup<double>(GetClusterExpansionZoomIdentifier).SetResult(11.2);
         JSInterop.SetupVoid(FlyToIdentifier);
     }
@@ -257,6 +260,51 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
         GetWireLayerEventMutations().Should().HaveCount(2);
         GetRemoveSourceMutations().Should().BeEmpty();
         GetRemoveLayerMutations().Should().BeEmpty();
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_preserve_cluster_event_state_when_unwire_disconnects(CancellationToken cancellationToken)
+    {
+        // arrange
+        var jsRuntime = new DisconnectingMapJsRuntime();
+        Services.AddSingleton<IJSRuntime>(jsRuntime);
+        var cut = Render<GeoJsonClusterSourceHarness>(parameters =>
+            parameters.Add(p => p.ClusterOptions, ClusterOptions.Default)
+        );
+        await cut.Instance.Map.OnMapInitializedAsync();
+        cut.WaitForAssertion(() => jsRuntime.GetMutations("wireLayerEvents").Should().HaveCount(2));
+        GetRegisteredLayerEventIds(cut.Instance.Map)
+            .Should()
+            .Equal("geojson-source-clusters", "geojson-source-cluster-count");
+        jsRuntime.DisconnectOnApplySceneMutations = true;
+
+        // act
+        cut.SetParametersAndRender(parameters =>
+            parameters.Add(p => p.ClusterOptions, ClusterOptions.Create(clickBehavior: ClusterClickBehavior.None))
+        );
+
+        // assert
+        GetRegisteredLayerEventIds(cut.Instance.Map)
+            .Should()
+            .Equal("geojson-source-clusters", "geojson-source-cluster-count");
+
+        // arrange
+        jsRuntime.DisconnectOnApplySceneMutations = false;
+
+        // act
+        cut.SetParametersAndRender(parameters =>
+            parameters.Add(p => p.ClusterOptions, ClusterOptions.Create(clickBehavior: ClusterClickBehavior.None))
+        );
+
+        // assert
+        cut.WaitForAssertion(() => jsRuntime.GetMutations("unregisterLayerEvents").Should().HaveCount(4));
+        jsRuntime
+            .GetMutations("unregisterLayerEvents")
+            .ToArray()[^2..]
+            .Select(mutation => mutation.LayerId)
+            .Should()
+            .Equal("geojson-source-clusters", "geojson-source-cluster-count");
+        GetRegisteredLayerEventIds(cut.Instance.Map).Should().BeEmpty();
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -717,7 +765,7 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
             sourceSpec["clusterRadius"].Should().Be(64);
             sourceSpec["clusterMaxZoom"].Should().Be(12);
             sourceSpec["clusterMinPoints"].Should().Be(3);
-            sourceSpec["clusterProperties"].Should().BeSameAs(updatedProperties);
+            sourceSpec["clusterProperties"].Should().BeEquivalentTo(updatedProperties);
         });
     }
 
@@ -752,7 +800,7 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
         cut.SetParametersAndRender(parameters => parameters.Add(p => p.ClusterOptions, CreateOptions()));
 
         // assert
-        await Task.Delay(50, cancellationToken);
+        cut.WaitForAssertion(() => GetSourceSpecs("geojson-source").Should().HaveCount(1));
         GetRemoveSourceMutations().Should().BeEmpty();
         GetSourceSpecs("geojson-source").Should().HaveCount(1);
     }
@@ -780,7 +828,7 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
         sourceSpec["clusterRadius"].Should().Be(64);
         sourceSpec["clusterMaxZoom"].Should().Be(12);
         sourceSpec["clusterMinPoints"].Should().Be(3);
-        sourceSpec["clusterProperties"].Should().BeSameAs(properties);
+        sourceSpec["clusterProperties"].Should().BeEquivalentTo(properties);
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -849,6 +897,22 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
 
     private IReadOnlyList<MapSceneMutation> GetUnregisterLayerEventMutations() => GetMutations("unregisterLayerEvents");
 
+    private static IReadOnlyList<string> GetRegisteredLayerEventIds(SgbMap map)
+    {
+        var field = typeof(MapSceneRegistry).GetField(
+            "_layerEvents",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
+        );
+        field.Should().NotBeNull();
+        var layerEvents = field!
+            .GetValue(map.SceneRegistry)
+            .Should()
+            .BeAssignableTo<IDictionary<string, LayerEventDescriptor>>()
+            .Subject;
+
+        return layerEvents.Keys.ToArray();
+    }
+
     private IReadOnlyList<MapSceneMutation> GetMutations(string kind)
     {
         JSInterop.Invocations[ApplySceneMutationsIdentifier].Count.Should().BeGreaterThan(0);
@@ -865,6 +929,9 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
     public sealed class GeoJsonClusterSourceHarness : ComponentBase
     {
         public SgbMap Map { get; private set; } = null!;
+
+        public object Data { get; } =
+            new Dictionary<string, object?> { ["type"] = "FeatureCollection", ["features"] = Array.Empty<object>() };
 
         [Parameter]
         public bool Cluster { get; set; }
@@ -899,15 +966,7 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
                         mapBuilder.OpenComponent<GeoJsonSource>(0);
                         mapBuilder.AddAttribute(1, nameof(GeoJsonSource.Id), "geojson-source");
                         mapBuilder.AddAttribute(2, nameof(GeoJsonSource.AllowOutsideMapSources), true);
-                        mapBuilder.AddAttribute(
-                            3,
-                            nameof(GeoJsonSource.Data),
-                            new Dictionary<string, object?>
-                            {
-                                ["type"] = "FeatureCollection",
-                                ["features"] = Array.Empty<object>(),
-                            }
-                        );
+                        mapBuilder.AddAttribute(3, nameof(GeoJsonSource.Data), Data);
                         mapBuilder.AddAttribute(4, nameof(GeoJsonSource.Cluster), Cluster);
                         mapBuilder.AddAttribute(5, nameof(GeoJsonSource.ClusterRadius), ClusterRadius);
                         mapBuilder.AddAttribute(6, nameof(GeoJsonSource.ClusterMaxZoom), ClusterMaxZoom);
@@ -942,5 +1001,42 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
             builder.AddComponentReferenceCapture(2, value => Map = (SgbMap)value);
             builder.CloseComponent();
         }
+    }
+
+    private sealed class DisconnectingMapJsRuntime : IJSRuntime
+    {
+        private readonly List<MapSceneMutationBatch> _sceneMutationBatches = [];
+
+        public bool DisconnectOnApplySceneMutations { get; set; }
+
+        public ValueTask<TValue> InvokeAsync<TValue>(string identifier, object?[]? args)
+        {
+            if (identifier == ApplySceneMutationsIdentifier)
+            {
+                if (args is not null && args.Length > 1 && args[1] is MapSceneMutationBatch batch)
+                {
+                    _sceneMutationBatches.Add(batch);
+                }
+
+                if (DisconnectOnApplySceneMutations)
+                {
+                    throw new JSDisconnectedException("test disconnect");
+                }
+            }
+
+            return ValueTask.FromResult(default(TValue)!);
+        }
+
+        public ValueTask<TValue> InvokeAsync<TValue>(
+            string identifier,
+            CancellationToken cancellationToken,
+            object?[]? args
+        ) => InvokeAsync<TValue>(identifier, args);
+
+        public IReadOnlyList<MapSceneMutation> GetMutations(string kind) =>
+            _sceneMutationBatches
+                .SelectMany(batch => batch.Mutations)
+                .Where(mutation => mutation.Kind == kind)
+                .ToArray();
     }
 }

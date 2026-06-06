@@ -5,10 +5,10 @@ namespace Spillgebees.Blazor.Map;
 /// </summary>
 public sealed record ClusterLayerSet
 {
-    private ClusterLayerSet(bool enabled, IReadOnlyList<ClusterLayerDefinition> layers)
+    private ClusterLayerSet(bool enabled, IEnumerable<ClusterLayerDefinition> layers)
     {
         Enabled = enabled;
-        Layers = layers;
+        Layers = layers.ToArray().AsReadOnly();
     }
 
     /// <summary>
@@ -79,6 +79,6 @@ public sealed record ClusterLayerSet
             );
         }
 
-        return new ClusterLayerSet(true, layers.ToArray());
+        return new ClusterLayerSet(true, layers);
     }
 }

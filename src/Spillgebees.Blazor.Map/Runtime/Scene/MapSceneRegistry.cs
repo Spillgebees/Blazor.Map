@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map.Runtime.Scene;
@@ -17,6 +18,43 @@ internal sealed class MapSceneRegistry
     }
 
     internal MapSceneBatchBuilder CreateBatchBuilder() => new(this);
+
+    internal MapSceneRegistryState CaptureState() =>
+        new(
+            _sources.ToDictionary(
+                entry => entry.Key,
+                entry => entry.Value with { SourceSpec = CloneDictionary(entry.Value.SourceSpec) },
+                StringComparer.Ordinal
+            ),
+            _layers.ToDictionary(
+                entry => entry.Key,
+                entry => entry.Value with { LayerSpec = CloneDictionary(entry.Value.LayerSpec) },
+                StringComparer.Ordinal
+            ),
+            new Dictionary<string, LayerEventDescriptor>(_layerEvents, StringComparer.Ordinal)
+        );
+
+    internal void RestoreState(MapSceneRegistryState state)
+    {
+        _sources.Clear();
+        _layers.Clear();
+        _layerEvents.Clear();
+
+        foreach (var source in state.Sources)
+        {
+            _sources[source.Key] = source.Value with { SourceSpec = CloneDictionary(source.Value.SourceSpec) };
+        }
+
+        foreach (var layer in state.Layers)
+        {
+            _layers[layer.Key] = layer.Value with { LayerSpec = CloneDictionary(layer.Value.LayerSpec) };
+        }
+
+        foreach (var layerEvent in state.LayerEvents)
+        {
+            _layerEvents[layerEvent.Key] = layerEvent.Value;
+        }
+    }
 
     internal LayerOrderRegistration ReserveLayerOrderRegistration(
         string groupId,
@@ -122,15 +160,29 @@ internal sealed class MapSceneRegistry
         var mapReady = await _map.WhenReadyAsync();
         if (!mapReady)
         {
+            batch.RestoreRegistrySnapshot();
             return;
         }
 
-        await Interop.MapJs.ApplySceneMutationsAsync(
-            _map.Runtime,
-            _map.RuntimeLogger,
-            _map.MapReference,
-            batch.Build()
-        );
+        try
+        {
+            await Interop.MapJs.ApplySceneMutationsAsync(
+                _map.Runtime,
+                _map.RuntimeLogger,
+                _map.MapReference,
+                batch.Build()
+            );
+        }
+        catch (JSDisconnectedException)
+        {
+            batch.RestoreRegistrySnapshot();
+            throw;
+        }
+        catch (ObjectDisposedException)
+        {
+            batch.RestoreRegistrySnapshot();
+            throw;
+        }
     }
 
     internal void SetSource(MapSourceDescriptor descriptor)
@@ -249,6 +301,19 @@ internal sealed class MapSceneRegistry
     internal void RemoveLayerEvents(string layerId)
     {
         _layerEvents.Remove(layerId);
+    }
+
+    internal IReadOnlyDictionary<string, LayerEventDescriptor> CaptureLayerEvents() =>
+        new Dictionary<string, LayerEventDescriptor>(_layerEvents, StringComparer.Ordinal);
+
+    internal void RestoreLayerEvents(IReadOnlyDictionary<string, LayerEventDescriptor> layerEvents)
+    {
+        _layerEvents.Clear();
+
+        foreach (var layerEvent in layerEvents)
+        {
+            _layerEvents[layerEvent.Key] = layerEvent.Value;
+        }
     }
 
     private static string? GetLayerSourceId(MapLayerDescriptor descriptor)

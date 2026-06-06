@@ -28,9 +28,10 @@
                      OnClick="@GetGeneratedClusterClickCallback()" />
     }
     @* tracked cluster layers render as child components so they can attach generated callbacks and hit-area ordering. *@
-    @for (var clusterLayerIndex = 0; clusterLayerIndex < GetClusterLayerDefinitions().Count; clusterLayerIndex++)
+    @{ var clusterLayerDefinitions = GetClusterLayerDefinitions(); }
+    @for (var clusterLayerIndex = 0; clusterLayerIndex < clusterLayerDefinitions.Count; clusterLayerIndex++)
     {
-        var clusterLayer = GetClusterLayerDefinitions()[clusterLayerIndex];
+        var clusterLayer = clusterLayerDefinitions[clusterLayerIndex];
         var clusterLayerId = GetClusterLayerId(clusterLayer);
         var afterLayerGroup = GetClusterLayerAfterLayerGroup(clusterLayerIndex);
 

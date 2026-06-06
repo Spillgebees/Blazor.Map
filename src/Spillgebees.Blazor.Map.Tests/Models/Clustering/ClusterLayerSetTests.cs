@@ -57,6 +57,25 @@ public class ClusterLayerSetTests
     }
 
     [Test]
+    public void Should_expose_custom_layers_as_read_only_snapshot()
+    {
+        // arrange
+        var layers = new[] { ClusterLayerDefinition.Circle("cluster-bubble") };
+
+        // act
+        var layerSet = ClusterLayerSet.Custom(layers);
+        layers[0] = ClusterLayerDefinition.Circle("replacement-bubble");
+
+        // assert
+        layerSet.Layers.Should().ContainSingle(layer => layer.IdSuffix == "cluster-bubble");
+        layerSet.Layers.Should().NotBeAssignableTo<ClusterLayerDefinition[]>();
+        layerSet
+            .Layers.Invoking(readOnlyLayers => ((IList<ClusterLayerDefinition>)readOnlyLayers).Clear())
+            .Should()
+            .Throw<NotSupportedException>();
+    }
+
+    [Test]
     public void Should_reject_empty_custom_layer_set()
     {
         // arrange
@@ -66,7 +85,7 @@ public class ClusterLayerSetTests
         var assertion = act.Should().Throw<ArgumentException>();
 
         // assert
-        assertion.WithMessage("*at least one layer*");
+        assertion.WithMessage("*at least one layer*").Which.ParamName.Should().Be("layers");
     }
 
     [Test]
@@ -93,7 +112,11 @@ public class ClusterLayerSetTests
         var act = () => ClusterLayerSet.Custom(circle, nullLayer);
 
         // assert
-        act.Should().Throw<ArgumentException>().WithMessage("*must not contain null layers*");
+        act.Should()
+            .Throw<ArgumentException>()
+            .WithMessage("*must not contain null layers*")
+            .Which.ParamName.Should()
+            .Be("layers");
     }
 
     [Test]
@@ -107,7 +130,11 @@ public class ClusterLayerSetTests
         var act = () => ClusterLayerSet.Custom(circle, symbol);
 
         // assert
-        act.Should().Throw<ArgumentException>().WithMessage("*duplicate*id suffix*");
+        act.Should()
+            .Throw<ArgumentException>()
+            .WithMessage("*duplicate*id suffix*")
+            .Which.ParamName.Should()
+            .Be("layers");
     }
 
     [Test]
@@ -137,10 +164,12 @@ public class ClusterLayerSetTests
         };
 
         // act
-        var assertions = invalidFactories.Select(factory => factory.Should().Throw<Exception>());
+        var assertions = invalidFactories.Select(factory => factory.Should().Throw<ArgumentException>());
 
         // assert
-        assertions.Should().AllSatisfy(assertion => assertion.WithMessage("*zoom*"));
+        assertions
+            .Should()
+            .AllSatisfy(assertion => assertion.WithMessage("*zoom*").Which.ParamName.Should().NotBeNull());
     }
 
     [Test]

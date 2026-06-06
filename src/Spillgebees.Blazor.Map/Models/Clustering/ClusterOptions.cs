@@ -109,7 +109,11 @@ public sealed record ClusterOptions
             radius,
             maxZoom,
             minPoints,
-            properties,
+            properties is null
+                ? null
+                : new System.Collections.ObjectModel.ReadOnlyDictionary<string, object>(
+                    properties.ToDictionary(pair => pair.Key, pair => pair.Value)
+                ),
             layerSet ?? ClusterLayerSet.Default,
             clickBehavior
         );

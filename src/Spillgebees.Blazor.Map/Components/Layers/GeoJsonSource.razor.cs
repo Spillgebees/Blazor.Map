@@ -520,28 +520,58 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
             return;
         }
 
-        foreach (var layerId in _registeredClusterEventLayerIds.ToArray())
-        {
-            await Map.SceneRegistry.UnregisterLayerEventsAsync(layerId);
-        }
-
-        _registeredClusterEventLayerIds.Clear();
-
+        var previousLayerIds = _registeredClusterEventLayerIds.ToArray();
         var interactiveLayerIds = GetCurrentInteractiveClusterLayerIds().ToArray();
-        if (interactiveLayerIds.Length == 0)
+        var layerIdsToUnregister = previousLayerIds.Except(interactiveLayerIds, StringComparer.Ordinal).ToArray();
+        var layerIdsToWire = interactiveLayerIds.Except(previousLayerIds, StringComparer.Ordinal).ToArray();
+
+        if (layerIdsToUnregister.Length == 0 && layerIdsToWire.Length == 0)
         {
-            _dotNetRef?.Dispose();
-            _dotNetRef = null;
             return;
         }
 
-        _dotNetRef ??= DotNetObjectReference.Create(this);
-        foreach (var layerId in interactiveLayerIds)
+        if (interactiveLayerIds.Length > 0)
         {
-            await Map.SceneRegistry.WireLayerEventsAsync(
-                new LayerEventDescriptor(layerId, _dotNetRef, true, false, false)
-            );
-            _registeredClusterEventLayerIds.Add(layerId);
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+        }
+
+        var layerEventsSnapshot = Map.SceneRegistry.CaptureLayerEvents();
+        var batch = Map.SceneRegistry.CreateBatchBuilder();
+
+        foreach (var layerId in layerIdsToUnregister)
+        {
+            batch.UnregisterLayerEvents(layerId);
+        }
+
+        foreach (var layerId in layerIdsToWire)
+        {
+            batch.WireLayerEvents(new LayerEventDescriptor(layerId, _dotNetRef!, true, false, false));
+        }
+
+        try
+        {
+            await Map.SceneRegistry.ApplyBatchAsync(batch);
+        }
+        catch (JSDisconnectedException)
+        {
+            // keep the local view unchanged; the registry rolls back failed batch mutations.
+            Map.SceneRegistry.RestoreLayerEvents(layerEventsSnapshot);
+            return;
+        }
+        catch (ObjectDisposedException)
+        {
+            // keep the local view unchanged; the registry rolls back failed batch mutations.
+            Map.SceneRegistry.RestoreLayerEvents(layerEventsSnapshot);
+            return;
+        }
+
+        _registeredClusterEventLayerIds.Clear();
+        _registeredClusterEventLayerIds.AddRange(interactiveLayerIds);
+
+        if (_registeredClusterEventLayerIds.Count == 0)
+        {
+            _dotNetRef?.Dispose();
+            _dotNetRef = null;
         }
     }
 

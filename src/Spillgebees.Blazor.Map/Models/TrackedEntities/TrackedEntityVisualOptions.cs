@@ -27,7 +27,7 @@ public sealed record TrackedEntityVisualOptions<TItem>
     {
         this.Symbol = Symbol;
         this.Decorations = Decorations;
-        this.Source = Source;
+        this.Source = Source ?? throw new ArgumentNullException(nameof(Source));
         this.Animation = Animation;
         this.Visible = Visible;
         this.PrimaryIconOpacity = PrimaryIconOpacity;

@@ -6,11 +6,13 @@ internal sealed class MapSceneBatchBuilder
 {
     private readonly MapSceneRegistry _registry;
     private readonly List<MapSceneMutation> _mutations = [];
+    private readonly MapSceneRegistryState _registryStateSnapshot;
     private bool _orderingReconcileQueued;
 
     internal MapSceneBatchBuilder(MapSceneRegistry registry)
     {
         _registry = registry;
+        _registryStateSnapshot = registry.CaptureState();
     }
 
     internal bool HasMutations => _mutations.Count > 0;
@@ -32,6 +34,11 @@ internal sealed class MapSceneBatchBuilder
                 .Select(static entry => entry.mutation)
                 .ToArray()
         );
+    }
+
+    internal void RestoreRegistrySnapshot()
+    {
+        _registry.RestoreState(_registryStateSnapshot);
     }
 
     internal void AddSource(MapSourceDescriptor descriptor)

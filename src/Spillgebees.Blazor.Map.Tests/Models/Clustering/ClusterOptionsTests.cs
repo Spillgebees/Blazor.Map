@@ -58,8 +58,28 @@ public class ClusterOptionsTests
         options.Radius.Should().Be(64);
         options.MaxZoom.Should().Be(12);
         options.MinPoints.Should().Be(3);
-        options.Properties.Should().BeSameAs(properties);
+        options.Properties.Should().NotBeSameAs(properties);
+        options.Properties.Should().NotBeAssignableTo<Dictionary<string, object>>();
+        options.Properties.Should().Equal(properties);
         options.ClickBehavior.Should().Be(ClusterClickBehavior.ZoomToDissolve);
+    }
+
+    [Test]
+    public void Should_snapshot_cluster_properties_when_created()
+    {
+        // arrange
+        var properties = new Dictionary<string, object>
+        {
+            ["total"] = new object[] { "+", new object[] { "get", "count" } },
+        };
+
+        // act
+        var options = ClusterOptions.Create(properties: properties);
+        properties["maximum"] = new object[] { "max", new object[] { "get", "count" } };
+
+        // assert
+        options.Properties.Should().ContainSingle();
+        options.Properties.Should().ContainKey("total");
     }
 
     [Test]

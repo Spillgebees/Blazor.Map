@@ -391,7 +391,7 @@ public class TrackedEntityLayerMapApiTests : BunitContext
         source.ClusterOptions!.Radius.Should().Be(72);
         source.ClusterOptions.MaxZoom.Should().Be(10);
         source.ClusterOptions.MinPoints.Should().Be(4);
-        source.ClusterOptions.Properties.Should().BeSameAs(properties);
+        source.ClusterOptions.Properties.Should().BeEquivalentTo(properties);
         source.ClusterOptions.LayerSet.Should().Be(ClusterLayerSet.None);
     }
 

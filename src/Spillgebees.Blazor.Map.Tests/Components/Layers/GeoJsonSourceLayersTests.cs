@@ -210,7 +210,7 @@ public class GeoJsonSourceLayersTests : BunitContext
         cut.SetParametersAndRender(parameters => parameters.Add(p => p.Layers, CreateLayers()));
 
         // assert
-        await Task.Delay(50, cancellationToken);
+        cut.WaitForAssertion(() => GetAddLayerMutations().Should().HaveCount(2));
         GetRemoveLayerMutations().Should().BeEmpty();
         GetAddLayerMutations().Should().HaveCount(2);
     }
