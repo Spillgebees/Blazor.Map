@@ -535,7 +535,6 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
             _dotNetRef ??= DotNetObjectReference.Create(this);
         }
 
-        var layerEventsSnapshot = Map.SceneRegistry.CaptureLayerEvents();
         var batch = Map.SceneRegistry.CreateBatchBuilder();
 
         foreach (var layerId in layerIdsToUnregister)
@@ -555,13 +554,11 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
         catch (JSDisconnectedException)
         {
             // keep the local view unchanged; the registry rolls back failed batch mutations.
-            Map.SceneRegistry.RestoreLayerEvents(layerEventsSnapshot);
             return;
         }
         catch (ObjectDisposedException)
         {
             // keep the local view unchanged; the registry rolls back failed batch mutations.
-            Map.SceneRegistry.RestoreLayerEvents(layerEventsSnapshot);
             return;
         }
 

@@ -286,7 +286,7 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
         // assert
         GetRegisteredLayerEventIds(cut.Instance.Map)
             .Should()
-            .Equal("geojson-source-clusters", "geojson-source-cluster-count");
+            .BeEquivalentTo(["geojson-source-clusters", "geojson-source-cluster-count"]);
 
         // arrange
         jsRuntime.DisconnectOnApplySceneMutations = false;
@@ -297,14 +297,65 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
         );
 
         // assert
-        cut.WaitForAssertion(() => jsRuntime.GetMutations("unregisterLayerEvents").Should().HaveCount(4));
+        cut.WaitForAssertion(() => jsRuntime.GetMutations("unregisterLayerEvents").Should().HaveCount(2));
         jsRuntime
             .GetMutations("unregisterLayerEvents")
-            .ToArray()[^2..]
             .Select(mutation => mutation.LayerId)
             .Should()
             .Equal("geojson-source-clusters", "geojson-source-cluster-count");
         GetRegisteredLayerEventIds(cut.Instance.Map).Should().BeEmpty();
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_preserve_unrelated_layer_event_changes_when_unwire_disconnects(
+        CancellationToken cancellationToken
+    )
+    {
+        // arrange
+        var jsRuntime = new DisconnectingMapJsRuntime();
+        Services.AddSingleton<IJSRuntime>(jsRuntime);
+        var cut = Render<GeoJsonClusterSourceHarness>(parameters =>
+            parameters.Add(p => p.ClusterOptions, ClusterOptions.Default)
+        );
+        await cut.Instance.Map.OnMapInitializedAsync();
+        cut.WaitForAssertion(() => jsRuntime.GetMutations("wireLayerEvents").Should().HaveCount(2));
+        jsRuntime.DisconnectOnApplySceneMutations = true;
+        jsRuntime.BeforeDisconnect = () =>
+            cut.Instance.Map.SceneRegistry.SetLayerEvents(
+                new LayerEventDescriptor("unrelated-layer", new object(), true, false, false)
+            );
+
+        // act
+        cut.SetParametersAndRender(parameters =>
+            parameters.Add(p => p.ClusterOptions, ClusterOptions.Create(clickBehavior: ClusterClickBehavior.None))
+        );
+
+        // assert
+        GetRegisteredLayerEventIds(cut.Instance.Map)
+            .Should()
+            .BeEquivalentTo(["geojson-source-clusters", "geojson-source-cluster-count", "unrelated-layer"]);
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_not_count_failed_apply_scene_mutations_as_applied(CancellationToken cancellationToken)
+    {
+        // arrange
+        var jsRuntime = new DisconnectingMapJsRuntime();
+        Services.AddSingleton<IJSRuntime>(jsRuntime);
+        var cut = Render<GeoJsonClusterSourceHarness>(parameters =>
+            parameters.Add(p => p.ClusterOptions, ClusterOptions.Default)
+        );
+        await cut.Instance.Map.OnMapInitializedAsync();
+        cut.WaitForAssertion(() => jsRuntime.GetMutations("wireLayerEvents").Should().HaveCount(2));
+        jsRuntime.DisconnectOnApplySceneMutations = true;
+
+        // act
+        cut.SetParametersAndRender(parameters =>
+            parameters.Add(p => p.ClusterOptions, ClusterOptions.Create(clickBehavior: ClusterClickBehavior.None))
+        );
+
+        // assert
+        jsRuntime.GetMutations("unregisterLayerEvents").Should().BeEmpty();
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -1009,18 +1060,21 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
 
         public bool DisconnectOnApplySceneMutations { get; set; }
 
+        public Action? BeforeDisconnect { get; set; }
+
         public ValueTask<TValue> InvokeAsync<TValue>(string identifier, object?[]? args)
         {
             if (identifier == ApplySceneMutationsIdentifier)
             {
+                if (DisconnectOnApplySceneMutations)
+                {
+                    BeforeDisconnect?.Invoke();
+                    throw new JSDisconnectedException("test disconnect");
+                }
+
                 if (args is not null && args.Length > 1 && args[1] is MapSceneMutationBatch batch)
                 {
                     _sceneMutationBatches.Add(batch);
-                }
-
-                if (DisconnectOnApplySceneMutations)
-                {
-                    throw new JSDisconnectedException("test disconnect");
                 }
             }
 
