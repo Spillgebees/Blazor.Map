@@ -36,6 +36,9 @@ describe("browser test setup", () => {
 
     // assert
     expect(commands).toHaveLength(2);
+    expect(
+      commands.every((command) => command.startsWith("dotnet run --no-build --configuration Release --project")),
+    ).toBe(true);
     expect(commands.every((command) => command.includes("--no-build"))).toBe(true);
     expect(commands.every((command) => command.includes("--configuration Release"))).toBe(true);
   });
