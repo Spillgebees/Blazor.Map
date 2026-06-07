@@ -26,6 +26,7 @@ export interface MockMapInstance {
   getLayer: ReturnType<typeof vi.fn>;
   getCanvas: ReturnType<typeof vi.fn>;
   setLayoutProperty: ReturnType<typeof vi.fn>;
+  setFilter: ReturnType<typeof vi.fn>;
   removeLayer: ReturnType<typeof vi.fn>;
   removeSource: ReturnType<typeof vi.fn>;
   getCenter: ReturnType<typeof vi.fn>;
@@ -194,6 +195,7 @@ const MockMapConstructor = vi.fn().mockImplementation(function (
   this.getLayer = vi.fn();
   this.getCanvas = vi.fn().mockReturnValue({ style: {} });
   this.setLayoutProperty = vi.fn();
+  this.setFilter = vi.fn();
   this.removeLayer = vi.fn();
   this.removeSource = vi.fn();
   this.getCenter = vi.fn().mockReturnValue({ lng: 0, lat: 0 });

@@ -639,7 +639,6 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
         var layout = GetDefinitionLayoutProperties(layerDefinition)
             .Where(kv => kv.Value is not null)
             .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
-        layout["visibility"] = layerDefinition.Visible ? "visible" : "none";
         if (layout.Count > 0)
         {
             spec["layout"] = layout;
@@ -758,7 +757,6 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
                 filter: ClusterLayerFilter,
                 minZoom: circle.MinZoom,
                 maxZoom: circle.MaxZoom,
-                visible: circle.Visible,
                 beforeLayerId: circle.BeforeLayerId,
                 layerGroup: circle.LayerGroup,
                 beforeLayerGroup: circle.BeforeLayerGroup,
@@ -773,7 +771,6 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
                 filter: ClusterLayerFilter,
                 minZoom: symbol.MinZoom,
                 maxZoom: symbol.MaxZoom,
-                visible: symbol.Visible,
                 beforeLayerId: symbol.BeforeLayerId,
                 layerGroup: symbol.LayerGroup,
                 beforeLayerGroup: symbol.BeforeLayerGroup,
@@ -799,7 +796,6 @@ public partial class GeoJsonSource : ComponentBase, IMapSource, IAsyncDisposable
         && ValuesEqual(previous.Filter, current.Filter)
         && previous.MinZoom == current.MinZoom
         && previous.MaxZoom == current.MaxZoom
-        && previous.Visible == current.Visible
         && previous.BeforeLayerId == current.BeforeLayerId
         && previous.LayerGroup == current.LayerGroup
         && previous.BeforeLayerGroup == current.BeforeLayerGroup

@@ -103,7 +103,7 @@ public class PublicApiCleanupTests
             "Spillgebees.Blazor.Map.CustomMapControl",
             "Spillgebees.Blazor.Map.FullscreenMapControl",
             "Spillgebees.Blazor.Map.GeolocateMapControl",
-            "Spillgebees.Blazor.Map.LayerMapControl",
+            "Spillgebees.Blazor.Map.DisplayMapControl",
             "Spillgebees.Blazor.Map.LegendMapControl",
             "Spillgebees.Blazor.Map.MapFeatures",
             "Spillgebees.Blazor.Map.MapMarker",
@@ -224,13 +224,12 @@ public class PublicApiCleanupTests
             "Spillgebees.Blazor.Map.TrackedEntitySourceOptions",
             "Spillgebees.Blazor.Map.TrackedEntityVisualDefaults",
             "Spillgebees.Blazor.Map.TrackedEntityVisualOptions`1",
-            "Spillgebees.Blazor.Map.MapLayerVisibilityChangeKind",
-            "Spillgebees.Blazor.Map.MapLayerVisibilityChangedEventArgs",
-            "Spillgebees.Blazor.Map.MapLayerControlItemContext",
-            "Spillgebees.Blazor.Map.MapLayerVisibilityGroup",
-            "Spillgebees.Blazor.Map.MapLayerVisibilityState",
-            "Spillgebees.Blazor.Map.MapLayerVisibilityTarget",
-            "Spillgebees.Blazor.Map.MapLayerVisibilityTargetKind",
+            "Spillgebees.Blazor.Map.MapDisplayControlItemContext",
+            "Spillgebees.Blazor.Map.MapDisplayChangedEventArgs",
+            "Spillgebees.Blazor.Map.MapDisplayItem",
+            "Spillgebees.Blazor.Map.MapDisplayState",
+            "Spillgebees.Blazor.Map.MapDisplayTarget",
+            "Spillgebees.Blazor.Map.MapDisplayTargetKind",
             "Spillgebees.Blazor.Map.MapLayer",
             "Spillgebees.Blazor.Map.MapLayerDefinition",
             "Spillgebees.Blazor.Map.SymbolLayerDefinition",
@@ -302,7 +301,7 @@ public class PublicApiCleanupTests
             "Spillgebees.Blazor.Map.MapLegendSection",
             "Spillgebees.Blazor.Map.MapLegendItem",
             "Spillgebees.Blazor.Map.MapImage",
-            "Spillgebees.Blazor.Map.MapLayerVisibilityState",
+            "Spillgebees.Blazor.Map.MapDisplayState",
         };
 
         // act
@@ -331,6 +330,60 @@ public class PublicApiCleanupTests
 
         // assert
         resolvedTypes.Should().AllSatisfy(type => type.Should().BeNull());
+    }
+
+    [Test]
+    public void Should_not_expose_display_cleanup_legacy_public_names()
+    {
+        // arrange
+        var assembly = typeof(SgbMap).Assembly;
+        var legacyTypeNames = new[]
+        {
+            "Spillgebees.Blazor.Map.LayerMapControl",
+            "Spillgebees.Blazor.Map.MapLayerControlItemContext",
+            "Spillgebees.Blazor.Map.MapLayerVisibilityChangeKind",
+            "Spillgebees.Blazor.Map.MapLayerVisibilityChangedEventArgs",
+            "Spillgebees.Blazor.Map.MapLayerVisibilityGroup",
+            "Spillgebees.Blazor.Map.MapLayerVisibilityState",
+            "Spillgebees.Blazor.Map.MapLayerVisibilityTarget",
+            "Spillgebees.Blazor.Map.MapLayerVisibilityTargetKind",
+        };
+
+        // act
+        var resolvedTypes = legacyTypeNames.Select(assembly.GetType);
+
+        // assert
+        resolvedTypes.Should().AllSatisfy(type => type.Should().BeNull());
+    }
+
+    [Test]
+    public void Should_remove_public_display_state_from_layer_components_and_definitions()
+    {
+        // arrange
+        var types = new[]
+        {
+            typeof(LayerBase),
+            typeof(MapLayerDefinition),
+            typeof(ClusterLayerDefinition),
+            typeof(TrackedEntityVisualOptions<object>),
+            typeof(BaseMap),
+        };
+        var legacyPropertyNames = new[] { "Visible", "LayerVisibility" };
+
+        // act
+        var exposedLegacyProperties = types
+            .SelectMany(type =>
+                legacyPropertyNames.Select(propertyName => new
+                {
+                    Type = type,
+                    Property = type.GetProperty(propertyName),
+                })
+            )
+            .Where(match => match.Property is not null)
+            .Select(match => $"{match.Type.Name}.{match.Property!.Name}");
+
+        // assert
+        exposedLegacyProperties.Should().BeEmpty();
     }
 
     [Test]

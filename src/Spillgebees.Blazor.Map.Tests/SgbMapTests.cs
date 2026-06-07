@@ -11,7 +11,6 @@ public class SgbMapTests : BunitContext
     private const string DisposeMapIdentifier = "Spillgebees.Map.mapFunctions.disposeMap";
     private const string ResizeIdentifier = "Spillgebees.Map.mapFunctions.resize";
     private const string HasStyleLayerIdentifier = "Spillgebees.Map.mapFunctions.hasStyleLayer";
-    private const string SetStyleLayerVisibilityIdentifier = "Spillgebees.Map.mapFunctions.setStyleLayerVisibility";
     private const string GetCenterIdentifier = "Spillgebees.Map.mapFunctions.getCenter";
     private const string GetZoomIdentifier = "Spillgebees.Map.mapFunctions.getZoom";
     private const string GetBoundsIdentifier = "Spillgebees.Map.mapFunctions.getBounds";
@@ -38,7 +37,6 @@ public class SgbMapTests : BunitContext
         JSInterop.SetupVoid(DisposeMapIdentifier);
         JSInterop.SetupVoid(ResizeIdentifier);
         JSInterop.Setup<bool>(HasStyleLayerIdentifier).SetResult(true);
-        JSInterop.SetupVoid(SetStyleLayerVisibilityIdentifier);
         JSInterop.Setup<Coordinate?>(GetCenterIdentifier).SetResult(new Coordinate(49.61, 6.13));
         JSInterop.Setup<double?>(GetZoomIdentifier).SetResult(13.5);
         JSInterop
@@ -236,19 +234,6 @@ public class SgbMapTests : BunitContext
 
         // assert
         JSInterop.VerifyInvoke(HasStyleLayerIdentifier);
-    }
-
-    [Test, Timeout(TestTimeoutMs)]
-    public async Task Should_set_composed_style_layer_visibility_by_style_id(CancellationToken cancellationToken)
-    {
-        // arrange
-        var cut = Render<SgbMap>();
-
-        // act
-        await cut.Instance.SetStyleLayerVisibilityAsync("sgb-train-tracking-overlay", "railway-stations-circle", false);
-
-        // assert
-        JSInterop.VerifyInvoke(SetStyleLayerVisibilityIdentifier);
     }
 
     [Test, Timeout(TestTimeoutMs)]

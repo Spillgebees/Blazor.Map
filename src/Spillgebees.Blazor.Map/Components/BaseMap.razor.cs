@@ -16,6 +16,8 @@ namespace Spillgebees.Blazor.Map;
 /// </summary>
 public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
 {
+    private const string DisplayGroupIdPrefix = "__sgb_display__:";
+
     protected BaseMap()
     {
         SceneRegistry = new MapSceneRegistry(this);
@@ -87,10 +89,10 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     public List<MapImage> Images { get; set; } = [];
 
     /// <summary>
-    /// Shared layer visibility groups registered by the map and usable from legends or custom UI.
+    /// Map-level display state for toggling runtime layers, composed style layers, and style-layer feature subsets.
     /// </summary>
     [Parameter]
-    public MapLayerVisibilityState? LayerVisibility { get; set; }
+    public MapDisplayState? Display { get; set; }
 
     /// <summary>
     /// The width of the map. If not set, the map will take the full width of its container.
@@ -191,11 +193,11 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     private readonly Dictionary<string, IReadOnlyList<Polyline>> _registeredOverlayPolylines = new(
         StringComparer.Ordinal
     );
-    private readonly HashSet<string> _registeredLayerVisibilityGroupIds = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _registeredDisplayGroupIds = new(StringComparer.Ordinal);
     private readonly Dictionary<string, RegisteredOverlayDefinition> _registeredOverlays = new(StringComparer.Ordinal);
     private readonly HashSet<string> _registeredRuntimeOverlayIds = new(StringComparer.Ordinal);
-    private MapLayerVisibilityState? _activeLayerVisibility;
-    private bool _layerVisibilitySyncPending = true;
+    private MapDisplayState? _activeDisplay;
+    private bool _displaySyncPending = true;
     private bool _overlaySyncPending = true;
 
     internal event EventHandler<MapOverlayChangedEventArgs>? OverlayChanged;
@@ -303,7 +305,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// </summary>
     /// <param name="layerId">The ID of the layer in the map style.</param>
     /// <param name="visible">Whether the layer should be visible.</param>
-    public async ValueTask SetLayerVisibilityAsync(string layerId, bool visible)
+    internal async ValueTask SetLayerVisibilityAsync(string layerId, bool visible)
     {
         await JsRuntime.InvokeVoidAsync(
             "Spillgebees.Map.mapFunctions.setLayerVisibility",
@@ -316,7 +318,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
     /// <summary>
     /// Sets the visibility of a composed style layer using the style's stable ID and the original layer ID.
     /// </summary>
-    public ValueTask SetStyleLayerVisibilityAsync(string styleId, string layerId, bool visible) =>
+    internal ValueTask SetStyleLayerVisibilityAsync(string styleId, string layerId, bool visible) =>
         MapJs.SetStyleLayerVisibilityAsync(JsRuntime, Logger.Value, MapReference, styleId, layerId, visible);
 
     /// <summary>
@@ -435,10 +437,10 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         }
         finally
         {
-            if (_activeLayerVisibility is not null)
+            if (_activeDisplay is not null)
             {
-                _activeLayerVisibility.Changed -= HandleLayerVisibilityChanged;
-                _activeLayerVisibility = null;
+                _activeDisplay.Changed -= HandleDisplayChanged;
+                _activeDisplay = null;
             }
 
             DotNetObjectReference?.Dispose();
@@ -477,7 +479,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         RuntimeIsReady = true;
         _readyTcs.TrySetResult(true);
 
-        await SyncLayerVisibilityGroupsAsync();
+        await SyncDisplayGroupsAsync();
         await SyncOverlayRegistrationsAsync();
     }
 
@@ -564,16 +566,16 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         var desiredMapOptions = GetDesiredMapOptions();
         MapOptionsCompositionValidator.Validate(desiredMapOptions);
         ValidateControlIds(GetDesiredControls());
-        UpdateLayerVisibilitySubscription();
+        UpdateDisplaySubscription();
 
         if (IsInitialized is false)
         {
             return;
         }
 
-        if (_layerVisibilitySyncPending)
+        if (_displaySyncPending)
         {
-            await SyncLayerVisibilityGroupsAsync();
+            await SyncDisplayGroupsAsync();
         }
 
         if (_overlaySyncPending)
@@ -638,7 +640,7 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         InternalPolylines = GetDesiredPolylines();
         InternalOverlays = [.. Overlays];
         InternalImages = [.. GetDesiredImages()];
-        UpdateLayerVisibilitySubscription();
+        UpdateDisplaySubscription();
 
         await MapJs.CreateMapAsync(
             JsRuntime,
@@ -656,29 +658,29 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
         );
     }
 
-    private void UpdateLayerVisibilitySubscription()
+    private void UpdateDisplaySubscription()
     {
-        if (ReferenceEquals(_activeLayerVisibility, LayerVisibility))
+        if (ReferenceEquals(_activeDisplay, Display))
         {
             return;
         }
 
-        if (_activeLayerVisibility is not null)
+        if (_activeDisplay is not null)
         {
-            _activeLayerVisibility.Changed -= HandleLayerVisibilityChanged;
+            _activeDisplay.Changed -= HandleDisplayChanged;
         }
 
-        _activeLayerVisibility = LayerVisibility;
+        _activeDisplay = Display;
 
-        if (_activeLayerVisibility is not null)
+        if (_activeDisplay is not null)
         {
-            _activeLayerVisibility.Changed += HandleLayerVisibilityChanged;
+            _activeDisplay.Changed += HandleDisplayChanged;
         }
 
-        _layerVisibilitySyncPending = true;
+        _displaySyncPending = true;
     }
 
-    private void HandleLayerVisibilityChanged(object? sender, MapLayerVisibilityChangedEventArgs args)
+    private void HandleDisplayChanged(object? sender, MapDisplayChangedEventArgs args)
     {
         _ = InvokeAsync(async () =>
         {
@@ -686,78 +688,84 @@ public abstract partial class BaseMap : ComponentBase, IAsyncDisposable
             {
                 if (IsDisposing || !RuntimeIsReady)
                 {
-                    _layerVisibilitySyncPending = true;
+                    _displaySyncPending = true;
                     return;
                 }
 
-                if (
-                    args.ChangeKind == MapLayerVisibilityChangeKind.GroupChanged
-                    && args.GroupId is not null
-                    && _activeLayerVisibility?.TryGetGroup(args.GroupId, out var group) == true
-                )
+                if (!args.ItemsReplaced && args.Item is not null)
                 {
-                    await SceneRegistry.RegisterVisibilityGroupAsync(BuildVisibilityGroupDescriptor(group));
-                    _registeredLayerVisibilityGroupIds.Add(group.Id);
+                    var descriptor = BuildDisplayGroupDescriptor(args.Item);
+                    await SceneRegistry.RegisterVisibilityGroupAsync(descriptor);
+                    _registeredDisplayGroupIds.Add(descriptor.GroupId);
                     return;
                 }
 
-                await SyncLayerVisibilityGroupsAsync();
+                await SyncDisplayGroupsAsync();
             }
             catch (Exception exception) when (!IsDisposing)
             {
-                _layerVisibilitySyncPending = true;
-                Logger.Value.LogError(
-                    exception,
-                    "Failed to handle layer visibility change in {Method} for change kind {ChangeKind} and group {GroupId}.",
-                    nameof(HandleLayerVisibilityChanged),
-                    args.ChangeKind,
-                    args.GroupId
-                );
+                _displaySyncPending = true;
+                Logger.Value.LogError(exception, "Failed to handle display change for item {ItemId}.", args.ItemId);
             }
         });
     }
 
-    private async Task SyncLayerVisibilityGroupsAsync()
+    private async Task SyncDisplayGroupsAsync()
     {
         if (IsDisposing || !RuntimeIsReady)
         {
-            _layerVisibilitySyncPending = true;
+            _displaySyncPending = true;
             return;
         }
 
-        IReadOnlyList<MapLayerVisibilityGroup> desiredGroups = _activeLayerVisibility?.Groups ?? [];
-        var desiredGroupIds = desiredGroups.Select(group => group.Id).ToHashSet(StringComparer.Ordinal);
-        var removedGroupIds = _registeredLayerVisibilityGroupIds
-            .Except(desiredGroupIds, StringComparer.Ordinal)
-            .ToArray();
+        var desiredGroups = BuildDesiredDisplayDescriptors();
+        var desiredGroupIds = desiredGroups.Select(group => group.GroupId).ToHashSet(StringComparer.Ordinal);
+        var removedGroupIds = _registeredDisplayGroupIds.Except(desiredGroupIds, StringComparer.Ordinal).ToArray();
 
         foreach (var groupId in removedGroupIds)
         {
             await SceneRegistry.UnregisterVisibilityGroupAsync(groupId);
-            _registeredLayerVisibilityGroupIds.Remove(groupId);
+            _registeredDisplayGroupIds.Remove(groupId);
         }
 
         foreach (var group in desiredGroups)
         {
-            await SceneRegistry.RegisterVisibilityGroupAsync(BuildVisibilityGroupDescriptor(group));
-            _registeredLayerVisibilityGroupIds.Add(group.Id);
+            await SceneRegistry.RegisterVisibilityGroupAsync(group);
+            _registeredDisplayGroupIds.Add(group.GroupId);
         }
 
-        _layerVisibilitySyncPending = false;
+        _displaySyncPending = false;
     }
 
-    private static MapVisibilityGroupDescriptor BuildVisibilityGroupDescriptor(MapLayerVisibilityGroup group) =>
-        new(group.Id, group.IsVisible, group.Targets.Select(BuildVisibilityGroupTargetDescriptor).ToArray());
+    private IReadOnlyList<MapVisibilityGroupDescriptor> BuildDesiredDisplayDescriptors()
+    {
+        var descriptors = new List<MapVisibilityGroupDescriptor>();
+        if (_activeDisplay is not null)
+        {
+            descriptors.AddRange(_activeDisplay.Items.Select(BuildDisplayGroupDescriptor));
+        }
 
-    private static MapVisibilityGroupTargetDescriptor BuildVisibilityGroupTargetDescriptor(
-        MapLayerVisibilityTarget target
-    ) =>
+        return descriptors;
+    }
+
+    private static MapVisibilityGroupDescriptor BuildDisplayGroupDescriptor(MapDisplayItem item) =>
+        new(GetDisplayGroupId(item.Id), item.IsOn, item.Targets.Select(BuildDisplayTargetDescriptor).ToArray());
+
+    private static string GetDisplayGroupId(string itemId) => $"{DisplayGroupIdPrefix}{itemId}";
+
+    private static MapVisibilityGroupTargetDescriptor BuildDisplayTargetDescriptor(MapDisplayTarget target) =>
         new(
-            target.Kind == MapLayerVisibilityTargetKind.StyleLayer
-                ? MapVisibilityGroupTargetKind.StyleLayer
-                : MapVisibilityGroupTargetKind.RuntimeLayer,
+            target.Kind switch
+            {
+                MapDisplayTargetKind.StyleLayer => MapVisibilityGroupTargetKind.StyleLayer,
+                MapDisplayTargetKind.StyleLayerFeatures => MapVisibilityGroupTargetKind.StyleLayerFeatures,
+                MapDisplayTargetKind.StyleLayerTag => MapVisibilityGroupTargetKind.StyleLayerTag,
+                _ => MapVisibilityGroupTargetKind.RuntimeLayer,
+            },
             target.LayerIds.ToArray(),
-            target.StyleId
+            target.StyleId,
+            target.Tags.ToArray(),
+            target.Filter
         );
 
     internal void RegisterOverlayDefinition(

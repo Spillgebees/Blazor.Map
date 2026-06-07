@@ -265,35 +265,31 @@ public class MapStyledControlTests : BunitContext
     }
 
     [Test]
-    public void Should_render_layer_visibility_control_and_bind_switches()
+    public void Should_render_display_control_and_bind_switches()
     {
         // arrange
-        var visibility = new MapLayerVisibilityState([
-            new MapLayerVisibilityGroup("routes", [MapLayerVisibilityTarget.Layer("routes-layer")], Label: "Routes"),
-            new MapLayerVisibilityGroup(
-                "stations",
-                [MapLayerVisibilityTarget.Layer("stations-layer")],
-                Label: "Stations"
-            ),
+        var display = new MapDisplayState([
+            new MapDisplayItem("routes", [MapDisplayTarget.RuntimeLayers("routes-layer")], Label: "Routes"),
+            new MapDisplayItem("stations", [MapDisplayTarget.RuntimeLayers("stations-layer")], Label: "Stations"),
         ]);
 
         var cut = Render<SgbMap>(parameters =>
             parameters
-                .Add(map => map.LayerVisibility, visibility)
+                .Add(map => map.Display, display)
                 .AddChildContent<MapControls>(controls =>
-                    controls.AddChildContent<LayerMapControl>(control =>
-                        control.Add(c => c.Id, "layers").Add(c => c.GroupIds, ["stations"])
+                    controls.AddChildContent<DisplayMapControl>(control =>
+                        control.Add(c => c.Id, "display").Add(c => c.ItemIds, ["stations"])
                     )
                 )
         );
 
         // act
-        cut.Find("[data-testid='map-layer-toggle-stations']").Change(false);
+        cut.Find("[data-testid='map-display-toggle-stations']").Change(false);
 
         // assert
         cut.Markup.Should().Contain("Stations");
         cut.Markup.Should().NotContain("Routes");
-        visibility.TryGetGroup("stations", out var stations).Should().BeTrue();
-        stations!.IsVisible.Should().BeFalse();
+        display.TryGetItem("stations", out var stations).Should().BeTrue();
+        stations!.IsOn.Should().BeFalse();
     }
 }

@@ -27,7 +27,7 @@
         <tr><td>One boolean state</td><td><code>ToggleButtonMapControl</code></td></tr>
         <tr><td>Several related buttons</td><td><code>ButtonGroupMapControl</code></td></tr>
         <tr><td>Filters, settings, basemaps, options, status</td><td><code>PanelMapControl</code></td></tr>
-        <tr><td>Layer visibility</td><td><code>LayerMapControl</code></td></tr>
+        <tr><td>Display</td><td><code>DisplayMapControl</code></td></tr>
         <tr><td>Symbology explanation</td><td><code>LegendMapControl</code></td></tr>
         <tr><td>Bespoke UI</td><td><code>CustomMapControl</code></td></tr>
     </tbody>
@@ -61,9 +61,9 @@
 <p><code>PanelMapControl</code> is the default for filters, settings, basemap pickers, search forms, status panels, and other options UI. Use <code>InitiallyOpen</code> for uncontrolled panels, or bind <code>IsOpen</code> when application state owns the open value.</p>
 <CodeBlock Language="razor" Files="@_panelExamples" />
 
-<h2 id="layer_map_controls">// layer_map_controls</h2>
-<p><code>LayerMapControl</code> renders <code>SgbMap.LayerVisibility</code> groups. Use <code>GroupIds</code> to choose and order a subset.</p>
-<CodeBlock Language="razor" Files="@_layerExamples" />
+<h2 id="display_map_controls">// display_map_controls</h2>
+<p><code>DisplayMapControl</code> renders <code>SgbMap.Display</code> items. Use <code>ItemIds</code> to choose and order a subset.</p>
+<CodeBlock Language="razor" Files="@_displayExamples" />
 
 <h2 id="legend_map_controls">// legend_map_controls</h2>
 <p><code>LegendMapControl</code> explains visual symbols. Use structured symbols for common swatches, lines, dashed lines, and circles; use templates only for bespoke legends.</p>
@@ -188,12 +188,12 @@
             """,
     };
 
-    private static readonly Dictionary<string, string> _layerExamples = new()
+    private static readonly Dictionary<string, string> _displayExamples = new()
     {
-        ["LayerMapControl.razor"] = """
-            <SgbMap LayerVisibility="@_layerVisibility">
+        ["DisplayMapControl.razor"] = """
+            <SgbMap Display="@_display">
                 <MapControls>
-                    <LayerMapControl Id="layers" InitiallyOpen="true" />
+                    <DisplayMapControl Id="display" InitiallyOpen="true" />
                 </MapControls>
             </SgbMap>
             """,

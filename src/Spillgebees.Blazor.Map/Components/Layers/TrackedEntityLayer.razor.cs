@@ -286,7 +286,7 @@ public partial class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
         Source = Layer.Visual.Source;
         Interaction = Layer.Behavior.Interaction;
         Animation = Layer.Visual.Animation;
-        Visible = Layer.Visual.Visible;
+        Visible = true;
         PrimaryIconOpacity = Layer.Visual.PrimaryIconOpacity;
         MaxZoom = Layer.Visual.MaxZoom;
         Attribution = Layer.Visual.Attribution;

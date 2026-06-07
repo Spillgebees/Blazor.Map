@@ -92,6 +92,18 @@ export type SceneMutation =
             layerIds: string[];
           }
         | {
+            kind: "styleLayerFeatures";
+            styleId: string;
+            layerIds: string[];
+            filter: unknown;
+          }
+        | {
+            kind: "styleLayerTag";
+            styleId: string;
+            layerIds: string[];
+            tags: string[];
+          }
+        | {
             kind: "runtimeLayer";
             layerIds: string[];
           }

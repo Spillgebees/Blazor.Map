@@ -35,6 +35,10 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
     [Parameter]
     public string? SourceLayerId { get; set; }
 
+    /// <summary>
+    /// Gets or sets the baseline MapLibre layer filter expression. Map-level <see cref="BaseMap.Display" /> rules compose
+    /// additional display filters on top of this baseline instead of replacing it.
+    /// </summary>
     [Parameter]
     public object? Filter { get; set; }
 
@@ -57,9 +61,6 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
     public string? AfterLayerGroup { get; set; }
 
     [Parameter]
-    public bool Visible { get; set; } = true;
-
-    [Parameter]
     public EventCallback<LayerFeatureEventArgs> OnClick { get; set; }
 
     [Parameter]
@@ -77,7 +78,6 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
     private object? _previousFilter;
     private double? _previousMinZoom;
     private double? _previousMaxZoom;
-    private bool _previousVisible;
     private EventCallback<LayerFeatureEventArgs> _previousOnClick;
     private EventCallback<LayerFeatureEventArgs> _previousOnMouseEnter;
     private EventCallback _previousOnMouseLeave;
@@ -133,7 +133,6 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
         }
 
         var layout = GetLayoutProperties();
-        layout["visibility"] = Visible ? "visible" : "none";
         var nonNullLayout = layout.Where(kv => kv.Value is not null).ToDictionary(kv => kv.Key, kv => kv.Value);
         if (nonNullLayout.Count > 0)
         {
@@ -204,11 +203,9 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
     {
         _previousPaint = GetPaintProperties();
         _previousLayout = GetLayoutProperties();
-        _previousLayout["visibility"] = Visible ? "visible" : "none";
         _previousFilter = Filter;
         _previousMinZoom = MinZoom;
         _previousMaxZoom = MaxZoom;
-        _previousVisible = Visible;
         _previousOnClick = OnClick;
         _previousOnMouseEnter = OnMouseEnter;
         _previousOnMouseLeave = OnMouseLeave;
@@ -264,13 +261,6 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
         var currentLayout = GetLayoutProperties();
         var batch = map.SceneRegistry.CreateBatchBuilder();
 
-        // Handle Visible separately — it maps to the "visibility" layout property
-        if (_previousVisible != Visible)
-        {
-            batch.SetLayoutProperty(Id, "visibility", Visible ? "visible" : "none");
-            _previousVisible = Visible;
-        }
-
         if (_previousLayout is null)
         {
             return;
@@ -278,11 +268,6 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
 
         foreach (var (key, currentValue) in currentLayout)
         {
-            if (key == "visibility")
-            {
-                continue; // handled above
-            }
-
             _previousLayout.TryGetValue(key, out var previousValue);
 
             if (!ValuesEqual(currentValue, previousValue))
@@ -293,7 +278,6 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
 
         await map.SceneRegistry.ApplyBatchAsync(batch);
 
-        currentLayout["visibility"] = Visible ? "visible" : "none";
         _previousLayout = currentLayout;
     }
 

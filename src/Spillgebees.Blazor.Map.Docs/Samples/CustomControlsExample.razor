@@ -1,7 +1,7 @@
 @using Spillgebees.Blazor.Map
 
 <SgbMap MapOptions="@_mapOptions"
-        LayerVisibility="@_layerVisibility"
+        Display="@_display"
         Height="450px"
         Width="100%"
         @ref="_map">
@@ -37,10 +37,10 @@
             </Icon>
         </ButtonMapControl>
 
-        <LayerMapControl Id="network-layers"
-                         Position="ControlPosition.TopRight"
-                         Order="40"
-                         InitiallyOpen="true" />
+        <DisplayMapControl Id="network-display"
+                           Position="ControlPosition.TopRight"
+                           Order="40"
+                           InitiallyOpen="true" />
 
         <PanelMapControl Id="network-options"
                          Position="ControlPosition.TopRight"
@@ -96,17 +96,17 @@
     private int _nextStationIndex;
     private string? _focusedStationName;
     private bool _showStationNames = true;
-    private readonly MapLayerVisibilityState _layerVisibility =
+    private readonly MapDisplayState _display =
         new(
             [
-                new MapLayerVisibilityGroup(
+                new MapDisplayItem(
                     "metro-lines",
-                    [MapLayerVisibilityTarget.Layer("metro-line")],
+                    [MapDisplayTarget.RuntimeLayers("metro-line")],
                     Label: "Metro lines"
                 ),
-                new MapLayerVisibilityGroup(
+                new MapDisplayItem(
                     "stations",
-                    [MapLayerVisibilityTarget.Layer("station-layer")],
+                    [MapDisplayTarget.RuntimeLayers("station-layer")],
                     Label: "Stations"
                 ),
             ]
@@ -136,11 +136,13 @@
                         new MapLegendItem(
                             Id: "metro-lines",
                             Label: "Metro lines",
+                            DisplayItemId: "metro-lines",
                             Symbol: MapLegendSymbol.Line("#2563eb", 4)
                         ),
                         new MapLegendItem(
                             Id: "stations",
                             Label: "Stations",
+                            DisplayItemId: "stations",
                             Symbol: MapLegendSymbol.Circle("#f97316", "#ffffff")
                         ),
                     ]

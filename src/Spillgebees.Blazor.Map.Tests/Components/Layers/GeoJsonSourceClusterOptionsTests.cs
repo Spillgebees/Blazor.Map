@@ -88,7 +88,6 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
                 {
                     ["text-field"] = new object[] { "get", "point_count_abbreviated" },
                     ["text-size"] = 14d,
-                    ["visibility"] = "visible",
                 }
             );
     }
@@ -510,7 +509,7 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
                     strokeWidth: 3,
                     minZoom: 2,
                     maxZoom: 12,
-                    visible: false
+                    interactive: false
                 ),
                 ClusterLayerDefinition.Circle("inner", color: "#38bdf8", radius: 18),
                 ClusterLayerDefinition.Symbol("count", textSize: 16, textColor: "#ffffff")
@@ -531,7 +530,7 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
         outerSpec["filter"].Should().BeEquivalentTo(new object[] { "has", "point_count" });
         outerSpec["minzoom"].Should().Be(2d);
         outerSpec["maxzoom"].Should().Be(12d);
-        outerSpec["layout"].Should().BeEquivalentTo(new Dictionary<string, object?> { ["visibility"] = "none" });
+        outerSpec.Should().NotContainKey("layout");
         outerSpec["paint"]
             .Should()
             .BeEquivalentTo(
@@ -553,7 +552,6 @@ public class GeoJsonSourceClusterOptionsTests : BunitContext
                 {
                     ["text-field"] = new object[] { "get", "point_count_abbreviated" },
                     ["text-size"] = 16d,
-                    ["visibility"] = "visible",
                 }
             );
     }

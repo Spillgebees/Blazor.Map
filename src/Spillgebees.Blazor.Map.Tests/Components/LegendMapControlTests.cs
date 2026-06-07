@@ -28,10 +28,10 @@ public class LegendMapControlTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public async Task Should_register_initial_layer_visibility_without_legend(CancellationToken cancellationToken)
+    public async Task Should_register_initial_display_without_legend(CancellationToken cancellationToken)
     {
-        var visibility = CreateVisibility();
-        var cut = Render<SgbMap>(parameters => parameters.Add(map => map.LayerVisibility, visibility));
+        var display = CreateDisplay();
+        var cut = Render<SgbMap>(parameters => parameters.Add(map => map.Display, display));
 
         await cut.Instance.OnMapInitializedAsync();
 
@@ -40,21 +40,21 @@ public class LegendMapControlTests : BunitContext
                 .Should()
                 .Contain(mutation =>
                     mutation.Kind == "setVisibilityGroup"
-                    && mutation.GroupId == "stations"
+                    && mutation.GroupId!.Contains("stations")
                     && mutation.GroupVisible == false
                 )
         );
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public async Task Should_update_changed_visibility_group(CancellationToken cancellationToken)
+    public async Task Should_update_changed_display_item(CancellationToken cancellationToken)
     {
-        var visibility = CreateVisibility();
-        var cut = Render<SgbMap>(parameters => parameters.Add(map => map.LayerVisibility, visibility));
+        var display = CreateDisplay();
+        var cut = Render<SgbMap>(parameters => parameters.Add(map => map.Display, display));
         await cut.Instance.OnMapInitializedAsync();
         var initialBatchCount = JSInterop.Invocations[ApplySceneMutationsIdentifier].Count;
 
-        visibility.SetVisible("stations", true);
+        display.SetOn("stations", true);
 
         cut.WaitForAssertion(() =>
             JSInterop.Invocations[ApplySceneMutationsIdentifier].Count.Should().BeGreaterThan(initialBatchCount)
@@ -62,36 +62,58 @@ public class LegendMapControlTests : BunitContext
         GetLatestSceneMutationBatch()
             .Mutations.Should()
             .ContainSingle(mutation =>
-                mutation.Kind == "setVisibilityGroup" && mutation.GroupId == "stations" && mutation.GroupVisible == true
+                mutation.Kind == "setVisibilityGroup"
+                && mutation.GroupId!.Contains("stations")
+                && mutation.GroupVisible == true
             );
     }
 
     [Test, Timeout(TestTimeoutMs)]
     public async Task Should_unregister_removed_groups_when_state_is_replaced(CancellationToken cancellationToken)
     {
-        var visibility = CreateVisibility();
-        var cut = Render<SgbMap>(parameters => parameters.Add(map => map.LayerVisibility, visibility));
+        var display = CreateDisplay();
+        var cut = Render<SgbMap>(parameters => parameters.Add(map => map.Display, display));
         await cut.Instance.OnMapInitializedAsync();
         var initialBatchCount = JSInterop.Invocations[ApplySceneMutationsIdentifier].Count;
 
-        visibility.Replace([new MapLayerVisibilityGroup("routes", [MapLayerVisibilityTarget.Layer("routes-layer")])]);
+        display.Replace([new MapDisplayItem("routes", [MapDisplayTarget.RuntimeLayers("routes-layer")])]);
 
         cut.WaitForAssertion(() =>
             JSInterop.Invocations[ApplySceneMutationsIdentifier].Count.Should().BeGreaterThan(initialBatchCount)
         );
         GetSceneMutations()
             .Should()
-            .Contain(mutation => mutation.Kind == "removeVisibilityGroup" && mutation.GroupId == "stations");
+            .Contain(mutation => mutation.Kind == "removeVisibilityGroup" && mutation.GroupId!.Contains("stations"));
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public async Task Should_toggle_shared_visibility_from_legend(CancellationToken cancellationToken)
+    public async Task Should_namespace_display_groups(CancellationToken cancellationToken)
     {
-        var visibility = CreateVisibility();
+        // arrange
+        var display = new MapDisplayState([
+            new MapDisplayItem("stations", [MapDisplayTarget.RuntimeLayers("display-stations-layer")]),
+        ]);
+        var cut = Render<SgbMap>(parameters => parameters.Add(map => map.Display, display));
+
+        // act
+        await cut.Instance.OnMapInitializedAsync();
+
+        // assert
+        GetSceneMutations()
+            .Where(mutation => mutation.Kind == "setVisibilityGroup")
+            .Select(mutation => mutation.GroupId)
+            .Should()
+            .ContainSingle(groupId => groupId != "stations" && groupId!.Contains("stations"));
+    }
+
+    [Test, Timeout(TestTimeoutMs)]
+    public async Task Should_toggle_shared_display_from_legend(CancellationToken cancellationToken)
+    {
+        var display = CreateDisplay();
         var definition = CreateLegend();
         var cut = Render<SgbMap>(parameters =>
             parameters
-                .Add(map => map.LayerVisibility, visibility)
+                .Add(map => map.Display, display)
                 .AddChildContent<MapControls>(controls =>
                     controls.AddChildContent<LegendMapControl>(control => control.Add(c => c.Definition, definition))
                 )
@@ -100,7 +122,7 @@ public class LegendMapControlTests : BunitContext
 
         await cut.Find("input[data-testid='map-legend-toggle-stations']").ChangeAsync(true);
 
-        visibility.IsVisible("stations").Should().BeTrue();
+        display.IsOn("stations").Should().BeTrue();
     }
 
     [Test, Timeout(TestTimeoutMs)]
@@ -152,11 +174,11 @@ public class LegendMapControlTests : BunitContext
     [Test, Timeout(TestTimeoutMs)]
     public async Task Should_keep_two_legends_in_sync(CancellationToken cancellationToken)
     {
-        var visibility = CreateVisibility();
+        var display = CreateDisplay();
         var definition = CreateLegend();
         var cut = Render<SgbMap>(parameters =>
             parameters
-                .Add(map => map.LayerVisibility, visibility)
+                .Add(map => map.Display, display)
                 .AddChildContent<MapControls>(controls =>
                     controls.AddChildContent(builder =>
                     {
@@ -173,7 +195,7 @@ public class LegendMapControlTests : BunitContext
         );
         await cut.Instance.OnMapInitializedAsync();
 
-        visibility.SetVisible("stations", true);
+        display.SetOn("stations", true);
 
         cut.WaitForAssertion(() =>
             cut.FindAll("input[data-testid='map-legend-toggle-stations']")
@@ -183,9 +205,9 @@ public class LegendMapControlTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public async Task Should_pass_visibility_context_to_templates(CancellationToken cancellationToken)
+    public async Task Should_pass_display_context_to_templates(CancellationToken cancellationToken)
     {
-        var visibility = CreateVisibility();
+        var display = CreateDisplay();
         MapLegendItemTemplateContext? templateContext = null;
         RenderFragment<MapLegendItemTemplateContext> template = context =>
         {
@@ -195,7 +217,7 @@ public class LegendMapControlTests : BunitContext
 
         var cut = Render<SgbMap>(parameters =>
             parameters
-                .Add(map => map.LayerVisibility, visibility)
+                .Add(map => map.Display, display)
                 .AddChildContent<MapControls>(controls =>
                     controls.AddChildContent<LegendMapControl>(control =>
                         control.Add(c => c.Definition, CreateLegend()).Add(c => c.ItemTemplate, template)
@@ -207,12 +229,14 @@ public class LegendMapControlTests : BunitContext
 
         templateContext.Should().NotBeNull();
         templateContext!.IsToggleable.Should().BeTrue();
-        templateContext.IsVisible.Should().BeFalse();
-        templateContext.VisibilityGroup!.Id.Should().Be("stations");
+        templateContext.IsOn.Should().BeFalse();
+        templateContext.DisplayItem!.Id.Should().Be("stations");
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public void Should_fail_when_toggleable_legend_item_references_missing_group(CancellationToken cancellationToken)
+    public void Should_fail_when_toggleable_legend_item_references_missing_display_item(
+        CancellationToken cancellationToken
+    )
     {
         var definition = CreateLegend();
         var act = () =>
@@ -241,17 +265,15 @@ public class LegendMapControlTests : BunitContext
             .BeOfType<MapSceneMutationBatch>()
             .Subject;
 
-    private static MapLayerVisibilityState CreateVisibility() =>
+    private static MapDisplayState CreateDisplay() =>
         new([
-            new MapLayerVisibilityGroup(
+            new MapDisplayItem(
                 "stations",
-                [MapLayerVisibilityTarget.Style("overlay-style", "stations-circle", "stations-label")],
-                IsVisible: false
+                [MapDisplayTarget.StyleLayers("overlay-style", "stations-circle", "stations-label")],
+                IsOn: false
             ),
         ]);
 
     private static MapLegend CreateLegend() =>
-        new([
-            new MapLegendSection("Layers", [new MapLegendItem("stations", "Stations", VisibilityGroupId: "stations")]),
-        ]);
+        new([new MapLegendSection("Layers", [new MapLegendItem("stations", "Stations", DisplayItemId: "stations")])]);
 }

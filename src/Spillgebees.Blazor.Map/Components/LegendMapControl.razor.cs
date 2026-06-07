@@ -14,10 +14,10 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
     private readonly string _contentId = $"sgb-map-legend-content-{Guid.NewGuid():N}";
     private ElementReference _placeholderReference;
     private ElementReference _contentReference;
-    private MapLegendVisibilityBinder? _visibilityBinder;
+    private MapLegendDisplayBinder? _displayBinder;
 
-    private MapLegendVisibilityBinder VisibilityBinder =>
-        _visibilityBinder ??= new MapLegendVisibilityBinder(() => InvokeAsync(StateHasChanged));
+    private MapLegendDisplayBinder DisplayBinder =>
+        _displayBinder ??= new MapLegendDisplayBinder(() => InvokeAsync(StateHasChanged));
 
     [CascadingParameter]
     private MapControlRegistryContext? Registry { get; set; }
@@ -26,7 +26,7 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
     private MapSectionContext? SectionContext { get; set; }
 
     [CascadingParameter]
-    private MapLayerVisibilityState? LayerVisibility { get; set; }
+    private MapDisplayState? Display { get; set; }
 
     [Parameter]
     public string Id { get; set; } = "legend";
@@ -68,7 +68,7 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
     protected override void OnParametersSet()
     {
         ValidateControl();
-        VisibilityBinder.UpdateVisibilitySubscription(LayerVisibility);
+        DisplayBinder.UpdateDisplaySubscription(Display);
         ValidateDefinition();
 
         _registration.Register(
@@ -94,8 +94,8 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
-        _visibilityBinder?.Dispose();
-        _visibilityBinder = null;
+        _displayBinder?.Dispose();
+        _displayBinder = null;
         await _registration.DisposeAsync(Registry);
     }
 
@@ -113,17 +113,16 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
             .AddClass(section.ClassName, !string.IsNullOrWhiteSpace(section.ClassName))
             .Build();
 
-    private string GetItemClassName(MapLegendItem item) => VisibilityBinder.GetItemClassName(item);
+    private string GetItemClassName(MapLegendItem item) => DisplayBinder.GetItemClassName(item);
 
-    private static bool IsToggleable(MapLegendItem item) => MapLegendVisibilityBinder.IsToggleable(item);
+    private static bool IsToggleable(MapLegendItem item) => MapLegendDisplayBinder.IsToggleable(item);
 
-    private bool GetItemVisible(MapLegendItem item) => VisibilityBinder.GetItemVisible(item);
+    private bool GetItemOn(MapLegendItem item) => DisplayBinder.GetItemOn(item);
 
-    private Task ToggleItemAsync(MapLegendItem item, ChangeEventArgs args) =>
-        VisibilityBinder.ToggleItemAsync(item, args);
+    private Task ToggleItemAsync(MapLegendItem item, ChangeEventArgs args) => DisplayBinder.ToggleItemAsync(item, args);
 
     private MapLegendItemTemplateContext BuildTemplateContext(MapLegendItem item) =>
-        VisibilityBinder.BuildTemplateContext(item);
+        DisplayBinder.BuildTemplateContext(item);
 
     private static RenderFragment RenderLegendSymbol(MapLegendItem item) =>
         builder =>
@@ -203,7 +202,7 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
 
         if (duplicateId is null)
         {
-            VisibilityBinder.ValidateVisibilityGroups(Definition.GetItems());
+            DisplayBinder.ValidateDisplayItems(Definition.GetItems());
             return;
         }
 

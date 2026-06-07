@@ -9,7 +9,6 @@ public abstract record ClusterLayerDefinition
         string idSuffix,
         double? minZoom = null,
         double? maxZoom = null,
-        bool visible = true,
         string? beforeLayerId = null,
         string? layerGroup = null,
         string? beforeLayerGroup = null,
@@ -30,7 +29,6 @@ public abstract record ClusterLayerDefinition
         IdSuffix = idSuffix;
         MinZoom = minZoom;
         MaxZoom = maxZoom;
-        Visible = visible;
         BeforeLayerId = beforeLayerId;
         LayerGroup = layerGroup;
         BeforeLayerGroup = beforeLayerGroup;
@@ -46,8 +44,6 @@ public abstract record ClusterLayerDefinition
     public double? MinZoom { get; }
 
     public double? MaxZoom { get; }
-
-    public bool Visible { get; }
 
     public string? BeforeLayerId { get; }
 
@@ -98,7 +94,6 @@ public abstract record ClusterLayerDefinition
         StyleValue<double>? strokeWidth = null,
         double? minZoom = null,
         double? maxZoom = null,
-        bool visible = true,
         string? beforeLayerId = null,
         string? layerGroup = null,
         string? beforeLayerGroup = null,
@@ -114,7 +109,6 @@ public abstract record ClusterLayerDefinition
             strokeWidth,
             minZoom,
             maxZoom,
-            visible,
             beforeLayerId,
             layerGroup,
             beforeLayerGroup,
@@ -132,7 +126,6 @@ public abstract record ClusterLayerDefinition
         StyleValue<string>? textColor = null,
         double? minZoom = null,
         double? maxZoom = null,
-        bool visible = true,
         string? beforeLayerId = null,
         string? layerGroup = null,
         string? beforeLayerGroup = null,
@@ -146,7 +139,6 @@ public abstract record ClusterLayerDefinition
             textColor,
             minZoom,
             maxZoom,
-            visible,
             beforeLayerId,
             layerGroup,
             beforeLayerGroup,
