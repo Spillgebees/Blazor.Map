@@ -100,4 +100,12 @@ public sealed record MapDisplayTarget
     /// <summary>Creates a target for matching features in composed style layers.</summary>
     public static MapDisplayTarget StyleLayerFeatures(string styleId, object filter, params string[] layerIds) =>
         new(MapDisplayTargetKind.StyleLayerFeatures, layerIds, styleId, Filter: filter);
+
+    /// <summary>Creates a target for composed style layers with a matching tag.</summary>
+    public static MapDisplayTarget StyleLayerTag(string styleId, string tag) =>
+        new(MapDisplayTargetKind.StyleLayerTag, StyleId: styleId, Tags: [tag]);
+
+    /// <summary>Creates a target for composed style layers with any matching tag.</summary>
+    public static MapDisplayTarget StyleLayerTags(string styleId, params string[] tags) =>
+        new(MapDisplayTargetKind.StyleLayerTag, StyleId: styleId, Tags: tags);
 }

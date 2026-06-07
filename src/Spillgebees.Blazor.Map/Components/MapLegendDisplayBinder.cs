@@ -55,7 +55,9 @@ internal sealed class MapLegendDisplayBinder : IDisposable
         {
             bool boolValue => boolValue,
             string stringValue when bool.TryParse(stringValue, out var parsed) => parsed,
-            _ => false,
+            _ => throw new InvalidOperationException(
+                "Legend display toggle expected a bool or parseable string value."
+            ),
         };
 
         await SetItemOnAsync(item, selected);

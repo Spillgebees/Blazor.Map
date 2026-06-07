@@ -119,6 +119,7 @@ export function removeMapSource(mapElement: HTMLElement, sourceId: string): void
     for (const layer of style.layers) {
       if ("source" in layer && layer.source === sourceId) {
         unregisterLayerEventsForMap(map, layer.id);
+        clearLayerVisibilityBaseline(map, layer.id);
         layerStore?.delete(layer.id);
         map.removeLayer(layer.id);
       }
@@ -196,6 +197,7 @@ export function removeMapLayer(mapElement: HTMLElement, layerId: string): void {
   if (!map) return;
 
   unregisterLayerEventsForMap(map, layerId);
+  clearLayerVisibilityBaseline(map, layerId);
   getSceneLayerStore(map).delete(layerId);
 
   if (map.getLayer(layerId)) {
@@ -672,6 +674,10 @@ function getLayerVisibilityBaselineStore(map: MapLibreMap): Map<string, boolean>
   const created = new Map<string, boolean>();
   layerVisibilityBaselines.set(map, created);
   return created;
+}
+
+function clearLayerVisibilityBaseline(map: MapLibreMap, layerId: string): void {
+  layerVisibilityBaselines.get(map)?.delete(layerId);
 }
 
 export function setPaintProperty(mapElement: HTMLElement, layerId: string, name: string, value: unknown): void {

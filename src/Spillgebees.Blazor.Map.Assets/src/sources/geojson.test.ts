@@ -528,6 +528,77 @@ describe("display feature filters", () => {
     expect(mockMap.setLayoutProperty).toHaveBeenCalledWith("transit-a", "visibility", "visible");
     expect(mockMap.setLayoutProperty).toHaveBeenLastCalledWith("transit-b", "visibility", "none");
   });
+
+  it("should use current style visibility as baseline after removing and re-adding a layer", () => {
+    // arrange
+    const mapElement = setupStyledMapElement();
+    const mockMap = getLatestMockMapInstance()!;
+    let currentVisible = "visible";
+    let layerExists = true;
+    mockMap.getStyle.mockImplementation(() => ({
+      layers: layerExists
+        ? [{ id: "transit", type: "line", source: "base", layout: { visibility: currentVisible } }]
+        : [],
+    }));
+    mockMap.getLayer.mockImplementation((id: string) => (id === "transit" && layerExists ? { id } : undefined));
+    mockMap.setLayoutProperty.mockImplementation((_layerId: string, _name: string, value: unknown) => {
+      currentVisible = String(value);
+      return mockMap as never;
+    });
+    mockMap.removeLayer.mockImplementation(() => {
+      layerExists = false;
+    });
+
+    // act
+    setVisibilityGroup(mapElement, "transit", false, [
+      { kind: "styleLayer", styleId: "base-style", layerIds: ["transit"] },
+    ]);
+    removeMapLayer(mapElement, "transit");
+    layerExists = true;
+    setVisibilityGroup(mapElement, "transit", true, [
+      { kind: "styleLayer", styleId: "base-style", layerIds: ["transit"] },
+    ]);
+
+    // assert
+    expect(mockMap.setLayoutProperty).toHaveBeenLastCalledWith("transit", "visibility", "none");
+  });
+
+  it("should use current style visibility as baseline after removing and re-adding source layers", () => {
+    // arrange
+    const mapElement = setupStyledMapElement();
+    const mockMap = getLatestMockMapInstance()!;
+    const sourceSpec = { type: "geojson", data: null };
+    let currentVisible = "visible";
+    let layerExists = true;
+    mockMap.getStyle.mockImplementation(() => ({
+      layers: layerExists
+        ? [{ id: "transit", type: "line", source: "source-1", layout: { visibility: currentVisible } }]
+        : [],
+    }));
+    mockMap.getLayer.mockImplementation((id: string) => (id === "transit" && layerExists ? { id } : undefined));
+    mockMap.setLayoutProperty.mockImplementation((_layerId: string, _name: string, value: unknown) => {
+      currentVisible = String(value);
+      return mockMap as never;
+    });
+    mockMap.removeLayer.mockImplementation(() => {
+      layerExists = false;
+    });
+    addMapSource(mapElement, "source-1", sourceSpec);
+
+    // act
+    setVisibilityGroup(mapElement, "transit", false, [
+      { kind: "styleLayer", styleId: "base-style", layerIds: ["transit"] },
+    ]);
+    removeMapSource(mapElement, "source-1");
+    layerExists = true;
+    addMapSource(mapElement, "source-1", sourceSpec);
+    setVisibilityGroup(mapElement, "transit", true, [
+      { kind: "styleLayer", styleId: "base-style", layerIds: ["transit"] },
+    ]);
+
+    // assert
+    expect(mockMap.setLayoutProperty).toHaveBeenLastCalledWith("transit", "visibility", "none");
+  });
 });
 
 describe("addMapSource", () => {

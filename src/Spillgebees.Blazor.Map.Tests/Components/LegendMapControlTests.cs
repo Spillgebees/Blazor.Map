@@ -249,6 +249,24 @@ public class LegendMapControlTests : BunitContext
         act.Should().Throw<InvalidOperationException>().WithMessage("*stations*");
     }
 
+    [Test]
+    public async Task Should_throw_descriptive_error_for_invalid_legend_toggle_value()
+    {
+        // arrange
+        var display = CreateDisplay();
+        var binder = new MapLegendDisplayBinder(() => Task.CompletedTask);
+        binder.UpdateDisplaySubscription(display);
+        var item = new MapLegendItem("stations", "Stations", DisplayItemId: "stations");
+
+        // act
+        var act = () => binder.ToggleItemAsync(item, new ChangeEventArgs { Value = 42 });
+
+        // assert
+        await act.Should()
+            .ThrowAsync<InvalidOperationException>()
+            .WithMessage("Legend display toggle expected a bool or parseable string value.");
+    }
+
     private IReadOnlyList<MapSceneMutation> GetSceneMutations() =>
         JSInterop
             .Invocations[ApplySceneMutationsIdentifier]

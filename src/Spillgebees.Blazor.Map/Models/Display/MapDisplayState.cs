@@ -8,7 +8,8 @@ namespace Spillgebees.Blazor.Map;
 public sealed class MapDisplayState
 {
     private readonly Dictionary<string, MapDisplayItem> _items = new(StringComparer.Ordinal);
-    private IReadOnlyList<MapDisplayItem> _snapshot = Array.AsReadOnly(Array.Empty<MapDisplayItem>());
+    private readonly List<string> _itemIds = [];
+    private IReadOnlyList<MapDisplayItem>? _snapshot;
 
     /// <summary>Initializes a new map display state.</summary>
     public MapDisplayState(IEnumerable<MapDisplayItem> items)
@@ -20,7 +21,8 @@ public sealed class MapDisplayState
     public event EventHandler<MapDisplayChangedEventArgs>? Changed;
 
     /// <summary>Gets current display items.</summary>
-    public IReadOnlyList<MapDisplayItem> Items => _snapshot;
+    public IReadOnlyList<MapDisplayItem> Items =>
+        _snapshot ??= Array.AsReadOnly(_itemIds.Select(id => _items[id]).ToArray());
 
     /// <summary>Returns whether an item exists.</summary>
     public bool Contains(string itemId) => _items.ContainsKey(itemId);
@@ -51,8 +53,13 @@ public sealed class MapDisplayState
     public void Upsert(MapDisplayItem item)
     {
         ArgumentNullException.ThrowIfNull(item);
+        if (!_items.ContainsKey(item.Id))
+        {
+            _itemIds.Add(item.Id);
+        }
+
         _items[item.Id] = item;
-        _snapshot = Array.AsReadOnly(_items.Values.ToArray());
+        _snapshot = null;
         Changed?.Invoke(this, new MapDisplayChangedEventArgs(item.Id, item, false));
     }
 
@@ -88,11 +95,13 @@ public sealed class MapDisplayState
         }
 
         _items.Clear();
+        _itemIds.Clear();
         foreach (var item in next)
         {
             _items[item.Id] = item;
+            _itemIds.Add(item.Id);
         }
 
-        _snapshot = Array.AsReadOnly(next);
+        _snapshot = null;
     }
 }
