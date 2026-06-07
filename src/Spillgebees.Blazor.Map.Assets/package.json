@@ -25,8 +25,12 @@
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:browser:build": "dotnet build --configuration Release ../../Spillgebees.Blazor.Map.slnx",
+    "test:browser:no-build": "SGB_PLAYWRIGHT_NO_BUILD=1 playwright test",
     "test:browser": "playwright test",
+    "test:browser:docs:no-build": "SGB_PLAYWRIGHT_NO_BUILD=1 playwright test --project docs",
     "test:browser:docs": "playwright test --project docs",
+    "test:browser:integration:no-build": "SGB_PLAYWRIGHT_NO_BUILD=1 playwright test --project integration",
     "test:browser:integration": "playwright test --project integration",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

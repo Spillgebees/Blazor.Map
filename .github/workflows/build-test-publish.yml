@@ -79,7 +79,7 @@ jobs:
 
       - name: 🎭 browser regression tests
         if: inputs.dotnet-changed || inputs.ts-changed
-        run: pnpm run test:browser
+        run: pnpm run test:browser:no-build
         working-directory: src/Spillgebees.Blazor.Map.Assets
 
       - name: 📦 package the application

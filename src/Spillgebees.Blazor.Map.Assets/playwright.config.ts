@@ -1,17 +1,17 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const requestedProjects = getRequestedProjects(process.argv);
+const runWithoutBuild = process.env.SGB_PLAYWRIGHT_NO_BUILD === "1" || process.env.CI === "true";
+const dotnetRun = runWithoutBuild ? "dotnet run --no-build --configuration Release" : "dotnet run";
 const webServer = [
   {
-    command:
-      "dotnet run --project ../Spillgebees.Blazor.Map.Docs/Spillgebees.Blazor.Map.Docs.csproj --urls http://127.0.0.1:5002",
+    command: `${dotnetRun} --project ../Spillgebees.Blazor.Map.Docs/Spillgebees.Blazor.Map.Docs.csproj --urls http://127.0.0.1:5002`,
     url: "http://127.0.0.1:5002",
     reuseExistingServer: true,
     timeout: 120_000,
   },
   {
-    command:
-      "dotnet run --project ../Spillgebees.Blazor.Map.IntegrationTests/Spillgebees.Blazor.Map.IntegrationTests.csproj --urls http://127.0.0.1:5012",
+    command: `${dotnetRun} --project ../Spillgebees.Blazor.Map.IntegrationTests/Spillgebees.Blazor.Map.IntegrationTests.csproj --urls http://127.0.0.1:5012`,
     url: "http://127.0.0.1:5012",
     reuseExistingServer: false,
     timeout: 120_000,
