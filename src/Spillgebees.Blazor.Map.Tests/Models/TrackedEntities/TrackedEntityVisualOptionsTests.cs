@@ -48,7 +48,6 @@ public class TrackedEntityVisualOptionsTests
             [],
             cluster,
             Animation: null,
-            Visible: true,
             PrimaryIconOpacity: null
         );
 
@@ -76,7 +75,7 @@ public class TrackedEntityVisualOptionsTests
     }
 
     private static TrackedEntityVisualOptions<TestVehicle> CreateVisualOptions(TrackedEntitySourceOptions source) =>
-        new(CreateSymbolOptions(), [], source, Animation: null, Visible: true, PrimaryIconOpacity: null);
+        new(CreateSymbolOptions(), [], source, Animation: null, PrimaryIconOpacity: null);
 
     private static TrackedEntitySymbolOptions<TestVehicle> CreateSymbolOptions() =>
         new(vehicle => vehicle.Position, vehicle => vehicle.IconImage);

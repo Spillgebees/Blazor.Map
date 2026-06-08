@@ -114,7 +114,6 @@ public static class TrainSampleSimulation
                 ],
                 TrackedEntitySourceOptions.Default,
                 null,
-                true,
                 null
             ),
             new TrackedEntityBehaviorOptions<TrainSampleState>(),

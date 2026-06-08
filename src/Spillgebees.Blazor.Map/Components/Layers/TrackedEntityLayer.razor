@@ -22,9 +22,8 @@
                      Radius="@ClusterHitAreaRadiusValue"
                      Color="@("#000000")"
                      Opacity="0"
-                     PitchAlignment="CirclePitchAlignment.Viewport"
-                     LayerGroup="@ClusterHitAreaLayerId"
-                     Visible="@Visible"
+                      PitchAlignment="CirclePitchAlignment.Viewport"
+                      LayerGroup="@ClusterHitAreaLayerId"
                      OnClick="@GetGeneratedClusterClickCallback()" />
     }
     @* tracked cluster layers render as child components so they can attach generated callbacks and hit-area ordering. *@
@@ -50,9 +49,8 @@
                          BeforeLayerId="@circleLayer.BeforeLayerId"
                          LayerGroup="@circleLayer.LayerGroup"
                          BeforeLayerGroup="@circleLayer.BeforeLayerGroup"
-                         AfterLayerGroup="@afterLayerGroup"
-                         PitchAlignment="CirclePitchAlignment.Viewport"
-                         Visible="@(Visible && circleLayer.Visible)"
+                          AfterLayerGroup="@afterLayerGroup"
+                          PitchAlignment="CirclePitchAlignment.Viewport"
                          OnClick="@GetGeneratedClusterClickCallback(circleLayer.Interactive)" />
         }
         else if (clusterLayer is ClusterSymbolLayerDefinition symbolLayer)
@@ -69,10 +67,9 @@
                          LayerGroup="@symbolLayer.LayerGroup"
                          BeforeLayerGroup="@symbolLayer.BeforeLayerGroup"
                          AfterLayerGroup="@afterLayerGroup"
-                         TextPitchAlignment="MapAlignment.Viewport"
-                         TextRotationAlignment="MapAlignment.Viewport"
-                         TextAllowOverlap="true"
-                         Visible="@(Visible && symbolLayer.Visible)"
+                          TextPitchAlignment="MapAlignment.Viewport"
+                          TextRotationAlignment="MapAlignment.Viewport"
+                          TextAllowOverlap="true"
                          OnClick="@GetGeneratedClusterClickCallback(symbolLayer.Interactive)" />
         }
     }
@@ -88,9 +85,8 @@
                  IconAnchor="@PrimaryIconAnchorValue"
                  IconAllowOverlap="true"
                  RotationAlignment="MapAlignment.Map"
-                 SymbolSortKey="@RenderOrderSortKeyValue"
-                 AfterLayerGroup="@PrimaryAfterLayerGroup"
-                 Visible="@Visible"
+                  SymbolSortKey="@RenderOrderSortKeyValue"
+                  AfterLayerGroup="@PrimaryAfterLayerGroup"
                  OnClick="@HandleGeneratedItemClickAsync"
                  OnMouseEnter="@HandleGeneratedItemMouseEnterAsync"
                  OnMouseLeave="@HandleGeneratedItemMouseLeaveAsync" />
@@ -101,9 +97,8 @@
                  Radius="24"
                  Color="@("#000000")"
                  Opacity="0"
-                 PitchAlignment="CirclePitchAlignment.Viewport"
-                 AfterLayerGroup="@PrimaryLayerId"
-                 Visible="@Visible"
+                  PitchAlignment="CirclePitchAlignment.Viewport"
+                  AfterLayerGroup="@PrimaryLayerId"
                  OnClick="@HandleGeneratedItemClickAsync"
                  OnMouseEnter="@HandleGeneratedItemMouseEnterAsync"
                  OnMouseLeave="@HandleGeneratedItemMouseLeaveAsync" />
@@ -149,9 +144,8 @@
                          IconTextFit="@decorationLayer.IconTextFit"
                          IconTextFitPadding="@decorationLayer.IconTextFitPadding"
                          RotationAlignment="MapAlignment.Map"
-                         SymbolSortKey="@RenderOrderSortKeyValue"
-                         AfterLayerGroup="@PrimaryHitAreaLayerId"
-                         Visible="@Visible"
+                          SymbolSortKey="@RenderOrderSortKeyValue"
+                          AfterLayerGroup="@PrimaryHitAreaLayerId"
                          OnClick="@HandleGeneratedItemClickAsync"
                          OnMouseEnter="@HandleGeneratedItemMouseEnterAsync"
                          OnMouseLeave="@HandleGeneratedItemMouseLeaveAsync" />

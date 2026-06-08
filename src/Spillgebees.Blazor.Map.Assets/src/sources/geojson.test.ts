@@ -21,9 +21,11 @@ import {
   removeMapLayer,
   removeMapSource,
   setFeatureState,
+  setFilter,
   setLayoutProperty,
   setSourceData,
   setSourceDataAnimated,
+  setVisibilityGroup,
   unregisterLayerEvents,
   wireLayerEvents,
 } from "./geojson";
@@ -331,6 +333,273 @@ function setupMapElement(): HTMLElement {
   fireLoadEvent();
   return mapElement;
 }
+
+function setupStyledMapElement(): HTMLElement {
+  const mapElement = document.createElement("div");
+  const dotNetHelper = createMockDotNetHelper();
+  createMap(
+    dotNetHelper,
+    "OnMapInitialized",
+    mapElement,
+    createDefaultMapOptions({
+      style: {
+        id: "base-style",
+        url: "https://example.com/style.json",
+        referrerPolicy: null,
+        rasterSource: null,
+        wmsSource: null,
+      },
+    }),
+    createDefaultControls(),
+    "light",
+    [],
+    [],
+    [],
+    [],
+  );
+  fireLoadEvent();
+  return mapElement;
+}
+
+describe("display feature filters", () => {
+  beforeEach(() => {
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+  });
+
+  it("should preserve immutable baseline filters while toggling display feature groups", () => {
+    // arrange
+    const mapElement = setupStyledMapElement();
+    const mockMap = getLatestMockMapInstance()!;
+    let currentFilter: unknown = ["==", ["get", "class"], "rail"];
+    mockMap.getStyle.mockImplementation(() => ({
+      layers: [{ id: "transit", type: "line", source: "base", filter: currentFilter }],
+    }));
+    mockMap.getLayer.mockImplementation((id: string) => (id === "transit" ? { id } : undefined));
+    mockMap.setFilter.mockImplementation((_layerId: string, filter: unknown) => {
+      currentFilter = filter;
+      return mockMap as never;
+    });
+
+    // act
+    setVisibilityGroup(mapElement, "night-bus", false, [
+      {
+        kind: "styleLayerFeatures",
+        styleId: "base-style",
+        layerIds: ["transit"],
+        filter: ["==", ["get", "service"], "night"],
+      },
+    ]);
+    setVisibilityGroup(mapElement, "night-bus", true, [
+      {
+        kind: "styleLayerFeatures",
+        styleId: "base-style",
+        layerIds: ["transit"],
+        filter: ["==", ["get", "service"], "night"],
+      },
+    ]);
+    setVisibilityGroup(mapElement, "night-bus", false, [
+      {
+        kind: "styleLayerFeatures",
+        styleId: "base-style",
+        layerIds: ["transit"],
+        filter: ["==", ["get", "service"], "night"],
+      },
+    ]);
+
+    // assert
+    expect(mockMap.setFilter).toHaveBeenLastCalledWith("transit", [
+      "all",
+      ["==", ["get", "class"], "rail"],
+      ["!", ["==", ["get", "service"], "night"]],
+    ]);
+  });
+
+  it("should recompute old and new targets when replacing display feature groups", () => {
+    // arrange
+    const mapElement = setupStyledMapElement();
+    const mockMap = getLatestMockMapInstance()!;
+    const filters = new Map<string, unknown>([
+      ["transit-a", ["==", ["get", "class"], "rail"]],
+      ["transit-b", ["==", ["get", "class"], "bus"]],
+    ]);
+    mockMap.getStyle.mockImplementation(() => ({
+      layers: [
+        { id: "transit-a", type: "line", source: "base", filter: filters.get("transit-a") },
+        { id: "transit-b", type: "line", source: "base", filter: filters.get("transit-b") },
+      ],
+    }));
+    mockMap.getLayer.mockImplementation((id: string) => (filters.has(id) ? { id } : undefined));
+    mockMap.setFilter.mockImplementation((layerId: string, filter: unknown) => {
+      filters.set(layerId, filter);
+      return mockMap as never;
+    });
+
+    // act
+    setVisibilityGroup(mapElement, "night-service", false, [
+      {
+        kind: "styleLayerFeatures",
+        styleId: "base-style",
+        layerIds: ["transit-a"],
+        filter: ["==", ["get", "service"], "night"],
+      },
+    ]);
+    setVisibilityGroup(mapElement, "night-service", false, [
+      {
+        kind: "styleLayerFeatures",
+        styleId: "base-style",
+        layerIds: ["transit-b"],
+        filter: ["==", ["get", "service"], "night"],
+      },
+    ]);
+
+    // assert
+    expect(mockMap.setFilter).toHaveBeenCalledWith("transit-a", ["==", ["get", "class"], "rail"]);
+    expect(mockMap.setFilter).toHaveBeenLastCalledWith("transit-b", [
+      "all",
+      ["==", ["get", "class"], "bus"],
+      ["!", ["==", ["get", "service"], "night"]],
+    ]);
+  });
+
+  it("should preserve hidden display feature filters when updating a layer filter", () => {
+    // arrange
+    const mapElement = setupStyledMapElement();
+    const mockMap = getLatestMockMapInstance()!;
+    let currentFilter: unknown = ["==", ["get", "class"], "rail"];
+    mockMap.getStyle.mockImplementation(() => ({
+      layers: [{ id: "transit", type: "line", source: "base", filter: currentFilter }],
+    }));
+    mockMap.getLayer.mockImplementation((id: string) => (id === "transit" ? { id } : undefined));
+    mockMap.setFilter.mockImplementation((_layerId: string, filter: unknown) => {
+      currentFilter = filter;
+      return mockMap as never;
+    });
+    setVisibilityGroup(mapElement, "night-bus", false, [
+      {
+        kind: "styleLayerFeatures",
+        styleId: "base-style",
+        layerIds: ["transit"],
+        filter: ["==", ["get", "service"], "night"],
+      },
+    ]);
+
+    // act
+    setFilter(mapElement, "transit", ["==", ["get", "class"], "bus"]);
+
+    // assert
+    expect(mockMap.setFilter).toHaveBeenLastCalledWith("transit", [
+      "all",
+      ["==", ["get", "class"], "bus"],
+      ["!", ["==", ["get", "service"], "night"]],
+    ]);
+  });
+
+  it("should recompute old and new layers when replacing display layer groups", () => {
+    // arrange
+    const mapElement = setupStyledMapElement();
+    const mockMap = getLatestMockMapInstance()!;
+    const visibility = new Map<string, string>([
+      ["transit-a", "visible"],
+      ["transit-b", "visible"],
+    ]);
+    mockMap.getStyle.mockImplementation(() => ({
+      layers: [
+        { id: "transit-a", type: "line", source: "base", layout: { visibility: visibility.get("transit-a") } },
+        { id: "transit-b", type: "line", source: "base", layout: { visibility: visibility.get("transit-b") } },
+      ],
+    }));
+    mockMap.getLayer.mockImplementation((id: string) => (visibility.has(id) ? { id } : undefined));
+    mockMap.setLayoutProperty.mockImplementation((layerId: string, _name: string, value: unknown) => {
+      visibility.set(layerId, String(value));
+      return mockMap as never;
+    });
+
+    // act
+    setVisibilityGroup(mapElement, "transit", false, [
+      { kind: "styleLayer", styleId: "base-style", layerIds: ["transit-a"] },
+    ]);
+    setVisibilityGroup(mapElement, "transit", false, [
+      { kind: "styleLayer", styleId: "base-style", layerIds: ["transit-b"] },
+    ]);
+
+    // assert
+    expect(mockMap.setLayoutProperty).toHaveBeenCalledWith("transit-a", "visibility", "visible");
+    expect(mockMap.setLayoutProperty).toHaveBeenLastCalledWith("transit-b", "visibility", "none");
+  });
+
+  it("should use current style visibility as baseline after removing and re-adding a layer", () => {
+    // arrange
+    const mapElement = setupStyledMapElement();
+    const mockMap = getLatestMockMapInstance()!;
+    let currentVisible = "visible";
+    let layerExists = true;
+    mockMap.getStyle.mockImplementation(() => ({
+      layers: layerExists
+        ? [{ id: "transit", type: "line", source: "base", layout: { visibility: currentVisible } }]
+        : [],
+    }));
+    mockMap.getLayer.mockImplementation((id: string) => (id === "transit" && layerExists ? { id } : undefined));
+    mockMap.setLayoutProperty.mockImplementation((_layerId: string, _name: string, value: unknown) => {
+      currentVisible = String(value);
+      return mockMap as never;
+    });
+    mockMap.removeLayer.mockImplementation(() => {
+      layerExists = false;
+    });
+
+    // act
+    setVisibilityGroup(mapElement, "transit", false, [
+      { kind: "styleLayer", styleId: "base-style", layerIds: ["transit"] },
+    ]);
+    removeMapLayer(mapElement, "transit");
+    layerExists = true;
+    setVisibilityGroup(mapElement, "transit", true, [
+      { kind: "styleLayer", styleId: "base-style", layerIds: ["transit"] },
+    ]);
+
+    // assert
+    expect(mockMap.setLayoutProperty).toHaveBeenLastCalledWith("transit", "visibility", "none");
+  });
+
+  it("should use current style visibility as baseline after removing and re-adding source layers", () => {
+    // arrange
+    const mapElement = setupStyledMapElement();
+    const mockMap = getLatestMockMapInstance()!;
+    const sourceSpec = { type: "geojson", data: null };
+    let currentVisible = "visible";
+    let layerExists = true;
+    mockMap.getStyle.mockImplementation(() => ({
+      layers: layerExists
+        ? [{ id: "transit", type: "line", source: "source-1", layout: { visibility: currentVisible } }]
+        : [],
+    }));
+    mockMap.getLayer.mockImplementation((id: string) => (id === "transit" && layerExists ? { id } : undefined));
+    mockMap.setLayoutProperty.mockImplementation((_layerId: string, _name: string, value: unknown) => {
+      currentVisible = String(value);
+      return mockMap as never;
+    });
+    mockMap.removeLayer.mockImplementation(() => {
+      layerExists = false;
+    });
+    addMapSource(mapElement, "source-1", sourceSpec);
+
+    // act
+    setVisibilityGroup(mapElement, "transit", false, [
+      { kind: "styleLayer", styleId: "base-style", layerIds: ["transit"] },
+    ]);
+    removeMapSource(mapElement, "source-1");
+    layerExists = true;
+    addMapSource(mapElement, "source-1", sourceSpec);
+    setVisibilityGroup(mapElement, "transit", true, [
+      { kind: "styleLayer", styleId: "base-style", layerIds: ["transit"] },
+    ]);
+
+    // assert
+    expect(mockMap.setLayoutProperty).toHaveBeenLastCalledWith("transit", "visibility", "none");
+  });
+});
 
 describe("addMapSource", () => {
   beforeEach(() => {

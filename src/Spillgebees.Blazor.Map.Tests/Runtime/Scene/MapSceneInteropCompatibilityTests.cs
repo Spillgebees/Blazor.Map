@@ -239,8 +239,6 @@ public class MapSceneInteropCompatibilityTests : BunitContext
             ["features"] = Array.Empty<object>(),
         };
 
-        private bool _visible = true;
-
         public void UpdateScene()
         {
             _data = new Dictionary<string, object?>
@@ -260,7 +258,6 @@ public class MapSceneInteropCompatibilityTests : BunitContext
                     },
                 },
             };
-            _visible = false;
             StateHasChanged();
         }
 
@@ -290,7 +287,6 @@ public class MapSceneInteropCompatibilityTests : BunitContext
                                         "TextField",
                                         (Spillgebees.Blazor.Map.StyleValue<string>)"label"
                                     );
-                                    sourceBuilder.AddAttribute(3, "Visible", _visible);
                                     sourceBuilder.CloseComponent();
                                 }
                             )

@@ -12,24 +12,13 @@ public sealed record ClusterSymbolLayerDefinition : ClusterLayerDefinition
         StyleValue<string>? textColor = null,
         double? minZoom = null,
         double? maxZoom = null,
-        bool visible = true,
         string? beforeLayerId = null,
         string? layerGroup = null,
         string? beforeLayerGroup = null,
         string? afterLayerGroup = null,
         bool interactive = true
     )
-        : base(
-            idSuffix,
-            minZoom,
-            maxZoom,
-            visible,
-            beforeLayerId,
-            layerGroup,
-            beforeLayerGroup,
-            afterLayerGroup,
-            interactive
-        )
+        : base(idSuffix, minZoom, maxZoom, beforeLayerId, layerGroup, beforeLayerGroup, afterLayerGroup, interactive)
     {
         TextField = textField;
         TextSize = textSize;

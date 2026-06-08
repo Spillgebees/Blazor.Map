@@ -453,6 +453,69 @@ describe.sequential("applySceneMutations", () => {
     expect(mockMap.setLayoutProperty).toHaveBeenCalledWith("visibility-layer", "visibility", "none");
   });
 
+  it("should compose display feature filters with baseline filters", () => {
+    // arrange
+    resetWindowGlobals();
+    resetMockMapState();
+    bootstrap();
+
+    const mapElement = document.createElement("div");
+    const dotNetHelper = createMockDotNetHelper();
+    createMap(
+      dotNetHelper,
+      "OnMapInitialized",
+      mapElement,
+      createDefaultMapOptions({
+        style: {
+          id: "base-style",
+          url: "https://example.com/style.json",
+          referrerPolicy: null,
+          rasterSource: null,
+          wmsSource: null,
+        },
+      }),
+      createDefaultControls(),
+      "light",
+      [],
+      [],
+      [],
+      [],
+    );
+    fireLoadEvent();
+
+    const mockMap = getLatestMockMapInstance()!;
+    mockMap.getStyle.mockReturnValue({
+      layers: [{ id: "transit", type: "line", source: "base", filter: ["==", ["get", "class"], "rail"] }],
+    });
+    mockMap.getLayer.mockImplementation((id: string) => (id === "transit" ? { id } : undefined));
+
+    // act
+    applySceneMutations(mapElement, {
+      mutations: [
+        {
+          kind: "setVisibilityGroup",
+          groupId: "display:night-bus",
+          visible: false,
+          targets: [
+            {
+              kind: "styleLayerFeatures",
+              styleId: "base-style",
+              layerIds: ["transit"],
+              filter: ["==", ["get", "service"], "night"],
+            },
+          ],
+        },
+      ],
+    });
+
+    // assert
+    expect(mockMap.setFilter).toHaveBeenCalledWith("transit", [
+      "all",
+      ["==", ["get", "class"], "rail"],
+      ["!", ["==", ["get", "service"], "night"]],
+    ]);
+  });
+
   it("should reconcile ordering once while replaying a style reload", () => {
     // arrange
     resetWindowGlobals();

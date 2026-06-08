@@ -11,7 +11,6 @@ public abstract record MapLayerDefinition
         object? filter = null,
         double? minZoom = null,
         double? maxZoom = null,
-        bool visible = true,
         string? beforeLayerId = null,
         string? layerGroup = null,
         string? beforeLayerGroup = null,
@@ -26,7 +25,6 @@ public abstract record MapLayerDefinition
         Filter = filter;
         MinZoom = minZoom;
         MaxZoom = maxZoom;
-        Visible = visible;
         BeforeLayerId = beforeLayerId;
         LayerGroup = layerGroup;
         BeforeLayerGroup = beforeLayerGroup;
@@ -49,7 +47,8 @@ public abstract record MapLayerDefinition
     public string Key { get; }
 
     /// <summary>
-    /// Optional MapLibre layer filter expression.
+    /// Optional baseline MapLibre layer filter expression. Map-level display rules compose additional display filters on top
+    /// of this baseline instead of replacing it.
     /// </summary>
     public object? Filter { get; init; }
 
@@ -62,11 +61,6 @@ public abstract record MapLayerDefinition
     /// Optional maximum zoom at which this layer is visible.
     /// </summary>
     public double? MaxZoom { get; }
-
-    /// <summary>
-    /// Whether the generated layer is visible.
-    /// </summary>
-    public bool Visible { get; init; }
 
     /// <summary>
     /// Optional concrete layer id before which this layer should be inserted.

@@ -18,7 +18,6 @@ public class MapLayerDefinitionTests
         layer.IdSuffix.Should().Be(idSuffix);
         layer.Key.Should().Be(idSuffix);
         layer.Type.Should().Be("circle");
-        layer.Visible.Should().BeTrue();
         layer.ResolveId("earthquakes").Should().Be("earthquakes-clusters");
         layer.Filter.Should().BeNull();
         layer.MinZoom.Should().BeNull();
@@ -38,7 +37,6 @@ public class MapLayerDefinitionTests
         layer.IdSuffix.Should().Be(idSuffix);
         layer.Key.Should().Be(idSuffix);
         layer.Type.Should().Be("symbol");
-        layer.Visible.Should().BeTrue();
         layer.ResolveId("earthquakes").Should().Be("earthquakes-cluster-count");
     }
 
@@ -88,7 +86,6 @@ public class MapLayerDefinitionTests
             filter: original.Filter,
             minZoom: 5,
             maxZoom: 10,
-            visible: original.Visible,
             beforeLayerId: original.BeforeLayerId,
             layerGroup: original.LayerGroup,
             beforeLayerGroup: original.BeforeLayerGroup,
@@ -172,7 +169,6 @@ public class MapLayerDefinitionTests
             filter: filter,
             minZoom: 4,
             maxZoom: 14,
-            visible: false,
             layerGroup: "clustered-points"
         );
 
@@ -186,7 +182,6 @@ public class MapLayerDefinitionTests
         layer.Filter.Should().BeSameAs(filter);
         layer.MinZoom.Should().Be(4);
         layer.MaxZoom.Should().Be(14);
-        layer.Visible.Should().BeFalse();
         layer.LayerGroup.Should().Be("clustered-points");
     }
 

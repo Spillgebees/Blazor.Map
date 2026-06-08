@@ -10,4 +10,10 @@ internal enum MapVisibilityGroupTargetKind
 
     [JsonStringEnumMemberName("runtimeLayer")]
     RuntimeLayer,
+
+    [JsonStringEnumMemberName("styleLayerFeatures")]
+    StyleLayerFeatures,
+
+    [JsonStringEnumMemberName("styleLayerTag")]
+    StyleLayerTag,
 }

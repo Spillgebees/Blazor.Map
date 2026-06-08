@@ -16,7 +16,6 @@ public sealed record TrackedEntityVisualOptions<TItem>
         IReadOnlyList<TrackedEntityDecorationOptions<TItem>> Decorations,
         TrackedEntitySourceOptions Source,
         AnimationOptions? Animation,
-        bool Visible,
         StyleValue<double>? PrimaryIconOpacity,
         int MaxZoom = TrackedEntityVisualDefaults.DefaultMaxZoom,
         string? Attribution = null,
@@ -29,7 +28,6 @@ public sealed record TrackedEntityVisualOptions<TItem>
         this.Decorations = Decorations;
         this.Source = Source ?? throw new ArgumentNullException(nameof(Source));
         this.Animation = Animation;
-        this.Visible = Visible;
         this.PrimaryIconOpacity = PrimaryIconOpacity;
         this.MaxZoom = MaxZoom;
         this.Attribution = Attribution;
@@ -43,7 +41,6 @@ public sealed record TrackedEntityVisualOptions<TItem>
         IReadOnlyList<TrackedEntityDecorationOptions<TItem>> Decorations,
         ClusterOptions Cluster,
         AnimationOptions? Animation,
-        bool Visible,
         StyleValue<double>? PrimaryIconOpacity,
         int MaxZoom = TrackedEntityVisualDefaults.DefaultMaxZoom,
         string? Attribution = null,
@@ -56,7 +53,6 @@ public sealed record TrackedEntityVisualOptions<TItem>
             Decorations,
             new TrackedEntitySourceOptions(Cluster),
             Animation,
-            Visible,
             PrimaryIconOpacity,
             MaxZoom,
             Attribution,
@@ -80,8 +76,6 @@ public sealed record TrackedEntityVisualOptions<TItem>
     public ClusterOptions Cluster => Source.Cluster;
 
     public AnimationOptions? Animation { get; init; }
-
-    public bool Visible { get; init; }
 
     public StyleValue<double>? PrimaryIconOpacity { get; init; }
 

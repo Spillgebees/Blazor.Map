@@ -20,7 +20,7 @@ internal sealed class LegendMapControlHost : ComponentBase, IAsyncDisposable
     private BaseMap? Map { get; set; }
 
     [CascadingParameter]
-    private MapLayerVisibilityState? LayerVisibility { get; set; }
+    private MapDisplayState? Display { get; set; }
 
     [Inject]
     private ILoggerFactory LoggerFactory { get; set; } = null!;
@@ -38,11 +38,11 @@ internal sealed class LegendMapControlHost : ComponentBase, IAsyncDisposable
     private bool _registered;
     private string? _registeredControlId;
     private ILogger? _logger;
-    private MapLegendVisibilityBinder? _visibilityBinder;
+    private MapLegendDisplayBinder? _displayBinder;
 
     private ILogger Logger => _logger ??= LoggerFactory.CreateLogger<LegendMapControlHost>();
-    private MapLegendVisibilityBinder VisibilityBinder =>
-        _visibilityBinder ??= new MapLegendVisibilityBinder(() => InvokeAsync(StateHasChanged));
+    private MapLegendDisplayBinder DisplayBinder =>
+        _displayBinder ??= new MapLegendDisplayBinder(() => InvokeAsync(StateHasChanged));
 
     private string ContentClassName =>
         new CssBuilder()
@@ -143,7 +143,7 @@ internal sealed class LegendMapControlHost : ComponentBase, IAsyncDisposable
         builder.OpenElement(sequence++, "span");
         builder.AddAttribute(sequence++, "class", "sgb-map-legend-item-switch");
 
-        var selected = GetItemVisible(item);
+        var selected = GetItemOn(item);
 
         builder.OpenElement(sequence++, "input");
         builder.AddAttribute(sequence++, "type", "checkbox");
@@ -258,7 +258,7 @@ internal sealed class LegendMapControlHost : ComponentBase, IAsyncDisposable
     protected override void OnParametersSet()
     {
         ValidateControl();
-        VisibilityBinder.UpdateVisibilitySubscription(LayerVisibility);
+        DisplayBinder.UpdateDisplaySubscription(Display);
         ValidateDefinition();
 
         _controlSyncPending = true;
@@ -330,8 +330,8 @@ internal sealed class LegendMapControlHost : ComponentBase, IAsyncDisposable
     /// <inheritdoc/>
     public async ValueTask DisposeAsync()
     {
-        _visibilityBinder?.Dispose();
-        _visibilityBinder = null;
+        _displayBinder?.Dispose();
+        _displayBinder = null;
 
         if (Map is null || !_registered)
         {
@@ -364,17 +364,16 @@ internal sealed class LegendMapControlHost : ComponentBase, IAsyncDisposable
             .AddClass(section.ClassName, !string.IsNullOrWhiteSpace(section.ClassName))
             .Build();
 
-    private string GetItemClassName(MapLegendItem item) => VisibilityBinder.GetItemClassName(item);
+    private string GetItemClassName(MapLegendItem item) => DisplayBinder.GetItemClassName(item);
 
-    private static bool IsToggleable(MapLegendItem item) => MapLegendVisibilityBinder.IsToggleable(item);
+    private static bool IsToggleable(MapLegendItem item) => MapLegendDisplayBinder.IsToggleable(item);
 
-    private bool GetItemVisible(MapLegendItem item) => VisibilityBinder.GetItemVisible(item);
+    private bool GetItemOn(MapLegendItem item) => DisplayBinder.GetItemOn(item);
 
-    private Task ToggleItemAsync(MapLegendItem item, ChangeEventArgs args) =>
-        VisibilityBinder.ToggleItemAsync(item, args);
+    private Task ToggleItemAsync(MapLegendItem item, ChangeEventArgs args) => DisplayBinder.ToggleItemAsync(item, args);
 
     private MapLegendItemTemplateContext BuildTemplateContext(MapLegendItem item) =>
-        VisibilityBinder.BuildTemplateContext(item);
+        DisplayBinder.BuildTemplateContext(item);
 
     private void ValidateControl()
     {
@@ -398,7 +397,7 @@ internal sealed class LegendMapControlHost : ComponentBase, IAsyncDisposable
 
         if (duplicateId is null)
         {
-            VisibilityBinder.ValidateVisibilityGroups(Control.Content.Definition.GetItems());
+            DisplayBinder.ValidateDisplayItems(Control.Content.Definition.GetItems());
             return;
         }
 

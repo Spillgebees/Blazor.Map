@@ -27,7 +27,7 @@
 </ExampleView>
 
 <h2 id="controls">// controls</h2>
-<p>Use control subcomponents inside <code>MapControls</code>. The component-first control API uses discoverable names such as <code>NavigationMapControl</code>, <code>ButtonMapControl</code>, <code>PanelMapControl</code>, <code>LayerMapControl</code>, <code>LegendMapControl</code>, and <code>CustomMapControl</code>.</p>
+<p>Use control subcomponents inside <code>MapControls</code>. The component-first control API uses discoverable names such as <code>NavigationMapControl</code>, <code>ButtonMapControl</code>, <code>PanelMapControl</code>, <code>DisplayMapControl</code>, <code>LegendMapControl</code>, and <code>CustomMapControl</code>.</p>
 <p>The complete control selection guide, advanced examples, icon guidance, accessibility notes, and performance guidance live on the dedicated <a href="/components/controls">Map Controls</a> page.</p>
 <CodeBlock Language="razor" Files="@_customControlExamples" />
 <p>Component controls are explicit: maps render no controls by default. Ordering is deterministic per map corner: controls are sorted by <code>Order</code> ascending, then declaration order, then <code>Id</code> as a stable tie-breaker. Keep each control <code>Id</code> unique.</p>

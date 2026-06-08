@@ -32,9 +32,9 @@
                     <span class="sgb-map-legend-item-switch">
                         <input type="checkbox"
                                role="switch"
-                               aria-checked="@item.IsVisible.ToString().ToLowerInvariant()"
-                               checked="@item.IsVisible"
-                               data-testid="@($"map-layer-toggle-{item.Id}")"
+                               aria-checked="@item.IsOn.ToString().ToLowerInvariant()"
+                               checked="@item.IsOn"
+                               data-testid="@($"map-display-toggle-{item.Id}")"
                                @onchange="@((ChangeEventArgs args) => ToggleItemAsync(item, args))" />
                         <span class="sgb-map-legend-item-switch-track"></span>
                     </span>

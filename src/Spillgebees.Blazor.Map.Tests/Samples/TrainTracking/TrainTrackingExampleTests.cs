@@ -39,40 +39,40 @@ public class TrainTrackingExampleTests : BunitContext
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public void Should_define_shared_visibility_groups_for_toggleable_legend_items(CancellationToken cancellationToken)
+    public void Should_define_shared_display_items_for_toggleable_legend_items(CancellationToken cancellationToken)
     {
-        var visibility = TrainTrackingPresentation.CreateLayerVisibility();
-        var legendGroupIds = TrainTrackingPresentation
+        var display = TrainTrackingPresentation.CreateDisplay();
+        var legendItemIds = TrainTrackingPresentation
             .OverlayLegendDefinition.GetItems()
-            .Where(item => item.VisibilityGroupId is not null)
-            .Select(item => item.VisibilityGroupId)
+            .Where(item => item.DisplayItemId is not null)
+            .Select(item => item.DisplayItemId)
             .ToArray();
 
-        legendGroupIds.Should().AllSatisfy(groupId => visibility.Contains(groupId!).Should().BeTrue());
-        visibility.IsVisible("tram").Should().BeFalse();
-        visibility.IsVisible("infrastructure").Should().BeFalse();
-        visibility.IsVisible("tracks").Should().BeTrue();
+        legendItemIds.Should().AllSatisfy(itemId => display.Contains(itemId!).Should().BeTrue());
+        display.IsOn("tram").Should().BeFalse();
+        display.IsOn("infrastructure").Should().BeFalse();
+        display.IsOn("tracks").Should().BeTrue();
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public async Task Should_pass_layer_visibility_to_map(CancellationToken cancellationToken)
+    public async Task Should_pass_display_to_map(CancellationToken cancellationToken)
     {
         var cut = Render<TrainTrackingExample>();
         var map = cut.FindComponent<SgbMap>().Instance;
 
         await map.OnMapInitializedAsync();
 
-        map.LayerVisibility.Should().NotBeNull();
-        map.LayerVisibility!.Contains("tracks").Should().BeTrue();
+        map.Display.Should().NotBeNull();
+        map.Display!.Contains("tracks").Should().BeTrue();
     }
 
     [Test, Timeout(TestTimeoutMs)]
-    public void Should_render_legend_items_as_visibility_group_bindings(CancellationToken cancellationToken)
+    public void Should_render_legend_items_as_display_bindings(CancellationToken cancellationToken)
     {
         var items = TrainTrackingPresentation.OverlayLegendDefinition.GetItems();
 
-        items.Should().Contain(item => item.Id == "tracks" && item.VisibilityGroupId == "tracks");
-        items.Should().Contain(item => item.Id == "trains" && item.VisibilityGroupId == "trains");
-        items.Should().OnlyContain(item => item.VisibilityGroupId != null);
+        items.Should().Contain(item => item.Id == "tracks" && item.DisplayItemId == "tracks");
+        items.Should().Contain(item => item.Id == "trains" && item.DisplayItemId == "trains");
+        items.Should().OnlyContain(item => item.DisplayItemId != null);
     }
 }

@@ -766,7 +766,6 @@ public class TrackedEntityLayerMapApiTests : BunitContext
                             )
                     ),
                     Animation: null,
-                    Visible: true,
                     PrimaryIconOpacity: null
                 ),
                 Behavior: new TrackedEntityBehaviorOptions<TestVehicle>(

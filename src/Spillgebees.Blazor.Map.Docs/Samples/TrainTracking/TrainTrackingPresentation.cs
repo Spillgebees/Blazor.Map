@@ -92,17 +92,17 @@ public static class TrainTrackingPresentation
             ClassName: "train-overlay-legend-content"
         );
 
-    public static MapLayerVisibilityState CreateLayerVisibility() =>
+    public static MapDisplayState CreateDisplay() =>
         new([
-            new MapLayerVisibilityGroup(
+            new MapDisplayItem(
                 "3d-buildings",
-                [MapLayerVisibilityTarget.Layer("sgb-buildings-3d")],
+                [MapDisplayTarget.RuntimeLayers("sgb-buildings-3d")],
                 Label: "3D Buildings"
             ),
-            new MapLayerVisibilityGroup(
+            new MapDisplayItem(
                 "trains",
                 [
-                    MapLayerVisibilityTarget.Layer(
+                    MapDisplayTarget.RuntimeLayers(
                         "train-source-cluster-hit-area",
                         "train-source-clusters",
                         "train-source-cluster-count",
@@ -116,10 +116,10 @@ public static class TrainTrackingPresentation
                 ],
                 Label: "Trains"
             ),
-            new MapLayerVisibilityGroup(
+            new MapDisplayItem(
                 "tracks",
                 [
-                    MapLayerVisibilityTarget.Style(
+                    MapDisplayTarget.StyleLayers(
                         OverlayStyleId,
                         "railway-line-rail",
                         "railway-line-light-rail",
@@ -137,10 +137,10 @@ public static class TrainTrackingPresentation
                 ],
                 Label: "Tracks & tunnels"
             ),
-            new MapLayerVisibilityGroup(
+            new MapDisplayItem(
                 "tram",
                 [
-                    MapLayerVisibilityTarget.Style(
+                    MapDisplayTarget.StyleLayers(
                         OverlayStyleId,
                         "tram-line-fill",
                         "tram-line-tunnel",
@@ -150,13 +150,13 @@ public static class TrainTrackingPresentation
                         "railway-tram-crossings-circle"
                     ),
                 ],
-                IsVisible: false,
+                IsOn: false,
                 Label: "Tram & metro"
             ),
-            new MapLayerVisibilityGroup(
+            new MapDisplayItem(
                 "stations",
                 [
-                    MapLayerVisibilityTarget.Style(
+                    MapDisplayTarget.StyleLayers(
                         OverlayStyleId,
                         "railway-stations-circle",
                         "railway-stations-label",
@@ -166,10 +166,10 @@ public static class TrainTrackingPresentation
                 ],
                 Label: "Stations & borders"
             ),
-            new MapLayerVisibilityGroup(
+            new MapDisplayItem(
                 "platforms",
                 [
-                    MapLayerVisibilityTarget.Style(
+                    MapDisplayTarget.StyleLayers(
                         OverlayStyleId,
                         "railway-platforms-fill",
                         "railway-platforms-3d",
@@ -180,10 +180,10 @@ public static class TrainTrackingPresentation
                 ],
                 Label: "Platforms"
             ),
-            new MapLayerVisibilityGroup(
+            new MapDisplayItem(
                 "routes",
                 [
-                    MapLayerVisibilityTarget.Style(
+                    MapDisplayTarget.StyleLayers(
                         OverlayStyleId,
                         "railway-routes-casing",
                         "railway-routes",
@@ -192,10 +192,10 @@ public static class TrainTrackingPresentation
                 ],
                 Label: "Routes"
             ),
-            new MapLayerVisibilityGroup(
+            new MapDisplayItem(
                 "lifecycle",
                 [
-                    MapLayerVisibilityTarget.Style(
+                    MapDisplayTarget.StyleLayers(
                         OverlayStyleId,
                         "railway-lifecycle-construction",
                         "railway-lifecycle-proposed",
@@ -207,10 +207,10 @@ public static class TrainTrackingPresentation
                 ],
                 Label: "Lifecycle"
             ),
-            new MapLayerVisibilityGroup(
+            new MapDisplayItem(
                 "infrastructure",
                 [
-                    MapLayerVisibilityTarget.Style(
+                    MapDisplayTarget.StyleLayers(
                         OverlayStyleId,
                         "railway-switches",
                         "railway-signals",
@@ -223,7 +223,7 @@ public static class TrainTrackingPresentation
                         "railway-crossings-circle"
                     ),
                 ],
-                IsVisible: false,
+                IsOn: false,
                 Label: "Infrastructure"
             ),
         ]);

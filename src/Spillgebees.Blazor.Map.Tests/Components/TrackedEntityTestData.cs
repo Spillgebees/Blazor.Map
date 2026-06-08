@@ -22,7 +22,6 @@ internal static class TrackedEntityTestData
                 Decorations: [],
                 Cluster: ClusterOptions.None,
                 Animation: null,
-                Visible: true,
                 PrimaryIconOpacity: null
             ),
             Behavior: new TrackedEntityBehaviorOptions<Vehicle>(),

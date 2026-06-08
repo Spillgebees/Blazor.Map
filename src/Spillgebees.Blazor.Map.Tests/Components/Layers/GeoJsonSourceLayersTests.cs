@@ -41,8 +41,7 @@ public class GeoJsonSourceLayersTests : BunitContext
                 strokeWidth: 2,
                 filter: filter,
                 minZoom: 4,
-                maxZoom: 14,
-                visible: false
+                maxZoom: 14
             ),
             MapLayer.Symbol(
                 "cluster-count",
@@ -79,7 +78,7 @@ public class GeoJsonSourceLayersTests : BunitContext
                     ["circle-stroke-width"] = 2d,
                 }
             );
-        circleSpec["layout"].Should().BeEquivalentTo(new Dictionary<string, object?> { ["visibility"] = "none" });
+        circleSpec.Should().NotContainKey("layout");
 
         var symbolSpec = GetLayerSpec("geojson-source-cluster-count");
         symbolSpec["type"].Should().Be("symbol");
@@ -102,7 +101,6 @@ public class GeoJsonSourceLayersTests : BunitContext
                     ["text-field"] = new object[] { "get", "point_count_abbreviated" },
                     ["text-size"] = 12d,
                     ["text-allow-overlap"] = true,
-                    ["visibility"] = "visible",
                 }
             );
     }

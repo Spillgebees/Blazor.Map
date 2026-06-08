@@ -38,9 +38,10 @@ const projects = [
 
 export default defineConfig({
   testDir: "./tests/browser",
+  outputDir: "./tests/browser/test-results",
   timeout: 30_000,
   fullyParallel: true,
-  reporter: [["list"], ["html", { open: "never" }]],
+  reporter: [["list"], ["html", { open: "never", outputFolder: "./tests/browser/playwright-report" }]],
   use: {
     screenshot: "only-on-failure",
     trace: "retain-on-failure",

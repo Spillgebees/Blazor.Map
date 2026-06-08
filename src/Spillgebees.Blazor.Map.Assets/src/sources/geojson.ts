@@ -119,6 +119,7 @@ export function removeMapSource(mapElement: HTMLElement, sourceId: string): void
     for (const layer of style.layers) {
       if ("source" in layer && layer.source === sourceId) {
         unregisterLayerEventsForMap(map, layer.id);
+        clearLayerVisibilityBaseline(map, layer.id);
         layerStore?.delete(layer.id);
         map.removeLayer(layer.id);
       }
@@ -196,6 +197,7 @@ export function removeMapLayer(mapElement: HTMLElement, layerId: string): void {
   if (!map) return;
 
   unregisterLayerEventsForMap(map, layerId);
+  clearLayerVisibilityBaseline(map, layerId);
   getSceneLayerStore(map).delete(layerId);
 
   if (map.getLayer(layerId)) {
@@ -257,17 +259,25 @@ export function setVisibilityGroup(
   }
 
   const visibilityGroups = getVisibilityGroupStore(map);
-  visibilityGroups.set(groupId, {
+  const existingGroup = visibilityGroups.get(groupId);
+  const oldAffectedLayers = existingGroup
+    ? resolveAffectedVisibilityLayers(mapElement, existingGroup.targets)
+    : new Map<string, boolean>();
+  const oldAffectedFilterLayerIds = existingGroup
+    ? resolveFeatureTargetLayerIds(mapElement, existingGroup.targets)
+    : [];
+  const newGroup: VisibilityGroupRegistration = {
     groupId,
     visible,
     targets: structuredClone(targets),
-  });
+  };
+  const newAffectedLayers = resolveAffectedVisibilityLayers(mapElement, newGroup.targets);
+  const newAffectedFilterLayerIds = resolveFeatureTargetLayerIds(mapElement, newGroup.targets);
 
-  applyVisibilityGroup(mapElement, {
-    groupId,
-    visible,
-    targets,
-  });
+  visibilityGroups.set(groupId, newGroup);
+
+  recomputeLayerVisibility(mapElement, mergeAffectedVisibilityLayers(oldAffectedLayers, newAffectedLayers));
+  recomputeDisplayFilters(mapElement, uniqueLayerIds([...oldAffectedFilterLayerIds, ...newAffectedFilterLayerIds]));
 }
 
 export function removeVisibilityGroup(mapElement: HTMLElement, groupId: string): void {
@@ -276,7 +286,14 @@ export function removeVisibilityGroup(mapElement: HTMLElement, groupId: string):
     return;
   }
 
+  const removedGroup = getVisibilityGroupStore(map).get(groupId);
+  const affectedLayers = removedGroup
+    ? resolveAffectedVisibilityLayers(mapElement, removedGroup.targets)
+    : new Map<string, boolean>();
+  const affectedFilterLayerIds = removedGroup ? resolveFeatureTargetLayerIds(mapElement, removedGroup.targets) : [];
   getVisibilityGroupStore(map).delete(groupId);
+  recomputeLayerVisibility(mapElement, affectedLayers);
+  recomputeDisplayFilters(mapElement, affectedFilterLayerIds);
 }
 
 export function setOverlay(
@@ -391,25 +408,94 @@ function recomputeLayerVisibility(mapElement: HTMLElement, layerVisibility: Map<
   }
 }
 
+function mergeAffectedVisibilityLayers(
+  first: Map<string, boolean>,
+  second: Map<string, boolean>,
+): Map<string, boolean> {
+  return new Map([...first, ...second]);
+}
+
+function uniqueLayerIds(layerIds: string[]): string[] {
+  return [...new Set(layerIds)];
+}
+
 export function applyVisibilityGroup(mapElement: HTMLElement, group: VisibilityGroupRegistration): void {
-  for (const target of group.targets) {
-    if (target.kind === "styleLayer" && target.layerIds.length === 0) {
-      for (const resolvedLayerId of resolveStyleLayerIds(mapElement, target.styleId)) {
-        setLayerVisibility(mapElement, resolvedLayerId, group.visible);
-      }
+  recomputeLayerVisibility(mapElement, resolveAffectedVisibilityLayers(mapElement, group.targets));
+  recomputeDisplayFilters(mapElement, resolveFeatureTargetLayerIds(mapElement, group.targets));
+}
+
+function resolveAffectedVisibilityLayers(
+  mapElement: HTMLElement,
+  targets: VisibilityGroupTargetRegistration[],
+): Map<string, boolean> {
+  const affectedLayers = new Map<string, boolean>();
+  for (const resolved of resolveTargets(
+    mapElement,
+    targets.filter((target) => target.kind !== "styleLayerFeatures"),
+  )) {
+    affectedLayers.set(resolved.layerId, resolved.originalVisible);
+  }
+
+  return affectedLayers;
+}
+
+function resolveFeatureTargetLayerIds(mapElement: HTMLElement, targets: VisibilityGroupTargetRegistration[]): string[] {
+  const layerIds = new Set<string>();
+  for (const target of targets) {
+    if (target.kind !== "styleLayerFeatures") {
       continue;
     }
 
-    for (const layerId of target.layerIds) {
-      const resolvedLayerId =
-        target.kind === "styleLayer" ? resolveStyleLayerId(mapElement, target.styleId, layerId) : layerId;
-      if (!resolvedLayerId) {
+    for (const resolved of resolveFeatureTargetLayers(mapElement, target)) {
+      layerIds.add(resolved.layerId);
+    }
+  }
+
+  return [...layerIds];
+}
+
+function recomputeDisplayFilters(mapElement: HTMLElement, layerIds: string[]): void {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return;
+  }
+
+  for (const layerId of layerIds) {
+    const hiddenFilters: unknown[] = [];
+    for (const group of getVisibilityGroupStore(map).values()) {
+      if (group.visible) {
         continue;
       }
 
-      setLayerVisibility(mapElement, resolvedLayerId, group.visible);
+      for (const target of group.targets) {
+        if (target.kind !== "styleLayerFeatures") {
+          continue;
+        }
+
+        if (resolveFeatureTargetLayers(mapElement, target).some((resolved) => resolved.layerId === layerId)) {
+          hiddenFilters.push(target.filter);
+        }
+      }
+    }
+
+    if (map.getLayer(layerId)) {
+      map.setFilter(
+        layerId,
+        composeDisplayFilter(getBaselineLayerFilter(mapElement, layerId), hiddenFilters) as Parameters<
+          typeof map.setFilter
+        >[1],
+      );
     }
   }
+}
+
+function composeDisplayFilter(baselineFilter: unknown, hiddenFilters: unknown[]): unknown {
+  if (hiddenFilters.length === 0) {
+    return baselineFilter ?? null;
+  }
+
+  const filters = hiddenFilters.map((filter) => ["!", filter]);
+  return baselineFilter == null ? ["all", ...filters] : ["all", baselineFilter, ...filters];
 }
 
 function resolveTargets(
@@ -418,6 +504,15 @@ function resolveTargets(
 ): Array<{ layerId: string; originalVisible: boolean }> {
   const layers: Array<{ layerId: string; originalVisible: boolean }> = [];
   for (const target of targets) {
+    if (target.kind === "styleLayerFeatures") {
+      continue;
+    }
+
+    if (target.kind === "styleLayerTag") {
+      layers.push(...resolveTaggedStyleLayers(mapElement, target.styleId, target.tags));
+      continue;
+    }
+
     if (target.kind === "styleLayer" && target.layerIds.length === 0) {
       layers.push(...resolveStyleLayers(mapElement, target.styleId));
       continue;
@@ -438,6 +533,44 @@ function resolveTargets(
   return layers;
 }
 
+function resolveFeatureTargetLayers(
+  mapElement: HTMLElement,
+  target: Extract<VisibilityGroupTargetRegistration, { kind: "styleLayerFeatures" }>,
+): Array<{ layerId: string; originalVisible: boolean }> {
+  if (target.layerIds.length === 0) {
+    return resolveStyleLayers(mapElement, target.styleId);
+  }
+
+  return target.layerIds.flatMap((layerId) => {
+    const resolved = resolveStyleLayer(mapElement, target.styleId, layerId);
+    return resolved ? [resolved] : [];
+  });
+}
+
+function resolveTaggedStyleLayers(
+  mapElement: HTMLElement,
+  styleId: string,
+  tags: string[],
+): Array<{ layerId: string; originalVisible: boolean }> {
+  return resolveStyleLayers(mapElement, styleId).filter((resolved) => {
+    const metadata = getLayerMetadata(mapElement, resolved.layerId);
+    const metadataTags = Array.isArray(metadata?.tags)
+      ? metadata.tags
+      : Array.isArray(metadata?.["sgb:tags"])
+        ? metadata["sgb:tags"]
+        : [];
+    return tags.some((tag) => metadataTags.includes(tag));
+  });
+}
+
+function getLayerMetadata(mapElement: HTMLElement, layerId: string): Record<string, unknown> | undefined {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  const layer = map?.getStyle().layers?.find((candidate) => candidate.id === layerId) as
+    | { metadata?: Record<string, unknown> }
+    | undefined;
+  return layer?.metadata;
+}
+
 function resolveStyleLayers(
   mapElement: HTMLElement,
   styleId: string,
@@ -453,7 +586,11 @@ function resolveStyleLayers(
     return (
       map.getStyle().layers?.map((layer) => ({
         layerId: layer.id,
-        originalVisible: (layer.layout as { visibility?: string } | undefined)?.visibility !== "none",
+        originalVisible: getStyleLayerBaselineVisible(
+          map,
+          layer.id,
+          (layer.layout as { visibility?: string } | undefined)?.visibility !== "none",
+        ),
       })) ?? []
     );
   }
@@ -485,9 +622,14 @@ function resolveStyleLayer(
   const baseStyleId = mapOptions?.styles?.[0]?.id ?? mapOptions?.style?.id ?? null;
   if (baseStyleId === styleId) {
     const layer = map.getStyle().layers?.find((candidate) => candidate.id === layerId);
-    return layer
-      ? { layerId, originalVisible: (layer.layout as { visibility?: string } | undefined)?.visibility !== "none" }
-      : null;
+    return {
+      layerId,
+      originalVisible: getStyleLayerBaselineVisible(
+        map,
+        layerId,
+        (layer?.layout as { visibility?: string } | undefined)?.visibility !== "none",
+      ),
+    };
   }
 
   const composedLayerKey = `${styleId}\u0000${layerId}`;
@@ -512,43 +654,30 @@ function getRuntimeLayerOriginalVisible(mapElement: HTMLElement, layerId: string
   return true;
 }
 
-function resolveStyleLayerIds(mapElement: HTMLElement, styleId: string): string[] {
-  const map = window.Spillgebees.Map.maps.get(mapElement);
-  if (!map) {
-    return [];
+function getStyleLayerBaselineVisible(map: MapLibreMap, layerId: string, currentVisible: boolean): boolean {
+  const baselines = getLayerVisibilityBaselineStore(map);
+  const existing = baselines.get(layerId);
+  if (existing !== undefined) {
+    return existing;
   }
 
-  const mapOptions = window.Spillgebees.Map.mapOptions.get(map);
-  const baseStyleId = mapOptions?.styles?.[0]?.id ?? mapOptions?.style?.id ?? null;
-  if (baseStyleId === styleId) {
-    return map.getStyle().layers?.map((layer) => layer.id) ?? [];
-  }
-
-  const composedStyleLayerIds = window.Spillgebees.Map.composedStyleLayerIds.get(map);
-  if (!composedStyleLayerIds) {
-    return [];
-  }
-
-  return Array.from(composedStyleLayerIds.values())
-    .filter((registration) => registration.styleId === styleId)
-    .map((registration) => registration.runtimeLayerId);
+  baselines.set(layerId, currentVisible);
+  return currentVisible;
 }
 
-function resolveStyleLayerId(mapElement: HTMLElement, styleId: string, layerId: string): string | null {
-  const map = window.Spillgebees.Map.maps.get(mapElement);
-  if (!map) {
-    return null;
+function getLayerVisibilityBaselineStore(map: MapLibreMap): Map<string, boolean> {
+  const existing = layerVisibilityBaselines.get(map);
+  if (existing) {
+    return existing;
   }
 
-  const mapOptions = window.Spillgebees.Map.mapOptions.get(map);
-  const baseStyleId = mapOptions?.styles?.[0]?.id ?? mapOptions?.style?.id ?? null;
-  if (baseStyleId === styleId) {
-    return layerId;
-  }
+  const created = new Map<string, boolean>();
+  layerVisibilityBaselines.set(map, created);
+  return created;
+}
 
-  const composedLayerKey = `${styleId}\u0000${layerId}`;
-  const registration = window.Spillgebees.Map.composedStyleLayerIds.get(map)?.get(composedLayerKey);
-  return registration?.runtimeLayerId ?? null;
+function clearLayerVisibilityBaseline(map: MapLibreMap, layerId: string): void {
+  layerVisibilityBaselines.get(map)?.delete(layerId);
 }
 
 export function setPaintProperty(mapElement: HTMLElement, layerId: string, name: string, value: unknown): void {
@@ -583,13 +712,58 @@ export function setFilter(mapElement: HTMLElement, layerId: string, filter: unkn
   const map = window.Spillgebees.Map.maps.get(mapElement);
   if (!map?.getLayer(layerId)) return;
 
+  setDisplayFilterBaseline(map, layerId, filter);
+
   const layerStore = getSceneLayerStore(map);
   const registration = layerStore?.get(layerId);
   if (registration) {
     registration.layerSpec.filter = structuredClone(filter);
   }
 
-  map.setFilter(layerId, filter as Parameters<typeof map.setFilter>[1]);
+  recomputeDisplayFilters(mapElement, [layerId]);
+}
+
+function getBaselineLayerFilter(mapElement: HTMLElement, layerId: string): unknown {
+  const map = window.Spillgebees.Map.maps.get(mapElement);
+  if (!map) {
+    return null;
+  }
+
+  const baselines = getDisplayFilterBaselineStore(map);
+  if (baselines.has(layerId)) {
+    return cloneFilter(baselines.get(layerId));
+  }
+
+  const registeredLayer = getSceneLayerStore(map).get(layerId);
+  if (registeredLayer) {
+    const baseline = registeredLayer.layerSpec.filter ?? null;
+    baselines.set(layerId, cloneFilter(baseline));
+    return cloneFilter(baseline);
+  }
+
+  const styleLayer = map.getStyle().layers?.find((layer) => layer.id === layerId) as { filter?: unknown } | undefined;
+  const baseline = styleLayer?.filter ?? null;
+  baselines.set(layerId, cloneFilter(baseline));
+  return cloneFilter(baseline);
+}
+
+function getDisplayFilterBaselineStore(map: MapLibreMap): Map<string, unknown> {
+  const existing = displayFilterBaselines.get(map);
+  if (existing) {
+    return existing;
+  }
+
+  const created = new Map<string, unknown>();
+  displayFilterBaselines.set(map, created);
+  return created;
+}
+
+function setDisplayFilterBaseline(map: MapLibreMap, layerId: string, filter: unknown): void {
+  getDisplayFilterBaselineStore(map).set(layerId, cloneFilter(filter));
+}
+
+function cloneFilter(filter: unknown): unknown {
+  return filter == null ? null : structuredClone(filter);
 }
 
 export function setLayerZoomRange(mapElement: HTMLElement, layerId: string, minZoom: number, maxZoom: number): void {
@@ -955,6 +1129,8 @@ interface AnimationState {
 }
 
 const activeAnimations = new WeakMap<MapLibreMap, Map<string, AnimationState>>();
+const displayFilterBaselines = new WeakMap<MapLibreMap, Map<string, unknown>>();
+const layerVisibilityBaselines = new WeakMap<MapLibreMap, Map<string, boolean>>();
 
 export function setSourceDataAnimated(
   mapElement: HTMLElement,

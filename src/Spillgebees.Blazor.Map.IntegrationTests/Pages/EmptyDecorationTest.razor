@@ -14,9 +14,7 @@
     private readonly MapOptions _mapOptions = new(
         Center: new Coordinate(49.6117, 6.1319),
         Zoom: 12,
-        Style: MapStyle.FromRasterUrl(
-            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII=",
-            string.Empty));
+        Style: IntegrationTestStyles.Base);
 
     private readonly List<MapImage> _images =
     [
@@ -43,7 +41,6 @@
             ],
             Cluster: ClusterOptions.None,
             Animation: null,
-            Visible: true,
             PrimaryIconOpacity: null),
         Behavior: new TrackedEntityBehaviorOptions<TrackedItem>(
             new TrackedEntityInteractionOptions<TrackedItem>(

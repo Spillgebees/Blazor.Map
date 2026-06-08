@@ -32,7 +32,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
     private readonly TrackedEntityBehaviorOptions<TrainSampleState> _trainBehavior;
     private readonly TrackedEntityCallbacks<TrainSampleState> _trainCallbacks;
     private readonly object[] _trainIconOpacityExpr = TrainTrackingPresentation.TrainIconOpacityExpression;
-    private readonly MapLayerVisibilityState _visibility = TrainTrackingPresentation.CreateLayerVisibility();
+    private readonly MapDisplayState _display = TrainTrackingPresentation.CreateDisplay();
     private readonly TrackedEntityIdOptions<TrainSampleState> _trainId = new(train => train.Id);
     private readonly TrackedEntityInteractionOptions<TrainSampleState> _trainInteraction;
     private readonly TrackedEntitySymbolOptions<TrainSampleState> _trainSymbol = new(
@@ -114,7 +114,6 @@ public partial class TrainTrackingExample : IAsyncDisposable
             OnItemMouseLeave: HandleTrainLeave,
             OnBeforeShowPopup: null
         );
-        _visibility.Changed += HandleLayerVisibilityChanged;
     }
 
     protected override void OnInitialized()
@@ -278,20 +277,6 @@ public partial class TrainTrackingExample : IAsyncDisposable
         return currentZoom.Value >= SelectionDetailsMinZoom ? null : SelectionDetailsMinZoom;
     }
 
-    private void HandleLayerVisibilityChanged(object? sender, MapLayerVisibilityChangedEventArgs args)
-    {
-        if (
-            args.ChangeKind == MapLayerVisibilityChangeKind.GroupsReplaced
-            || string.Equals(args.GroupId, "trains", StringComparison.Ordinal)
-            || string.Equals(args.GroupId, "3d-buildings", StringComparison.Ordinal)
-        )
-        {
-            RebuildTrackedLayers();
-        }
-
-        _ = InvokeAsync(StateHasChanged);
-    }
-
     private void RebuildTrackedLayers()
     {
         _trackedEntityLayer = new TrackedEntityLayerDefinition<TrainSampleState>(
@@ -303,7 +288,6 @@ public partial class TrainTrackingExample : IAsyncDisposable
                 Decorations: _trainDecorations,
                 Source: _trainSourceOptions,
                 Animation: _trainAnimation,
-                Visible: _visibility.IsVisible("trains"),
                 PrimaryIconOpacity: _trainIconOpacityExpr
             ),
             Behavior: _trainBehavior,
@@ -329,6 +313,5 @@ public partial class TrainTrackingExample : IAsyncDisposable
         }
 
         _timer?.Dispose();
-        _visibility.Changed -= HandleLayerVisibilityChanged;
     }
 }

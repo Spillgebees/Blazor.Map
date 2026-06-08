@@ -18,24 +18,12 @@ public sealed record CircleLayerDefinition : MapLayerDefinition
         object? filter = null,
         double? minZoom = null,
         double? maxZoom = null,
-        bool visible = true,
         string? beforeLayerId = null,
         string? layerGroup = null,
         string? beforeLayerGroup = null,
         string? afterLayerGroup = null
     )
-        : base(
-            idSuffix,
-            key,
-            filter,
-            minZoom,
-            maxZoom,
-            visible,
-            beforeLayerId,
-            layerGroup,
-            beforeLayerGroup,
-            afterLayerGroup
-        )
+        : base(idSuffix, key, filter, minZoom, maxZoom, beforeLayerId, layerGroup, beforeLayerGroup, afterLayerGroup)
     {
         Color = color;
         Radius = radius;

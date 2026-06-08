@@ -1,0 +1,47 @@
+@page "/display-control-test"
+@using Spillgebees.Blazor.Map
+
+<SgbMap MapOptions="_mapOptions" Display="_display" Height="360px" Width="100%">
+    <MapControls>
+        <DisplayMapControl Id="display-control-test" InitiallyOpen="true" />
+    </MapControls>
+
+    <MapSources>
+        <GeoJsonSource Id="display-test-source" Data="@_displayTestData">
+            <CircleLayer Id="display-test-layer"
+                         Color="@("#2563eb")"
+                         Radius="8" />
+        </GeoJsonSource>
+    </MapSources>
+</SgbMap>
+
+@code {
+    private readonly MapOptions _mapOptions = new(
+        Style: IntegrationTestStyles.Base,
+        Center: new Coordinate(49.6117, 6.1319),
+        Zoom: 10);
+
+    private readonly MapDisplayState _display = new([
+        new MapDisplayItem(
+            "points",
+            [MapDisplayTarget.RuntimeLayers("display-test-layer")],
+            IsOn: false,
+            Label: "Points"
+        ),
+    ]);
+
+    private readonly object _displayTestData = new
+    {
+        type = "FeatureCollection",
+        features = new[]
+        {
+            new
+            {
+                type = "Feature",
+                properties = new { name = "Point" },
+                geometry = new { type = "Point", coordinates = new[] { 6.1319, 49.6117 } },
+            },
+        },
+    };
+
+}

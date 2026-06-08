@@ -188,7 +188,6 @@ public class ClusterLayerSetTests
             strokeWidth: original.StrokeWidth,
             minZoom: 5,
             maxZoom: 10,
-            visible: original.Visible,
             beforeLayerId: original.BeforeLayerId,
             layerGroup: original.LayerGroup,
             beforeLayerGroup: original.BeforeLayerGroup,
@@ -237,7 +236,6 @@ public class ClusterLayerSetTests
         layer.Radius.Should().NotBeNull();
         layer.MinZoom.Should().Be(4);
         layer.MaxZoom.Should().Be(10);
-        layer.Visible.Should().BeTrue();
         layer.Interactive.Should().BeTrue();
     }
 
@@ -264,7 +262,6 @@ public class ClusterLayerSetTests
         layer.TextColor.Should().NotBeNull();
         layer.MinZoom.Should().Be(4);
         layer.MaxZoom.Should().Be(10);
-        layer.Visible.Should().BeTrue();
         layer.Interactive.Should().BeTrue();
     }
 }
