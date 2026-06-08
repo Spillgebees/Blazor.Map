@@ -17,13 +17,10 @@
 
 @code {
     private readonly MapOptions _mapOptions = new(
-        Style: MapStyle.FromRasterUrl(
-            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=",
-            "Display control test"
-        ),
+        Style: IntegrationTestStyles.Base,
         Center: new Coordinate(49.6117, 6.1319),
-        Zoom: 10
-    );
+        Zoom: 10);
+
     private readonly MapDisplayState _display = new([
         new MapDisplayItem(
             "points",

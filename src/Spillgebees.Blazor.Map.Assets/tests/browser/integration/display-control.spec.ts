@@ -17,15 +17,18 @@ test("DisplayMapControl reflects initial state and toggles display item", async 
 
   // arrange
   await page.goto("/display-control-test");
-  const displayToggle = page.getByTestId("map-display-toggle-points");
-  const displayToggleControl = page.locator("label", { has: displayToggle });
+  await waitForDisplayMapAndForwardMapLibreErrors(page);
+  await waitForDisplayMapRuntimeReady(page);
+  await waitForDisplayRuntimeLayer(page);
+
+  const displayToggle = page.locator(".sgb-map-panel:not([hidden])").getByTestId("map-display-toggle-points");
+  const displayToggleControl = page
+    .locator(".sgb-map-panel:not([hidden]) .sgb-map-layer-control-item")
+    .filter({ hasText: "Points" });
 
   await expect(displayToggle).toBeAttached({ timeout: 15_000 });
   await expect(displayToggleControl).toBeVisible();
   await expect(displayToggle).not.toBeChecked();
-  await waitForDisplayMapAndForwardMapLibreErrors(page);
-  await waitForDisplayMapRuntimeReady(page);
-  await waitForDisplayRuntimeLayer(page);
   await expectLayerVisibility(page, "none");
 
   // act

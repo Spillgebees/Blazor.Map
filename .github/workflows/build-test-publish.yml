@@ -79,8 +79,19 @@ jobs:
 
       - name: 🎭 browser regression tests
         if: inputs.dotnet-changed || inputs.ts-changed
-        run: pnpm run test:browser:no-build
+        run: pnpm run test:browser
         working-directory: src/Spillgebees.Blazor.Map.Assets
+
+      - name: 🔃 upload Playwright artifacts
+        if: failure() && (inputs.dotnet-changed || inputs.ts-changed)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: playwright-artifacts
+          if-no-files-found: ignore
+          retention-days: 7
+          path: |
+            src/Spillgebees.Blazor.Map.Assets/tests/browser/playwright-report/
+            src/Spillgebees.Blazor.Map.Assets/tests/browser/test-results/
 
       - name: 📦 package the application
         if: inputs.should-package
