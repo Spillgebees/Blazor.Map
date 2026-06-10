@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map;
 
-internal sealed class MapControlRegistryContext(BaseMap map)
+/// <summary>
+/// The cascaded facade control components use to talk to their hosting map's control
+/// registry without referencing the map type directly.
+/// </summary>
+internal sealed class MapControlRegistryContext(IMapControlHost map)
 {
     public bool Register(string ownerId, MapControlDefinition control) => map.RegisterControl(ownerId, control);
 
@@ -22,8 +25,8 @@ internal sealed class MapControlRegistryContext(BaseMap map)
         string kind,
         ElementReference placeholderReference,
         ElementReference contentReference,
-        object? stateReference = null
-    ) => map.SetControlContentAsync(controlId, kind, placeholderReference, contentReference, stateReference);
+        Func<bool, Task>? onPanelOpenChangedAsync = null
+    ) => map.SetControlContentAsync(controlId, kind, placeholderReference, contentReference, onPanelOpenChangedAsync);
 
     public ValueTask RemoveControlContentAsync(string controlId) => map.RemoveControlContentAsync(controlId);
 }

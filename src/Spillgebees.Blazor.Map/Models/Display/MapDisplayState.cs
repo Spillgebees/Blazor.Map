@@ -9,7 +9,6 @@ public sealed class MapDisplayState
 {
     private readonly Dictionary<string, MapDisplayItem> _items = new(StringComparer.Ordinal);
     private readonly List<string> _itemIds = [];
-    private IReadOnlyList<MapDisplayItem>? _snapshot;
 
     /// <summary>Initializes a new map display state.</summary>
     public MapDisplayState(IEnumerable<MapDisplayItem> items)
@@ -21,8 +20,12 @@ public sealed class MapDisplayState
     public event EventHandler<MapDisplayChangedEventArgs>? Changed;
 
     /// <summary>Gets current display items.</summary>
-    public IReadOnlyList<MapDisplayItem> Items =>
-        _snapshot ??= Array.AsReadOnly(_itemIds.Select(id => _items[id]).ToArray());
+    [AllowNull]
+    public IReadOnlyList<MapDisplayItem> Items
+    {
+        get =>
+        field ??= Array.AsReadOnly(_itemIds.Select(id => _items[id]).ToArray()); private set;
+    }
 
     /// <summary>Returns whether an item exists.</summary>
     public bool Contains(string itemId) => _items.ContainsKey(itemId);
@@ -59,7 +62,7 @@ public sealed class MapDisplayState
         }
 
         _items[item.Id] = item;
-        _snapshot = null;
+        Items = null;
         Changed?.Invoke(this, new MapDisplayChangedEventArgs(item.Id, item, false));
     }
 
@@ -102,6 +105,6 @@ public sealed class MapDisplayState
             _itemIds.Add(item.Id);
         }
 
-        _snapshot = null;
+        Items = null;
     }
 }

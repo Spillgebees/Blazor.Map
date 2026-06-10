@@ -1,8 +1,7 @@
-namespace Spillgebees.Blazor.Map;
 
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map;
 
+namespace Spillgebees.Blazor.Map;
 /// <summary>
 /// Shared placement options for map controls.
 /// </summary>
@@ -95,7 +94,7 @@ public sealed record TerrainControlDefinition(
 ) : MapControlDefinition(ControlId, Position, Order, Visible);
 
 /// <summary>
-/// A center control entry that re-centers to current <see cref="MapOptions"/>.
+/// A center control entry that re-centers to current the map options.
 /// </summary>
 public sealed record CenterControlDefinition(
     string ControlId = "center",
@@ -151,5 +150,8 @@ public sealed record ContentControlDefinition(
     string? ClassName = null
 ) : MapControlDefinition(ControlId, Position, Order, Visible)
 {
+    /// <summary>
+    /// The control kind discriminator. Always "content".
+    /// </summary>
     public string Kind => "content";
 }

@@ -1,54 +1,70 @@
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map;
 
+/// <summary>
+/// Renders a purpose-built overlay control that toggles the visibility of the map's overlays and their parts.
+/// </summary>
 public partial class OverlayMapControl : ComponentBase, IDisposable
 {
     [CascadingParameter]
-    private BaseMap? Map { get; set; }
+    private IMapOverlayHost? _map { get; set; }
 
+    /// <summary>Unique control identifier within the map.</summary>
     [Parameter, EditorRequired]
     public string Id { get; set; } = string.Empty;
 
+    /// <summary>Map corner the control is placed in. Defaults to <see cref="ControlPosition.TopRight" />.</summary>
     [Parameter]
     public ControlPosition Position { get; set; } = ControlPosition.TopRight;
 
+    /// <summary>Deterministic ordering among controls at the same corner; lower values render first. Defaults to 450.</summary>
     [Parameter]
     public int Order { get; set; } = 450;
 
+    /// <summary>Whether the control is visible. Defaults to <c>true</c>.</summary>
     [Parameter]
     public bool Visible { get; set; } = true;
 
+    /// <summary>Additional CSS class applied to the control container.</summary>
     [Parameter]
     public string? Class { get; set; }
 
+    /// <summary>Accessible label for the control's toggle button; must be non-empty. Defaults to <c>"Overlays"</c>.</summary>
     [Parameter]
     public string Label { get; set; } = "Overlays";
 
+    /// <summary>Title shown in the panel header. Defaults to <c>"Overlays"</c>.</summary>
     [Parameter]
     public string Title { get; set; } = "Overlays";
 
+    /// <summary>Whether the panel starts open.</summary>
     [Parameter]
     public bool InitiallyOpen { get; set; }
 
+    /// <summary>Maximum width of the panel as a CSS length value.</summary>
     [Parameter]
     public string? MaxWidth { get; set; }
 
+    /// <summary>Additional CSS class applied to the panel content container.</summary>
     [Parameter]
     public string? PanelClass { get; set; }
 
+    /// <summary>Overlay ids to show; shows all overlays when not set.</summary>
     [Parameter]
     public IReadOnlyList<string>? OverlayIds { get; set; }
 
+    /// <summary>Optional template used to render each overlay item.</summary>
     [Parameter]
     public RenderFragment<MapOverlayControlItemContext>? ItemTemplate { get; set; }
 
+    /// <summary>Optional template used to render each overlay part.</summary>
     [Parameter]
     public RenderFragment<MapOverlayPartControlItemContext>? PartTemplate { get; set; }
 
-    private IReadOnlyList<MapOverlayItem> Items => ResolveItems();
+    private IReadOnlyList<MapOverlayItem> _items => ResolveItems();
 
+    /// <inheritdoc />
     protected override void OnParametersSet()
     {
         if (string.IsNullOrWhiteSpace(Id))
@@ -61,38 +77,37 @@ public partial class OverlayMapControl : ComponentBase, IDisposable
             throw new InvalidOperationException("A non-empty Label is required.");
         }
 
-        if (Map is null)
+        if (_map is null)
         {
             throw new InvalidOperationException("OverlayMapControl must be placed inside SgbMap.");
         }
 
-        Map.OverlayChanged -= HandleOverlayChanged;
-        Map.OverlayChanged += HandleOverlayChanged;
+        _map.OverlayChanged -= HandleOverlayChanged;
+        _map.OverlayChanged += HandleOverlayChanged;
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
-        if (Map is not null)
-        {
-            Map.OverlayChanged -= HandleOverlayChanged;
-        }
+        _map?.OverlayChanged -= HandleOverlayChanged;
+        GC.SuppressFinalize(this);
     }
 
     private IReadOnlyList<MapOverlayItem> ResolveItems()
     {
-        if (Map is null)
+        if (_map is null)
         {
             return [];
         }
 
-        var items = Map.GetOverlayItems();
+        var items = _map.GetOverlayItems();
         if (OverlayIds is null)
         {
             return items;
         }
 
         var selectedIds = OverlayIds.ToHashSet(StringComparer.Ordinal);
-        return items.Where(item => selectedIds.Contains(item.Id)).ToArray();
+        return [.. items.Where(item => selectedIds.Contains(item.Id))];
     }
 
     private MapOverlayControlItemContext BuildTemplateContext(MapOverlayItem overlay) =>
@@ -115,13 +130,13 @@ public partial class OverlayMapControl : ComponentBase, IDisposable
 
     private Task SetOverlayVisibleAsync(string overlayId, bool visible)
     {
-        Map!.SetOverlayVisible(overlayId, visible);
+        _map!.SetOverlayVisible(overlayId, visible);
         return Task.CompletedTask;
     }
 
     private Task SetPartVisibleAsync(string overlayId, string partId, bool visible)
     {
-        Map!.SetOverlayPartVisible(overlayId, partId, visible);
+        _map!.SetOverlayPartVisible(overlayId, partId, visible);
         return Task.CompletedTask;
     }
 
@@ -194,7 +209,7 @@ public partial class OverlayMapControl : ComponentBase, IDisposable
         }
 
         var sanitized = new string(
-            cssClass.Where(character => char.IsLetterOrDigit(character) || character is '-' or '_' or ' ').ToArray()
+            [.. cssClass.Where(character => char.IsLetterOrDigit(character) || character is '-' or '_' or ' ')]
         );
 
         return string.IsNullOrWhiteSpace(sanitized) ? null : sanitized.Trim();

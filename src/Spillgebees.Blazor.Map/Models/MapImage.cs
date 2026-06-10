@@ -35,15 +35,33 @@ public sealed record MapImage
         IsSdf = isSdf;
     }
 
+    /// <summary>
+    /// Unique image identifier used by layer <c>icon-image</c> expressions.
+    /// </summary>
     public string Id { get; }
 
+    /// <summary>
+    /// Image URL or data URI.
+    /// </summary>
     public string Url { get; }
 
+    /// <summary>
+    /// Image width in CSS pixels.
+    /// </summary>
     public int Width { get; }
 
+    /// <summary>
+    /// Image height in CSS pixels.
+    /// </summary>
     public int Height { get; }
 
+    /// <summary>
+    /// Image pixel ratio. Default is 1.
+    /// </summary>
     public double PixelRatio { get; }
 
+    /// <summary>
+    /// Whether the image is treated as SDF for runtime tinting. Default is false.
+    /// </summary>
     public bool IsSdf { get; }
 }

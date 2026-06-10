@@ -1,42 +1,39 @@
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map;
 
-/// <summary>
-/// A MapLibre circle layer that renders point geometry from a GeoJSON source.
-/// </summary>
-public class CircleLayer : LayerBase
+/// <summary>Engine-backed circle layer.</summary>
+public sealed class CircleLayer : LayerBase
 {
-    /// <summary>The circle radius in pixels (literal or expression).</summary>
+    /// <summary>Circle radius in pixels (MapLibre <c>circle-radius</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? Radius { get; set; }
 
-    /// <summary>The circle fill color (CSS color string or expression).</summary>
+    /// <summary>Circle fill color (MapLibre <c>circle-color</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<string>? Color { get; set; }
 
-    /// <summary>The circle fill opacity (0.0–1.0, literal or expression).</summary>
+    /// <summary>Circle fill opacity (MapLibre <c>circle-opacity</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? Opacity { get; set; }
 
-    /// <summary>The stroke width in pixels (literal or expression).</summary>
+    /// <summary>Stroke width in pixels (MapLibre <c>circle-stroke-width</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? StrokeWidth { get; set; }
 
-    /// <summary>The stroke color (CSS color string or expression).</summary>
+    /// <summary>Stroke color (MapLibre <c>circle-stroke-color</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<string>? StrokeColor { get; set; }
 
-    /// <summary>The stroke opacity (0.0–1.0, literal or expression).</summary>
+    /// <summary>Stroke opacity (MapLibre <c>circle-stroke-opacity</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? StrokeOpacity { get; set; }
 
-    /// <summary>The alignment of the circle when the map is pitched ("map" or "viewport").</summary>
+    /// <summary>Orientation of circles when the map is pitched (MapLibre <c>circle-pitch-alignment</c>).</summary>
     [Parameter]
     public CirclePitchAlignment? PitchAlignment { get; set; }
 
-    internal override string _layerType => "circle";
+    internal override string LayerType => "circle";
 
     internal override Dictionary<string, object?> GetPaintProperties() =>
         new()
@@ -50,5 +47,5 @@ public class CircleLayer : LayerBase
             ["circle-pitch-alignment"] = PitchAlignment?.ToJsonName(),
         };
 
-    internal override Dictionary<string, object?> GetLayoutProperties() => new();
+    internal override Dictionary<string, object?> GetLayoutProperties() => [];
 }

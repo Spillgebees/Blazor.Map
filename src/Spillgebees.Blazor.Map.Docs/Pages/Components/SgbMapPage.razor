@@ -21,7 +21,7 @@
 </ExampleView>
 
 <h2 id="fit_bounds_padding">// fit_bounds_padding</h2>
-<p><code>FitBoundsOptions</code> fits the map viewport to a set of features. Use <code>Padding</code> for uniform spacing on all sides, or <code>TopLeftPadding</code> and <code>BottomRightPadding</code> for asymmetric padding when UI elements like sidebars overlap the map. The <code>CenterMapControl</code> button automatically reads the current <code>MapOptions</code> to re-center.</p>
+<p><code>FitBoundsOptions</code> fits the map viewport to a set of features. Use <code>Padding</code> for uniform spacing on all sides, or <code>TopLeftPadding</code> and <code>BottomRightPadding</code> for asymmetric padding when UI elements like sidebars overlap the map. The <code>CenterMapControl</code> button returns to the home view: the <code>FitBounds</code> features when set, otherwise <code>Center</code>/<code>Zoom</code>.</p>
 <ExampleView TComponent="FitBoundsPaddingExample">
     <FitBoundsPaddingExample />
 </ExampleView>
@@ -36,7 +36,7 @@
 </ExampleView>
 
 <h2 id="styles">// styles</h2>
-<p>Swap between built-in style presets using the <code>MapOptions.Style</code> property. The library ships with <code>MapStyle.OpenFreeMap.Liberty</code>, <code>Positron</code>, and <code>Bright</code>. Use <code>MapStyle.FromUrl</code> or <code>MapStyle.FromRasterUrl</code> for custom sources. Because <code>MapOptions</code> is a record, change styles reactively with a <code>with</code> expression.</p>
+<p>Swap between built-in style presets using the <code>Style</code> parameter. The library ships with <code>MapStyle.OpenFreeMap.Liberty</code>, <code>Positron</code>, and <code>Bright</code>. Use <code>MapStyle.FromUrl</code> or <code>MapStyle.FromRasterUrl</code> for custom sources. Assign a new <code>MapStyle</code> to switch styles reactively.</p>
 <ExampleView TComponent="StyleSwitchingExample">
     <StyleSwitchingExample />
 </ExampleView>
@@ -109,7 +109,7 @@
     private static readonly Dictionary<string, string> _canonicalStructure = new()
     {
         ["SgbMapSections.razor"] = """
-            <SgbMap MapOptions="@_mapOptions" ContainerClass="rail-map">
+            <SgbMap Center="@_center" Zoom="11" ContainerClass="rail-map">
                 <MapControls>
                     <NavigationMapControl Id="navigation" />
                     <LegendMapControl Id="legend" Definition="@_legend" />
@@ -121,8 +121,14 @@
                     </GeoJsonSource>
                 </MapSources>
 
+                <TrackedEntityLayer TItem="Train"
+                                    Id="trains"
+                                    Items="@_trains"
+                                    ItemId="@(train => train.Id)"
+                                    Position="@(train => train.Position)"
+                                    IconImage="train-icon" />
+
                 <MapFeatures>
-                    <TrackedEntityLayer TItem="Train" Layer="@_trainLayer" />
                     <MapMarkers TItem="Station"
                                 Items="@_stations"
                                 IdSelector="station => station.Id"

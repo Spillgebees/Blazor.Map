@@ -1,0 +1,138 @@
+@page "/engine-geojson-functional-test"
+@inject NavigationManager Navigation
+@using System.Text.Json.Nodes
+
+<main class="e2e-shell">
+    <h1>Engine GeoJSON functional test</h1>
+    <p>Deterministic fixture for Playwright: raw GeoJSON source, typed layers, data updates, paint updates, clustering.</p>
+
+    <section style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+        <button type="button" data-testid="update-data" @onclick="UpdateData">Update data</button>
+        <button type="button" data-testid="change-paint" @onclick="ChangePaint">Change paint</button>
+        <span>Last clicked: <strong data-testid="last-clicked">@(_lastClicked ?? "none")</strong></span>
+    </section>
+
+    @if (_lastError is not null)
+    {
+        <p style="color: #b91c1c;" data-testid="map-error">@_lastError</p>
+    }
+
+    <div id="engine-geojson-frame" class="stress-map-frame">
+        <SgbMap StyleSpec="@BaseStyleJson"
+                  Center="@(new Coordinate(49.61, 6.14))"
+                  Zoom="@(_clusterMode ? 10 : 11)"
+                  Height="480px"
+                  Width="100%"
+                  OnMapError="@HandleMapError">
+            <GeoJsonSource Id="places"
+                             Data="@_data"
+                             Cluster="@(_clusterMode ? TestClusterOptions : null)">
+                @if (!_clusterMode)
+                {
+                    <CircleLayer Id="places-circles"
+                                   Radius="@_circleRadius"
+                                   Color="@_circleColor"
+                                   StrokeColor="@("#ffffff")"
+                                   StrokeWidth="2"
+                                   Filter="@PointFilter"
+                                   OnClick="@HandleCircleClick" />
+                    <LineLayer Id="places-lines"
+                                 Color="@("#0ea5e9")"
+                                 Width="3"
+                                 Filter="@LineFilter" />
+                }
+            </GeoJsonSource>
+        </SgbMap>
+    </div>
+</main>
+
+@code {
+    private const string BaseStyleJson = """
+        {"version":8,"sources":{"base":{"type":"raster","tiles":["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII="],"tileSize":256,"attribution":"Integration test"}},"layers":[{"id":"base","type":"raster","source":"base"}]}
+        """;
+
+    private static readonly object PointFilter = new object[] { "==", new object[] { "geometry-type" }, "Point" };
+    private static readonly object LineFilter = new object[] { "==", new object[] { "geometry-type" }, "LineString" };
+
+    // circle-only cluster layers: the offline test style has no glyphs for count labels
+    private static readonly ClusterOptions TestClusterOptions = ClusterOptions.Create(
+        layerSet: ClusterLayerSet.Custom(
+            ClusterLayerDefinition.Circle("clusters", color: "#2563eb", radius: 18, strokeColor: "#ffffff", strokeWidth: 2)
+        )
+    );
+
+    private object _data = BuildData(pointCount: 3, shiftLng: 0);
+    private StyleValue<double> _circleRadius = 8;
+    private StyleValue<string> _circleColor = "#dc2626";
+    private bool _clusterMode;
+    private string? _lastClicked;
+    private string? _lastError;
+
+    protected override void OnInitialized()
+    {
+        var query = StressQuery.Parse(Navigation.Uri);
+        _clusterMode = query.GetBool("cluster", false);
+        if (_clusterMode)
+        {
+            _data = BuildData(pointCount: 40, shiftLng: 0);
+        }
+    }
+
+    private void UpdateData() => _data = BuildData(pointCount: 4, shiftLng: 0.02);
+
+    private void ChangePaint()
+    {
+        _circleRadius = 14;
+        _circleColor = "#16a34a";
+    }
+
+    private void HandleCircleClick(LayerFeatureEventArgs args)
+    {
+        _lastClicked = args.Properties?.TryGetProperty("name", out var name) == true ? name.GetString() : "unknown";
+        StateHasChanged();
+    }
+
+    private void HandleMapError(Exception exception)
+    {
+        _lastError = exception.Message;
+        StateHasChanged();
+    }
+
+    private static string BuildData(int pointCount, double shiftLng)
+    {
+        var features = new JsonArray();
+        for (var index = 0; index < pointCount; index++)
+        {
+            features.Add(
+                new JsonObject
+                {
+                    ["type"] = "Feature",
+                    ["geometry"] = new JsonObject
+                    {
+                        ["type"] = "Point",
+                        ["coordinates"] = new JsonArray(6.12 + (index % 7) * 0.012 + shiftLng, 49.6 + (index / 7) * 0.012),
+                    },
+                    ["properties"] = new JsonObject { ["name"] = $"place-{index + 1}" },
+                }
+            );
+        }
+
+        features.Add(
+            new JsonObject
+            {
+                ["type"] = "Feature",
+                ["geometry"] = new JsonObject
+                {
+                    ["type"] = "LineString",
+                    ["coordinates"] = new JsonArray(
+                        new JsonArray(6.11, 49.59),
+                        new JsonArray(6.17, 49.62)
+                    ),
+                },
+                ["properties"] = new JsonObject { ["name"] = "track" },
+            }
+        );
+
+        return new JsonObject { ["type"] = "FeatureCollection", ["features"] = features }.ToJsonString();
+    }
+}

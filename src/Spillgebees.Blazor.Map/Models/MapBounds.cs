@@ -2,7 +2,7 @@ namespace Spillgebees.Blazor.Map;
 
 /// <summary>
 /// A geographic bounding box defined by its southwest and northeast corners.
-/// Used to constrain the map viewport via <see cref="MapOptions.MaxBounds"/>.
+/// Used to constrain the map viewport via the map's <c>MaxBounds</c>.
 /// </summary>
 /// <param name="Southwest">The southwest corner of the bounds.</param>
 /// <param name="Northeast">The northeast corner of the bounds.</param>

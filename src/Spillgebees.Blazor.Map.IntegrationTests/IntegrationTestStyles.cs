@@ -1,5 +1,3 @@
-using Spillgebees.Blazor.Map;
-
 namespace Spillgebees.Blazor.Map.IntegrationTests;
 
 internal static class IntegrationTestStyles

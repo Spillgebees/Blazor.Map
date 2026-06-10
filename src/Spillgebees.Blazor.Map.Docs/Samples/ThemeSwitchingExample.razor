@@ -3,7 +3,9 @@
     <button type="button" class="sample-btn @(_theme == MapTheme.Dark ? "active" : "")" aria-pressed="@(_theme == MapTheme.Dark)" @onclick="@(() => _theme = MapTheme.Dark)">Dark</button>
 </div>
 
-<SgbMap MapOptions="@_mapOptions"
+<SgbMap Center="@(new Coordinate(49.6117, 6.1319))"
+        Zoom="12"
+        Style="@(MapStyle.OpenFreeMap.Liberty)"
         Theme="@_theme"
         Markers="@_markers"
         Height="400px"
@@ -15,12 +17,6 @@
 
 @code {
     private MapTheme _theme = MapTheme.Light;
-
-    private readonly MapOptions _mapOptions = new(
-        Center: new Coordinate(49.6117, 6.1319),
-        Zoom: 12,
-        Style: MapStyle.OpenFreeMap.Liberty
-    );
 
     private readonly List<Marker> _markers =
     [

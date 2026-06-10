@@ -1,6 +1,8 @@
 @using Spillgebees.Blazor.Map
 
-<SgbMap MapOptions="@_mapOptions"
+<SgbMap Center="@(new Coordinate(49.6117, 6.1319))"
+        Zoom="12"
+        Style="@(MapStyle.OpenFreeMap.Liberty)"
         Display="@_display"
         Height="450px"
         Width="100%"
@@ -78,12 +80,6 @@
 </SgbMap>
 
 @code {
-    private readonly MapOptions _mapOptions = new(
-        Style: MapStyle.OpenFreeMap.Liberty,
-        Center: new Coordinate(49.6117, 6.1319),
-        Zoom: 12
-    );
-
     private readonly StationFeature[] _stations =
     [
         new("Central Station", [6.1319, 49.6117]),

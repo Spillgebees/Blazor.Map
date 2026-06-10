@@ -25,9 +25,11 @@
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:browser": "playwright test",
+    "test:browser": "playwright test --project docs --project integration",
     "test:browser:docs": "playwright test --project docs",
     "test:browser:integration": "playwright test --project integration",
+    "test:browser:perf": "playwright test --project perf --workers 1",
+    "test:browser:perf:record": "PERF_RECORD=1 playwright test --project perf --workers 1",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },

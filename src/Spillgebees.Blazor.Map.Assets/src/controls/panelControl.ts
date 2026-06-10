@@ -73,7 +73,7 @@ export class PanelControl implements IControl {
     this._stateReference = stateReference ?? this._stateReference;
 
     if (!this._container) {
-      if (this._options.isOpen !== null) {
+      if (this._options.isOpen != null) {
         this._isOpen = this._options.isOpen;
       }
       return;
@@ -95,7 +95,7 @@ export class PanelControl implements IControl {
 
     this._syncMaxWidth();
     this._syncMaxHeight();
-    if (this._options.isOpen !== null) {
+    if (this._options.isOpen != null) {
       this._isOpen = this._options.isOpen;
     }
     this._setOpen(this._isOpen);
@@ -206,7 +206,7 @@ export class PanelControl implements IControl {
   }
 
   private _requestOpenChange(isOpen: boolean): void {
-    if (this._options.isOpen === null) {
+    if (this._options.isOpen == null) {
       this._setOpen(isOpen);
     }
 

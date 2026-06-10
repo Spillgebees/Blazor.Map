@@ -1,0 +1,112 @@
+@page "/engine-features-functional-test"
+
+<main class="e2e-shell">
+    <h1>Engine features functional test</h1>
+    <p>
+        Markers, circles and polylines on SgbMap — both the component family (through the
+        feature-host seam) and the parameter API (Markers/Circles/Polylines, including a
+        draggable marker with click/dragend callbacks).
+    </p>
+
+    <section style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+        <button type="button" data-testid="move-marker" @onclick="MoveMarker">Move marker</button>
+        <button type="button" data-testid="remove-marker" @onclick="ToggleMarker">Toggle marker</button>
+        <span data-testid="marker-click-log">@_markerClickLog</span>
+        <span data-testid="marker-drag-log">@_markerDragLog</span>
+    </section>
+
+    @if (_lastError is not null)
+    {
+        <p style="color: #b91c1c;" data-testid="map-error">@_lastError</p>
+    }
+
+    <div id="engine-features-frame" class="stress-map-frame">
+        <SgbMap Style="@BaseStyle"
+                  Center="@(new Coordinate(49.61, 6.14))"
+                  Zoom="12"
+                  Height="480px"
+                  Width="100%"
+                  Markers="@_parameterMarkers"
+                  Circles="@_parameterCircles"
+                  Polylines="@_parameterPolylines"
+                  OnMarkerClick="@HandleMarkerClick"
+                  OnMarkerDragEnd="@HandleMarkerDragEnd"
+                  OnMapError="@HandleMapError">
+            <MapFeatures>
+                @if (_markerVisible)
+                {
+                    <MapMarker Id="m1"
+                               Position="@_markerPosition"
+                               Title="Marker one"
+                               Color="#dc2626" />
+                }
+                <MapCircle Id="c1" Position="@(new Coordinate(49.605, 6.12))" Radius="12" Color="#16a34a" />
+                <MapPolyline Id="p1"
+                             Coordinates="@(new[] { new Coordinate(49.6, 6.11), new Coordinate(49.62, 6.17) })"
+                             Color="#0ea5e9"
+                             Width="3" />
+            </MapFeatures>
+        </SgbMap>
+    </div>
+</main>
+
+@code {
+    private static readonly MapStyle BaseStyle = MapStyle
+        .FromRasterUrl(
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGM4YWMDAAMQAUEiFmcFAAAAAElFTkSuQmCC",
+            "base"
+        )
+        .WithId("base");
+
+    private Coordinate _markerPosition = new(49.61, 6.13);
+    private bool _markerVisible = true;
+    private string? _lastError;
+    private string _markerClickLog = "";
+    private string _markerDragLog = "";
+
+    private readonly IReadOnlyList<Marker> _parameterMarkers =
+    [
+        new Marker(
+            "drag-me",
+            new Coordinate(49.615, 6.15),
+            Title: "Draggable marker",
+            Color: "#7c3aed",
+            Draggable: true,
+            ClassName: "test-draggable-marker"
+        ),
+    ];
+
+    private readonly IReadOnlyList<Circle> _parameterCircles =
+    [
+        new Circle("pc1", new Coordinate(49.6, 6.16), Radius: 10, Color: "#f59e0b"),
+    ];
+
+    private readonly IReadOnlyList<Polyline> _parameterPolylines =
+    [
+        new Polyline(
+            "pp1",
+            [new Coordinate(49.595, 6.12), new Coordinate(49.6, 6.18)],
+            Color: "#ef4444",
+            Width: 2
+        ),
+    ];
+
+    private void MoveMarker() =>
+        _markerPosition = new Coordinate(_markerPosition.Latitude, _markerPosition.Longitude + 0.01);
+
+    private void ToggleMarker() => _markerVisible = !_markerVisible;
+
+    private void HandleMarkerClick(MarkerClickEventArgs args) =>
+        _markerClickLog = $"click:{args.MarkerId}";
+
+    private void HandleMarkerDragEnd(MarkerDragEventArgs args) =>
+        _markerDragLog = FormattableString.Invariant(
+            $"dragend:{args.MarkerId}:{args.Position.Latitude:F4},{args.Position.Longitude:F4}"
+        );
+
+    private void HandleMapError(Exception exception)
+    {
+        _lastError = exception.Message;
+        StateHasChanged();
+    }
+}

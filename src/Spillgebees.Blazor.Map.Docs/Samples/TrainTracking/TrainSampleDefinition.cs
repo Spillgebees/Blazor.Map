@@ -1,5 +1,3 @@
-using Spillgebees.Blazor.Map;
-
 namespace Spillgebees.Blazor.Map.Docs.Samples.TrainTracking;
 
 public sealed record TrainSampleDefinition(

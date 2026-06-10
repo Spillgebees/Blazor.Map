@@ -24,42 +24,55 @@
     [CascadingParameter]
     private MapButtonGroupContext? ButtonGroup { get; set; }
 
+    /// <summary>Accessible label for the toggle button (<c>aria-label</c>); must be non-empty.</summary>
     [Parameter, EditorRequired]
     public string Label { get; set; } = string.Empty;
 
+    /// <summary>Tooltip text; falls back to <see cref="Label" /> when not set.</summary>
     [Parameter]
     public string? Title { get; set; }
 
+    /// <summary>Text displayed in both toggle states unless overridden by <see cref="OnText" /> or <see cref="OffText" />.</summary>
     [Parameter]
     public string? Text { get; set; }
 
+    /// <summary>Text displayed while toggled on; falls back to <see cref="Text" />.</summary>
     [Parameter]
     public string? OnText { get; set; }
 
+    /// <summary>Text displayed while toggled off; falls back to <see cref="Text" />.</summary>
     [Parameter]
     public string? OffText { get; set; }
 
+    /// <summary>Icon displayed in both toggle states unless overridden by <see cref="OnIcon" /> or <see cref="OffIcon" />.</summary>
     [Parameter]
     public RenderFragment? Icon { get; set; }
 
+    /// <summary>Icon displayed while toggled on; falls back to <see cref="Icon" />.</summary>
     [Parameter]
     public RenderFragment? OnIcon { get; set; }
 
+    /// <summary>Icon displayed while toggled off; falls back to <see cref="Icon" />.</summary>
     [Parameter]
     public RenderFragment? OffIcon { get; set; }
 
+    /// <summary>Visual variant of the button. Defaults to <see cref="MapButtonVariant.Neutral" />.</summary>
     [Parameter]
     public MapButtonVariant Variant { get; set; } = MapButtonVariant.Neutral;
 
+    /// <summary>Size of the button. Defaults to <see cref="MapButtonSize.Medium" />.</summary>
     [Parameter]
     public MapButtonSize Size { get; set; } = MapButtonSize.Medium;
 
+    /// <summary>Whether the button is disabled.</summary>
     [Parameter]
     public bool Disabled { get; set; }
 
+    /// <summary>Whether the toggle is on; supports two-way binding via <see cref="IsOnChanged" />.</summary>
     [Parameter]
     public bool IsOn { get; set; }
 
+    /// <summary>Fires when the user toggles the button, carrying the requested on state.</summary>
     [Parameter]
     public EventCallback<bool> IsOnChanged { get; set; }
 

@@ -5,6 +5,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <NoWarn>1701;1702;1591;</NoWarn>
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+    <!-- run IDExxxx style/naming analyzers in the build so editorconfig warnings
+         fail compilation instead of only surfacing in the IDE; IDE0005 (unnecessary
+         usings) additionally requires GenerateDocumentationFile (roslyn#41640) -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

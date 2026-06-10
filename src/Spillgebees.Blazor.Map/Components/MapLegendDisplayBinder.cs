@@ -3,15 +3,14 @@ using Microsoft.AspNetCore.Components;
 
 namespace Spillgebees.Blazor.Map;
 
-internal sealed class MapLegendDisplayBinder : IDisposable
+/// <summary>
+/// Binds legend item toggles to <see cref="MapDisplayState"/> items by id, keeping
+/// legend checkboxes and display visibility in sync in both directions.
+/// </summary>
+internal sealed class MapLegendDisplayBinder(Func<Task> requestRender) : IDisposable
 {
-    private readonly Func<Task> _requestRender;
+    private readonly Func<Task> _requestRender = requestRender;
     private MapDisplayState? _display;
-
-    public MapLegendDisplayBinder(Func<Task> requestRender)
-    {
-        _requestRender = requestRender;
-    }
 
     public void UpdateDisplaySubscription(MapDisplayState? display)
     {
@@ -20,17 +19,11 @@ internal sealed class MapLegendDisplayBinder : IDisposable
             return;
         }
 
-        if (_display is not null)
-        {
-            _display.Changed -= HandleDisplayChanged;
-        }
+        _display?.Changed -= HandleDisplayChanged;
 
         _display = display;
 
-        if (_display is not null)
-        {
-            _display.Changed += HandleDisplayChanged;
-        }
+        _display?.Changed += HandleDisplayChanged;
     }
 
     public string GetItemClassName(MapLegendItem item)
@@ -125,11 +118,8 @@ internal sealed class MapLegendDisplayBinder : IDisposable
 
     public void Dispose()
     {
-        if (_display is not null)
-        {
-            _display.Changed -= HandleDisplayChanged;
-            _display = null;
-        }
+        _display?.Changed -= HandleDisplayChanged;
+        _display = null;
     }
 
     private void HandleDisplayChanged(object? sender, MapDisplayChangedEventArgs args) => _ = _requestRender();

@@ -1,0 +1,445 @@
+@page "/engine-geojson-stress-test"
+@using System.Diagnostics
+@using System.Text.Json.Nodes
+@inject IJSRuntime JsRuntime
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<main class="e2e-shell">
+    <h1>Engine GeoJSON stress test</h1>
+    <p>Raw GeoJsonSource updates on the engine path, per layer type (circle, symbol, line).</p>
+    <p>
+        Query parameters for automated runs:
+        <code>?entities=2000&amp;interval=100&amp;pattern=TenPercent&amp;mode=Circle&amp;autostart=1</code>
+    </p>
+
+    <section class="stress-controls">
+        <button type="button" data-testid="stress-toggle" @onclick="ToggleAsync">@(_isRunning ? "Pause" : "Start")</button>
+
+        <label>
+            Mode
+            <select @bind:get="_mode" @bind:set="OnModeChanged">
+                <option value="Circle">Circle</option>
+                <option value="Symbol">Symbol</option>
+                <option value="Line">Line</option>
+                <option value="Fill">Fill</option>
+                <option value="FillExtrusion">Fill extrusion</option>
+            </select>
+        </label>
+
+        <label>
+            Interval
+            <select @bind:get="_intervalMs" @bind:set="value => _intervalMs = value">
+                <option value="100">100 ms</option>
+                <option value="200">200 ms</option>
+                <option value="500">500 ms</option>
+            </select>
+        </label>
+
+        <label>
+            Features
+            <select @bind:get="_entityCount" @bind:set="OnEntityCountChanged">
+                <option value="100">100</option>
+                <option value="500">500</option>
+                <option value="2000">2,000</option>
+            </select>
+        </label>
+
+        <label>
+            Update pattern
+            <select @bind:get="_updatePattern" @bind:set="OnUpdatePatternChanged">
+                <option value="AllFeatures">Update all features</option>
+                <option value="TenPercent">Update 10%</option>
+            </select>
+        </label>
+
+        <div class="stress-status" data-testid="stress-status">
+            <strong>Ticks:</strong> <span data-testid="stress-tick-count">@_tickCount</span>
+        </div>
+    </section>
+
+    @if (_lastError is not null)
+    {
+        <p style="color: #b91c1c;" data-testid="stress-error">@_lastError</p>
+    }
+
+    <div id="engine-geojson-stress-frame" class="stress-map-frame">
+        <div id="engine-geojson-stress-diagnostics" class="stress-diagnostics">Starting diagnostics…</div>
+        <SgbMap StyleSpec="@BaseStyleJson"
+                  Center="@(new Coordinate(49.6117, 6.1319))"
+                  Zoom="11"
+                  Images="_images"
+                  Height="560px"
+                  Width="100%"
+                  OnMapError="@HandleMapError">
+            <GeoJsonSource Id="geojson-stress" Data="@_data">
+                @if (_mode == RenderMode.Circle)
+                {
+                    <CircleLayer Id="geojson-stress-layer"
+                                   Radius="4"
+                                   Color="@("#2563eb")"
+                                   StrokeColor="@("#ffffff")"
+                                   StrokeWidth="1" />
+                }
+                else if (_mode == RenderMode.Symbol)
+                {
+                    <SymbolLayer Id="geojson-stress-layer"
+                                   IconImage="@Expr.Get("icon")"
+                                   IconSize="0.75"
+                                   IconRotate="@Expr.Get("bearing")"
+                                   IconAllowOverlap="true"
+                                   RotationAlignment="MapAlignment.Map" />
+                }
+                else if (_mode == RenderMode.Line)
+                {
+                    <LineLayer Id="geojson-stress-layer"
+                                 Color="@("#0ea5e9")"
+                                 Width="2" />
+                }
+                else if (_mode == RenderMode.Fill)
+                {
+                    <FillLayer Id="geojson-stress-layer"
+                                 Color="@("#22c55e")"
+                                 Opacity="0.6"
+                                 OutlineColor="@("#166534")" />
+                }
+                else
+                {
+                    <FillExtrusionLayer Id="geojson-stress-layer"
+                                          Color="@("#f97316")"
+                                          Opacity="0.8"
+                                          Height="@Expr.Get("height")" />
+                }
+            </GeoJsonSource>
+        </SgbMap>
+    </div>
+</main>
+
+@code {
+    private const string FrameId = "engine-geojson-stress-frame";
+
+    private const string BaseStyleJson = """
+        {"version":8,"sources":{"base":{"type":"raster","tiles":["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII="],"tileSize":256,"attribution":"Integration test"}},"layers":[{"id":"base","type":"raster","source":"base"}]}
+        """;
+
+    private readonly List<MapImage> _images =
+    [
+        new(
+            "stress-entity-dot",
+            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='10' fill='%232563eb' stroke='white' stroke-width='4'/%3E%3C/svg%3E",
+            32,
+            32
+        ),
+    ];
+
+    private string _data = "";
+    private RenderMode _mode = RenderMode.Circle;
+    private CancellationTokenSource? _loopCancellation;
+    private Task? _loopTask;
+    private bool _isRunning;
+    private bool _autoStart;
+    private int _intervalMs = 200;
+    private int _entityCount = 500;
+    private int _tickCount;
+    private UpdatePattern _updatePattern = UpdatePattern.AllFeatures;
+    private string? _lastError;
+    private bool _diagnosticsStarted;
+
+    protected override void OnInitialized()
+    {
+        var query = StressQuery.Parse(Navigation.Uri);
+        _entityCount = query.GetInt("entities", _entityCount);
+        _intervalMs = query.GetInt("interval", _intervalMs);
+        _autoStart = query.GetBool("autostart", false);
+
+        if (query.TryGetEnum<RenderMode>("mode", out var mode))
+        {
+            _mode = mode;
+        }
+
+        if (query.TryGetEnum<UpdatePattern>("pattern", out var pattern))
+        {
+            _updatePattern = pattern;
+        }
+
+        _data = BuildData(_tickCount, _entityCount, _updatePattern, _mode);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _diagnosticsStarted)
+        {
+            return;
+        }
+
+        _diagnosticsStarted = true;
+        await JsRuntime.InvokeVoidAsync("MapStressDiagnostics.start", FrameId, "engine-geojson-stress-diagnostics");
+
+        if (_autoStart)
+        {
+            Start();
+            StateHasChanged();
+        }
+    }
+
+    private Task HandleMapError(Exception exception)
+    {
+        _lastError = exception.Message;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task ToggleAsync()
+    {
+        if (_isRunning)
+        {
+            await PauseAsync();
+            return;
+        }
+
+        Start();
+    }
+
+    private void OnModeChanged(RenderMode mode)
+    {
+        _mode = mode;
+        _data = BuildData(_tickCount, _entityCount, _updatePattern, _mode);
+    }
+
+    private void OnEntityCountChanged(int entityCount)
+    {
+        _entityCount = entityCount;
+        _data = BuildData(_tickCount, _entityCount, _updatePattern, _mode);
+    }
+
+    private void OnUpdatePatternChanged(UpdatePattern pattern)
+    {
+        _updatePattern = pattern;
+        _data = BuildData(_tickCount, _entityCount, _updatePattern, _mode);
+    }
+
+    private void Start()
+    {
+        if (_isRunning)
+        {
+            return;
+        }
+
+        _lastError = null;
+        _loopCancellation = new CancellationTokenSource();
+        _isRunning = true;
+        _loopTask = RunLoopAsync(_loopCancellation.Token);
+    }
+
+    private async Task PauseAsync()
+    {
+        if (!_isRunning && _loopTask is null)
+        {
+            return;
+        }
+
+        var cancellation = _loopCancellation;
+        var loopTask = _loopTask;
+        _loopCancellation = null;
+        _loopTask = null;
+        _isRunning = false;
+
+        if (cancellation is not null)
+        {
+            await cancellation.CancelAsync();
+            cancellation.Dispose();
+        }
+
+        if (loopTask is not null)
+        {
+            await loopTask;
+        }
+    }
+
+    private async Task RunLoopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(_intervalMs), cancellationToken);
+                _tickCount++;
+                var tickStopwatch = Stopwatch.StartNew();
+                _data = BuildData(_tickCount, _entityCount, _updatePattern, _mode);
+                await InvokeAsync(StateHasChanged);
+                tickStopwatch.Stop();
+                await JsRuntime.InvokeVoidAsync(
+                    "MapStressDiagnostics.recordTick",
+                    cancellationToken,
+                    FrameId,
+                    tickStopwatch.Elapsed.TotalMilliseconds
+                );
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        catch (Exception exception)
+        {
+            _lastError = exception.Message;
+            _isRunning = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    // The document is written straight to UTF-8 (no JsonNode DOM): this runs every
+    // tick and is the page's dominant C#-side cost at 2,000 features.
+    private static string BuildData(int tick, int entityCount, UpdatePattern updatePattern, RenderMode mode)
+    {
+        const double centerLatitude = 49.6117;
+        const double centerLongitude = 6.1319;
+        var buffer = new System.Buffers.ArrayBufferWriter<byte>(256 * 1024);
+        using (var writer = new System.Text.Json.Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("type", "FeatureCollection");
+            writer.WriteStartArray("features");
+
+            if (mode is RenderMode.Fill or RenderMode.FillExtrusion)
+            {
+                // a fifth of the feature budget as polygons (small squares) — geometry
+                // moves with the tick, and extrusion height churns as a property
+                var polygonCount = Math.Max(1, entityCount / 5);
+                for (var index = 0; index < polygonCount; index++)
+                {
+                    var changes = ShouldUpdateFeature(index, tick, updatePattern);
+                    var effectiveTick = changes ? tick : 0;
+                    var angle = ((index * 137.508) + (effectiveTick * 3)) * Math.PI / 180;
+                    var radius = 0.01 + ((index % 40) * 0.0008);
+                    var lng = centerLongitude + (Math.Cos(angle) * radius);
+                    var lat = centerLatitude + (Math.Sin(angle) * radius);
+                    const double half = 0.0006;
+
+                    writer.WriteStartObject();
+                    writer.WriteString("type", "Feature");
+                    writer.WriteNumber("id", index);
+                    writer.WriteStartObject("geometry");
+                    writer.WriteString("type", "Polygon");
+                    writer.WriteStartArray("coordinates");
+                    writer.WriteStartArray();
+                    foreach (var (x, y) in (ReadOnlySpan<(double, double)>)
+                        [
+                            (lng - half, lat - half),
+                            (lng + half, lat - half),
+                            (lng + half, lat + half),
+                            (lng - half, lat + half),
+                            (lng - half, lat - half),
+                        ])
+                    {
+                        writer.WriteStartArray();
+                        writer.WriteNumberValue(x);
+                        writer.WriteNumberValue(y);
+                        writer.WriteEndArray();
+                    }
+
+                    writer.WriteEndArray();
+                    writer.WriteEndArray();
+                    writer.WriteEndObject();
+                    writer.WriteStartObject("properties");
+                    writer.WriteString("name", $"polygon-{index}");
+                    writer.WriteNumber("height", 50 + ((index * 17 + effectiveTick * 5) % 300));
+                    writer.WriteEndObject();
+                    writer.WriteEndObject();
+                }
+            }
+            else if (mode == RenderMode.Line)
+            {
+                // a fifth of the feature budget as lines, five vertices each
+                var lineCount = Math.Max(1, entityCount / 5);
+                for (var index = 0; index < lineCount; index++)
+                {
+                    var changes = ShouldUpdateFeature(index, tick, updatePattern);
+                    var effectiveTick = changes ? tick : 0;
+
+                    writer.WriteStartObject();
+                    writer.WriteString("type", "Feature");
+                    writer.WriteNumber("id", index);
+                    writer.WriteStartObject("geometry");
+                    writer.WriteString("type", "LineString");
+                    writer.WriteStartArray("coordinates");
+                    for (var vertex = 0; vertex < 5; vertex++)
+                    {
+                        var angle = ((index * 137.508) + (vertex * 12) + (effectiveTick * 3)) * Math.PI / 180;
+                        var radius = 0.01 + ((index % 40) * 0.0008) + (vertex * 0.001);
+                        writer.WriteStartArray();
+                        writer.WriteNumberValue(centerLongitude + (Math.Cos(angle) * radius));
+                        writer.WriteNumberValue(centerLatitude + (Math.Sin(angle) * radius));
+                        writer.WriteEndArray();
+                    }
+
+                    writer.WriteEndArray();
+                    writer.WriteEndObject();
+                    writer.WriteStartObject("properties");
+                    writer.WriteString("name", $"line-{index}");
+                    writer.WriteEndObject();
+                    writer.WriteEndObject();
+                }
+            }
+            else
+            {
+                for (var index = 0; index < entityCount; index++)
+                {
+                    var ring = index % 40;
+                    var orbit = index / 40;
+                    var changes = ShouldUpdateFeature(index, tick, updatePattern);
+                    var effectiveTick = changes ? tick : 0;
+                    var angleDegrees = (index * 137.508) + (effectiveTick * (2 + orbit % 5));
+                    var angle = angleDegrees * Math.PI / 180;
+                    var radius = 0.01 + (ring * 0.0008);
+
+                    writer.WriteStartObject();
+                    writer.WriteString("type", "Feature");
+                    writer.WriteNumber("id", index);
+                    writer.WriteStartObject("geometry");
+                    writer.WriteString("type", "Point");
+                    writer.WriteStartArray("coordinates");
+                    writer.WriteNumberValue(centerLongitude + (Math.Cos(angle) * radius));
+                    writer.WriteNumberValue(centerLatitude + (Math.Sin(angle) * radius));
+                    writer.WriteEndArray();
+                    writer.WriteEndObject();
+                    writer.WriteStartObject("properties");
+                    writer.WriteString("icon", "stress-entity-dot");
+                    writer.WriteNumber("bearing", (angleDegrees + 90) % 360);
+                    writer.WriteEndObject();
+                    writer.WriteEndObject();
+                }
+            }
+
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+        }
+
+        return System.Text.Encoding.UTF8.GetString(buffer.WrittenSpan);
+    }
+
+    private static bool ShouldUpdateFeature(int index, int tick, UpdatePattern updatePattern) =>
+        updatePattern != UpdatePattern.TenPercent || index % 10 == tick % 10;
+
+    public async ValueTask DisposeAsync()
+    {
+        await PauseAsync();
+        try
+        {
+            await JsRuntime.InvokeVoidAsync("MapStressDiagnostics.stop", FrameId);
+        }
+        catch (JSDisconnectedException) { }
+    }
+
+    private enum RenderMode
+    {
+        Circle,
+        Symbol,
+        Line,
+        Fill,
+        FillExtrusion,
+    }
+
+    private enum UpdatePattern
+    {
+        AllFeatures,
+        TenPercent,
+    }
+}

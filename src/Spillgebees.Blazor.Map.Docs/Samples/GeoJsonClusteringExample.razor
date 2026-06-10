@@ -1,6 +1,8 @@
 <p>Click any visible incident cluster to zoom until it dissolves into individual incidents.</p>
 
-<SgbMap MapOptions="@_mapOptions" Height="420px" Width="100%">
+<SgbMap Center="@(new Coordinate(49.62, 6.13))"
+        Zoom="11"
+        Style="@(MapStyle.OpenStreetMap.Standard)" Height="420px" Width="100%">
     <MapControls>
         <NavigationMapControl />
     </MapControls>
@@ -8,19 +10,27 @@
     <MapSources>
         <GeoJsonSource Id="incidents"
                        Data="@_incidentGeoJson"
-                       ClusterOptions="@_incidentClusters"
-                       Layers="@_incidentLayers" />
+                       Cluster="@_incidentClusters">
+            <CircleLayer Id="unclustered-points"
+                         Color="@Expr.Step("severity", "#22c55e", 3, "#f97316", 5, "#dc2626")"
+                         Radius="@Expr.Step("severity", 6, 3, 8, 5, 10)"
+                         Opacity="0.9"
+                         StrokeColor="@("#ffffff")"
+                         StrokeWidth="2"
+                         Filter="@_unclusteredOnlyFilter" />
+            <SymbolLayer Id="unclustered-labels"
+                         TextField="@(new object[] { "to-string", Expr.Get("severity") })"
+                         TextSize="11"
+                         TextColor="@("#ffffff")"
+                         TextHaloColor="@("#111827")"
+                         TextHaloWidth="1"
+                         Filter="@_unclusteredOnlyFilter" />
+        </GeoJsonSource>
     </MapSources>
 </SgbMap>
 
 @code {
     private static readonly object[] _unclusteredOnlyFilter = Expr.Not(Expr.Has("point_count"));
-
-    private static readonly MapOptions _mapOptions = new(
-        Style: MapStyle.OpenStreetMap.Standard,
-        Center: new Coordinate(49.62, 6.13),
-        Zoom: 11
-    );
 
     private static readonly ClusterOptions _incidentClusters = ClusterOptions.Create(
         radius: 58,
@@ -49,26 +59,6 @@
                 textColor: "#ffffff",
                 textSize: 13))
     );
-
-    private static readonly IReadOnlyList<MapLayerDefinition> _incidentLayers =
-    [
-        MapLayer.Circle(
-            "unclustered-points",
-            color: Expr.Step("severity", "#22c55e", 3, "#f97316", 5, "#dc2626"),
-            radius: Expr.Step("severity", 6, 3, 8, 5, 10),
-            opacity: 0.9,
-            strokeColor: "#ffffff",
-            strokeWidth: 2,
-            filter: _unclusteredOnlyFilter),
-        MapLayer.Symbol(
-            "unclustered-labels",
-            textField: new object[] { "to-string", Expr.Get("severity") },
-            textSize: 11,
-            textColor: "#ffffff",
-            textHaloColor: "#111827",
-            textHaloWidth: 1,
-            filter: _unclusteredOnlyFilter),
-    ];
 
     private static readonly object _incidentGeoJson = new
     {

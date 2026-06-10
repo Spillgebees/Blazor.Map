@@ -18,5 +18,8 @@ public sealed record MapLegendItem(
     MapLegendSymbol? Symbol = null
 )
 {
+    /// <summary>
+    /// The symbol to render, falling back to <see cref="MapLegendSymbol.None"/> when unset.
+    /// </summary>
     public MapLegendSymbol ResolvedSymbol => Symbol ?? MapLegendSymbol.None;
 }

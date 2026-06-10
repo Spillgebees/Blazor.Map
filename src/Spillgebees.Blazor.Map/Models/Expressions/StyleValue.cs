@@ -1,5 +1,4 @@
 using System.Text.Json.Serialization;
-using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map;
 

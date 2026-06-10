@@ -2,8 +2,8 @@
 @using BlazorComponentUtilities
 @using Spillgebees.Blazor.Map
 
-<div @ref="_placeholderReference" class="sgb-map-legend-placeholder" hidden>
-    <div id="@_contentId" @ref="_contentReference" class="@ContentClassName" hidden>
+<div @ref="_placeholderReference" data-sgb-control-placeholder="@Id" class="sgb-map-legend-placeholder" hidden>
+    <div id="@_contentId" @ref="_contentReference" class="@_contentClassName" hidden>
         @foreach (var legendSection in Definition.Sections)
         {
             <div class="@GetSectionClassName(legendSection)">

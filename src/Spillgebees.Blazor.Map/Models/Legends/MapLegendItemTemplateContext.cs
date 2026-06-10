@@ -1,7 +1,4 @@
 namespace Spillgebees.Blazor.Map;
-
-using Spillgebees.Blazor.Map;
-
 /// <summary>
 /// Default legend item template context.
 /// </summary>

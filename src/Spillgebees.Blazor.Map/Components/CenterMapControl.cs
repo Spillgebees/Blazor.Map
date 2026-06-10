@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map;
 
@@ -10,30 +9,37 @@ public sealed class CenterMapControl : ComponentBase, IAsyncDisposable
 {
     private readonly MapControlComponentRegistration _registration = new();
 
+    /// <summary>Unique control identifier within the map. Defaults to <c>"center"</c>.</summary>
     [Parameter]
     public string Id { get; set; } = "center";
 
+    /// <summary>Map corner the control is placed in. Defaults to <see cref="ControlPosition.TopLeft" />.</summary>
     [Parameter]
     public ControlPosition Position { get; set; } = ControlPosition.TopLeft;
 
+    /// <summary>Deterministic ordering among controls at the same corner; lower values render first. Defaults to 100.</summary>
     [Parameter]
     public int Order { get; set; } = 100;
 
+    /// <summary>Whether the control is visible. Defaults to <c>true</c>.</summary>
     [Parameter]
     public bool Visible { get; set; } = true;
 
     [CascadingParameter]
-    private MapControlRegistryContext? Registry { get; set; }
+    private MapControlRegistryContext? _registry { get; set; }
 
     [CascadingParameter]
-    private MapSectionContext? SectionContext { get; set; }
+    private MapSectionContext? _sectionContext { get; set; }
 
+    /// <inheritdoc />
     protected override void OnParametersSet() =>
-        _registration.Register(Registry, SectionContext, nameof(CenterMapControl), Id, BuildControl());
+        _registration.Register(_registry, _sectionContext, nameof(CenterMapControl), Id, BuildControl());
 
-    protected override Task OnAfterRenderAsync(bool firstRender) => _registration.SyncAfterRenderAsync(Registry);
+    /// <inheritdoc />
+    protected override Task OnAfterRenderAsync(bool firstRender) => _registration.SyncAfterRenderAsync(_registry);
 
-    public ValueTask DisposeAsync() => _registration.DisposeAsync(Registry);
+    /// <inheritdoc />
+    public ValueTask DisposeAsync() => _registration.DisposeAsync(_registry);
 
-    private MapControlDefinition BuildControl() => new CenterControlDefinition(Id, Visible, Position, Order);
+    private CenterControlDefinition BuildControl() => new(Id, Visible, Position, Order);
 }

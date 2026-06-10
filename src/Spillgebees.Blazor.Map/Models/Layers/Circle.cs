@@ -1,5 +1,3 @@
-using Spillgebees.Blazor.Map;
-
 namespace Spillgebees.Blazor.Map;
 
 /// <summary>

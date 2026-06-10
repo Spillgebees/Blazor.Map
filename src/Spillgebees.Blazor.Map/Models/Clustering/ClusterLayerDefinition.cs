@@ -5,6 +5,9 @@ namespace Spillgebees.Blazor.Map;
 /// </summary>
 public abstract record ClusterLayerDefinition
 {
+    /// <summary>
+    /// Initializes the shared cluster layer placement values.
+    /// </summary>
     protected ClusterLayerDefinition(
         string idSuffix,
         double? minZoom = null,
@@ -41,20 +44,44 @@ public abstract record ClusterLayerDefinition
     /// </summary>
     public string IdSuffix { get; }
 
+    /// <summary>
+    /// The minimum zoom level at which the layer is visible.
+    /// </summary>
     public double? MinZoom { get; }
 
+    /// <summary>
+    /// The maximum zoom level at which the layer is visible.
+    /// </summary>
     public double? MaxZoom { get; }
 
+    /// <summary>
+    /// The id of an existing layer to insert the generated layer before.
+    /// </summary>
     public string? BeforeLayerId { get; }
 
+    /// <summary>
+    /// The layer group the generated layer belongs to.
+    /// </summary>
     public string? LayerGroup { get; }
 
+    /// <summary>
+    /// The layer group the generated layer is inserted before.
+    /// </summary>
     public string? BeforeLayerGroup { get; }
 
+    /// <summary>
+    /// The layer group the generated layer is inserted after.
+    /// </summary>
     public string? AfterLayerGroup { get; }
 
+    /// <summary>
+    /// Whether the generated layer raises pointer events. Default is true.
+    /// </summary>
     public bool Interactive { get; }
 
+    /// <summary>
+    /// Validates that both zoom values are within 0-24 and that the minimum does not exceed the maximum.
+    /// </summary>
     protected static void ValidateZoomRange(double? minZoom, double? maxZoom)
     {
         ValidateMinZoom(minZoom);

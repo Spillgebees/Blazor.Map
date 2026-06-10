@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using AwesomeAssertions;
-using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map.Tests.Models.Layers;
 

@@ -1,0 +1,349 @@
+@page "/engine-shapes-stress-test"
+@using System.Diagnostics
+@inject IJSRuntime JsRuntime
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<main class="e2e-shell">
+    <h1>Engine shapes stress test</h1>
+    <p>
+        The Markers/Circles/Polylines parameters on SgbMap — circles/polylines ride the
+        engine source pipeline, markers are real DOM elements.
+    </p>
+    <p>
+        Query parameters for automated runs:
+        <code>?entities=2000&amp;interval=100&amp;pattern=TenPercent&amp;mode=Circles&amp;autostart=1</code>
+    </p>
+
+    <section class="stress-controls">
+        <button type="button" data-testid="stress-toggle" @onclick="ToggleAsync">@(_isRunning ? "Pause" : "Start")</button>
+
+        <label>
+            Mode
+            <select @bind:get="_mode" @bind:set="OnModeChanged">
+                <option value="Circles">Circles</option>
+                <option value="Polylines">Polylines</option>
+                <option value="Markers">Markers (DOM)</option>
+            </select>
+        </label>
+
+        <label>
+            Interval
+            <select @bind:get="_intervalMs" @bind:set="value => _intervalMs = value">
+                <option value="100">100 ms</option>
+                <option value="200">200 ms</option>
+                <option value="500">500 ms</option>
+            </select>
+        </label>
+
+        <label>
+            Features
+            <select @bind:get="_entityCount" @bind:set="OnEntityCountChanged">
+                <option value="100">100</option>
+                <option value="200">200</option>
+                <option value="400">400</option>
+                <option value="2000">2,000</option>
+            </select>
+        </label>
+
+        <label>
+            Update pattern
+            <select @bind:get="_updatePattern" @bind:set="OnUpdatePatternChanged">
+                <option value="AllFeatures">Update all features</option>
+                <option value="TenPercent">Update 10%</option>
+            </select>
+        </label>
+
+        <div class="stress-status" data-testid="stress-status">
+            <strong>Ticks:</strong> <span data-testid="stress-tick-count">@_tickCount</span>
+        </div>
+    </section>
+
+    @if (_lastError is not null)
+    {
+        <p style="color: #b91c1c;" data-testid="stress-error">@_lastError</p>
+    }
+
+    <div id="engine-shapes-stress-frame" class="stress-map-frame">
+        <div id="engine-shapes-stress-diagnostics" class="stress-diagnostics">Starting diagnostics…</div>
+        <SgbMap StyleSpec="@BaseStyleJson"
+                  Center="@(new Coordinate(49.6117, 6.1319))"
+                  Zoom="11"
+                  Height="560px"
+                  Width="100%"
+                  Markers="@_markers"
+                  Circles="@_circles"
+                  Polylines="@_polylines"
+                  OnMapError="@HandleMapError" />
+    </div>
+</main>
+
+@code {
+    private const string FrameId = "engine-shapes-stress-frame";
+
+    private const string BaseStyleJson = """
+        {"version":8,"sources":{"base":{"type":"raster","tiles":["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII="],"tileSize":256,"attribution":"Integration test"}},"layers":[{"id":"base","type":"raster","source":"base"}]}
+        """;
+
+    private RenderMode _mode = RenderMode.Circles;
+    private IReadOnlyList<Marker>? _markers;
+    private IReadOnlyList<Circle>? _circles;
+    private IReadOnlyList<Polyline>? _polylines;
+    private CancellationTokenSource? _loopCancellation;
+    private Task? _loopTask;
+    private bool _isRunning;
+    private bool _autoStart;
+    private int _intervalMs = 200;
+    private int _entityCount = 400;
+    private int _tickCount;
+    private UpdatePattern _updatePattern = UpdatePattern.AllFeatures;
+    private string? _lastError;
+    private bool _diagnosticsStarted;
+
+    protected override void OnInitialized()
+    {
+        var query = StressQuery.Parse(Navigation.Uri);
+        _entityCount = query.GetInt("entities", _entityCount);
+        _intervalMs = query.GetInt("interval", _intervalMs);
+        _autoStart = query.GetBool("autostart", false);
+
+        if (query.TryGetEnum<RenderMode>("mode", out var mode))
+        {
+            _mode = mode;
+        }
+
+        if (query.TryGetEnum<UpdatePattern>("pattern", out var pattern))
+        {
+            _updatePattern = pattern;
+        }
+
+        BuildFeatures();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _diagnosticsStarted)
+        {
+            return;
+        }
+
+        _diagnosticsStarted = true;
+        await JsRuntime.InvokeVoidAsync("MapStressDiagnostics.start", FrameId, "engine-shapes-stress-diagnostics");
+
+        if (_autoStart)
+        {
+            Start();
+            StateHasChanged();
+        }
+    }
+
+    private Task HandleMapError(Exception exception)
+    {
+        _lastError = exception.Message;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task ToggleAsync()
+    {
+        if (_isRunning)
+        {
+            await PauseAsync();
+            return;
+        }
+
+        Start();
+    }
+
+    private void OnModeChanged(RenderMode mode)
+    {
+        _mode = mode;
+        BuildFeatures();
+    }
+
+    private void OnEntityCountChanged(int entityCount)
+    {
+        _entityCount = entityCount;
+        BuildFeatures();
+    }
+
+    private void OnUpdatePatternChanged(UpdatePattern pattern)
+    {
+        _updatePattern = pattern;
+        BuildFeatures();
+    }
+
+    private void Start()
+    {
+        if (_isRunning)
+        {
+            return;
+        }
+
+        _lastError = null;
+        _loopCancellation = new CancellationTokenSource();
+        _isRunning = true;
+        _loopTask = RunLoopAsync(_loopCancellation.Token);
+    }
+
+    private async Task PauseAsync()
+    {
+        if (!_isRunning && _loopTask is null)
+        {
+            return;
+        }
+
+        var cancellation = _loopCancellation;
+        var loopTask = _loopTask;
+        _loopCancellation = null;
+        _loopTask = null;
+        _isRunning = false;
+
+        if (cancellation is not null)
+        {
+            await cancellation.CancelAsync();
+            cancellation.Dispose();
+        }
+
+        if (loopTask is not null)
+        {
+            await loopTask;
+        }
+    }
+
+    private async Task RunLoopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(_intervalMs), cancellationToken);
+                _tickCount++;
+                var tickStopwatch = Stopwatch.StartNew();
+                BuildFeatures();
+                await InvokeAsync(StateHasChanged);
+                tickStopwatch.Stop();
+                await JsRuntime.InvokeVoidAsync(
+                    "MapStressDiagnostics.recordTick",
+                    cancellationToken,
+                    FrameId,
+                    tickStopwatch.Elapsed.TotalMilliseconds
+                );
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        catch (Exception exception)
+        {
+            _lastError = exception.Message;
+            _isRunning = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void BuildFeatures()
+    {
+        _markers = _mode == RenderMode.Markers ? BuildMarkers(_tickCount, _entityCount, _updatePattern) : null;
+        _circles = _mode == RenderMode.Circles ? BuildCircles(_tickCount, _entityCount, _updatePattern) : null;
+        _polylines = _mode == RenderMode.Polylines ? BuildPolylines(_tickCount, _entityCount, _updatePattern) : null;
+    }
+
+    private const double CenterLatitude = 49.6117;
+    private const double CenterLongitude = 6.1319;
+
+    private static Coordinate OrbitPosition(int index, int effectiveTick)
+    {
+        var ring = index % 40;
+        var orbit = index / 40;
+        var angle = ((index * 137.508) + (effectiveTick * (2 + orbit % 5))) * Math.PI / 180;
+        var radius = 0.01 + (ring * 0.0008);
+        return new Coordinate(CenterLatitude + (Math.Sin(angle) * radius), CenterLongitude + (Math.Cos(angle) * radius));
+    }
+
+    private static IReadOnlyList<Circle> BuildCircles(int tick, int entityCount, UpdatePattern updatePattern)
+    {
+        var circles = new Circle[entityCount];
+        for (var index = 0; index < entityCount; index++)
+        {
+            var effectiveTick = ShouldUpdateFeature(index, tick, updatePattern) ? tick : 0;
+            circles[index] = new Circle(
+                $"circle-{index}",
+                OrbitPosition(index, effectiveTick),
+                Radius: 4,
+                Color: "#2563eb",
+                StrokeColor: "#ffffff",
+                StrokeWidth: 1
+            );
+        }
+
+        return circles;
+    }
+
+    private static IReadOnlyList<Polyline> BuildPolylines(int tick, int entityCount, UpdatePattern updatePattern)
+    {
+        // a fifth of the feature budget as lines, five vertices each (matches the
+        // geojson stress fixture so the numbers compare directly)
+        var lineCount = Math.Max(1, entityCount / 5);
+        var polylines = new Polyline[lineCount];
+        for (var index = 0; index < lineCount; index++)
+        {
+            var effectiveTick = ShouldUpdateFeature(index, tick, updatePattern) ? tick : 0;
+            var coordinates = new Coordinate[5];
+            for (var vertex = 0; vertex < 5; vertex++)
+            {
+                var angle = ((index * 137.508) + (vertex * 12) + (effectiveTick * 3)) * Math.PI / 180;
+                var radius = 0.01 + ((index % 40) * 0.0008) + (vertex * 0.001);
+                coordinates[vertex] = new Coordinate(
+                    CenterLatitude + (Math.Sin(angle) * radius),
+                    CenterLongitude + (Math.Cos(angle) * radius)
+                );
+            }
+
+            polylines[index] = new Polyline($"line-{index}", [.. coordinates], Color: "#0ea5e9", Width: 2);
+        }
+
+        return polylines;
+    }
+
+    private static IReadOnlyList<Marker> BuildMarkers(int tick, int entityCount, UpdatePattern updatePattern)
+    {
+        var markers = new Marker[entityCount];
+        for (var index = 0; index < entityCount; index++)
+        {
+            var effectiveTick = ShouldUpdateFeature(index, tick, updatePattern) ? tick : 0;
+            markers[index] = new Marker(
+                $"marker-{index}",
+                OrbitPosition(index, effectiveTick),
+                Color: "#2563eb",
+                Scale: 0.6
+            );
+        }
+
+        return markers;
+    }
+
+    private static bool ShouldUpdateFeature(int index, int tick, UpdatePattern updatePattern) =>
+        updatePattern != UpdatePattern.TenPercent || index % 10 == tick % 10;
+
+    public async ValueTask DisposeAsync()
+    {
+        await PauseAsync();
+        try
+        {
+            await JsRuntime.InvokeVoidAsync("MapStressDiagnostics.stop", FrameId);
+        }
+        catch (JSDisconnectedException) { }
+    }
+
+    private enum RenderMode
+    {
+        Circles,
+        Polylines,
+        Markers,
+    }
+
+    private enum UpdatePattern
+    {
+        AllFeatures,
+        TenPercent,
+    }
+}

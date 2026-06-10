@@ -3,7 +3,7 @@
 @using Microsoft.JSInterop
 @using Spillgebees.Blazor.Map
 
-<div style="display:none" @ref="_placeholderReference">
+<div style="display:none" @ref="_placeholderReference" data-sgb-popup-placeholder="@_resolvedId">
     <div @ref="_contentReference">
         @ChildContent
     </div>
@@ -16,32 +16,37 @@
     private string? _registeredId;
     private bool _contentRegistered;
     private PopupContentSnapshot? _lastSnapshot;
-    private DotNetObjectReference<MapPopup>? _dotNetReference;
     private Task? _pendingReadyRegistrationTask;
     private CancellationTokenSource? _pendingReadyRegistrationCancellation;
     private bool _isDisposed;
 
     [CascadingParameter]
-    private BaseMap? Map { get; set; }
+    private IMapInteropHost? Map { get; set; }
 
     [CascadingParameter]
     private MapSectionContext? SectionContext { get; set; }
 
+    /// <summary>Popup id; auto-generated when not set.</summary>
     [Parameter]
     public string? Id { get; set; }
 
+    /// <summary>Popup anchor position.</summary>
     [Parameter, EditorRequired]
     public Coordinate Position { get; set; }
 
+    /// <summary>Whether the popup is shown. Defaults to true. Supports @bind-Open.</summary>
     [Parameter]
     public bool Open { get; set; } = true;
 
+    /// <summary>Fires when the popup is closed by the user; args carry the new open state (false).</summary>
     [Parameter]
     public EventCallback<bool> OpenChanged { get; set; }
 
+    /// <summary>Popup display options (offset, anchor, close behavior, ...).</summary>
     [Parameter]
     public PopupOptions? Options { get; set; }
 
+    /// <summary>The popup's rendered content.</summary>
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
@@ -86,7 +91,7 @@
         }
     }
 
-    private void QueueRegistrationWhenMapIsReady(BaseMap map)
+    private void QueueRegistrationWhenMapIsReady(IMapInteropHost map)
     {
         if (_pendingReadyRegistrationTask is { IsCompleted: false })
         {
@@ -98,7 +103,7 @@
         _pendingReadyRegistrationTask = RegisterWhenMapIsReadyAsync(map, _pendingReadyRegistrationCancellation.Token);
     }
 
-    private async Task RegisterWhenMapIsReadyAsync(BaseMap map, CancellationToken cancellationToken)
+    private async Task RegisterWhenMapIsReadyAsync(IMapInteropHost map, CancellationToken cancellationToken)
     {
         try
         {
@@ -149,23 +154,20 @@
             await RemovePopupContentAsync(_registeredId);
         }
 
-        _dotNetReference ??= DotNetObjectReference.Create(this);
-        await Spillgebees.Blazor.Map.Interop.MapJs.SetPopupContentAsync(
-            Map.Runtime,
-            Map.RuntimeLogger,
-            Map.MapReference,
+        await Map.SetPopupContentAsync(
             _resolvedId,
             Position,
             options,
             _placeholderReference,
             _contentReference,
-            _dotNetReference
+            OnPopupClosedAsync
         );
         _contentRegistered = true;
         _registeredId = _resolvedId;
         _lastSnapshot = snapshot;
     }
 
+    /// <summary>Removes the popup content from the host map.</summary>
     public async ValueTask DisposeAsync()
     {
         if (_isDisposed)
@@ -178,11 +180,9 @@
         _pendingReadyRegistrationCancellation?.Dispose();
         _pendingReadyRegistrationCancellation = null;
         await RemovePopupContentAsync();
-        _dotNetReference?.Dispose();
     }
 
-    [JSInvokable]
-    public async Task OnPopupClosedAsync()
+    internal async Task OnPopupClosedAsync()
     {
         if (_isDisposed || !Open)
         {
@@ -213,12 +213,7 @@
             return;
         }
 
-        await Spillgebees.Blazor.Map.Interop.MapJs.RemovePopupContentAsync(
-            Map.Runtime,
-            Map.RuntimeLogger,
-            Map.MapReference,
-            popupId
-        );
+        await Map.RemovePopupContentAsync(popupId);
         _contentRegistered = false;
         _registeredId = null;
         _lastSnapshot = null;

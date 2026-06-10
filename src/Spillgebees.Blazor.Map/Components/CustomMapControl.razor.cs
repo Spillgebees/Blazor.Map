@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map;
 
@@ -15,26 +14,32 @@ public partial class CustomMapControl : ComponentBase, IAsyncDisposable
     private ElementReference _contentReference;
 
     [CascadingParameter]
-    private MapControlRegistryContext? Registry { get; set; }
+    private MapControlRegistryContext? _registry { get; set; }
 
     [CascadingParameter]
-    private MapSectionContext? SectionContext { get; set; }
+    private MapSectionContext? _sectionContext { get; set; }
 
+    /// <summary>Unique control identifier within the map.</summary>
     [Parameter, EditorRequired]
     public string Id { get; set; } = string.Empty;
 
+    /// <summary>Map corner the control is placed in. Defaults to <see cref="ControlPosition.TopRight" />.</summary>
     [Parameter]
     public ControlPosition Position { get; set; } = ControlPosition.TopRight;
 
+    /// <summary>Deterministic ordering among controls at the same corner; lower values render first. Defaults to 500.</summary>
     [Parameter]
     public int Order { get; set; } = 500;
 
+    /// <summary>Whether the control is visible. Defaults to <c>true</c>.</summary>
     [Parameter]
     public bool Visible { get; set; } = true;
 
+    /// <summary>Additional CSS class applied to the control container.</summary>
     [Parameter]
     public string? Class { get; set; }
 
+    /// <summary>Content rendered inside the control shell.</summary>
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
@@ -44,8 +49,8 @@ public partial class CustomMapControl : ComponentBase, IAsyncDisposable
         StyledContentMapControlRegistration.ValidateId(Id);
 
         _registration.RegisterContent(
-            Registry,
-            SectionContext,
+            _registry,
+            _sectionContext,
             "CustomMapControl must be placed inside MapControls.",
             Id,
             Visible,
@@ -58,7 +63,7 @@ public partial class CustomMapControl : ComponentBase, IAsyncDisposable
     /// <inheritdoc />
     protected override Task OnAfterRenderAsync(bool firstRender) =>
         _registration.SyncAfterRenderAsync(
-            Registry,
+            _registry,
             Id,
             Visible,
             CustomControlKind,
@@ -67,5 +72,9 @@ public partial class CustomMapControl : ComponentBase, IAsyncDisposable
         );
 
     /// <inheritdoc />
-    public ValueTask DisposeAsync() => _registration.DisposeAsync(Registry);
+    public ValueTask DisposeAsync()
+    {
+        GC.SuppressFinalize(this);
+        return _registration.DisposeAsync(_registry);
+    }
 }

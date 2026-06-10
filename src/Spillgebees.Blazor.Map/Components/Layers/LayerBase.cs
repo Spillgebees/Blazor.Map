@@ -1,110 +1,139 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
-using Spillgebees.Blazor.Map;
-using Spillgebees.Blazor.Map.Runtime.Scene;
+using Spillgebees.Blazor.Map.Engine;
 
 namespace Spillgebees.Blazor.Map;
 
 /// <summary>
-/// Base class for MapLibre layer components. Layers can either be nested inside a
-/// <see cref="IMapSource"/> (which provides the source automatically), or used
-/// standalone with an explicit <see cref="SourceId"/> to reference an existing source
-/// from the map style (e.g., the vector tile source in OpenFreeMap styles).
+/// Base class for engine-backed MapLibre layer components. Layers nest inside a
+/// <see cref="GeoJsonSource"/> (which provides the source), or stand alone with an
+/// explicit <see cref="SourceId"/> referencing a style source. Specs cross the interop
+/// boundary once; parameter changes diff into per-property ops.
 /// </summary>
 public abstract class LayerBase : ComponentBase, IAsyncDisposable
 {
-    [Inject]
-    private IJSRuntime _jsRuntime { get; set; } = null!;
+    /// <summary>Owning <see cref="SgbMap"/>, provided as a cascading parameter.</summary>
+    [CascadingParameter]
+    public SgbMap? Map { get; set; }
 
     [CascadingParameter]
-    internal IMapSource? Source { get; set; }
+    internal IEngineSource? Source { get; set; }
 
     [CascadingParameter]
-    public BaseMap? Map { get; set; }
+    internal MapOverlayPart? OverlayPart { get; set; }
 
-    [CascadingParameter]
-    internal MapOverlayPartContext? OverlayPart { get; set; }
-
+    /// <summary>Unique layer id within the map style.</summary>
     [Parameter, EditorRequired]
     public string Id { get; set; } = "";
 
+    /// <summary>Explicit source id; defaults to the enclosing source component's id when nested.</summary>
     [Parameter]
     public string? SourceId { get; set; }
 
+    /// <summary>Vector layer to use within a vector tile source (MapLibre <c>source-layer</c>).</summary>
     [Parameter]
     public string? SourceLayerId { get; set; }
 
-    /// <summary>
-    /// Gets or sets the baseline MapLibre layer filter expression. Map-level <see cref="BaseMap.Display" /> rules compose
-    /// additional display filters on top of this baseline instead of replacing it.
-    /// </summary>
+    /// <summary>MapLibre filter expression (object array or <see cref="JsonNode"/>).</summary>
     [Parameter]
     public object? Filter { get; set; }
 
+    /// <summary>Minimum zoom level at which the layer is visible (MapLibre <c>minzoom</c>).</summary>
     [Parameter]
     public double? MinZoom { get; set; }
 
+    /// <summary>Maximum zoom level at which the layer is visible (MapLibre <c>maxzoom</c>).</summary>
     [Parameter]
     public double? MaxZoom { get; set; }
 
+    /// <summary>Ordering slot defined on the map (see engine slot ops).</summary>
     [Parameter]
-    public string? BeforeLayerId { get; set; }
+    public string? Slot { get; set; }
 
+    /// <summary>Explicit before-layer id; takes precedence over <see cref="Slot"/>.</summary>
     [Parameter]
-    public string? LayerGroup { get; set; }
+    public string? Before { get; set; }
 
-    [Parameter]
-    public string? BeforeLayerGroup { get; set; }
-
-    [Parameter]
-    public string? AfterLayerGroup { get; set; }
-
+    /// <summary>Fires when a feature of this layer is clicked; args carry the layer id, click coordinate, and the feature's properties.</summary>
     [Parameter]
     public EventCallback<LayerFeatureEventArgs> OnClick { get; set; }
 
+    /// <summary>Fires when the pointer enters a feature of this layer; args carry the layer id, pointer coordinate, and the feature's properties.</summary>
     [Parameter]
     public EventCallback<LayerFeatureEventArgs> OnMouseEnter { get; set; }
 
+    /// <summary>Fires when the pointer leaves the layer's features.</summary>
     [Parameter]
     public EventCallback OnMouseLeave { get; set; }
 
     private bool _isInitialized;
-    private DotNetObjectReference<LayerBase>? _dotNetRef;
+    private JsonObject _appliedPaint = [];
+    private JsonObject _appliedLayout = [];
+    private string? _appliedFilterJson;
+    private double? _appliedMinZoom;
+    private double? _appliedMaxZoom;
+    private int _clickHandlerId;
+    private int _enterHandlerId;
+    private int _leaveHandlerId;
 
-    // Previous state for diffing
-    private Dictionary<string, object?>? _previousPaint;
-    private Dictionary<string, object?>? _previousLayout;
-    private object? _previousFilter;
-    private double? _previousMinZoom;
-    private double? _previousMaxZoom;
-    private EventCallback<LayerFeatureEventArgs> _previousOnClick;
-    private EventCallback<LayerFeatureEventArgs> _previousOnMouseEnter;
-    private EventCallback _previousOnMouseLeave;
-    private bool _eventsRequireWire;
-    private string? _previousBeforeLayerId;
-    private string? _previousLayerGroup;
-    private string? _previousBeforeLayerGroup;
-    private string? _previousAfterLayerGroup;
-
-    private string? _resolvedSourceId => SourceId ?? Source?.Id;
-    private BaseMap? _resolvedMap => Source?.Map ?? Map;
-    private bool _hasEvents => OnClick.HasDelegate || OnMouseEnter.HasDelegate || OnMouseLeave.HasDelegate;
-    internal MapLayerOrderOptions _orderOptions => new(LayerGroup, BeforeLayerGroup, AfterLayerGroup);
-
-    internal abstract string _layerType { get; }
+    internal abstract string LayerType { get; }
     internal abstract Dictionary<string, object?> GetPaintProperties();
     internal abstract Dictionary<string, object?> GetLayoutProperties();
 
-    internal Dictionary<string, object?> BuildLayerSpec()
+    private string _resolvedSourceId =>
+        SourceId
+        ?? Source?.Id
+        ?? throw new InvalidOperationException(
+            $"Layer '{Id}' must be nested inside a GeoJsonSource or set {nameof(SourceId)}."
+        );
+
+    /// <summary>Always returns <c>false</c>; the layer has no render output and updates flow through engine ops.</summary>
+    protected override bool ShouldRender() => false;
+
+    /// <summary>Validates the map cascade and, once initialized, diffs parameter changes into per-property ops.</summary>
+    protected override void OnParametersSet()
     {
-        var spec = new Dictionary<string, object?>
+        if (Map is null)
+        {
+            throw new InvalidOperationException($"Layer '{Id}' must be nested inside a {nameof(SgbMap)}.");
+        }
+
+        if (_isInitialized)
+        {
+            DiffAndApply();
+        }
+    }
+
+    /// <summary>On first render, ensures the enclosing source exists and adds the layer to the map.</summary>
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        // sources must exist before layers that reference them; child OnAfterRender
+        // ordering is not guaranteed, so the source initializes on demand.
+        Source?.EnsureInitialized();
+        Initialize();
+        _isInitialized = true;
+    }
+
+    private void Initialize()
+    {
+        _appliedPaint = EngineSpec.FromProperties(GetPaintProperties());
+        _appliedLayout = EngineSpec.FromProperties(GetLayoutProperties());
+        _appliedFilterJson = Filter is null ? null : EngineJson.ToNode(Filter)?.ToJsonString();
+        _appliedMinZoom = MinZoom;
+        _appliedMaxZoom = MaxZoom;
+
+        var spec = new JsonObject
         {
             ["id"] = Id,
-            ["type"] = _layerType,
+            ["type"] = LayerType,
             ["source"] = _resolvedSourceId,
         };
-
         if (SourceLayerId is not null)
         {
             spec["source-layer"] = SourceLayerId;
@@ -112,393 +141,156 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
 
         if (Filter is not null)
         {
-            spec["filter"] = Filter;
+            spec["filter"] = EngineJson.ToNode(Filter);
         }
 
-        if (MinZoom.HasValue)
+        if (MinZoom is { } minZoom)
         {
-            spec["minzoom"] = MinZoom.Value;
+            spec["minzoom"] = minZoom;
         }
 
-        if (MaxZoom.HasValue)
+        if (MaxZoom is { } maxZoom)
         {
-            spec["maxzoom"] = MaxZoom.Value;
+            spec["maxzoom"] = maxZoom;
         }
 
-        var paint = GetPaintProperties();
-        var nonNullPaint = paint.Where(kv => kv.Value is not null).ToDictionary(kv => kv.Key, kv => kv.Value);
-        if (nonNullPaint.Count > 0)
+        if (_appliedPaint.Count > 0)
         {
-            spec["paint"] = nonNullPaint;
+            spec["paint"] = _appliedPaint.DeepClone();
         }
 
-        var layout = GetLayoutProperties();
-        var nonNullLayout = layout.Where(kv => kv.Value is not null).ToDictionary(kv => kv.Key, kv => kv.Value);
-        if (nonNullLayout.Count > 0)
+        if (_appliedLayout.Count > 0)
         {
-            spec["layout"] = nonNullLayout;
+            spec["layout"] = _appliedLayout.DeepClone();
         }
 
-        return spec;
+        Map!.Channel.Queue(new LayerAddOp(Id, spec, Slot, Before));
+        RegisterEventHandlers();
+        OverlayPart?.RegisterRuntimeLayer(Id);
     }
 
-    internal virtual string GetLogicalOrderingIdentity() => $"layer:{Id}";
-
-    /// <inheritdoc/>
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender)
-        {
-            return;
-        }
-
-        if (Source is not null)
-        {
-            await Source.RegisterLayerAsync(this);
-        }
-        else if (SourceId is not null && Map is not null)
-        {
-            var mapReady = await Map.WhenReadyAsync();
-            if (!mapReady)
-            {
-                return;
-            }
-
-            await Map.SceneRegistry.RegisterLayerAsync(
-                new MapLayerDescriptor(Id, BuildLayerSpec(), BeforeLayerId, GetLayerOrderRegistration())
-            );
-        }
-
-        _isInitialized = true;
-        SnapshotState();
-        _eventsRequireWire = _hasEvents;
-        RegisterOverlayPartLayer();
-
-        await EnsureEventsWiredAsync();
-    }
-
-    /// <inheritdoc/>
-    protected override async Task OnParametersSetAsync()
-    {
-        if (!_isInitialized)
-        {
-            return;
-        }
-
-        var map = _resolvedMap;
-        if (map is null)
-        {
-            return;
-        }
-
-        await DiffAndApplyPaintAsync(map);
-        await DiffAndApplyLayoutAsync(map);
-        await DiffAndApplyFilterAsync(map);
-        await DiffAndApplyZoomRangeAsync(map);
-        await DiffAndApplyOrderingAsync();
-        await DiffAndApplyEventBindingsAsync(map);
-    }
-
-    private void SnapshotState()
-    {
-        _previousPaint = GetPaintProperties();
-        _previousLayout = GetLayoutProperties();
-        _previousFilter = Filter;
-        _previousMinZoom = MinZoom;
-        _previousMaxZoom = MaxZoom;
-        _previousOnClick = OnClick;
-        _previousOnMouseEnter = OnMouseEnter;
-        _previousOnMouseLeave = OnMouseLeave;
-        _previousBeforeLayerId = BeforeLayerId;
-        _previousLayerGroup = LayerGroup;
-        _previousBeforeLayerGroup = BeforeLayerGroup;
-        _previousAfterLayerGroup = AfterLayerGroup;
-    }
-
-    internal LayerOrderRegistration GetLayerOrderRegistration()
-    {
-        var map = _resolvedMap;
-        if (map is null)
-        {
-            throw new InvalidOperationException($"Layer '{Id}' is not associated with a map yet.");
-        }
-
-        var inheritedOrder = Source?.OrderOptions ?? MapLayerOrderOptions.Empty;
-        return map.SceneRegistry.ReserveLayerOrderRegistration(
-            GetLogicalOrderingIdentity(),
-            _orderOptions,
-            inheritedOrder
-        );
-    }
-
-    private async Task DiffAndApplyPaintAsync(BaseMap map)
-    {
-        var currentPaint = GetPaintProperties();
-        var batch = map.SceneRegistry.CreateBatchBuilder();
-
-        if (_previousPaint is null)
-        {
-            return;
-        }
-
-        foreach (var (key, currentValue) in currentPaint)
-        {
-            _previousPaint.TryGetValue(key, out var previousValue);
-
-            if (!ValuesEqual(currentValue, previousValue))
-            {
-                batch.SetPaintProperty(Id, key, currentValue);
-            }
-        }
-
-        await map.SceneRegistry.ApplyBatchAsync(batch);
-
-        _previousPaint = currentPaint;
-    }
-
-    private async Task DiffAndApplyLayoutAsync(BaseMap map)
-    {
-        var currentLayout = GetLayoutProperties();
-        var batch = map.SceneRegistry.CreateBatchBuilder();
-
-        if (_previousLayout is null)
-        {
-            return;
-        }
-
-        foreach (var (key, currentValue) in currentLayout)
-        {
-            _previousLayout.TryGetValue(key, out var previousValue);
-
-            if (!ValuesEqual(currentValue, previousValue))
-            {
-                batch.SetLayoutProperty(Id, key, currentValue);
-            }
-        }
-
-        await map.SceneRegistry.ApplyBatchAsync(batch);
-
-        _previousLayout = currentLayout;
-    }
-
-    private async Task DiffAndApplyFilterAsync(BaseMap map)
-    {
-        if (!ValuesEqual(Filter, _previousFilter))
-        {
-            var batch = map.SceneRegistry.CreateBatchBuilder();
-            batch.SetFilter(Id, Filter);
-            await map.SceneRegistry.ApplyBatchAsync(batch);
-            _previousFilter = Filter;
-        }
-    }
-
-    private async Task DiffAndApplyZoomRangeAsync(BaseMap map)
-    {
-        if (_previousMinZoom != MinZoom || _previousMaxZoom != MaxZoom)
-        {
-            var batch = map.SceneRegistry.CreateBatchBuilder();
-            batch.SetLayerZoomRange(Id, MinZoom ?? 0, MaxZoom ?? 24);
-            await map.SceneRegistry.ApplyBatchAsync(batch);
-            _previousMinZoom = MinZoom;
-            _previousMaxZoom = MaxZoom;
-        }
-    }
-
-    private async Task DiffAndApplyOrderingAsync()
-    {
-        if (
-            _previousBeforeLayerId == BeforeLayerId
-            && _previousLayerGroup == LayerGroup
-            && _previousBeforeLayerGroup == BeforeLayerGroup
-            && _previousAfterLayerGroup == AfterLayerGroup
-        )
-        {
-            return;
-        }
-
-        var map = _resolvedMap;
-        if (map is null)
-        {
-            return;
-        }
-
-        await map.SceneRegistry.RegisterLayerAsync(
-            new MapLayerDescriptor(Id, BuildLayerSpec(), BeforeLayerId, GetLayerOrderRegistration())
-        );
-
-        _previousBeforeLayerId = BeforeLayerId;
-        _previousLayerGroup = LayerGroup;
-        _previousBeforeLayerGroup = BeforeLayerGroup;
-        _previousAfterLayerGroup = AfterLayerGroup;
-    }
-
-    private static bool ValuesEqual(object? a, object? b)
-    {
-        if (ReferenceEquals(a, b))
-        {
-            return true;
-        }
-
-        if (a is null || b is null)
-        {
-            return a is null && b is null;
-        }
-
-        // Handle arrays (expressions, DashArray, etc.)
-        if (a is object[] arrA && b is object[] arrB)
-        {
-            return arrA.Length == arrB.Length && arrA.Zip(arrB).All(pair => ValuesEqual(pair.First, pair.Second));
-        }
-
-        if (a is double[] dArrA && b is double[] dArrB)
-        {
-            return dArrA.SequenceEqual(dArrB);
-        }
-
-        if (a is string[] sArrA && b is string[] sArrB)
-        {
-            return sArrA.SequenceEqual(sArrB);
-        }
-
-        return a.Equals(b);
-    }
-
-    private async Task WireEventsAsync()
-    {
-        _dotNetRef?.Dispose();
-        _dotNetRef = DotNetObjectReference.Create(this);
-        var map = _resolvedMap!;
-
-        if (!map.RuntimeIsInitialized)
-        {
-            return;
-        }
-
-        await map.SceneRegistry.WireLayerEventsAsync(
-            new LayerEventDescriptor(
-                Id,
-                _dotNetRef,
-                OnClick.HasDelegate,
-                OnMouseEnter.HasDelegate,
-                OnMouseLeave.HasDelegate
-            )
-        );
-    }
-
-    internal async Task NotifyLayerAddedAsync()
-    {
-        _eventsRequireWire = true;
-        await EnsureEventsWiredAsync();
-    }
-
-    private async Task EnsureEventsWiredAsync()
-    {
-        if (!_eventsRequireWire || !_isInitialized || !_hasEvents || _resolvedMap is null)
-        {
-            return;
-        }
-
-        await WireEventsAsync();
-        _eventsRequireWire = false;
-    }
-
-    private async Task DiffAndApplyEventBindingsAsync(BaseMap map)
-    {
-        if (
-            _previousOnClick.Equals(OnClick)
-            && _previousOnMouseEnter.Equals(OnMouseEnter)
-            && _previousOnMouseLeave.Equals(OnMouseLeave)
-        )
-        {
-            return;
-        }
-
-        var previouslyHadEvents =
-            _previousOnClick.HasDelegate || _previousOnMouseEnter.HasDelegate || _previousOnMouseLeave.HasDelegate;
-
-        if (_hasEvents)
-        {
-            await WireEventsAsync();
-            _eventsRequireWire = false;
-        }
-        else if (previouslyHadEvents)
-        {
-            await map.SceneRegistry.UnregisterLayerEventsAsync(Id);
-            _dotNetRef?.Dispose();
-            _dotNetRef = null;
-            _eventsRequireWire = false;
-        }
-
-        _previousOnClick = OnClick;
-        _previousOnMouseEnter = OnMouseEnter;
-        _previousOnMouseLeave = OnMouseLeave;
-    }
-
-    private void RegisterOverlayPartLayer()
-    {
-        if (OverlayPart is not null)
-        {
-            OverlayPart.Map.RegisterOverlayPartRuntimeLayer(OverlayPart.OverlayId, OverlayPart.PartId, Id);
-        }
-    }
-
-    [JSInvokable("OnLayerClickAsync")]
-    public async Task OnLayerClickAsync(double latitude, double longitude, JsonElement? properties)
+    private void RegisterEventHandlers()
     {
         if (OnClick.HasDelegate)
         {
-            await OnClick.InvokeAsync(new LayerFeatureEventArgs(Id, new Coordinate(latitude, longitude), properties));
+            _clickHandlerId = Map!.Router.Register(payload => HandleEventAsync(payload, OnClick));
         }
-    }
 
-    [JSInvokable("OnLayerMouseEnterAsync")]
-    public async Task OnLayerMouseEnterAsync(double latitude, double longitude, JsonElement? properties)
-    {
         if (OnMouseEnter.HasDelegate)
         {
-            await OnMouseEnter.InvokeAsync(
-                new LayerFeatureEventArgs(Id, new Coordinate(latitude, longitude), properties)
+            _enterHandlerId = Map!.Router.Register(payload => HandleEventAsync(payload, OnMouseEnter));
+        }
+
+        if (OnMouseLeave.HasDelegate)
+        {
+            _leaveHandlerId = Map!.Router.Register(_ => OnMouseLeave.InvokeAsync());
+        }
+
+        if (_clickHandlerId != 0 || _enterHandlerId != 0 || _leaveHandlerId != 0)
+        {
+            Map!.Channel.Queue(
+                new EventsSetOp(
+                    Id,
+                    new EngineEventHandlers(
+                        Click: _clickHandlerId == 0 ? null : _clickHandlerId,
+                        Enter: _enterHandlerId == 0 ? null : _enterHandlerId,
+                        Leave: _leaveHandlerId == 0 ? null : _leaveHandlerId
+                    )
+                )
             );
         }
     }
 
-    [JSInvokable("OnLayerMouseLeaveAsync")]
-    public async Task OnLayerMouseLeaveAsync()
+    private async Task HandleEventAsync(JsonElement payload, EventCallback<LayerFeatureEventArgs> callback)
     {
-        if (OnMouseLeave.HasDelegate)
+        var lng = payload.TryGetProperty("lng", out var lngProperty) ? lngProperty.GetDouble() : 0;
+        var lat = payload.TryGetProperty("lat", out var latProperty) ? latProperty.GetDouble() : 0;
+        JsonElement? properties = payload.TryGetProperty("properties", out var propertiesProperty)
+            ? propertiesProperty
+            : null;
+        await callback.InvokeAsync(new LayerFeatureEventArgs(Id, new Coordinate(lat, lng), properties));
+    }
+
+    private void DiffAndApply()
+    {
+        var channel = Map!.Channel;
+        _appliedPaint = DiffSection(
+            channel,
+            _appliedPaint,
+            EngineSpec.FromProperties(GetPaintProperties()),
+            (name, value) => new LayerSetPaintOp(Id, name, value)
+        );
+        _appliedLayout = DiffSection(
+            channel,
+            _appliedLayout,
+            EngineSpec.FromProperties(GetLayoutProperties()),
+            (name, value) => new LayerSetLayoutOp(Id, name, value)
+        );
+
+        var filterNode = Filter is null ? null : EngineJson.ToNode(Filter);
+        var filterJson = filterNode?.ToJsonString();
+        if (filterJson != _appliedFilterJson)
         {
-            await OnMouseLeave.InvokeAsync();
+            _appliedFilterJson = filterJson;
+            channel.Queue(new LayerSetFilterOp(Id, filterNode));
+        }
+
+        if (MinZoom != _appliedMinZoom || MaxZoom != _appliedMaxZoom)
+        {
+            _appliedMinZoom = MinZoom;
+            _appliedMaxZoom = MaxZoom;
+            channel.Queue(new LayerSetZoomOp(Id, MinZoom ?? 0, MaxZoom ?? 24));
         }
     }
 
-    /// <inheritdoc/>
-    public async ValueTask DisposeAsync()
+    private static JsonObject DiffSection(
+        MapEngineChannel channel,
+        JsonObject applied,
+        JsonObject current,
+        Func<string, JsonNode?, EngineOp> createOp
+    )
     {
-        try
+        foreach (var (name, value) in current)
         {
-            if (_isInitialized && _resolvedMap is not null)
+            if (!applied.TryGetPropertyValue(name, out var previous) || !JsonNode.DeepEquals(previous, value))
             {
-                await _resolvedMap.SceneRegistry.UnregisterLayerEventsAsync(Id);
-            }
-
-            if (Source is not null)
-            {
-                await Source.UnregisterLayerAsync(this);
-            }
-            else if (_isInitialized && Map is not null)
-            {
-                await Map.SceneRegistry.UnregisterLayerAsync(Id);
-            }
-
-            if (OverlayPart is not null)
-            {
-                OverlayPart.Map.UnregisterOverlayPartRuntimeLayer(OverlayPart.OverlayId, OverlayPart.PartId, Id);
+                channel.Queue(createOp(name, value?.DeepClone()));
             }
         }
-        catch (JSDisconnectedException) { }
-        catch (ObjectDisposedException) { }
 
-        _dotNetRef?.Dispose();
+        foreach (var (name, _) in applied)
+        {
+            if (!current.ContainsKey(name))
+            {
+                channel.Queue(createOp(name, null));
+            }
+        }
+
+        return current;
+    }
+
+    /// <summary>Unregisters event handlers and removes the layer from the map.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        if (Map is null || !_isInitialized)
+        {
+            return;
+        }
+
+        foreach (var handlerId in (int[])[_clickHandlerId, _enterHandlerId, _leaveHandlerId])
+        {
+            if (handlerId != 0)
+            {
+                Map.Router.Unregister(handlerId);
+            }
+        }
+
+        if (_clickHandlerId != 0 || _enterHandlerId != 0 || _leaveHandlerId != 0)
+        {
+            Map.Channel.Queue(new EventsClearOp(Id));
+        }
+
+        await Map.Channel.QueueAndFlushAsync(new LayerRemoveOp(Id));
         GC.SuppressFinalize(this);
     }
 }

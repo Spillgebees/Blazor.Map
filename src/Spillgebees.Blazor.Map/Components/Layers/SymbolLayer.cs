@@ -1,143 +1,127 @@
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map;
 
-/// <summary>
-/// A MapLibre symbol layer that renders text and/or icon labels from a GeoJSON source.
-/// </summary>
-public class SymbolLayer : LayerBase
+/// <summary>Engine-backed symbol layer.</summary>
+public sealed class SymbolLayer : LayerBase
 {
-    // Text layout
-
-    /// <summary>The text field content (literal or expression).</summary>
+    /// <summary>Text to display (MapLibre <c>text-field</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<string>? TextField { get; set; }
 
-    /// <summary>The text font size in pixels (literal or expression).</summary>
+    /// <summary>Text size in pixels (MapLibre <c>text-size</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? TextSize { get; set; }
 
-    /// <summary>The font stack for text rendering.</summary>
+    /// <summary>Font stack for the text (MapLibre <c>text-font</c>, style glyph names).</summary>
     [Parameter]
     public string[]? TextFont { get; set; }
 
-    /// <summary>The text anchor position. Values are defined by <see cref="SymbolAnchor"/>.</summary>
+    /// <summary>Part of the text placed closest to the anchor point (MapLibre <c>text-anchor</c>).</summary>
     [Parameter]
     public SymbolAnchor? TextAnchor { get; set; }
 
-    /// <summary>The text offset from the anchor position in ems [x, y].</summary>
+    /// <summary>Text offset as <c>[x, y]</c> in ems (MapLibre <c>text-offset</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double[]>? TextOffset { get; set; }
 
-    /// <summary>The text rotation in degrees (literal or expression).</summary>
+    /// <summary>Text rotation in degrees clockwise (MapLibre <c>text-rotate</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? TextRotate { get; set; }
 
-    /// <summary>The alignment of text when the map is pitched. Values are defined by <see cref="MapAlignment"/>.</summary>
+    /// <summary>Orientation of text when the map is pitched (MapLibre <c>text-pitch-alignment</c>).</summary>
     [Parameter]
     public MapAlignment? TextPitchAlignment { get; set; }
 
-    /// <summary>The alignment of text when the map is rotated. Values are defined by <see cref="MapAlignment"/>.</summary>
+    /// <summary>Rotation behavior of text when the map is rotated (MapLibre <c>text-rotation-alignment</c>).</summary>
     [Parameter]
     public MapAlignment? TextRotationAlignment { get; set; }
 
-    /// <summary>The text transform. Values are defined by <see cref="TextTransform"/>.</summary>
+    /// <summary>Capitalization transform applied to the text (MapLibre <c>text-transform</c>).</summary>
     [Parameter]
     public TextTransform? TextTransform { get; set; }
 
-    /// <summary>Maximum text width in ems before wrapping. Default is 10.</summary>
+    /// <summary>Maximum text line width in ems before wrapping (MapLibre <c>text-max-width</c>).</summary>
     [Parameter]
     public double? TextMaxWidth { get; set; }
 
-    /// <summary>Whether text can overlap other symbols.</summary>
+    /// <summary>Shows the text even when it collides with other symbols (MapLibre <c>text-allow-overlap</c>).</summary>
     [Parameter]
     public bool TextAllowOverlap { get; set; }
 
-    // Text paint
-
-    /// <summary>The text color (CSS color string or expression).</summary>
+    /// <summary>Text color (MapLibre <c>text-color</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<string>? TextColor { get; set; }
 
-    /// <summary>The text halo color (CSS color string or expression).</summary>
+    /// <summary>Text halo color (MapLibre <c>text-halo-color</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<string>? TextHaloColor { get; set; }
 
-    /// <summary>The text halo width in pixels (literal or expression).</summary>
+    /// <summary>Text halo width in pixels (MapLibre <c>text-halo-width</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? TextHaloWidth { get; set; }
 
-    /// <summary>The text opacity (0.0–1.0, literal or expression).</summary>
+    /// <summary>Text opacity (MapLibre <c>text-opacity</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? TextOpacity { get; set; }
 
-    // Icon layout
-
-    /// <summary>The icon image name from the map's sprite (literal or expression).</summary>
+    /// <summary>Icon image id from the map's image registry (MapLibre <c>icon-image</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<string>? IconImage { get; set; }
 
-    /// <summary>The icon size scaling factor (literal or expression).</summary>
+    /// <summary>Icon scale factor relative to the image's native size (MapLibre <c>icon-size</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? IconSize { get; set; }
 
-    /// <summary>The icon rotation in degrees (literal or expression).</summary>
+    /// <summary>Icon rotation in degrees clockwise (MapLibre <c>icon-rotate</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? IconRotate { get; set; }
 
-    /// <summary>The icon offset from the anchor position in pixels [x, y].</summary>
+    /// <summary>Icon offset as <c>[x, y]</c> in pixels (MapLibre <c>icon-offset</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double[]>? IconOffset { get; set; }
 
-    /// <summary>The icon anchor position. Values are defined by <see cref="SymbolAnchor"/>.</summary>
+    /// <summary>Part of the icon placed closest to the anchor point (MapLibre <c>icon-anchor</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<SymbolAnchor>? IconAnchor { get; set; }
 
-    /// <summary>Whether icons can overlap other symbols.</summary>
+    /// <summary>Shows the icon even when it collides with other symbols (MapLibre <c>icon-allow-overlap</c>).</summary>
     [Parameter]
     public bool IconAllowOverlap { get; set; }
 
-    /// <summary>Scales the icon to fit the text. Values are defined by <see cref="IconTextFit"/>.</summary>
+    /// <summary>Scales the icon to fit the text (MapLibre <c>icon-text-fit</c>).</summary>
     [Parameter]
     public IconTextFit? IconTextFit { get; set; }
 
-    /// <summary>Padding around the text when icon-text-fit is active [top, right, bottom, left].</summary>
+    /// <summary>Padding as <c>[top, right, bottom, left]</c> pixels added when fitting the icon to text (MapLibre <c>icon-text-fit-padding</c>).</summary>
     [Parameter]
     public double[]? IconTextFitPadding { get; set; }
 
-    /// <summary>
-    /// The alignment of the icon when the map is rotated. Values are defined by <see cref="MapAlignment"/>.
-    /// When set to <see cref="MapAlignment.Map"/>, the icon rotates with the map. Default is <see cref="MapAlignment.Auto"/>.
-    /// </summary>
+    /// <summary>Rotation behavior of icons when the map is rotated (MapLibre <c>icon-rotation-alignment</c>).</summary>
     [Parameter]
     public MapAlignment? RotationAlignment { get; set; }
 
-    // Icon paint
-
-    /// <summary>The icon opacity (0.0–1.0, literal or expression).</summary>
+    /// <summary>Icon opacity (MapLibre <c>icon-opacity</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? IconOpacity { get; set; }
 
-    /// <summary>The icon color tint, only works with SDF icons (CSS color string or expression).</summary>
+    /// <summary>Icon tint color, applied to SDF icons (MapLibre <c>icon-color</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<string>? IconColor { get; set; }
 
-    // Symbol layout
-
-    /// <summary>The symbol placement strategy. Values are defined by <see cref="SymbolPlacement"/>.</summary>
+    /// <summary>Symbol placement relative to the geometry (MapLibre <c>symbol-placement</c>).</summary>
     [Parameter]
     public SymbolPlacement? Placement { get; set; }
 
-    /// <summary>The distance between symbol instances along a line in pixels.</summary>
+    /// <summary>Distance between symbols placed along a line, in pixels (MapLibre <c>symbol-spacing</c>).</summary>
     [Parameter]
     public double? Spacing { get; set; }
 
-    /// <summary>The explicit symbol sort key for render ordering (literal or expression).</summary>
+    /// <summary>Render order of symbols; lower values render first (MapLibre <c>symbol-sort-key</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? SymbolSortKey { get; set; }
 
-    internal override string _layerType => "symbol";
+    internal override string LayerType => "symbol";
 
     internal override Dictionary<string, object?> GetPaintProperties() =>
         new()
