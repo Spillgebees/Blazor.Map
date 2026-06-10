@@ -51,7 +51,7 @@ const projects = [
     },
   },
   {
-    // Performance benchmarks (docs/plans/map-engine-rewrite.md §5). Opt-in via
+    // Performance benchmarks with enforced budgets. Opt-in via
     // `pnpm run test:browser:perf` — they measure main-thread health and must run alone.
     name: "perf",
     testMatch: /perf\/.*\.spec\.ts/,

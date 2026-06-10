@@ -16,7 +16,7 @@ internal sealed record EntityDiffResult(
 );
 
 /// <summary>
-/// Owns the entity identity table (docs/plans/map-engine-protocol.md §3.1 and §3.5):
+/// Owns the entity identity table:
 /// assigns recycled u32 indices, keeps one ~40-byte snapshot per entity, and splits each
 /// update into motion records (binary fast path) and structural upserts (JSON op).
 /// Structural changes bump the epoch; motion frames carry the epoch they were computed

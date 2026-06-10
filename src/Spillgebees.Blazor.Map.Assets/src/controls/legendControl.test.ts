@@ -1,6 +1,6 @@
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { describe, expect, it } from "vitest";
-import "../../test/maplibreMock";
+import "../../tests/unit/maplibreMock";
 import type { ILegendMapControl } from "../interfaces/controls";
 import { LegendControl } from "./legendControl";
 

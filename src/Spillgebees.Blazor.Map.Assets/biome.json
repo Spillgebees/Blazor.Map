@@ -8,7 +8,15 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["src/**", "test/**", "*.ts", "*.json"]
+    "includes": [
+      "src/**",
+      "tests/unit/**",
+      "tests/browser/**",
+      "!tests/browser/test-results",
+      "!tests/browser/playwright-report",
+      "*.ts",
+      "*.json"
+    ]
   },
   "formatter": {
     "enabled": true,

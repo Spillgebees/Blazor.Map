@@ -5,7 +5,7 @@ using Microsoft.JSInterop;
 namespace Spillgebees.Blazor.Map.Engine;
 
 /// <summary>
-/// The .NET side of the ops + motion channels (docs/plans/map-engine-protocol.md §1, §3.6).
+/// The .NET side of the ops + motion channels.
 /// Ops queue and flush as one <c>applyOps</c> call per render batch; everything queued
 /// before the map's load event is buffered. Motion frames are latest-wins per layer with
 /// a single interop call in flight — if JS is slow, intermediate frames are replaced,

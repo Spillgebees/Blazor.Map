@@ -18,7 +18,6 @@ function evaluateOnMap<T>(page: Page, body: string): Promise<T> {
         throw new Error("map not found");
       }
 
-      // biome-ignore lint/security/noGlobalEval: test-only helper running fixed strings
       return new Function("map", evalBody)(map) as T;
     },
     { evalBody: body },
@@ -76,10 +75,9 @@ test.describe("engine display + overlays", () => {
 
     await page.getByTestId("toggle-express").click();
     await expect
-      .poll(
-        () => evaluateOnMap<unknown>(page, `return map.getFilter(${JSON.stringify(POINTS_LAYER_ID)});`),
-        { timeout: 10000 },
-      )
+      .poll(() => evaluateOnMap<unknown>(page, `return map.getFilter(${JSON.stringify(POINTS_LAYER_ID)});`), {
+        timeout: 10000,
+      })
       .toEqual(["all", ["has", "name"], ["!", ["==", ["get", "kind"], "express"]]]);
 
     await page.getByTestId("toggle-express").click();

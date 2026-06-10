@@ -4,8 +4,8 @@ using System.Text.Json.Serialization;
 namespace Spillgebees.Blazor.Map.Engine;
 
 /// <summary>
-/// The op vocabulary crossing .NET → JS (docs/plans/map-engine-protocol.md §2.2),
-/// mirrored by <c>engine/ops.ts</c>. Ops apply in array order; free-form MapLibre
+/// The op vocabulary crossing .NET → JS, mirrored by <c>engine/ops.ts</c>.
+/// Ops apply in array order; free-form MapLibre
 /// specs/values are carried as <see cref="JsonNode"/> pass-throughs.
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "op")]

@@ -1,4 +1,4 @@
-// Per-map write scheduler (docs/plans/map-engine-protocol.md §3.6).
+// Per-map write scheduler.
 //
 // All map writes funnel through one requestAnimationFrame callback: dirty flushes are
 // latest-wins per key (a slow frame drops intermediate states instead of queueing them),

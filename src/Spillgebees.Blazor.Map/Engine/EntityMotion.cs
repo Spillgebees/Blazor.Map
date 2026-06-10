@@ -20,8 +20,8 @@ internal readonly record struct EntityInput(
 internal readonly record struct EntityMotionRecord(uint Index, double Lng, double Lat, float Rotation, float SortKey);
 
 /// <summary>
-/// Encodes motion frames in the binary layout decoded by <c>engine/motion.ts</c>
-/// (docs/plans/map-engine-protocol.md §3.4). Little-endian, columnar.
+/// Encodes motion frames in the binary layout decoded by <c>engine/motion.ts</c>.
+/// Little-endian, columnar.
 /// </summary>
 internal static class MotionFrameEncoder
 {

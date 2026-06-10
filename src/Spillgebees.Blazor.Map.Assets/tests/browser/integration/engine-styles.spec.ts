@@ -16,7 +16,6 @@ function evaluateOnMap<T>(page: Page, body: string): Promise<T> {
         throw new Error("map not found");
       }
 
-      // biome-ignore lint/security/noGlobalEval: test-only helper running fixed strings
       return new Function("map", evalBody)(map) as T;
     },
     { evalBody: body },

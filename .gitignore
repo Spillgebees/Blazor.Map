@@ -535,5 +535,5 @@ fabric.properties
 src/Spillgebees.Blazor.Map/wwwroot/
 .claude/
 
-# benchmark recordings are machine-local; canonical numbers live in docs/plans
+# playwright benchmark results
 src/Spillgebees.Blazor.Map.Assets/tests/perf-results/

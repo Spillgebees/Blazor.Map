@@ -1,4 +1,4 @@
-// Engine runtime (docs/plans/map-engine-protocol.md §2): owns per-map scene state,
+// Engine runtime: owns per-map scene state,
 // dispatches ops in array order, and replays the scene after a style change. The op
 // store kept here is the single copy of scene state — there is no C#-side mirror.
 

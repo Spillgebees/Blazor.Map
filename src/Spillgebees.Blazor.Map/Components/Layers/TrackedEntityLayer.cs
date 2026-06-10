@@ -15,8 +15,8 @@ public sealed record EntityEventArgs<TItem>(TItem Item, string EntityId, Coordin
 /// Engine-backed tracked entity layer. Devs hand it their domain items plus selectors;
 /// updates are diffed against a per-entity snapshot and cross the interop boundary as
 /// binary motion frames (positions/rotations) or small structural upserts — never as a
-/// rebuilt feature collection, and never through the Blazor render cycle
-/// (docs/plans/map-engine-rewrite.md §3.2, §3.5). Decorations are declared as
+/// rebuilt feature collection, and never through the Blazor render cycle.
+/// Decorations are declared as
 /// <see cref="EntityDecoration{TItem}"/> children; hover and selection styling run as
 /// JS-local feature-state.
 /// </summary>

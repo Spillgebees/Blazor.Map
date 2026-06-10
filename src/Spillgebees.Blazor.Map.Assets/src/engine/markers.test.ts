@@ -5,7 +5,7 @@ import {
   type MockMarkerInstance,
   type MockPopupInstance,
   resetMockMapState,
-} from "../../test/maplibreMock";
+} from "../../tests/unit/maplibreMock";
 import { createMarkerController, type MarkerEventKind } from "./markers";
 import type { MarkerData } from "./ops";
 

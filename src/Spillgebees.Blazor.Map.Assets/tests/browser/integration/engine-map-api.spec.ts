@@ -14,7 +14,6 @@ function evaluateOnMap<T>(page: Page, body: string): Promise<T> {
         throw new Error("map not found");
       }
 
-      // biome-ignore lint/security/noGlobalEval: test-only helper running fixed strings
       return new Function("map", evalBody)(map) as T;
     },
     { evalBody: body },
@@ -30,9 +29,7 @@ test.describe("engine map API", () => {
   test("applies map options at create time", async ({ page }) => {
     await openFixture(page);
 
-    await expect
-      .poll(() => evaluateOnMap<number>(page, "return map.getPitch();"), { timeout: 20000 })
-      .toBe(30);
+    await expect.poll(() => evaluateOnMap<number>(page, "return map.getPitch();"), { timeout: 20000 }).toBe(30);
     expect(await evaluateOnMap<number>(page, "return map.getBearing();")).toBe(15);
     expect(await evaluateOnMap<number>(page, "return map.getMinZoom();")).toBe(3);
     expect(await evaluateOnMap<number>(page, "return map.getMaxZoom();")).toBe(18);
@@ -43,14 +40,10 @@ test.describe("engine map API", () => {
 
   test("reacts to pitch parameter changes through map.configure", async ({ page }) => {
     await openFixture(page);
-    await expect
-      .poll(() => evaluateOnMap<number>(page, "return map.getPitch();"), { timeout: 20000 })
-      .toBe(30);
+    await expect.poll(() => evaluateOnMap<number>(page, "return map.getPitch();"), { timeout: 20000 }).toBe(30);
 
     await page.getByTestId("toggle-pitch").click();
-    await expect
-      .poll(() => evaluateOnMap<number>(page, "return map.getPitch();"), { timeout: 10000 })
-      .toBe(60);
+    await expect.poll(() => evaluateOnMap<number>(page, "return map.getPitch();"), { timeout: 10000 }).toBe(60);
   });
 
   test("flies the camera and raises moveend callbacks", async ({ page }) => {

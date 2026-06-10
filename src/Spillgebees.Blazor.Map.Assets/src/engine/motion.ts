@@ -1,4 +1,4 @@
-// Binary motion frame decoder (docs/plans/map-engine-protocol.md §3.4).
+// Binary motion frame decoder (the counterpart of MotionFrameEncoder in C#).
 //
 // Layout, little-endian, columnar:
 //   header (16 bytes): u32 magic+version, u32 epoch, u32 count, u32 column bitmask

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getMockMapConstructor, type MockMapInstance, resetMockMapState } from "../../test/maplibreMock";
+import { getMockMapConstructor, type MockMapInstance, resetMockMapState } from "../../tests/unit/maplibreMock";
 import { type ControlsController, createControlsController } from "./controls";
 import type { ControlData } from "./ops";
 

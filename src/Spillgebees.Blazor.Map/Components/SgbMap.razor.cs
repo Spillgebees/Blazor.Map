@@ -7,7 +7,7 @@ using Spillgebees.Blazor.Map.Engine;
 namespace Spillgebees.Blazor.Map;
 
 /// <summary>
-/// Engine-backed map component (docs/plans/map-engine-rewrite.md). Declarative children
+/// Engine-backed map component. Declarative children
 /// queue ops through a single channel; high-frequency entity data flows through binary
 /// motion frames. The component owns lifecycle and parameters; model → ops translation
 /// lives in the engine coordinators (controls, features, popups, display). Hosts the

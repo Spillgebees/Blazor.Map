@@ -18,7 +18,6 @@ function evaluateOnMap<T>(page: Page, body: string): Promise<T> {
         throw new Error("map not found");
       }
 
-      // biome-ignore lint/security/noGlobalEval: test-only helper running fixed strings
       return new Function("map", evalBody)(map) as T;
     },
     { evalBody: body },
@@ -79,13 +78,20 @@ test.describe("engine geojson sources", () => {
 
     await expect
       .poll(
-        () => evaluateOnMap<unknown>(page, `return map.getPaintProperty(${JSON.stringify(CIRCLE_LAYER_ID)}, "circle-radius");`),
+        () =>
+          evaluateOnMap<unknown>(
+            page,
+            `return map.getPaintProperty(${JSON.stringify(CIRCLE_LAYER_ID)}, "circle-radius");`,
+          ),
         { timeout: 10000 },
       )
       .toBe(14);
     await expect
       .poll(() =>
-        evaluateOnMap<unknown>(page, `return map.getPaintProperty(${JSON.stringify(CIRCLE_LAYER_ID)}, "circle-color");`),
+        evaluateOnMap<unknown>(
+          page,
+          `return map.getPaintProperty(${JSON.stringify(CIRCLE_LAYER_ID)}, "circle-color");`,
+        ),
       )
       .toBe("#16a34a");
   });

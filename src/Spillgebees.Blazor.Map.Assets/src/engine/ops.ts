@@ -1,4 +1,4 @@
-// Op vocabulary for the map engine (docs/plans/map-engine-protocol.md §2).
+// Op vocabulary for the map engine, mirrored by EngineOps.cs on the .NET side.
 // Ops are the only way scene structure crosses the .NET → JS boundary; they apply in
 // array order and double as the replay log after a style change.
 

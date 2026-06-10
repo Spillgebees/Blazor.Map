@@ -5,7 +5,7 @@ namespace Spillgebees.Blazor.Map.Engine;
 
 /// <summary>
 /// The complete JS interop surface of the engine control plane: one ops call, one
-/// motion call, plus map lifecycle (docs/plans/map-engine-protocol.md §1).
+/// motion call, plus map lifecycle.
 /// </summary>
 internal static class MapEngineJs
 {

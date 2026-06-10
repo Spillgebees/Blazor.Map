@@ -1,6 +1,6 @@
 // .NET-facing glue for the map engine: creates MapLibre maps, adapts them to the
-// EngineMap surface, and exposes the interop entry points
-// (docs/plans/map-engine-protocol.md §1) under window.Spillgebees.Engine.
+// EngineMap surface, and exposes the interop entry points under
+// window.Spillgebees.Engine.
 
 import { Map as MapLibreMap, type Popup as MapLibrePopup, type RequestParameters } from "maplibre-gl";
 import type { IMapStyle } from "../interfaces/map";

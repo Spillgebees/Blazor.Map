@@ -5,7 +5,7 @@ import {
   type MockMapInstance,
   type MockPopupInstance,
   resetMockMapState,
-} from "../../test/maplibreMock";
+} from "../../tests/unit/maplibreMock";
 import type { PopupData } from "./ops";
 import { createPopupController, type PopupController } from "./popups";
 

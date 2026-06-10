@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="assets/map-hero.png" alt="Live train tracking across Luxembourg built with Spillgebees.Blazor.Map" />
+    <img src="assets/map-hero.png" alt="real-time train tracking map this component was originally built for" />
     <p><em>real-time train tracking map this component was originally built for</em></p>
 </div>
 

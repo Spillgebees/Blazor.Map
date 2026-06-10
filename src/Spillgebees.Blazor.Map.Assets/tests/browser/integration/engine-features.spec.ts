@@ -17,7 +17,6 @@ function evaluateOnMap<T>(page: Page, body: string): Promise<T> {
         throw new Error("map not found");
       }
 
-      // biome-ignore lint/security/noGlobalEval: test-only helper running fixed strings
       return new Function("map", evalBody)(map) as T;
     },
     { evalBody: body },
@@ -66,9 +65,7 @@ test.describe("engine markers and shapes", () => {
 
     // c1+pc1 circles, p1+pp1 polylines — components and parameters share the layers.
     await expect.poll(() => renderedCount(page, CIRCLES_LAYER_ID), { timeout: 30000 }).toBeGreaterThanOrEqual(2);
-    await expect
-      .poll(() => renderedCount(page, POLYLINES_LAYER_ID), { timeout: 30000 })
-      .toBeGreaterThanOrEqual(2);
+    await expect.poll(() => renderedCount(page, POLYLINES_LAYER_ID), { timeout: 30000 }).toBeGreaterThanOrEqual(2);
     await expect(page.getByTestId("map-error")).toHaveCount(0);
   });
 

@@ -1,4 +1,4 @@
-// Entity layer store (docs/plans/map-engine-protocol.md §3).
+// Entity layer store.
 //
 // Holds live GeoJSON features keyed by the .NET-assigned entity index and mutates them
 // in place: structural upserts replace whole entities, motion frames touch only
@@ -135,7 +135,7 @@ export interface MotionResult {
 
 export function applyMotion(store: EntityLayerStore, frame: MotionFrame, nowMs: number): MotionResult {
   // Stale frames are dropped, never reordered: the upsert that bumped the epoch already
-  // carried fresh positions for the entities it touched (protocol §3.1).
+  // carried fresh positions for the entities it touched.
   if (frame.epoch !== store.epoch) {
     return { applied: false, matched: 0 };
   }

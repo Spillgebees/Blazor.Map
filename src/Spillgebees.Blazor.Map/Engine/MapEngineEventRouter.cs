@@ -4,7 +4,7 @@ using Microsoft.JSInterop;
 namespace Spillgebees.Blazor.Map.Engine;
 
 /// <summary>
-/// The single JS → .NET entry point per map (docs/plans/map-engine-protocol.md §4).
+/// The single JS → .NET entry point per map.
 /// UI events arrive with an integer handler id registered by components; map lifecycle
 /// events (load, moveend, …) arrive by kind.
 /// </summary>
@@ -23,7 +23,7 @@ internal sealed class MapEngineEventRouter : IDisposable
     /// <summary>Raised for map lifecycle events: "load", "moveend", "zoomend", "click".</summary>
     public event Func<string, JsonElement, Task>? MapEvent;
 
-    /// <summary>Marker interactions (the router doubles as the marker dotNetHelper).</summary>
+    /// <summary>Marker interactions; markers share the router instead of owning per-marker .NET object references.</summary>
     public event Func<MarkerClickEventArgs, Task>? MarkerClick;
 
     public event Func<MarkerDragEventArgs, Task>? MarkerDragEnd;

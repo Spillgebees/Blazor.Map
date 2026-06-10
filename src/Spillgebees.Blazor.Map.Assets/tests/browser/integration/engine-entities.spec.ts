@@ -1,8 +1,8 @@
 import { expect, type Page, test } from "@playwright/test";
 
-// Functional coverage for the engine tracked entity layer
-// (docs/plans/map-engine-rewrite.md §4): rendering, motion, membership, click/hover
-// events, selection, decorations, clustering, and animation — all against the real map.
+// Functional coverage for the engine tracked entity layer: rendering, motion,
+// membership, click/hover events, selection, decorations, clustering, and
+// animation — all against the real map.
 
 const PAGE_ROUTE = "/engine-entity-functional-test";
 const SOURCE_ID = "entities";
@@ -38,7 +38,6 @@ function evaluateOnMap<T>(page: Page, body: string): Promise<T> {
         throw new Error("map not found");
       }
 
-      // biome-ignore lint/security/noGlobalEval: test-only helper running fixed strings
       return new Function("map", evalBody)(map) as T;
     },
     { evalBody: body },
@@ -159,9 +158,9 @@ test.describe("engine tracked entities", () => {
     await expect(page.getByTestId("last-hovered")).toHaveText("e1");
 
     await page.mouse.move(position.x + 200, position.y + 200);
-    await expect.poll(() => featureState(page, 0).then((state) => state.hover ?? false), { timeout: 10000 }).toBe(
-      false,
-    );
+    await expect
+      .poll(() => featureState(page, 0).then((state) => state.hover ?? false), { timeout: 10000 })
+      .toBe(false);
   });
 
   test("hovering a decoration label triggers the entity hover behavior", async ({ page }) => {
@@ -181,9 +180,7 @@ test.describe("engine tracked entities", () => {
     const position = await screenPositionOf(page, 6.1, 49.6);
     await page.mouse.move(position.x + 20, position.y - 22);
 
-    await expect.poll(() => featureState(page, 0).then((state) => state.hover ?? false), { timeout: 10000 }).toBe(
-      true,
-    );
+    await expect.poll(() => featureState(page, 0).then((state) => state.hover ?? false), { timeout: 10000 }).toBe(true);
     await expect(page.getByTestId("last-hovered")).toHaveText("e1");
   });
 
@@ -193,9 +190,7 @@ test.describe("engine tracked entities", () => {
     await page.getByTestId("select-e1").click();
     await expect.poll(() => featureState(page, 0).then((state) => state.selected), { timeout: 10000 }).toBe(true);
     // decorations carry the same state in their own source (id 1 = slot 0 of entity 0)
-    await expect
-      .poll(() => featureState(page, 1, DECORATION_SOURCE_ID).then((state) => state.selected))
-      .toBe(true);
+    await expect.poll(() => featureState(page, 1, DECORATION_SOURCE_ID).then((state) => state.selected)).toBe(true);
 
     await page.getByTestId("clear-selection").click();
     await expect
