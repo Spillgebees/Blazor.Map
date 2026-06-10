@@ -4,7 +4,9 @@
     <button type="button" class="sample-btn @(_activeStyle == "bright" ? "active" : "")" aria-pressed="@(_activeStyle == "bright")" @onclick="@(() => SetStyle("bright", MapStyle.OpenFreeMap.Bright))">Bright</button>
 </div>
 
-<SgbMap MapOptions="@_mapOptions"
+<SgbMap Center="@(new Coordinate(49.75, 6.10))"
+        Zoom="9"
+        Style="@_style"
         Height="400px"
         Width="100%">
     <MapControls>
@@ -15,15 +17,11 @@
 @code {
     private string _activeStyle = "liberty";
 
-    private MapOptions _mapOptions = new(
-        Center: new Coordinate(49.75, 6.10),
-        Zoom: 9,
-        Style: MapStyle.OpenFreeMap.Liberty
-    );
+    private MapStyle _style = MapStyle.OpenFreeMap.Liberty;
 
     private void SetStyle(string key, MapStyle style)
     {
         _activeStyle = key;
-        _mapOptions = _mapOptions with { Style = style };
+        _style = style;
     }
 }

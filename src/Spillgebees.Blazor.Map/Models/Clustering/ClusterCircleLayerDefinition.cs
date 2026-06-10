@@ -5,6 +5,9 @@ namespace Spillgebees.Blazor.Map;
 /// </summary>
 public sealed record ClusterCircleLayerDefinition : ClusterLayerDefinition
 {
+    /// <summary>
+    /// Creates a circle layer definition for cluster bubbles.
+    /// </summary>
     public ClusterCircleLayerDefinition(
         string idSuffix,
         StyleValue<string>? color = null,
@@ -29,13 +32,28 @@ public sealed record ClusterCircleLayerDefinition : ClusterLayerDefinition
         StrokeWidth = strokeWidth;
     }
 
+    /// <summary>
+    /// The circle fill color.
+    /// </summary>
     public StyleValue<string>? Color { get; init; }
 
+    /// <summary>
+    /// The circle radius in pixels.
+    /// </summary>
     public StyleValue<double>? Radius { get; init; }
 
+    /// <summary>
+    /// The circle fill opacity.
+    /// </summary>
     public StyleValue<double>? Opacity { get; init; }
 
+    /// <summary>
+    /// The circle stroke color.
+    /// </summary>
     public StyleValue<string>? StrokeColor { get; init; }
 
+    /// <summary>
+    /// The circle stroke width in pixels.
+    /// </summary>
     public StyleValue<double>? StrokeWidth { get; init; }
 }

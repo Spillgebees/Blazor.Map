@@ -1,58 +1,69 @@
-using System.Collections.Immutable;
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map;
 
+/// <summary>
+/// Projects a collection of items into polylines via selector functions. Must be placed
+/// inside <see cref="MapFeatures"/> within a <see cref="SgbMap"/>.
+/// </summary>
+/// <typeparam name="TItem">The item type the selectors operate on.</typeparam>
 public sealed class MapPolylines<TItem> : ComponentBase, IAsyncDisposable
 {
     private readonly string _ownerId = Guid.NewGuid().ToString("N");
 
     [CascadingParameter]
-    private BaseMap? Map { get; set; }
+    private IMapFeatureHost? _map { get; set; }
 
     [CascadingParameter]
-    private MapSectionContext? SectionContext { get; set; }
+    private MapSectionContext? _sectionContext { get; set; }
 
+    /// <summary>The items to project into polylines. Defaults to an empty list.</summary>
     [Parameter, EditorRequired]
     public IReadOnlyList<TItem> Items { get; set; } = [];
 
+    /// <summary>Extracts the unique polyline id per item.</summary>
     [Parameter, EditorRequired]
     public Func<TItem, string>? IdSelector { get; set; }
 
+    /// <summary>Extracts the line's coordinates, in draw order, per item.</summary>
     [Parameter, EditorRequired]
     public Func<TItem, IReadOnlyList<Coordinate>>? CoordinatesSelector { get; set; }
 
+    /// <summary>Extracts the line color (any CSS color) per item.</summary>
     [Parameter]
     public Func<TItem, string?>? ColorSelector { get; set; }
 
+    /// <summary>Extracts the line width per item.</summary>
     [Parameter]
     public Func<TItem, double?>? WidthSelector { get; set; }
 
+    /// <summary>Extracts the click popup per item.</summary>
     [Parameter]
     public Func<TItem, PopupOptions?>? PopupSelector { get; set; }
 
+    /// <summary>Re-projects the items and replaces this component's polylines on the host map.</summary>
     protected override async Task OnParametersSetAsync()
     {
         ValidatePlacement();
         ValidateSelectors();
 
         var polylines = Items.Select(CreatePolyline).ToArray();
-        await Map!.SetOverlayPolylinesAsync(_ownerId, polylines);
+        await _map!.SetOverlayPolylinesAsync(_ownerId, polylines);
     }
 
+    /// <summary>Removes this component's polylines from the host map.</summary>
     public async ValueTask DisposeAsync()
     {
-        if (Map is not null)
+        if (_map is not null)
         {
-            await Map.RemoveOverlayFeaturesAsync(_ownerId);
+            await _map.RemoveOverlayFeaturesAsync(_ownerId);
         }
     }
 
     private Polyline CreatePolyline(TItem item) =>
         new(
             IdSelector!(item),
-            CoordinatesSelector!(item).ToImmutableList(),
+            [.. CoordinatesSelector!(item)],
             ColorSelector?.Invoke(item),
             WidthSelector?.Invoke(item),
             Popup: PopupSelector?.Invoke(item)
@@ -60,12 +71,12 @@ public sealed class MapPolylines<TItem> : ComponentBase, IAsyncDisposable
 
     private void ValidatePlacement()
     {
-        if (Map is null)
+        if (_map is null)
         {
             throw new InvalidOperationException("MapPolylines must be placed inside SgbMap.");
         }
 
-        if (SectionContext?.Kind is not MapContentSectionKind.Features)
+        if (_sectionContext?.Kind is not MapContentSectionKind.Features)
         {
             throw new InvalidOperationException("MapPolylines must be placed inside MapFeatures.");
         }

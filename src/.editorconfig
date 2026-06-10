@@ -121,6 +121,12 @@ csharp_style_prefer_index_operator = false:none
 csharp_style_prefer_range_operator = false:none
 csharp_style_pattern_local_over_anonymous_function = false:none
 
+# the public surface deliberately lives in the flat root namespace regardless of folder
+dotnet_diagnostic.IDE0130.severity = none
+
+# naming rules only run in the build when the diagnostic itself has a severity
+dotnet_diagnostic.IDE1006.severity = warning
+
 [*.{xml,config,*proj,nuspec,props,resx,targets,yml,tasks}]
 indent_size = 2
 
@@ -361,11 +367,17 @@ dotnet_naming_rule.camel_case_for_private_internal_fields.severity = warning
 dotnet_naming_rule.camel_case_for_private_internal_fields.symbols  = private_internal_fields
 dotnet_naming_rule.camel_case_for_private_internal_fields.style    = camel_case_underscore_style
 dotnet_naming_symbols.private_internal_fields.applicable_kinds = field, property
-dotnet_naming_symbols.private_internal_fields.applicable_accessibilities = private, internal, private_protected
+dotnet_naming_symbols.private_internal_fields.applicable_accessibilities = private, private_protected
 dotnet_naming_style.camel_case_underscore_style.required_prefix = _
 dotnet_naming_style.camel_case_underscore_style.capitalization = camel_case
+
+# internal properties are cross-class API and stay PascalCase; internal fields keep _camelCase
+dotnet_naming_rule.camel_case_for_internal_fields.severity = warning
+dotnet_naming_rule.camel_case_for_internal_fields.symbols  = internal_fields
+dotnet_naming_rule.camel_case_for_internal_fields.style    = camel_case_underscore_style
+dotnet_naming_symbols.internal_fields.applicable_kinds = field
+dotnet_naming_symbols.internal_fields.applicable_accessibilities = internal
 
 
 # disable discard variables for unused return values
 csharp_style_unused_value_assignment_preference = local_variable:none
-

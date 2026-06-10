@@ -24,7 +24,11 @@
     </button>
 </div>
 
-<SgbMap MapOptions="@_mapOptions"
+<SgbMap Center="@(new Coordinate(49.75, 6.10))"
+        Zoom="9"
+        Style="@(MapStyle.OpenFreeMap.Positron)"
+        PixelRatioMode="@_pixelRatioMode"
+        PixelRatio="@_pixelRatio"
         Height="400px"
         Width="100%">
     <MapControls>
@@ -51,11 +55,8 @@
     private string _activeMode = "browser";
     private double? _devicePixelRatio;
 
-    private MapOptions _mapOptions = new(
-        Center: new Coordinate(49.75, 6.10),
-        Zoom: 9,
-        Style: MapStyle.OpenFreeMap.Positron
-    );
+    private MapPixelRatioMode _pixelRatioMode = MapPixelRatioMode.BrowserDefault;
+    private double? _pixelRatio;
 
     private string BrowserDefaultPixelRatioDisplay => FormatPixelRatio(_devicePixelRatio);
 
@@ -63,10 +64,10 @@
         _devicePixelRatio is { } value ? FormatPixelRatio(Math.Max(1, Math.Ceiling(value))) : "Checking...";
 
     private string SelectedPixelRatioDisplay =>
-        _mapOptions.PixelRatio switch
+        _pixelRatio switch
         {
             { } pixelRatio => FormatPixelRatio(pixelRatio),
-            _ when _mapOptions.PixelRatioMode == MapPixelRatioMode.RoundedUpDevicePixelRatio => RoundedPixelRatioDisplay,
+            _ when _pixelRatioMode == MapPixelRatioMode.RoundedUpDevicePixelRatio => RoundedPixelRatioDisplay,
             _ => BrowserDefaultPixelRatioDisplay,
         };
 
@@ -94,30 +95,21 @@
     private void UseBrowserDefault()
     {
         _activeMode = "browser";
-        _mapOptions = _mapOptions with
-        {
-            PixelRatioMode = MapPixelRatioMode.BrowserDefault,
-            PixelRatio = null,
-        };
+        _pixelRatioMode = MapPixelRatioMode.BrowserDefault;
+        _pixelRatio = null;
     }
 
     private void UseRoundedDpr()
     {
         _activeMode = "rounded";
-        _mapOptions = _mapOptions with
-        {
-            PixelRatioMode = MapPixelRatioMode.RoundedUpDevicePixelRatio,
-            PixelRatio = null,
-        };
+        _pixelRatioMode = MapPixelRatioMode.RoundedUpDevicePixelRatio;
+        _pixelRatio = null;
     }
 
     private void UseExplicitRatio()
     {
         _activeMode = "explicit";
-        _mapOptions = _mapOptions with
-        {
-            PixelRatioMode = MapPixelRatioMode.BrowserDefault,
-            PixelRatio = 1.25,
-        };
+        _pixelRatioMode = MapPixelRatioMode.BrowserDefault;
+        _pixelRatio = 1.25;
     }
 }

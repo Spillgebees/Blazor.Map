@@ -13,7 +13,7 @@
                  MaxWidth="@MaxWidth"
                  PanelClass="@PanelClass">
     <div class="sgb-map-layer-control-content">
-        @foreach (var item in Items)
+        @foreach (var item in _items)
         {
             @if (ItemTemplate is not null)
             {

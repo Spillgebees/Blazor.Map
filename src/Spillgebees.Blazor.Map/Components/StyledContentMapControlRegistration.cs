@@ -1,8 +1,12 @@
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map;
 
+/// <summary>
+/// Registration plumbing for custom-shell controls (legend/panel/content): registers
+/// the definition, then binds the component's rendered DOM as control content after
+/// render, tracking pending syncs and removals across re-renders.
+/// </summary>
 internal sealed class StyledContentMapControlRegistration
 {
     private const string CustomControlKind = "content";
@@ -81,25 +85,6 @@ internal sealed class StyledContentMapControlRegistration
         ElementReference contentReference
     ) => SyncAfterRenderAsync(registry, id, visible, CustomControlKind, placeholderReference, contentReference);
 
-    public Task SyncAfterRenderAsync(
-        MapControlRegistryContext? registry,
-        string id,
-        bool visible,
-        string kind,
-        ElementReference placeholderReference,
-        ElementReference contentReference,
-        object? stateReference = null
-    ) =>
-        SyncAfterRenderAsync(
-            registry,
-            id,
-            visible,
-            kind,
-            placeholderReference,
-            contentReference,
-            stateReference is null ? null : () => stateReference
-        );
-
     public async Task SyncAfterRenderAsync(
         MapControlRegistryContext? registry,
         string id,
@@ -107,7 +92,7 @@ internal sealed class StyledContentMapControlRegistration
         string kind,
         ElementReference placeholderReference,
         ElementReference contentReference,
-        Func<object?>? stateReferenceFactory
+        Func<bool, Task>? onPanelOpenChangedAsync = null
     )
     {
         if (registry is null || string.IsNullOrWhiteSpace(_registeredId))
@@ -143,8 +128,13 @@ internal sealed class StyledContentMapControlRegistration
 
         if (_contentSyncPending)
         {
-            var stateReference = stateReferenceFactory?.Invoke();
-            await registry.SetControlContentAsync(id, kind, placeholderReference, contentReference, stateReference);
+            await registry.SetControlContentAsync(
+                id,
+                kind,
+                placeholderReference,
+                contentReference,
+                onPanelOpenChangedAsync
+            );
             _contentRegistered = true;
             _contentSyncPending = false;
         }

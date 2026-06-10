@@ -1,26 +1,23 @@
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map;
 
-/// <summary>
-/// A MapLibre fill layer that renders polygon geometry from a GeoJSON source.
-/// </summary>
-public class FillLayer : LayerBase
+/// <summary>Engine-backed fill layer.</summary>
+public sealed class FillLayer : LayerBase
 {
-    /// <summary>The fill color (CSS color string or expression).</summary>
+    /// <summary>Fill color (MapLibre <c>fill-color</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<string>? Color { get; set; }
 
-    /// <summary>The fill opacity (0.0–1.0, literal or expression).</summary>
+    /// <summary>Fill opacity (MapLibre <c>fill-opacity</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? Opacity { get; set; }
 
-    /// <summary>The outline color of the fill (CSS color string or expression).</summary>
+    /// <summary>Outline color drawn as a 1px line around the fill (MapLibre <c>fill-outline-color</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<string>? OutlineColor { get; set; }
 
-    internal override string _layerType => "fill";
+    internal override string LayerType => "fill";
 
     internal override Dictionary<string, object?> GetPaintProperties() =>
         new()
@@ -30,5 +27,5 @@ public class FillLayer : LayerBase
             ["fill-outline-color"] = OutlineColor?.ToSerializable(),
         };
 
-    internal override Dictionary<string, object?> GetLayoutProperties() => new();
+    internal override Dictionary<string, object?> GetLayoutProperties() => [];
 }

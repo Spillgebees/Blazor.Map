@@ -1,6 +1,6 @@
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { describe, expect, it, vi } from "vitest";
-import "../../test/maplibreMock";
+import "../../tests/unit/maplibreMock";
 import type { IContentMapControl } from "../interfaces/controls";
 import { ContentControl } from "./contentControl";
 

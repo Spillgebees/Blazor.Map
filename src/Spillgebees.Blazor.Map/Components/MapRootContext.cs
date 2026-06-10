@@ -1,6 +1,7 @@
 namespace Spillgebees.Blazor.Map;
 
-internal sealed class MapRootContext(BaseMap map)
+/// <summary>Marks content as being nested inside a <see cref="SgbMap"/>.</summary>
+internal sealed class MapRootContext(object map)
 {
-    public BaseMap Map { get; } = map;
+    public object Map { get; } = map;
 }

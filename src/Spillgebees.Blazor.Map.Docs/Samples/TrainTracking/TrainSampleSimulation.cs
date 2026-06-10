@@ -1,5 +1,3 @@
-using Spillgebees.Blazor.Map;
-
 namespace Spillgebees.Blazor.Map.Docs.Samples.TrainTracking;
 
 public static class TrainSampleSimulation
@@ -57,68 +55,6 @@ public static class TrainSampleSimulation
 
         return new TrainFeatureCollection(features);
     }
-
-    public static TrackedEntityLayerDefinition<TrainSampleState> BuildTrackedEntityLayer(
-        IReadOnlyList<TrainSampleState> trains
-    ) =>
-        new(
-            "sample-trains",
-            trains,
-            new TrackedEntityIdOptions<TrainSampleState>(train => train.Id),
-            new TrackedEntityVisualOptions<TrainSampleState>(
-                new TrackedEntitySymbolOptions<TrainSampleState>(
-                    train => train.CurrentPosition,
-                    train => $"train-{train.Color.TrimStart('#')}",
-                    SizeSelector: _ => 1.0,
-                    RotationSelector: train => CalculateBearing(train.CurrentPosition, train.NextPosition),
-                    ColorSelector: train => train.Color,
-                    HoverSelector: _ => new TrackedEntityHoverIntent(1.2, true),
-                    RenderOrderSelector: _ => 100,
-                    PropertiesSelector: train => new Dictionary<string, object?>
-                    {
-                        ["internationalPresence"] = IsInternational(train) ? 1 : 0,
-                    }
-                ),
-                [
-                    new(
-                        "service",
-                        TextSelector: train => train.ServiceNumber,
-                        Offset: new PixelPoint(1.3, -0.3),
-                        Anchor: SymbolAnchor.Left,
-                        ColorSelector: _ => "#1e293b",
-                        TextSizeSelector: _ => 11,
-                        RotationSelector: train => CalculateBearing(train.CurrentPosition, train.NextPosition),
-                        RenderOrderSelector: _ => 110
-                    ),
-                    new(
-                        "route",
-                        TextSelector: train => train.Route,
-                        Offset: new PixelPoint(1.8, 1.2),
-                        Anchor: SymbolAnchor.Left,
-                        DisplayMode: TrackedEntityDecorationDisplayMode.Hover,
-                        ColorSelector: _ => "#64748b",
-                        TextSizeSelector: _ => 9,
-                        RotationSelector: train => CalculateBearing(train.CurrentPosition, train.NextPosition),
-                        RenderOrderSelector: _ => 105
-                    ),
-                    new(
-                        "operator",
-                        TextSelector: train => train.Operator,
-                        Offset: new PixelPoint(-1.3, 0.0),
-                        Anchor: SymbolAnchor.Right,
-                        DisplayMode: TrackedEntityDecorationDisplayMode.Selected,
-                        ColorSelector: train => train.Color,
-                        TextSizeSelector: _ => 8,
-                        RenderOrderSelector: _ => 108
-                    ),
-                ],
-                TrackedEntitySourceOptions.Default,
-                null,
-                null
-            ),
-            new TrackedEntityBehaviorOptions<TrainSampleState>(),
-            new TrackedEntityCallbacks<TrainSampleState>()
-        );
 
     public static string BuildIconSvg(string color) =>
         $"""

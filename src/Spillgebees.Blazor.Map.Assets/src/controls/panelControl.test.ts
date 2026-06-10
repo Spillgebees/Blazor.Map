@@ -1,7 +1,7 @@
 import type { DotNet } from "@microsoft/dotnet-js-interop";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { describe, expect, it, vi } from "vitest";
-import "../../test/maplibreMock";
+import "../../tests/unit/maplibreMock";
 import type { IPanelMapControl } from "../interfaces/controls";
 import { PanelControl } from "./panelControl";
 

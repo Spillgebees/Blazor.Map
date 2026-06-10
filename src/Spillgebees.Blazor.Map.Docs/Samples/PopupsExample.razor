@@ -1,4 +1,5 @@
-<SgbMap MapOptions="@_mapOptions"
+<SgbMap Center="@(new Coordinate(49.6117, 6.1319))"
+        Zoom="12"
         Markers="@_markers"
         Height="400px"
         Width="100%">
@@ -13,11 +14,6 @@
 </SgbMap>
 
 @code {
-    private readonly MapOptions _mapOptions = new(
-        Center: new Coordinate(49.6117, 6.1319),
-        Zoom: 12
-    );
-
     private readonly List<Marker> _markers =
     [
         new(

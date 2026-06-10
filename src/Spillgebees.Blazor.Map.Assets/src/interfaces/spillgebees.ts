@@ -1,87 +1,7 @@
-import type { DotNet } from "@microsoft/dotnet-js-interop";
-import type { IControl, Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
-import type { FeatureStorage } from "../types/feature-storage";
-import type { IMapControl } from "./controls";
-import type { IMapImage, IMapOptions, ITileOverlay, ReferrerPolicy } from "./map";
+import type { Map as MapLibreMap } from "maplibre-gl";
+import type { ReferrerPolicy } from "./map";
 
-export interface RegisteredMapSource {
-  sourceId: string;
-  sourceSpec: Record<string, unknown>;
-}
-
-export interface RegisteredMapLayer {
-  layerId: string;
-  layerSpec: Record<string, unknown>;
-  originalVisible?: boolean;
-  beforeLayerId: string | null;
-  imperativeBeforeLayerId?: string | null;
-  ordering: {
-    declarationOrder: number;
-    layerGroup: string | null;
-    beforeLayerGroup: string | null;
-    afterLayerGroup: string | null;
-  };
-}
-
-export interface RegisteredMapImage {
-  id: string;
-  url: string;
-  width: number;
-  height: number;
-  pixelRatio: number;
-  isSdf: boolean;
-}
-
-export type VisibilityGroupTargetRegistration =
-  | {
-      kind: "styleLayer";
-      styleId: string;
-      layerIds: string[];
-    }
-  | {
-      kind: "styleLayerFeatures";
-      styleId: string;
-      layerIds: string[];
-      filter: unknown;
-    }
-  | {
-      kind: "styleLayerTag";
-      styleId: string;
-      layerIds: string[];
-      tags: string[];
-    }
-  | {
-      kind: "runtimeLayer";
-      layerIds: string[];
-    };
-
-export interface VisibilityGroupRegistration {
-  groupId: string;
-  visible: boolean;
-  targets: VisibilityGroupTargetRegistration[];
-}
-
-export interface OverlayPartRegistration {
-  partId: string;
-  visible: boolean;
-  targets: VisibilityGroupTargetRegistration[];
-}
-
-export interface OverlayRegistration {
-  overlayId: string;
-  visible: boolean;
-  targets: VisibilityGroupTargetRegistration[];
-  parts: OverlayPartRegistration[];
-}
-
-export interface LayerEventSubscription {
-  dotNetRef?: DotNet.DotNetObject;
-  click?: (event: { lngLat: { lat: number; lng: number }; features?: Array<{ properties?: unknown }> }) => void;
-  mouseEnter?: (event: { lngLat: { lat: number; lng: number }; features?: Array<{ properties?: unknown }> }) => void;
-  mouseLeave?: () => void;
-  onStyleData?: () => void;
-}
-
+/** A composed overlay-style layer registered under a prefixed runtime layer id. */
 export interface ComposedStyleLayerRegistration {
   runtimeLayerId: string;
   styleId: string;
@@ -95,48 +15,11 @@ export interface OverlayStyleRequestOptions {
   referrerPolicy: ReferrerPolicy | null;
 }
 
-export interface CustomControlRegistration {
-  controlId: string;
-  kind: "legend" | "panel" | "content";
-  control: IControl;
-}
-
-export interface NativeControlRegistration {
-  controlId: string;
-  kind: IMapControl["kind"];
-  signature: string;
-  control: IControl;
-}
-
-export type SpillgebeesInteropFunction = { bivarianceHack(...args: unknown[]): unknown }["bivarianceHack"];
-
+/**
+ * The shared per-map registries: the map registry (diagnostics/tests) and the
+ * composed-style layer index (style composition + engine visibility resolution).
+ */
 export interface SpillgebeesMapNamespace {
-  __bundleMarker: string;
-  mapFunctions: Record<string, SpillgebeesInteropFunction>;
   maps: Map<HTMLElement, MapLibreMap>;
-  features: Map<MapLibreMap, FeatureStorage>;
-  overlays: Map<MapLibreMap, Map<string, ITileOverlay>>;
-  controls: Map<MapLibreMap, Set<IControl>>;
-  nativeControlRegistrations: Map<MapLibreMap, Map<string, NativeControlRegistration>>;
-  customControlRegistrations: Map<MapLibreMap, Map<string, CustomControlRegistration>>;
-  styles: Map<MapLibreMap, string | StyleSpecification>;
-  mapOptions: Map<MapLibreMap, IMapOptions>;
-  dotNetHelpers: Map<MapLibreMap, DotNet.DotNetObject>;
-  controlsPayload: Map<MapLibreMap, IMapControl[]>;
-  sourceSpecs: Map<MapLibreMap, Map<string, RegisteredMapSource>>;
-  layerSpecs: Map<MapLibreMap, Map<string, RegisteredMapLayer>>;
-  imageRegistrations: Map<MapLibreMap, Map<string, RegisteredMapImage>>;
-  layerEventSubscriptions: Map<MapLibreMap, Map<string, LayerEventSubscription>>;
-  visibilityGroups: Map<MapLibreMap, Map<string, VisibilityGroupRegistration>>;
-  overlayVisibility: Map<MapLibreMap, Map<string, OverlayRegistration>>;
-  overlayStyleUrls: Map<MapLibreMap, string[]>;
-  overlayStyleRequests: Map<MapLibreMap, OverlayStyleRequestOptions[]>;
   composedStyleLayerIds: Map<MapLibreMap, Map<string, ComposedStyleLayerRegistration>>;
-  pendingStyleReloads: WeakSet<MapLibreMap>;
-  requestContexts: Map<MapLibreMap, { mapOptions: IMapOptions; overlays: ITileOverlay[] }>;
-  imageSyncVersion: Map<MapLibreMap, number>;
-}
-
-export interface SpillgebeesMapFunctions {
-  setImages: (mapElement: HTMLElement, images: IMapImage[]) => Promise<void>;
 }

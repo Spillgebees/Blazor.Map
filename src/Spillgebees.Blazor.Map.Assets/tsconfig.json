@@ -16,7 +16,7 @@
   },
   "include": [
     "src/**/*.ts",
-    "test/**/*.ts",
+    "tests/unit/**/*.ts",
     "tests/browser/integration/**/*.ts",
     "playwright.config.ts",
     "vite.config.ts"

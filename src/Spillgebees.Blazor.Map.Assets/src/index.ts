@@ -1,6 +1,6 @@
 // noinspection JSUnusedGlobalSymbols
 
-import { bootstrap } from "./map";
+import { bootstrapEngine } from "./engine/bootstrap";
 import "./styles.scss";
 
 export function beforeWebStart(options: unknown) {
@@ -53,7 +53,7 @@ export function afterServerStarted(options: unknown) {
 
 export function beforeStart(_: unknown) {
   window.hasBeforeStartBeenCalledForSpillgebeesMap = true;
-  bootstrap();
+  bootstrapEngine();
 }
 
 export function afterStarted(_: unknown) {

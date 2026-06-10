@@ -1,64 +1,55 @@
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map;
 
-/// <summary>
-/// A MapLibre line layer that renders line geometry from a GeoJSON source.
-/// </summary>
-public class LineLayer : LayerBase
+/// <summary>Engine-backed line layer.</summary>
+public sealed class LineLayer : LayerBase
 {
-    /// <summary>The line color. Accepts either a CSS color literal or a MapLibre expression.</summary>
+    /// <summary>Line color (MapLibre <c>line-color</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<string>? Color { get; set; }
 
-    /// <summary>The line width in pixels. Accepts either a numeric literal or a MapLibre expression.</summary>
+    /// <summary>Line width in pixels (MapLibre <c>line-width</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? Width { get; set; }
 
-    /// <summary>The line opacity (0.0-1.0). Accepts either a numeric literal or a MapLibre expression.</summary>
+    /// <summary>Line opacity (MapLibre <c>line-opacity</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? Opacity { get; set; }
 
-    /// <summary>An array of dash lengths for a dashed line pattern.</summary>
+    /// <summary>Dash pattern as alternating dash and gap lengths, in line-width units (MapLibre <c>line-dasharray</c>).</summary>
     [Parameter]
     public double[]? DashArray { get; set; }
 
-    /// <summary>
-    /// The width of a gap between parallel lines. Accepts either a numeric literal or a MapLibre expression.
-    /// </summary>
+    /// <summary>Width of the gap drawn inside the line, in pixels (MapLibre <c>line-gap-width</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? GapWidth { get; set; }
 
-    /// <summary>The blur applied to the line. Accepts either a numeric literal or a MapLibre expression.</summary>
+    /// <summary>Blur applied to the line, in pixels (MapLibre <c>line-blur</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? Blur { get; set; }
 
-    /// <summary>
-    /// The line offset perpendicular to the line direction. Accepts either a numeric literal or a MapLibre expression.
-    /// </summary>
+    /// <summary>Perpendicular offset from the line center, in pixels (MapLibre <c>line-offset</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? Offset { get; set; }
 
-    /// <summary>
-    /// The cap style for line endpoints. Accepts either a <see cref="LineCap" /> literal or a MapLibre expression.
-    /// </summary>
+    /// <summary>Display of line endings (MapLibre <c>line-cap</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<LineCap>? Cap { get; set; }
 
-    /// <summary>The join style for line corners ("bevel", "round", "miter").</summary>
+    /// <summary>Display of joints between line segments (MapLibre <c>line-join</c>).</summary>
     [Parameter]
     public LineJoin? Join { get; set; }
 
-    /// <summary>The line miter limit. Accepts either a numeric literal or a MapLibre expression.</summary>
+    /// <summary>Maximum miter length before a miter join falls back to bevel (MapLibre <c>line-miter-limit</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? MiterLimit { get; set; }
 
-    /// <summary>The line round limit. Accepts either a numeric literal or a MapLibre expression.</summary>
+    /// <summary>Maximum radius for round joins (MapLibre <c>line-round-limit</c>). Accepts a literal or an expression.</summary>
     [Parameter]
     public StyleValue<double>? RoundLimit { get; set; }
 
-    internal override string _layerType => "line";
+    internal override string LayerType => "line";
 
     internal override Dictionary<string, object?> GetPaintProperties() =>
         new()

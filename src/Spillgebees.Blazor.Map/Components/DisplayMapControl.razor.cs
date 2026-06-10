@@ -10,46 +10,59 @@ public partial class DisplayMapControl : ComponentBase, IDisposable
     private MapDisplayState? _subscribedDisplay;
 
     [CascadingParameter]
-    private MapDisplayState? Display { get; set; }
+    private MapDisplayState? _display { get; set; }
 
+    /// <summary>Unique control identifier within the map.</summary>
     [Parameter, EditorRequired]
     public string Id { get; set; } = string.Empty;
 
+    /// <summary>Map corner the control is placed in. Defaults to <see cref="ControlPosition.TopRight" />.</summary>
     [Parameter]
     public ControlPosition Position { get; set; } = ControlPosition.TopRight;
 
+    /// <summary>Deterministic ordering among controls at the same corner; lower values render first. Defaults to 450.</summary>
     [Parameter]
     public int Order { get; set; } = 450;
 
+    /// <summary>Whether the control is visible. Defaults to <c>true</c>.</summary>
     [Parameter]
     public bool Visible { get; set; } = true;
 
+    /// <summary>Additional CSS class applied to the control container.</summary>
     [Parameter]
     public string? Class { get; set; }
 
+    /// <summary>Accessible label for the control's toggle button; must be non-empty. Defaults to <c>"Display"</c>.</summary>
     [Parameter]
     public string Label { get; set; } = "Display";
 
+    /// <summary>Title shown in the panel header. Defaults to <c>"Display"</c>.</summary>
     [Parameter]
     public string Title { get; set; } = "Display";
 
+    /// <summary>Whether the panel starts open.</summary>
     [Parameter]
     public bool InitiallyOpen { get; set; }
 
+    /// <summary>Maximum width of the panel as a CSS length value.</summary>
     [Parameter]
     public string? MaxWidth { get; set; }
 
+    /// <summary>Additional CSS class applied to the panel content container.</summary>
     [Parameter]
     public string? PanelClass { get; set; }
 
+    /// <summary>Display item ids to show, in order; shows all items when not set.</summary>
     [Parameter]
     public IReadOnlyList<string>? ItemIds { get; set; }
 
+    /// <summary>Optional template used to render each display item.</summary>
     [Parameter]
     public RenderFragment<MapDisplayControlItemContext>? ItemTemplate { get; set; }
 
-    private IReadOnlyList<MapDisplayItem> Items => ResolveItems();
+    private IReadOnlyList<MapDisplayItem> _items => ResolveItems();
 
+    /// <inheritdoc />
     protected override void OnParametersSet()
     {
         if (string.IsNullOrWhiteSpace(Id))
@@ -62,50 +75,46 @@ public partial class DisplayMapControl : ComponentBase, IDisposable
             throw new InvalidOperationException("A non-empty Label is required.");
         }
 
-        if (Display is null)
+        if (_display is null)
         {
-            throw new InvalidOperationException("DisplayMapControl requires SgbMap.Display.");
+            throw new InvalidOperationException("DisplayMapControl requires a cascading MapDisplayState (SgbMap Display parameter).");
         }
 
-        if (ReferenceEquals(_subscribedDisplay, Display))
+        if (ReferenceEquals(_subscribedDisplay, _display))
         {
             return;
         }
 
-        if (_subscribedDisplay is not null)
-        {
-            _subscribedDisplay.Changed -= HandleDisplayChanged;
-        }
+        _subscribedDisplay?.Changed -= HandleDisplayChanged;
 
-        _subscribedDisplay = Display;
+        _subscribedDisplay = _display;
         _subscribedDisplay.Changed += HandleDisplayChanged;
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
-        if (_subscribedDisplay is not null)
-        {
-            _subscribedDisplay.Changed -= HandleDisplayChanged;
-            _subscribedDisplay = null;
-        }
+        _subscribedDisplay?.Changed -= HandleDisplayChanged;
+        _subscribedDisplay = null;
+        GC.SuppressFinalize(this);
     }
 
     private IReadOnlyList<MapDisplayItem> ResolveItems()
     {
-        if (Display is null)
+        if (_display is null)
         {
             return [];
         }
 
         if (ItemIds is null)
         {
-            return Display.Items;
+            return _display.Items;
         }
 
         var items = new List<MapDisplayItem>(ItemIds.Count);
         foreach (var itemId in ItemIds)
         {
-            if (!Display.TryGetItem(itemId, out var item))
+            if (!_display.TryGetItem(itemId, out var item))
             {
                 throw new InvalidOperationException($"Display item '{itemId}' was not found.");
             }
@@ -133,7 +142,7 @@ public partial class DisplayMapControl : ComponentBase, IDisposable
 
     private Task SetOnAsync(string itemId, bool on)
     {
-        Display!.SetOn(itemId, on);
+        _display!.SetOn(itemId, on);
         return Task.CompletedTask;
     }
 

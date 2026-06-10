@@ -1,7 +1,10 @@
-using Spillgebees.Blazor.Map;
-
 namespace Spillgebees.Blazor.Map;
 
+/// <summary>
+/// Shared registration plumbing for native control components: registers the typed
+/// definition with the host's registry on parameter changes and syncs after render
+/// once the map is ready.
+/// </summary>
 internal sealed class MapControlComponentRegistration
 {
     private readonly string _ownerId = Guid.NewGuid().ToString("N");

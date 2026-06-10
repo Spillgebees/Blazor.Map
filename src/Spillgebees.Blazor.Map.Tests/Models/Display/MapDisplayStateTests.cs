@@ -105,7 +105,7 @@ public sealed class MapDisplayStateTests
     {
         // arrange
         var item = new MapDisplayItem("roads", [MapDisplayTarget.RuntimeLayers("roads")]);
-        Func<bool, Task> callback = _ => Task.CompletedTask;
+        static Task callback(bool _) => Task.CompletedTask;
 
         // act
         var nullItem = () => new MapDisplayControlItemContext(null!, true, callback);

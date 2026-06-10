@@ -1,0 +1,159 @@
+@page "/engine-entity-functional-test"
+@inject NavigationManager Navigation
+
+<main class="e2e-shell">
+    <h1>Engine entity functional test</h1>
+    <p>Deterministic fixture for Playwright: engine entities with decorations, selection, clustering, and animation.</p>
+
+    <section style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+        <button type="button" data-testid="move-e1" @onclick="MoveE1">Move e1</button>
+        <button type="button" data-testid="add-entity" @onclick="AddEntity">Add entity</button>
+        <button type="button" data-testid="remove-e2" @onclick="RemoveE2">Remove e2</button>
+        <button type="button" data-testid="select-e1" @onclick="SelectE1">Select e1</button>
+        <button type="button" data-testid="clear-selection" @onclick="ClearSelection">Clear selection</button>
+        <span>Last clicked: <strong data-testid="last-clicked">@(_lastClicked ?? "none")</strong></span>
+        <span>Last hovered: <strong data-testid="last-hovered">@(_lastHovered ?? "none")</strong></span>
+    </section>
+
+    @if (_lastError is not null)
+    {
+        <p style="color: #b91c1c;" data-testid="map-error">@_lastError</p>
+    }
+
+    <div id="engine-functional-frame" class="stress-map-frame">
+        <SgbMap StyleSpec="@BaseStyleJson"
+                  Center="@(new Coordinate(49.61, 6.14))"
+                  Zoom="@(_clusterMode ? 10 : 12)"
+                  Images="_images"
+                  Height="560px"
+                  Width="100%"
+                  OnMapError="@HandleMapError">
+            <TrackedEntityLayer TItem="@Vehicle"
+                                  Id="entities"
+                                  Items="@_vehicles"
+                                  ItemId="@(vehicle => vehicle.Id)"
+                                  Position="@(vehicle => vehicle.Position)"
+                                  Rotation="@(vehicle => vehicle.Heading)"
+                                  IconImage="functional-dot"
+                                  IconSize="0.75"
+                                  HoverScale="@(_ => 1.5)"
+                                  Interactive="true"
+                                  Cluster="@(_clusterMode ? TestClusterOptions : null)"
+                                  Animate="@(_animateMode ? TimeSpan.FromMilliseconds(1500) : null)"
+                                  SelectedIds="@_selectedIds"
+                                  OnClick="@HandleClick"
+                                  OnHoverEnter="@HandleHoverEnter">
+                <EntityDecoration Id="badge"
+                                  Icon="@(_ => "functional-badge")"
+                                  Text="@(vehicle => vehicle.Name)"
+                                  Offset="@(new PixelPoint(0, -20))"
+                                  IconSize="0.5" />
+            </TrackedEntityLayer>
+        </SgbMap>
+    </div>
+</main>
+
+@code {
+    private const string BaseStyleJson = """
+        {"version":8,"sources":{"base":{"type":"raster","tiles":["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII="],"tileSize":256,"attribution":"Integration test"}},"layers":[{"id":"base","type":"raster","source":"base"}]}
+        """;
+
+    private readonly List<MapImage> _images =
+    [
+        new(
+            "functional-dot",
+            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='10' fill='%232563eb' stroke='white' stroke-width='4'/%3E%3C/svg%3E",
+            32,
+            32
+        ),
+        new(
+            "functional-badge",
+            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23f59e0b'/%3E%3C/svg%3E",
+            16,
+            16
+        ),
+    ];
+
+    // circle-only cluster layers: the offline test style has no glyphs for count labels
+    private static readonly ClusterOptions TestClusterOptions = ClusterOptions.Create(
+        layerSet: ClusterLayerSet.Custom(
+            ClusterLayerDefinition.Circle("clusters", color: "#2563eb", radius: 18, strokeColor: "#ffffff", strokeWidth: 2)
+        )
+    );
+
+    private List<Vehicle> _vehicles = [];
+    private IReadOnlyCollection<string>? _selectedIds;
+    private string? _lastClicked;
+    private string? _lastHovered;
+    private bool _clusterMode;
+    private bool _animateMode;
+    private int _nextEntityNumber = 4;
+
+    protected override void OnInitialized()
+    {
+        var query = StressQuery.Parse(Navigation.Uri);
+        _clusterMode = query.GetBool("cluster", false);
+        _animateMode = query.GetBool("animate", false);
+
+        _vehicles = _clusterMode
+            ? Enumerable
+                .Range(0, 50)
+                .Select(index => new Vehicle(
+                    $"e{index + 1}",
+                    $"Vehicle {index + 1}",
+                    new Coordinate(49.61 + (index % 7) * 0.001, 6.14 + (index / 7) * 0.001),
+                    0
+                ))
+                .ToList()
+            :
+            [
+                new Vehicle("e1", "Vehicle 1", new Coordinate(49.60, 6.10), 45),
+                new Vehicle("e2", "Vehicle 2", new Coordinate(49.61, 6.14), 90),
+                new Vehicle("e3", "Vehicle 3", new Coordinate(49.62, 6.18), 135),
+            ];
+    }
+
+    private void MoveE1()
+    {
+        _vehicles = _vehicles
+            .Select(vehicle =>
+                vehicle.Id == "e1"
+                    ? vehicle with
+                    {
+                        Position = new Coordinate(vehicle.Position.Latitude, vehicle.Position.Longitude + 0.02),
+                        Heading = vehicle.Heading + 90,
+                    }
+                    : vehicle
+            )
+            .ToList();
+    }
+
+    private void AddEntity()
+    {
+        var number = _nextEntityNumber++;
+        _vehicles = [.. _vehicles, new Vehicle($"e{number}", $"Vehicle {number}", new Coordinate(49.63, 6.12), 0)];
+    }
+
+    private void RemoveE2()
+    {
+        _vehicles = _vehicles.Where(vehicle => vehicle.Id != "e2").ToList();
+    }
+
+    private void SelectE1() => _selectedIds = ["e1"];
+
+    private void ClearSelection() => _selectedIds = [];
+
+    private string? _lastError;
+
+    private void HandleMapError(Exception exception)
+    {
+        _lastError = exception.Message;
+        StateHasChanged();
+    }
+
+    private void HandleClick(EntityEventArgs<Vehicle> args) => _lastClicked = args.Item.Id;
+
+    private void HandleHoverEnter(EntityEventArgs<Vehicle> args) => _lastHovered = args.Item.Id;
+
+    private sealed record Vehicle(string Id, string Name, Coordinate Position, double Heading);
+}

@@ -1,0 +1,96 @@
+@page "/engine-style-functional-test"
+
+<main class="e2e-shell">
+    <h1>Engine style functional test</h1>
+    <p>Deterministic fixture for Playwright: typed styles, overlay composition, style switching with replay, theme.</p>
+
+    <section style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+        <button type="button" data-testid="switch-style" @onclick="SwitchStyle">Switch base style</button>
+        <button type="button" data-testid="toggle-theme" @onclick="ToggleTheme">Toggle theme</button>
+        <span>Base: <strong data-testid="active-style">@_activeStyleId</strong></span>
+        <span>Reloads: <strong data-testid="reload-count">@_reloadCount</strong></span>
+    </section>
+
+    @if (_lastError is not null)
+    {
+        <p style="color: #b91c1c;" data-testid="map-error">@_lastError</p>
+    }
+
+    <div id="engine-style-frame" class="stress-map-frame">
+        <SgbMap Styles="@_styles"
+                  Theme="@_theme"
+                  Center="@(new Coordinate(49.61, 6.14))"
+                  Zoom="12"
+                  Images="_images"
+                  Height="480px"
+                  Width="100%"
+                  OnStyleReloaded="@HandleStyleReloaded"
+                  OnMapError="@HandleMapError">
+            <TrackedEntityLayer TItem="@Poi"
+                                  Id="entities"
+                                  Items="@_pois"
+                                  ItemId="@(poi => poi.Id)"
+                                  Position="@(poi => poi.Position)"
+                                  IconImage="style-test-dot"
+                                  IconSize="0.75" />
+        </SgbMap>
+    </div>
+</main>
+
+@code {
+    private static readonly MapStyle RedStyle = MapStyle
+        .FromRasterUrl(
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGM4YWMDAAMQAUEiFmcFAAAAAElFTkSuQmCC",
+            "red"
+        )
+        .WithId("red");
+
+    private static readonly MapStyle BlueStyle = MapStyle
+        .FromRasterUrl(
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGOwsTkBAAH4AUE+E+0vAAAAAElFTkSuQmCC",
+            "blue"
+        )
+        .WithId("blue");
+
+    private static readonly MapStyle OverlayStyle = MapStyle.FromUrl("/test-overlay-style.json").WithId("test-overlay");
+
+    private readonly List<MapImage> _images =
+    [
+        new(
+            "style-test-dot",
+            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='10' fill='%232563eb' stroke='white' stroke-width='4'/%3E%3C/svg%3E",
+            32,
+            32
+        ),
+    ];
+
+    private readonly List<Poi> _pois =
+    [
+        new("p1", new Coordinate(49.605, 6.13)),
+        new("p2", new Coordinate(49.615, 6.15)),
+    ];
+
+    private IReadOnlyList<MapStyle> _styles = [RedStyle, OverlayStyle];
+    private string _activeStyleId = "red";
+    private MapTheme _theme = MapTheme.Light;
+    private int _reloadCount;
+    private string? _lastError;
+
+    private void SwitchStyle()
+    {
+        _activeStyleId = _activeStyleId == "red" ? "blue" : "red";
+        _styles = [_activeStyleId == "red" ? RedStyle : BlueStyle, OverlayStyle];
+    }
+
+    private void ToggleTheme() => _theme = _theme == MapTheme.Light ? MapTheme.Dark : MapTheme.Light;
+
+    private void HandleStyleReloaded() => _reloadCount++;
+
+    private void HandleMapError(Exception exception)
+    {
+        _lastError = exception.Message;
+        StateHasChanged();
+    }
+
+    private sealed record Poi(string Id, Coordinate Position);
+}

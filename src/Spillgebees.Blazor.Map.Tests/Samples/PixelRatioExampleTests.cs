@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using Spillgebees.Blazor.Map;
 using Spillgebees.Blazor.Map.Docs.Samples;
 
 namespace Spillgebees.Blazor.Map.Tests.Samples;
@@ -25,9 +24,9 @@ public class PixelRatioExampleTests : BunitContext
         cut.Find(".docs-pixel-ratio-control").TextContent.Should().Contain("2x");
         cut.Find("button.active").TextContent.Should().Contain("Browser default");
 
-        var mapOptions = cut.FindComponent<SgbMap>().Instance.MapOptions;
-        mapOptions.PixelRatioMode.Should().Be(MapPixelRatioMode.BrowserDefault);
-        mapOptions.PixelRatio.Should().BeNull();
+        var map = cut.FindComponent<SgbMap>().Instance;
+        map.PixelRatioMode.Should().Be(MapPixelRatioMode.BrowserDefault);
+        map.PixelRatio.Should().BeNull();
     }
 
     [Test]
@@ -40,9 +39,9 @@ public class PixelRatioExampleTests : BunitContext
         cut.Find("button[data-test='pixel-ratio-rounded-dpr']").Click();
 
         // assert
-        var mapOptions = cut.FindComponent<SgbMap>().Instance.MapOptions;
-        mapOptions.PixelRatioMode.Should().Be(MapPixelRatioMode.RoundedUpDevicePixelRatio);
-        mapOptions.PixelRatio.Should().BeNull();
+        var map = cut.FindComponent<SgbMap>().Instance;
+        map.PixelRatioMode.Should().Be(MapPixelRatioMode.RoundedUpDevicePixelRatio);
+        map.PixelRatio.Should().BeNull();
         cut.Find(".docs-pixel-ratio-control").TextContent.Should().Contain("2x");
     }
 
@@ -56,8 +55,8 @@ public class PixelRatioExampleTests : BunitContext
         cut.Find("button[data-test='pixel-ratio-explicit']").Click();
 
         // assert
-        var mapOptions = cut.FindComponent<SgbMap>().Instance.MapOptions;
-        mapOptions.PixelRatio.Should().Be(1.25);
+        var map = cut.FindComponent<SgbMap>().Instance;
+        map.PixelRatio.Should().Be(1.25);
         cut.Find(".docs-pixel-ratio-control").TextContent.Should().Contain("1.25x");
     }
 
@@ -72,9 +71,9 @@ public class PixelRatioExampleTests : BunitContext
         cut.Find("button[data-test='pixel-ratio-browser-default']").Click();
 
         // assert
-        var mapOptions = cut.FindComponent<SgbMap>().Instance.MapOptions;
-        mapOptions.PixelRatioMode.Should().Be(MapPixelRatioMode.BrowserDefault);
-        mapOptions.PixelRatio.Should().BeNull();
+        var map = cut.FindComponent<SgbMap>().Instance;
+        map.PixelRatioMode.Should().Be(MapPixelRatioMode.BrowserDefault);
+        map.PixelRatio.Should().BeNull();
         cut.Find(".docs-pixel-ratio-control").TextContent.Should().Contain("1.25x");
     }
 }

@@ -1,0 +1,102 @@
+@page "/engine-controls-functional-test"
+
+<main class="e2e-shell">
+    <h1>Engine controls functional test</h1>
+    <p>The map control component family: native controls, panels with Blazor content, display and overlay controls.</p>
+
+    @if (_lastError is not null)
+    {
+        <p style="color: #b91c1c;" data-testid="map-error">@_lastError</p>
+    }
+
+    <div id="engine-controls-frame" class="stress-map-frame">
+        <SgbMap Style="@BaseStyle"
+                  Display="@_display"
+                  Center="@(new Coordinate(49.61, 6.14))"
+                  Zoom="12"
+                  Height="480px"
+                  Width="100%"
+                  OnMapError="@HandleMapError">
+            <GeoJsonSource Id="ctrl" Data="@DataJson">
+                <CircleLayer Id="ctrl-points" Radius="8" Color="@("#dc2626")" />
+            </GeoJsonSource>
+            <MapOverlay Id="notes" Label="Notes">
+                <MapOverlayPart Id="markers" Label="Markers">
+                    <GeoJsonSource Id="notes-source" Data="@NotesDataJson">
+                        <CircleLayer Id="notes-circle" Radius="6" Color="@("#16a34a")" />
+                    </GeoJsonSource>
+                </MapOverlayPart>
+            </MapOverlay>
+
+            <MapControls>
+                <NavigationMapControl Id="nav" />
+                <PanelMapControl Id="info-panel" Label="Info" Title="Info panel" InitiallyOpen="true" Position="ControlPosition.TopLeft">
+                    <div data-testid="panel-content">Hello from Blazor</div>
+                </PanelMapControl>
+                <DisplayMapControl Id="display-ctrl" Label="Display" InitiallyOpen="true" Position="ControlPosition.BottomLeft" />
+                <OverlayMapControl Id="overlay-ctrl" Label="Overlays" InitiallyOpen="true" Position="ControlPosition.BottomRight" />
+                <LegendMapControl Id="legend-ctrl" Title="Legend" InitiallyOpen="true" Position="ControlPosition.TopRight" Definition="@Legend" />
+            </MapControls>
+
+            <MapFeatures>
+                <MapPopup Id="info-popup"
+                          Position="@(new Coordinate(49.605, 6.13))"
+                          Open="@_popupOpen"
+                          OpenChanged="@(open => _popupOpen = open)"
+                          Options="@(PopupOptions.FromText(string.Empty) with { CloseButton = true })">
+                    <div data-testid="popup-content">Popup from Blazor</div>
+                </MapPopup>
+            </MapFeatures>
+        </SgbMap>
+    </div>
+</main>
+
+@code {
+    private static readonly MapStyle BaseStyle = MapStyle
+        .FromRasterUrl(
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGM4YWMDAAMQAUEiFmcFAAAAAElFTkSuQmCC",
+            "base"
+        )
+        .WithId("base");
+
+    private const string DataJson = """
+        {"type":"FeatureCollection","features":[
+            {"type":"Feature","geometry":{"type":"Point","coordinates":[6.13,49.605]},"properties":{"name":"a"}}
+        ]}
+        """;
+
+    private const string NotesDataJson = """
+        {"type":"FeatureCollection","features":[
+            {"type":"Feature","geometry":{"type":"Point","coordinates":[6.15,49.615]},"properties":{"name":"note"}}
+        ]}
+        """;
+
+    private readonly MapDisplayState _display = new(
+        [new MapDisplayItem("points", [MapDisplayTarget.RuntimeLayers("ctrl-points")], Label: "Points")]
+    );
+
+    private static readonly MapLegend Legend = new(
+        [
+            new MapLegendSection(
+                "Layers",
+                [
+                    new MapLegendItem(
+                        "points-legend",
+                        "Points",
+                        DisplayItemId: "points",
+                        Symbol: new MapLegendSymbol.CircleSymbol("#dc2626")
+                    ),
+                ]
+            ),
+        ]
+    );
+
+    private bool _popupOpen = true;
+    private string? _lastError;
+
+    private void HandleMapError(Exception exception)
+    {
+        _lastError = exception.Message;
+        StateHasChanged();
+    }
+}

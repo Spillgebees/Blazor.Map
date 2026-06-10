@@ -1,0 +1,414 @@
+@page "/engine-entity-stress-test"
+@using System.Diagnostics
+@inject IJSRuntime JsRuntime
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<main class="e2e-shell">
+    <h1>Engine entity stress test</h1>
+    <p>Tracked entities under continuous churn: snapshot diff + binary motion frames through the engine.</p>
+    <p>
+        Query parameters for automated runs:
+        <code>?entities=2000&amp;interval=100&amp;pattern=TenPercent&amp;autostart=1</code>
+    </p>
+
+    <section class="stress-controls">
+        <button type="button" data-testid="stress-toggle" @onclick="ToggleAsync">@(_isRunning ? "Pause" : "Start")</button>
+        <button type="button" data-testid="stress-reset" @onclick="ResetAsync">Reset</button>
+
+        <label>
+            Rotation
+            <select @bind:get="_rotationEnabled.ToString()" @bind:set='value => _rotationEnabled = bool.Parse(value ?? "false")'>
+                <option value="True">On</option>
+                <option value="False">Off</option>
+            </select>
+        </label>
+
+        <label>
+            Interactivity
+            <select @bind:get="_interactivityEnabled.ToString()" @bind:set='value => _interactivityEnabled = bool.Parse(value ?? "false")'>
+                <option value="False">Off</option>
+                <option value="True">On (no-op click)</option>
+            </select>
+        </label>
+
+        <label>
+            Interval
+            <select @bind:get="_intervalMs" @bind:set="value => _intervalMs = value">
+                <option value="100">100 ms</option>
+                <option value="200">200 ms</option>
+                <option value="500">500 ms</option>
+            </select>
+        </label>
+
+        <label>
+            Entities
+            <select @bind:get="_entityCount" @bind:set="OnEntityCountChanged">
+                <option value="100">100</option>
+                <option value="500">500</option>
+                <option value="1000">1,000</option>
+                <option value="2000">2,000</option>
+            </select>
+        </label>
+
+        <label>
+            Animation
+            <select @bind:get="_animationEnabled.ToString()" @bind:set='value => _animationEnabled = bool.Parse(value ?? "false")'>
+                <option value="False">Off</option>
+                <option value="True">On</option>
+            </select>
+        </label>
+
+        <label>
+            Update pattern
+            <select @bind:get="_updatePattern" @bind:set="value => _updatePattern = value">
+                <option value="AllFeatures">Update all features</option>
+                <option value="TenPercent">Update 10%</option>
+                <option value="Membership">Membership churn 10%</option>
+                <option value="NoOpSameValues">No-op same values</option>
+            </select>
+        </label>
+
+        <label>
+            Decorations
+            <select data-testid="stress-decorations" @bind:get="_decorationsEnabled.ToString()" @bind:set='value => _decorationsEnabled = bool.Parse(value ?? "false")'>
+                <option value="False">Off</option>
+                <option value="True">Label per entity</option>
+            </select>
+        </label>
+
+        <label>
+            Clustering
+            <select data-testid="stress-clustering" @bind:get="_clusteringEnabled.ToString()" @bind:set='value => _clusteringEnabled = bool.Parse(value ?? "false")'>
+                <option value="False">Off</option>
+                <option value="True">On</option>
+            </select>
+        </label>
+
+        <div class="stress-status" data-testid="stress-status">
+            <strong>Ticks:</strong> <span data-testid="stress-tick-count">@_tickCount</span><br />
+            <strong>Tick delta last/avg/max:</strong> @_lastTickDeltaMs.ToString("0") / @_averageTickDeltaMs.ToString("0") / @_maxTickDeltaMs.ToString("0") ms<br />
+            <strong>Last update:</strong> @_lastUpdateText
+        </div>
+    </section>
+
+    @if (_lastError is not null)
+    {
+        <p style="color: #b91c1c;" data-testid="stress-error">@_lastError</p>
+    }
+
+    <div id="engine-entity-stress-frame" class="stress-map-frame">
+        <div id="engine-entity-stress-diagnostics" class="stress-diagnostics">Starting diagnostics…</div>
+        <SgbMap StyleSpec="@BaseStyleJson"
+                  Center="@(new Coordinate(49.6117, 6.1319))"
+                  Zoom="@_zoom"
+                  Images="_images"
+                  Height="560px"
+                  Width="100%"
+                  OnMapError="HandleMapError">
+            <TrackedEntityLayer TItem="@StressEntity"
+                                  Id="engine-stress"
+                                  Items="@_entities"
+                                  ItemId="@(entity => entity.Id)"
+                                  Position="@(entity => entity.Position)"
+                                  Rotation="@(_rotationEnabled ? entity => entity.Bearing : null)"
+                                  IconImage="stress-entity-dot"
+                                  IconSize="0.75"
+                                  Animate="@(_animationEnabled ? TimeSpan.FromMilliseconds(350) : null)"
+                                  Interactive="@_interactivityEnabled"
+                                  Cluster="@(_clusteringEnabled ? StressClusterOptions : null)"
+                                  OnClick="@(_interactivityEnabled ? EventCallback.Factory.Create<EntityEventArgs<StressEntity>>(this, HandleEntityClick) : default)">
+                @if (_decorationsEnabled)
+                {
+                    <EntityDecoration Id="label"
+                                      Text="@(entity => entity.Id)"
+                                      Offset="@(new PixelPoint(0, -22))"
+                                      TextSize="10"
+                                      HaloColor="#ffffff"
+                                      HaloWidth="1.5" />
+                }
+            </TrackedEntityLayer>
+        </SgbMap>
+    </div>
+</main>
+
+@code {
+    private const string FrameId = "engine-entity-stress-frame";
+
+    private const string BaseStyleJson = """
+        {"version":8,"sources":{"base":{"type":"raster","tiles":["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII="],"tileSize":256,"attribution":"Integration test"}},"layers":[{"id":"base","type":"raster","source":"base"}]}
+        """;
+
+    private readonly List<MapImage> _images =
+    [
+        new(
+            "stress-entity-dot",
+            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='10' fill='%232563eb' stroke='white' stroke-width='4'/%3E%3C/svg%3E",
+            32,
+            32
+        ),
+    ];
+
+    // circle-only cluster layers: the offline test style has no glyphs for count labels
+    private static readonly ClusterOptions StressClusterOptions = ClusterOptions.Create(
+        layerSet: ClusterLayerSet.Custom(
+            ClusterLayerDefinition.Circle("clusters", color: "#2563eb", radius: 18, strokeColor: "#ffffff", strokeWidth: 2)
+        )
+    );
+
+    private IReadOnlyList<StressEntity> _entities = BuildEntities(0, 500, UpdatePattern.AllFeatures);
+    private CancellationTokenSource? _loopCancellation;
+    private Task? _loopTask;
+    private bool _isRunning;
+    private bool _autoStart;
+    private int _intervalMs = 200;
+    private int _entityCount = 500;
+    private int _tickCount;
+    private bool _rotationEnabled = true;
+    private bool _animationEnabled;
+    private bool _interactivityEnabled;
+    private bool _decorationsEnabled;
+    private bool _clusteringEnabled;
+    private double _zoom = 11;
+    private UpdatePattern _updatePattern = UpdatePattern.AllFeatures;
+    private DateTimeOffset? _lastTickAt;
+    private double _lastTickDeltaMs;
+    private double _averageTickDeltaMs;
+    private double _maxTickDeltaMs;
+    private string _lastUpdateText = "not started";
+    private string? _lastError;
+    private bool _diagnosticsStarted;
+
+    protected override void OnInitialized()
+    {
+        var query = StressQuery.Parse(Navigation.Uri);
+        _entityCount = query.GetInt("entities", _entityCount);
+        _intervalMs = query.GetInt("interval", _intervalMs);
+        _rotationEnabled = query.GetBool("rotation", _rotationEnabled);
+        _animationEnabled = query.GetBool("animation", _animationEnabled);
+        _interactivityEnabled = query.GetBool("interactivity", _interactivityEnabled);
+        _decorationsEnabled = query.GetBool("decorations", _decorationsEnabled);
+        _clusteringEnabled = query.GetBool("cluster", _clusteringEnabled);
+        _zoom = query.GetInt("zoom", (int)_zoom);
+        _autoStart = query.GetBool("autostart", false);
+
+        if (query.TryGetEnum<UpdatePattern>("pattern", out var pattern))
+        {
+            _updatePattern = pattern;
+        }
+
+        _entities = BuildEntities(_tickCount, _entityCount, _updatePattern);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _diagnosticsStarted)
+        {
+            return;
+        }
+
+        _diagnosticsStarted = true;
+        await JsRuntime.InvokeVoidAsync("MapStressDiagnostics.start", FrameId, "engine-entity-stress-diagnostics");
+
+        if (_autoStart)
+        {
+            Start();
+            StateHasChanged();
+        }
+    }
+
+    private Task HandleEntityClick(EntityEventArgs<StressEntity> _) => Task.CompletedTask;
+
+    private Task HandleMapError(Exception exception)
+    {
+        _lastError = exception.Message;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task ToggleAsync()
+    {
+        if (_isRunning)
+        {
+            await PauseAsync();
+            return;
+        }
+
+        Start();
+    }
+
+    private async Task ResetAsync()
+    {
+        await PauseAsync();
+        _tickCount = 0;
+        _lastTickAt = null;
+        _lastTickDeltaMs = 0;
+        _averageTickDeltaMs = 0;
+        _maxTickDeltaMs = 0;
+        _lastError = null;
+        _lastUpdateText = "reset";
+        _entities = BuildEntities(_tickCount, _entityCount, _updatePattern);
+    }
+
+    private void OnEntityCountChanged(int entityCount)
+    {
+        _entityCount = entityCount;
+        _entities = BuildEntities(_tickCount, _entityCount, _updatePattern);
+    }
+
+    private void Start()
+    {
+        if (_isRunning)
+        {
+            return;
+        }
+
+        _lastError = null;
+        _lastTickAt = null;
+        _loopCancellation = new CancellationTokenSource();
+        _isRunning = true;
+        _loopTask = RunLoopAsync(_loopCancellation.Token);
+    }
+
+    private async Task PauseAsync()
+    {
+        if (!_isRunning && _loopTask is null)
+        {
+            return;
+        }
+
+        var cancellation = _loopCancellation;
+        var loopTask = _loopTask;
+        _loopCancellation = null;
+        _loopTask = null;
+        _isRunning = false;
+
+        if (cancellation is not null)
+        {
+            await cancellation.CancelAsync();
+            cancellation.Dispose();
+        }
+
+        if (loopTask is not null)
+        {
+            await loopTask;
+        }
+    }
+
+    private async Task RunLoopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(_intervalMs), cancellationToken);
+                _tickCount++;
+                RecordTickDelta();
+                var tickStopwatch = Stopwatch.StartNew();
+                _entities = BuildEntities(_tickCount, _entityCount, _updatePattern);
+                _lastUpdateText = DateTimeOffset.Now.ToString("HH:mm:ss.fff");
+                await InvokeAsync(StateHasChanged);
+                tickStopwatch.Stop();
+                await JsRuntime.InvokeVoidAsync(
+                    "MapStressDiagnostics.recordTick",
+                    cancellationToken,
+                    FrameId,
+                    tickStopwatch.Elapsed.TotalMilliseconds
+                );
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        catch (Exception exception)
+        {
+            _lastError = exception.Message;
+            _isRunning = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void RecordTickDelta()
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (_lastTickAt is not null)
+        {
+            _lastTickDeltaMs = (now - _lastTickAt.Value).TotalMilliseconds;
+            _maxTickDeltaMs = Math.Max(_maxTickDeltaMs, _lastTickDeltaMs);
+            _averageTickDeltaMs = _tickCount <= 1
+                ? _lastTickDeltaMs
+                : (((_averageTickDeltaMs * (_tickCount - 2)) + _lastTickDeltaMs) / (_tickCount - 1));
+        }
+
+        _lastTickAt = now;
+    }
+
+    private static IReadOnlyList<StressEntity> BuildEntities(int tick, int entityCount, UpdatePattern updatePattern)
+    {
+        const double centerLatitude = 49.6117;
+        const double centerLongitude = 6.1319;
+        var entities = new StressEntity[entityCount];
+
+        for (var index = 0; index < entityCount; index++)
+        {
+            var ring = index % 40;
+            var orbit = index / 40;
+            var changes = ShouldUpdateFeature(index, tick, updatePattern);
+            var effectiveTick = updatePattern == UpdatePattern.NoOpSameValues || !changes ? 0 : tick;
+            var angleDegrees = (index * 137.508) + (effectiveTick * (2 + orbit % 5));
+            var angle = angleDegrees * Math.PI / 180;
+            var radius = 0.01 + (ring * 0.0008);
+            var latitude = centerLatitude + (Math.Sin(angle) * radius);
+            var longitude = centerLongitude + (Math.Cos(angle) * radius);
+            entities[index] = new StressEntity(
+                BuildEntityId(index, tick, updatePattern),
+                index,
+                new Coordinate(latitude, longitude),
+                NormalizeBearing(angleDegrees + 90)
+            );
+        }
+
+        return entities;
+    }
+
+    private static string BuildEntityId(int index, int tick, UpdatePattern updatePattern)
+    {
+        if (updatePattern != UpdatePattern.Membership)
+        {
+            return $"entity-{index}";
+        }
+
+        var slice = index % 10;
+        var generation = tick < slice ? 0 : ((tick - slice) / 10) + 1;
+        return $"entity-{index}-g{generation}";
+    }
+
+    private static bool ShouldUpdateFeature(int index, int tick, UpdatePattern updatePattern) =>
+        updatePattern is UpdatePattern.TenPercent or UpdatePattern.Membership
+            ? index % 10 == tick % 10
+            : true;
+
+    private static double NormalizeBearing(double bearing)
+    {
+        var normalized = bearing % 360;
+        return normalized < 0 ? normalized + 360 : normalized;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await PauseAsync();
+        try
+        {
+            await JsRuntime.InvokeVoidAsync("MapStressDiagnostics.stop", FrameId);
+        }
+        catch (JSDisconnectedException) { }
+    }
+
+    private enum UpdatePattern
+    {
+        AllFeatures,
+        TenPercent,
+        Membership,
+        NoOpSameValues,
+    }
+
+    private sealed record StressEntity(string Id, int Index, Coordinate Position, double Bearing);
+}

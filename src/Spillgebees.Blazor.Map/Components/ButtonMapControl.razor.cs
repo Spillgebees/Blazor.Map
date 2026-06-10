@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map;
 
@@ -15,55 +14,68 @@ public partial class ButtonMapControl : ComponentBase, IAsyncDisposable
     private ElementReference _contentReference;
 
     [CascadingParameter]
-    private MapControlRegistryContext? Registry { get; set; }
+    private MapControlRegistryContext? _registry { get; set; }
 
     [CascadingParameter]
-    private MapSectionContext? SectionContext { get; set; }
+    private MapSectionContext? _sectionContext { get; set; }
 
+    /// <summary>Unique control identifier within the map.</summary>
     [Parameter, EditorRequired]
     public string Id { get; set; } = string.Empty;
 
+    /// <summary>Map corner the control is placed in. Defaults to <see cref="ControlPosition.TopRight" />.</summary>
     [Parameter]
     public ControlPosition Position { get; set; } = ControlPosition.TopRight;
 
+    /// <summary>Deterministic ordering among controls at the same corner; lower values render first. Defaults to 500.</summary>
     [Parameter]
     public int Order { get; set; } = 500;
 
+    /// <summary>Whether the control is visible. Defaults to <c>true</c>.</summary>
     [Parameter]
     public bool Visible { get; set; } = true;
 
+    /// <summary>Additional CSS class applied to the control container.</summary>
     [Parameter]
     public string? Class { get; set; }
 
+    /// <summary>Accessible label for the button (<c>aria-label</c>); must be non-empty.</summary>
     [Parameter, EditorRequired]
     public string Label { get; set; } = string.Empty;
 
+    /// <summary>Tooltip text; falls back to <see cref="Label" /> when not set.</summary>
     [Parameter]
     public string? Title { get; set; }
 
+    /// <summary>Text displayed inside the button; at least one of <see cref="Text" /> or <see cref="Icon" /> is required.</summary>
     [Parameter]
     public string? Text { get; set; }
 
+    /// <summary>Icon content displayed inside the button.</summary>
     [Parameter]
     public RenderFragment? Icon { get; set; }
 
+    /// <summary>Visual variant of the button. Defaults to <see cref="MapButtonVariant.Neutral" />.</summary>
     [Parameter]
     public MapButtonVariant Variant { get; set; } = MapButtonVariant.Neutral;
 
+    /// <summary>Size of the button. Defaults to <see cref="MapButtonSize.Medium" />.</summary>
     [Parameter]
     public MapButtonSize Size { get; set; } = MapButtonSize.Medium;
 
+    /// <summary>Whether the button is disabled.</summary>
     [Parameter]
     public bool Disabled { get; set; }
 
+    /// <summary>Fires when the button is clicked.</summary>
     [Parameter]
     public EventCallback<MouseEventArgs> OnClick { get; set; }
 
     private const string PlacementErrorMessage = "ButtonMapControl must be placed inside MapControls.";
 
-    private string EffectiveTitle => string.IsNullOrWhiteSpace(Title) ? Label : Title;
+    private string _effectiveTitle => string.IsNullOrWhiteSpace(Title) ? Label : Title;
 
-    private string GroupClass =>
+    private string _groupClass =>
         string.Join(
             " ",
             new[] { "sgb-map-control-button-group", "sgb-map-action-control", Class }.Where(value =>
@@ -71,7 +83,7 @@ public partial class ButtonMapControl : ComponentBase, IAsyncDisposable
             )
         );
 
-    private string ButtonClass =>
+    private string _buttonClass =>
         string.Join(
             " ",
             new[]
@@ -99,6 +111,7 @@ public partial class ButtonMapControl : ComponentBase, IAsyncDisposable
         return "sgb-map-control-button-text-only";
     }
 
+    /// <inheritdoc />
     protected override void OnParametersSet()
     {
         StyledContentMapControlRegistration.ValidateId(Id);
@@ -113,11 +126,17 @@ public partial class ButtonMapControl : ComponentBase, IAsyncDisposable
             throw new InvalidOperationException("ButtonMapControl requires non-empty Text or Icon.");
         }
 
-        _registration.RegisterContent(Registry, SectionContext, PlacementErrorMessage, Id, Visible, Position, Order);
+        _registration.RegisterContent(_registry, _sectionContext, PlacementErrorMessage, Id, Visible, Position, Order);
     }
 
+    /// <inheritdoc />
     protected override Task OnAfterRenderAsync(bool firstRender) =>
-        _registration.SyncAfterRenderAsync(Registry, Id, Visible, _placeholderReference, _contentReference);
+        _registration.SyncAfterRenderAsync(_registry, Id, Visible, _placeholderReference, _contentReference);
 
-    public ValueTask DisposeAsync() => _registration.DisposeAsync(Registry);
+    /// <inheritdoc />
+    public ValueTask DisposeAsync()
+    {
+        GC.SuppressFinalize(this);
+        return _registration.DisposeAsync(_registry);
+    }
 }

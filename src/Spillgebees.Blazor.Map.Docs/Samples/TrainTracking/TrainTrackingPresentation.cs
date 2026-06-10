@@ -1,5 +1,3 @@
-using Spillgebees.Blazor.Map;
-
 namespace Spillgebees.Blazor.Map.Docs.Samples.TrainTracking;
 
 public static class TrainTrackingPresentation
@@ -103,15 +101,12 @@ public static class TrainTrackingPresentation
                 "trains",
                 [
                     MapDisplayTarget.RuntimeLayers(
-                        "train-source-cluster-hit-area",
                         "train-source-clusters",
                         "train-source-cluster-count",
-                        "train-source-hit-area",
                         "train-source-symbols",
-                        "train-source-cluster-sentinel",
-                        "train-source-service-left",
-                        "train-source-route-left",
-                        "train-source-operator-right"
+                        "train-source-decoration-service",
+                        "train-source-decoration-route",
+                        "train-source-decoration-operator"
                     ),
                 ],
                 Label: "Trains"
@@ -228,28 +223,17 @@ public static class TrainTrackingPresentation
             ),
         ]);
 
-    public static MapOptions BuildMapOptions(string? overlayStyleUrl, string? composedGlyphsUrl)
+    public static IReadOnlyList<MapStyle> BuildStyles(string? overlayStyleUrl)
     {
         var resolvedOverlayStyleUrl = string.IsNullOrWhiteSpace(overlayStyleUrl)
             ? DefaultOverlayStyleUrl
             : overlayStyleUrl;
-        var styles = new[]
-        {
-            MapStyle.OpenFreeMap.Positron,
-            MapStyle.FromUrl(resolvedOverlayStyleUrl).WithId(OverlayStyleId),
-        };
-
-        return new(
-            Center: new Coordinate(49.75, 6.12),
-            Zoom: 8,
-            Styles: styles,
-            ComposedGlyphsUrl: composedGlyphsUrl,
-            Pitch: 45,
-            WebFonts: ["11px 'Martian Mono'", "11px 'DM Sans'"]
-        );
+        return [MapStyle.OpenFreeMap.Positron, MapStyle.FromUrl(resolvedOverlayStyleUrl).WithId(OverlayStyleId)];
     }
 
-    public static AnimationOptions TrainAnimation { get; } = new(Duration: 2000, Easing: AnimationEasing.EaseInOut);
+    public static IReadOnlyList<string> WebFonts { get; } = ["11px 'Martian Mono'", "11px 'DM Sans'"];
+
+    public static TimeSpan TrainAnimation { get; } = TimeSpan.FromMilliseconds(2000);
 
     public static ClusterOptions TrackedTrainClusterOptions { get; } =
         ClusterOptions.Create(
@@ -262,26 +246,6 @@ public static class TrainTrackingPresentation
             },
             clickBehavior: ClusterClickBehavior.ZoomToDissolve
         );
-
-    public static object[] TrainIconOpacityExpression { get; } =
-    [
-        "case",
-        new object[] { "boolean", new object[] { "feature-state", TrackedEntityFeatureStates.Selected.Name }, false },
-        1.0,
-        new object[] { "boolean", new object[] { "feature-state", TrackedEntityFeatureStates.Hover.Name }, false },
-        1.0,
-        0.96,
-    ];
-
-    public static object[] OperatorOpacityExpression { get; } =
-    [
-        "case",
-        new object[] { "boolean", new object[] { "feature-state", TrackedEntityFeatureStates.Selected.Name }, false },
-        1.0,
-        new object[] { "boolean", new object[] { "feature-state", TrackedEntityFeatureStates.Hover.Name }, false },
-        1.0,
-        0.0,
-    ];
 
     public static double GetBearing(TrainSampleState train)
     {

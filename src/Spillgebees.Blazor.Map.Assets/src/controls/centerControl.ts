@@ -1,11 +1,14 @@
 import type { IControl, Map as MapLibreMap } from "maplibre-gl";
 
 export class CenterControl implements IControl {
-  private _map: MapLibreMap | null = null;
   private _container: HTMLDivElement | null = null;
+  private readonly _onClick: (() => void) | null;
 
-  onAdd(map: MapLibreMap): HTMLElement {
-    this._map = map;
+  constructor(onClick?: () => void) {
+    this._onClick = onClick ?? null;
+  }
+
+  onAdd(_map: MapLibreMap): HTMLElement {
     this._container = document.createElement("div");
     this._container.className = "maplibregl-ctrl sgb-map-ctrl-group sgb-map-center-control";
 
@@ -31,32 +34,11 @@ export class CenterControl implements IControl {
 
   onRemove(): void {
     this._container?.remove();
-    this._map = null;
     this._container = null;
   }
 
   private _handleClick(): void {
-    if (!this._map) {
-      return;
-    }
-
-    const mapOptions = window.Spillgebees?.Map?.mapOptions?.get(this._map);
-    if (!mapOptions) {
-      return;
-    }
-
-    if (mapOptions.fitBoundsOptions) {
-      const mapElement = this._map.getContainer();
-      const fitBoundsFn = window.Spillgebees?.Map?.mapFunctions?.fitBounds;
-      if (typeof fitBoundsFn === "function") {
-        fitBoundsFn(mapElement, mapOptions.fitBoundsOptions);
-        return;
-      }
-    }
-
-    this._map.flyTo({
-      center: [mapOptions.center.longitude, mapOptions.center.latitude],
-      zoom: mapOptions.zoom,
-    });
+    // the host owns the home view (center/zoom/fit) — surface the intent and let it decide
+    this._onClick?.();
   }
 }

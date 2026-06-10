@@ -5,6 +5,9 @@ namespace Spillgebees.Blazor.Map;
 /// </summary>
 public sealed record ClusterOptions
 {
+    /// <summary>
+    /// The default cluster radius in pixels.
+    /// </summary>
     public const int DefaultRadius = 50;
 
     private ClusterOptions(

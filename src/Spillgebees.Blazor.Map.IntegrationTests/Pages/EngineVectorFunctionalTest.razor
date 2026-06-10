@@ -1,0 +1,143 @@
+@page "/engine-vector-functional-test"
+@using System.Diagnostics
+@inject IJSRuntime JsRuntime
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<main class="e2e-shell">
+    <h1>Engine vector tile functional test</h1>
+    <p>VectorTileSource over an offline single-tile endpoint, with runtime paint updates (and a paint-churn loop for benchmarks).</p>
+
+    <section style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+        <button type="button" data-testid="change-paint" @onclick="ChangePaint">Change paint</button>
+        <span>Ticks: <strong data-testid="stress-tick-count">@_tickCount</strong></span>
+    </section>
+
+    @if (_lastError is not null)
+    {
+        <p style="color: #b91c1c;" data-testid="map-error">@_lastError</p>
+    }
+
+    <div id="engine-vector-frame" class="stress-map-frame">
+        <div id="engine-vector-diagnostics" class="stress-diagnostics">Starting diagnostics…</div>
+        <SgbMap StyleSpec="@BaseStyleJson"
+                  Center="@(new Coordinate(49.61, 6.14))"
+                  Zoom="12"
+                  Height="480px"
+                  Width="100%"
+                  OnMapError="@HandleMapError">
+            <VectorTileSource Id="vector-test"
+                                Tiles="@(new[] { Navigation.ToAbsoluteUri("/test-tile.bin").ToString() })"
+                                MinZoom="0"
+                                MaxZoom="14">
+                <FillLayer Id="vector-fill"
+                             SourceLayerId="test-layer"
+                             Color="@_fillColor"
+                             Opacity="0.7" />
+            </VectorTileSource>
+        </SgbMap>
+    </div>
+</main>
+
+@code {
+    private const string FrameId = "engine-vector-frame";
+
+    private const string BaseStyleJson = """
+        {"version":8,"sources":{"base":{"type":"raster","tiles":["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII="],"tileSize":256,"attribution":"Integration test"}},"layers":[{"id":"base","type":"raster","source":"base"}]}
+        """;
+
+    private StyleValue<string> _fillColor = "#7c3aed";
+    private CancellationTokenSource? _loopCancellation;
+    private Task? _loopTask;
+    private bool _autoStart;
+    private int _intervalMs = 100;
+    private int _tickCount;
+    private string? _lastError;
+    private bool _diagnosticsStarted;
+
+    protected override void OnInitialized()
+    {
+        var query = StressQuery.Parse(Navigation.Uri);
+        _autoStart = query.GetBool("autostart", false);
+        _intervalMs = query.GetInt("interval", _intervalMs);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _diagnosticsStarted)
+        {
+            return;
+        }
+
+        _diagnosticsStarted = true;
+        await JsRuntime.InvokeVoidAsync("MapStressDiagnostics.start", FrameId, "engine-vector-diagnostics");
+
+        if (_autoStart)
+        {
+            _loopCancellation = new CancellationTokenSource();
+            _loopTask = RunPaintChurnAsync(_loopCancellation.Token);
+        }
+    }
+
+    private void ChangePaint() => _fillColor = "#ea580c";
+
+    private Task HandleMapError(Exception exception)
+    {
+        _lastError = exception.Message;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task RunPaintChurnAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(_intervalMs), cancellationToken);
+                _tickCount++;
+                var tickStopwatch = Stopwatch.StartNew();
+                // alternate the fill color so a paint op flows every tick
+                _fillColor = _tickCount % 2 == 0 ? "#7c3aed" : $"#10b9{(_tickCount % 90) + 10:00}";
+                await InvokeAsync(StateHasChanged);
+                tickStopwatch.Stop();
+                await JsRuntime.InvokeVoidAsync(
+                    "MapStressDiagnostics.recordTick",
+                    cancellationToken,
+                    FrameId,
+                    tickStopwatch.Elapsed.TotalMilliseconds
+                );
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        catch (Exception exception)
+        {
+            _lastError = exception.Message;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_loopCancellation is not null)
+        {
+            await _loopCancellation.CancelAsync();
+            _loopCancellation.Dispose();
+        }
+
+        if (_loopTask is not null)
+        {
+            try
+            {
+                await _loopTask;
+            }
+            catch (OperationCanceledException) { }
+        }
+
+        try
+        {
+            await JsRuntime.InvokeVoidAsync("MapStressDiagnostics.stop", FrameId);
+        }
+        catch (JSDisconnectedException) { }
+    }
+}

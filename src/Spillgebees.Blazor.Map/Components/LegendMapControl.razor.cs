@@ -1,6 +1,5 @@
 using BlazorComponentUtilities;
 using Microsoft.AspNetCore.Components;
-using Spillgebees.Blazor.Map;
 
 namespace Spillgebees.Blazor.Map;
 
@@ -14,51 +13,64 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
     private readonly string _contentId = $"sgb-map-legend-content-{Guid.NewGuid():N}";
     private ElementReference _placeholderReference;
     private ElementReference _contentReference;
-    private MapLegendDisplayBinder? _displayBinder;
+    private readonly MapLegendDisplayBinder _displayBinder;
 
-    private MapLegendDisplayBinder DisplayBinder =>
-        _displayBinder ??= new MapLegendDisplayBinder(() => InvokeAsync(StateHasChanged));
-
-    [CascadingParameter]
-    private MapControlRegistryContext? Registry { get; set; }
-
-    [CascadingParameter]
-    private MapSectionContext? SectionContext { get; set; }
+    /// <summary>Initializes the display binder bound to this component's re-render callback.</summary>
+    public LegendMapControl()
+    {
+        _displayBinder = new MapLegendDisplayBinder(() => InvokeAsync(StateHasChanged));
+    }
 
     [CascadingParameter]
-    private MapDisplayState? Display { get; set; }
+    private MapControlRegistryContext? _registry { get; set; }
 
+    [CascadingParameter]
+    private MapSectionContext? _sectionContext { get; set; }
+
+    [CascadingParameter]
+    private MapDisplayState? _display { get; set; }
+
+    /// <summary>Unique control identifier within the map. Defaults to <c>"legend"</c>.</summary>
     [Parameter]
     public string Id { get; set; } = "legend";
 
+    /// <summary>Map corner the control is placed in. Defaults to <see cref="ControlPosition.TopRight" />.</summary>
     [Parameter]
     public ControlPosition Position { get; set; } = ControlPosition.TopRight;
 
+    /// <summary>Deterministic ordering among controls at the same corner; lower values render first. Defaults to 500.</summary>
     [Parameter]
     public int Order { get; set; } = 500;
 
+    /// <summary>Whether the control is visible. Defaults to <c>true</c>.</summary>
     [Parameter]
     public bool Visible { get; set; } = true;
 
+    /// <summary>Title shown in the legend header.</summary>
     [Parameter]
     public string? Title { get; set; }
 
+    /// <summary>Whether the legend can be collapsed. Defaults to <c>true</c>.</summary>
     [Parameter]
     public bool Collapsible { get; set; } = true;
 
+    /// <summary>Whether the legend starts open. Defaults to <c>true</c>.</summary>
     [Parameter]
     public bool InitiallyOpen { get; set; } = true;
 
+    /// <summary>Additional CSS class applied to the control container.</summary>
     [Parameter]
     public string? Class { get; set; }
 
+    /// <summary>Legend definition describing its sections and items. Defaults to an empty legend.</summary>
     [Parameter]
     public MapLegend Definition { get; set; } = new([]);
 
+    /// <summary>Optional template used to render each legend item.</summary>
     [Parameter]
     public RenderFragment<MapLegendItemTemplateContext>? ItemTemplate { get; set; }
 
-    private string ContentClassName =>
+    private string _contentClassName =>
         new CssBuilder()
             .AddClass("sgb-map-legend-content")
             .AddClass(Definition.ClassName, !string.IsNullOrWhiteSpace(Definition.ClassName))
@@ -68,12 +80,12 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
     protected override void OnParametersSet()
     {
         ValidateControl();
-        DisplayBinder.UpdateDisplaySubscription(Display);
+        _displayBinder.UpdateDisplaySubscription(_display);
         ValidateDefinition();
 
         _registration.Register(
-            Registry,
-            SectionContext,
+            _registry,
+            _sectionContext,
             "LegendMapControl must be placed inside MapControls.",
             Id,
             BuildControl()
@@ -83,7 +95,7 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
     /// <inheritdoc />
     protected override Task OnAfterRenderAsync(bool firstRender) =>
         _registration.SyncAfterRenderAsync(
-            Registry,
+            _registry,
             Id,
             Visible,
             CustomControlKind,
@@ -94,9 +106,9 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
-        _displayBinder?.Dispose();
-        _displayBinder = null;
-        await _registration.DisposeAsync(Registry);
+        GC.SuppressFinalize(this);
+        _displayBinder.Dispose();
+        await _registration.DisposeAsync(_registry);
     }
 
     private LegendControlDefinition BuildControl() =>
@@ -113,16 +125,16 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
             .AddClass(section.ClassName, !string.IsNullOrWhiteSpace(section.ClassName))
             .Build();
 
-    private string GetItemClassName(MapLegendItem item) => DisplayBinder.GetItemClassName(item);
+    private string GetItemClassName(MapLegendItem item) => _displayBinder.GetItemClassName(item);
 
     private static bool IsToggleable(MapLegendItem item) => MapLegendDisplayBinder.IsToggleable(item);
 
-    private bool GetItemOn(MapLegendItem item) => DisplayBinder.GetItemOn(item);
+    private bool GetItemOn(MapLegendItem item) => _displayBinder.GetItemOn(item);
 
-    private Task ToggleItemAsync(MapLegendItem item, ChangeEventArgs args) => DisplayBinder.ToggleItemAsync(item, args);
+    private Task ToggleItemAsync(MapLegendItem item, ChangeEventArgs args) => _displayBinder.ToggleItemAsync(item, args);
 
     private MapLegendItemTemplateContext BuildTemplateContext(MapLegendItem item) =>
-        DisplayBinder.BuildTemplateContext(item);
+        _displayBinder.BuildTemplateContext(item);
 
     private static RenderFragment RenderLegendSymbol(MapLegendItem item) =>
         builder =>
@@ -179,7 +191,7 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
         }
 
         var sanitized = new string(
-            cssClass.Where(character => char.IsLetterOrDigit(character) || character is '-' or '_' or ' ').ToArray()
+            [.. cssClass.Where(character => char.IsLetterOrDigit(character) || character is '-' or '_' or ' ')]
         );
 
         return string.IsNullOrWhiteSpace(sanitized) ? null : sanitized.Trim();
@@ -202,7 +214,7 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
 
         if (duplicateId is null)
         {
-            DisplayBinder.ValidateDisplayItems(Definition.GetItems());
+            _displayBinder.ValidateDisplayItems(Definition.GetItems());
             return;
         }
 

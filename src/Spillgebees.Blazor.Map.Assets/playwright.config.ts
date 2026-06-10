@@ -13,6 +13,17 @@ const webServer = [
     command:
       "dotnet run --project ../Spillgebees.Blazor.Map.IntegrationTests/Spillgebees.Blazor.Map.IntegrationTests.csproj --urls http://127.0.0.1:5012",
     url: "http://127.0.0.1:5012",
+    // never reuse: a manually-started server can serve a stale build and turn a
+    // broken page into a false-green suite — a loud port conflict is the better failure
+    reuseExistingServer: false,
+    timeout: 120_000,
+  },
+  {
+    // Dedicated server for the perf project so benchmark runs never share a port
+    // (or a stale build) with an integration-test server.
+    command:
+      "dotnet run --project ../Spillgebees.Blazor.Map.IntegrationTests/Spillgebees.Blazor.Map.IntegrationTests.csproj --urls http://127.0.0.1:5013",
+    url: "http://127.0.0.1:5013",
     reuseExistingServer: false,
     timeout: 120_000,
   },
@@ -32,6 +43,31 @@ const projects = [
     use: {
       ...devices["Desktop Chrome"],
       baseURL: "http://127.0.0.1:5012",
+      // headless software WebGL needs explicit flags or shader compilation can fail
+      // mid-test and tear the map down.
+      launchOptions: {
+        args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
+      },
+    },
+  },
+  {
+    // Performance benchmarks with enforced budgets. Opt-in via
+    // `pnpm run test:browser:perf` — they measure main-thread health and must run alone.
+    name: "perf",
+    testMatch: /perf\/.*\.spec\.ts/,
+    fullyParallel: false,
+    timeout: 180_000,
+    use: {
+      ...devices["Desktop Chrome"],
+      baseURL: "http://127.0.0.1:5013",
+      // Benchmarks measure main-thread health: recording artifacts would distort the
+      // numbers, and software WebGL needs explicit flags to stay stable under load.
+      screenshot: "off" as const,
+      trace: "off" as const,
+      video: "off" as const,
+      launchOptions: {
+        args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
+      },
     },
   },
 ];

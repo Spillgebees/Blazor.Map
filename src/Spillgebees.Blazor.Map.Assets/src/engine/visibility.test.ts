@@ -1,0 +1,160 @@
+import { describe, expect, it } from "vitest";
+import { composeDisplayFilter, createVisibilityController, styleLayerInfo, type VisibilityHost } from "./visibility";
+
+interface HostOptions {
+  styleLayers?: ReturnType<typeof styleLayerInfo>[];
+  composed?: Record<string, { layerId: string; visible: boolean }[]>;
+}
+
+function createHost(options: HostOptions = {}) {
+  const visibilityCalls: [string, boolean][] = [];
+  const filterCalls: [string, unknown][] = [];
+  const styleLayers = options.styleLayers ?? [];
+  const composed = options.composed ?? {};
+  const knownLayers = new Set([
+    ...styleLayers.map((layer) => layer.id),
+    ...Object.values(composed).flatMap((layers) => layers.map((layer) => layer.layerId)),
+  ]);
+
+  const host: VisibilityHost = {
+    getRuntimeLayer: () => null,
+    getRuntimeBaselineFilter: () => null,
+    listStyleLayers: () => styleLayers,
+    resolveComposedLayer: (styleId, layerId) =>
+      composed[styleId]?.find((layer) => layer.layerId.endsWith(layerId)) ?? null,
+    listComposedLayers: (styleId) => composed[styleId] ?? [],
+    setLayerVisibility: (layerId, visible) => visibilityCalls.push([layerId, visible]),
+    setLayerFilter: (layerId, filter) => filterCalls.push([layerId, filter]),
+    hasLayer: (layerId) => knownLayers.has(layerId),
+  };
+
+  return { host, visibilityCalls, filterCalls };
+}
+
+describe("composeDisplayFilter", () => {
+  it("returns the baseline when nothing is hidden", () => {
+    expect(composeDisplayFilter(["has", "x"], [])).toEqual(["has", "x"]);
+    expect(composeDisplayFilter(null, [])).toBeNull();
+  });
+
+  it("negates hidden filters and ANDs them onto the baseline", () => {
+    expect(composeDisplayFilter(["has", "x"], [["==", "t", "a"]])).toEqual([
+      "all",
+      ["has", "x"],
+      ["!", ["==", "t", "a"]],
+    ]);
+    expect(composeDisplayFilter(null, [["==", "t", "a"]])).toEqual(["all", ["!", ["==", "t", "a"]]]);
+  });
+});
+
+describe("styleLayerInfo", () => {
+  it("reads visibility, filter, and tags from both metadata keys", () => {
+    expect(
+      styleLayerInfo({
+        id: "parks",
+        layout: { visibility: "none" },
+        filter: ["has", "park"],
+        metadata: { "sgb:tags": ["nature"] },
+      }),
+    ).toEqual({ id: "parks", visible: false, filter: ["has", "park"], tags: ["nature"] });
+
+    expect(styleLayerInfo({ id: "rail", metadata: { tags: ["transit"] } }).tags).toEqual(["transit"]);
+  });
+});
+
+describe("visibility controller", () => {
+  it("resolves tag targets against style layer metadata", () => {
+    const { host, visibilityCalls } = createHost({
+      styleLayers: [
+        styleLayerInfo({ id: "parks", metadata: { tags: ["nature"] } }),
+        styleLayerInfo({ id: "rail", metadata: { "sgb:tags": ["transit"] } }),
+        styleLayerInfo({ id: "roads" }),
+      ],
+    });
+    const controller = createVisibilityController(host);
+
+    controller.setGroup("g", false, [{ kind: "styleLayerTag", styleId: "base", tags: ["nature", "transit"] }]);
+
+    expect(visibilityCalls).toEqual([
+      ["parks", false],
+      ["rail", false],
+    ]);
+  });
+
+  it("resolves an empty styleLayer target to every layer of the style", () => {
+    const { host, visibilityCalls } = createHost({
+      styleLayers: [styleLayerInfo({ id: "a" }), styleLayerInfo({ id: "b" })],
+    });
+    const controller = createVisibilityController(host);
+
+    controller.setGroup("g", false, [{ kind: "styleLayer", styleId: "base", layerIds: [] }]);
+
+    expect(visibilityCalls.map(([id]) => id).sort()).toEqual(["a", "b"]);
+  });
+
+  it("prefers composed overlay-style layers over base style layers", () => {
+    const { host, visibilityCalls } = createHost({
+      composed: { railway: [{ layerId: "sgb-overlay-style-railway-tracks", visible: true }] },
+    });
+    const controller = createVisibilityController(host);
+
+    controller.setGroup("g", false, [{ kind: "styleLayer", styleId: "railway", layerIds: ["tracks"] }]);
+
+    expect(visibilityCalls).toEqual([["sgb-overlay-style-railway-tracks", false]]);
+  });
+
+  it("never shows a layer the style originally hid", () => {
+    const { host, visibilityCalls } = createHost({
+      styleLayers: [styleLayerInfo({ id: "hidden-by-style", layout: { visibility: "none" } })],
+    });
+    const controller = createVisibilityController(host);
+
+    controller.setGroup("g", false, [{ kind: "styleLayer", styleId: "base", layerIds: ["hidden-by-style"] }]);
+    controller.setGroup("g", true, [{ kind: "styleLayer", styleId: "base", layerIds: ["hidden-by-style"] }]);
+
+    expect(visibilityCalls).toEqual([
+      ["hidden-by-style", false],
+      ["hidden-by-style", false],
+    ]);
+  });
+
+  it("captures and restores style layer baseline filters", () => {
+    const { host, filterCalls } = createHost({
+      styleLayers: [styleLayerInfo({ id: "rail", filter: ["has", "rail"] })],
+    });
+    const controller = createVisibilityController(host);
+    const target = {
+      kind: "styleLayerFeatures" as const,
+      styleId: "base",
+      layerIds: ["rail"],
+      filter: ["==", "type", "express"],
+    };
+
+    controller.setGroup("g", false, [target]);
+    controller.setGroup("g", true, [target]);
+
+    expect(filterCalls).toEqual([
+      ["rail", ["all", ["has", "rail"], ["!", ["==", "type", "express"]]]],
+      ["rail", ["has", "rail"]],
+    ]);
+  });
+
+  it("recaptures originals on replay", () => {
+    const styleLayers = [styleLayerInfo({ id: "a", filter: ["has", "old"] })];
+    const { host, filterCalls } = createHost({ styleLayers });
+    const controller = createVisibilityController(host);
+    const target = {
+      kind: "styleLayerFeatures" as const,
+      styleId: "base",
+      layerIds: ["a"],
+      filter: ["==", "x", 1],
+    };
+    controller.setGroup("g", false, [target]);
+
+    // a style switch replaces the layer's baseline filter
+    styleLayers[0] = styleLayerInfo({ id: "a", filter: ["has", "new"] });
+    controller.replay();
+
+    expect(filterCalls.at(-1)).toEqual(["a", ["all", ["has", "new"], ["!", ["==", "x", 1]]]]);
+  });
+});

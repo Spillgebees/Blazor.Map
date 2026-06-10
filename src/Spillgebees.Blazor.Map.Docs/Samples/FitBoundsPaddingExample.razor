@@ -3,7 +3,9 @@
     <button type="button" class="sample-btn @(!_isUniform ? "active" : "")" aria-pressed="@(!_isUniform)" @onclick="SetAsymmetricPadding">Asymmetric</button>
 </div>
 
-<SgbMap MapOptions="@_mapOptions"
+<SgbMap Center="@(new Coordinate(49.75, 6.10))"
+        Zoom="9"
+        FitBounds="@_fitBounds"
         Markers="@_markers"
         Height="400px"
         Width="100%">
@@ -16,13 +18,9 @@
 @code {
     private bool _isUniform = true;
 
-    private MapOptions _mapOptions = new(
-        Center: new Coordinate(49.75, 6.10),
-        Zoom: 9,
-        FitBoundsOptions: new FitBoundsOptions(
-            FeatureIds: ["marker-lux-city", "marker-esch", "marker-diekirch", "marker-echternach"],
-            Padding: new PixelPoint(60, 60))
-    );
+    private FitBoundsOptions _fitBounds = new(
+        FeatureIds: ["marker-lux-city", "marker-esch", "marker-diekirch", "marker-echternach"],
+        Padding: new PixelPoint(60, 60));
 
     private readonly List<Marker> _markers =
     [
@@ -35,23 +33,17 @@
     private void SetUniformPadding()
     {
         _isUniform = true;
-        _mapOptions = _mapOptions with
-        {
-            FitBoundsOptions = new FitBoundsOptions(
-                FeatureIds: ["marker-lux-city", "marker-esch", "marker-diekirch", "marker-echternach"],
-                Padding: new PixelPoint(60, 60))
-        };
+        _fitBounds = new FitBoundsOptions(
+            FeatureIds: ["marker-lux-city", "marker-esch", "marker-diekirch", "marker-echternach"],
+            Padding: new PixelPoint(60, 60));
     }
 
     private void SetAsymmetricPadding()
     {
         _isUniform = false;
-        _mapOptions = _mapOptions with
-        {
-            FitBoundsOptions = new FitBoundsOptions(
-                FeatureIds: ["marker-lux-city", "marker-esch", "marker-diekirch", "marker-echternach"],
-                TopLeftPadding: new PixelPoint(200, 40),
-                BottomRightPadding: new PixelPoint(40, 40))
-        };
+        _fitBounds = new FitBoundsOptions(
+            FeatureIds: ["marker-lux-city", "marker-esch", "marker-diekirch", "marker-echternach"],
+            TopLeftPadding: new PixelPoint(200, 40),
+            BottomRightPadding: new PixelPoint(40, 40));
     }
 }

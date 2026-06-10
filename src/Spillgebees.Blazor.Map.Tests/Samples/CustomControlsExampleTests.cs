@@ -1,18 +1,17 @@
 using System.Reflection;
 using AwesomeAssertions;
-using Spillgebees.Blazor.Map;
 using Spillgebees.Blazor.Map.Docs.Samples;
 
 namespace Spillgebees.Blazor.Map.Tests.Samples;
 
 public class CustomControlsExampleTests : BunitContext
 {
-    private const string FlyToIdentifier = "Spillgebees.Map.mapFunctions.flyTo";
+    private const string ApplyOpsIdentifier = "Spillgebees.Engine.applyOps";
 
     public CustomControlsExampleTests()
     {
         JSInterop.Mode = JSRuntimeMode.Loose;
-        JSInterop.SetupVoid(FlyToIdentifier);
+        JSInterop.SetupVoid(ApplyOpsIdentifier);
     }
 
     [Test]
@@ -41,25 +40,42 @@ public class CustomControlsExampleTests : BunitContext
     }
 
     [Test]
-    public void Should_focus_and_cycle_station_features_from_custom_control()
+    public async Task Should_focus_and_cycle_station_features_from_custom_control()
     {
         // arrange
         var cut = Render<CustomControlsExample>();
         var source = cut.FindComponent<GeoJsonSource>();
         CountFeatures(source.Instance.Data).Should().Be(4);
+        // the channel buffers ops until the map reports load
+        await cut.FindComponent<SgbMap>().Instance.Router.OnMapEvent("load", default);
 
         // act
         cut.Find("button.sgb-map-action-control-button").Click();
 
-        // assert
-        cut.Markup.Should().Contain("Focused Central Station");
-        cut.Find("button.sgb-map-action-control-button").GetAttribute("aria-label").Should().Be("Focus North Station");
+        // assert — the focus label re-renders in a continuation after the awaited
+        // fly-to interop, so poll instead of asserting on the click's synchronous result
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("Focused Central Station");
+            cut.Find("button.sgb-map-action-control-button")
+                .GetAttribute("aria-label")
+                .Should()
+                .Be("Focus North Station");
+        });
         CountFeatures(source.Instance.Data).Should().Be(4);
-        JSInterop.VerifyInvoke(FlyToIdentifier);
 
-        var flyToInvocation = JSInterop.Invocations[FlyToIdentifier][0];
-        flyToInvocation.Arguments[1].Should().Be(new Coordinate(49.6117, 6.1319));
-        flyToInvocation.Arguments[2].Should().Be(14);
+        var opsPayloads = JSInterop
+            .Invocations[ApplyOpsIdentifier]
+            .Select(invocation => invocation.Arguments[1] as string ?? "");
+        cut.WaitForAssertion(() =>
+            opsPayloads
+                .Should()
+                .Contain(payload =>
+                    payload.Contains("\"op\":\"camera.flyTo\"")
+                    && payload.Contains("\"latitude\":49.6117")
+                    && payload.Contains("\"zoom\":14")
+                )
+        );
     }
 
     private static int CountFeatures(object? data)

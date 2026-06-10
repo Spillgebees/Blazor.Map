@@ -13,13 +13,37 @@
                ["Terminal"] = "dotnet add package Spillgebees.Blazor.Map",
            })" />
 
+<h2>Stylesheet</h2>
+
+<p>
+    Load the stylesheet. It bundles the MapLibre GL CSS and the
+    styles for the library's controls and popups. How you reference it depends on the hosting model:
+</p>
+
+<CodeBlock Language="html" Files="@_stylesheetUsage" />
+
+<p>
+    In Blazor Web Apps and Blazor Server apps on .NET 9 or later, <code>@@Assets["…"]</code> resolves the
+    fingerprinted asset URL produced by
+    <a href="https://learn.microsoft.com/aspnet/core/blazor/fundamentals/static-files" target="_blank"
+       rel="noopener">Map Static Assets</a> (<code>MapStaticAssets()</code>, on by default
+    in the templates), so the stylesheet is compressed and cache-busted on every release.
+</p>
+
+<p>
+    Standalone Blazor WebAssembly apps use the plain path. Note that the .NET 10
+    <code>#[.{fingerprint}]</code> placeholders in <code>index.html</code>
+    (<code>OverrideHtmlAssetPlaceholders</code>) currently apply to scripts only — stylesheets are not
+    fingerprinted, so the plain path is the correct form there.
+</p>
+
 <h2>JavaScript Module</h2>
 
 <p>
     No script tags are required. The library ships with a <code>lib.module.js</code> file that Blazor
     loads automatically via the standard <a
-    href="https://learn.microsoft.com/aspnet/core/blazor/javascript-interoperability/javascript-isolation"
-    target="_blank" rel="noopener">JS module isolation</a> convention.
+    href="https://learn.microsoft.com/aspnet/core/blazor/fundamentals/startup#javascript-initializers"
+    target="_blank" rel="noopener">JS initializers</a> convention.
     The MapLibre GL JS bundle is included, so no CDN reference is needed.
 </p>
 
@@ -35,40 +59,38 @@
 
 <p>
     When no style is specified, the map defaults to <strong>OpenFreeMap Liberty</strong>, a clean vector style
-    with no API key required. To use a different style, pass it via <code>MapOptions.Style</code>:
+    with no API key required. To use a different style, pass it via the <code>Style</code> parameter:
 </p>
 
 <CodeBlock Language="razor" Files="@_styleUsage" />
 
 @code {
+    private static readonly Dictionary<string, string> _stylesheetUsage = new()
+    {
+        ["App.razor (Blazor Web App / Server)"] = """
+            <link rel="stylesheet" href="@Assets["_content/Spillgebees.Blazor.Map/Spillgebees.Blazor.Map.lib.module.css"]" />
+            """,
+        ["index.html (standalone WebAssembly)"] = """
+            <link rel="stylesheet" href="_content/Spillgebees.Blazor.Map/Spillgebees.Blazor.Map.lib.module.css" />
+            """,
+    };
+
     private static readonly Dictionary<string, string> _minimalUsage = new()
     {
         ["MyPage.razor"] = """
             @using Spillgebees.Blazor.Map
 
-            <SgbMap MapOptions="@_mapOptions" Height="500px" />
-
-            @code {
-                private readonly MapOptions _mapOptions = new(
-                    Center: new Coordinate(51.505, -0.09),
-                    Zoom: 13
-                );
-            }
+            <SgbMap Center="@(new Coordinate(51.505, -0.09))" Zoom="13" Height="500px" />
             """,
     };
 
     private static readonly Dictionary<string, string> _styleUsage = new()
     {
         ["MyPage.razor"] = """
-            <SgbMap MapOptions="@_mapOptions" Height="500px" />
-
-            @code {
-                private readonly MapOptions _mapOptions = new(
-                    Center: new Coordinate(51.505, -0.09),
-                    Zoom: 13,
-                    Style: MapStyle.OpenFreeMap.Bright
-                );
-            }
+            <SgbMap Center="@(new Coordinate(51.505, -0.09))"
+                    Zoom="13"
+                    Style="@(MapStyle.OpenFreeMap.Bright)"
+                    Height="500px" />
             """,
     };
 }

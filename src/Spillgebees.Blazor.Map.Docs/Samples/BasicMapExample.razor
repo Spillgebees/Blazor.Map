@@ -1,4 +1,7 @@
-<SgbMap MapOptions="@_mapOptions"
+<SgbMap Center="@(new Coordinate(49.75, 6.10))"
+        Zoom="9"
+        Style="@(MapStyle.OpenStreetMap.Standard)"
+        FitBounds="@_fitBounds"
         Markers="@_markers"
         Polylines="@_polylines"
         Height="400px"
@@ -9,14 +12,9 @@
 </SgbMap>
 
 @code {
-    private readonly MapOptions _mapOptions = new(
-        Style: MapStyle.OpenStreetMap.Standard,
-        Center: new Coordinate(49.75, 6.10),
-        Zoom: 9,
-        FitBoundsOptions: new FitBoundsOptions(
-            FeatureIds: ["route-1"],
-            Padding: new PixelPoint(60, 60))
-    );
+    private readonly FitBoundsOptions _fitBounds = new(
+        FeatureIds: ["route-1"],
+        Padding: new PixelPoint(60, 60));
 
     private readonly List<Marker> _markers =
     [

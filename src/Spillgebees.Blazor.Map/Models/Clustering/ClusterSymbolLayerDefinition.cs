@@ -5,6 +5,9 @@ namespace Spillgebees.Blazor.Map;
 /// </summary>
 public sealed record ClusterSymbolLayerDefinition : ClusterLayerDefinition
 {
+    /// <summary>
+    /// Creates a symbol layer definition for cluster labels.
+    /// </summary>
     public ClusterSymbolLayerDefinition(
         string idSuffix,
         StyleValue<string>? textField = null,
@@ -25,9 +28,18 @@ public sealed record ClusterSymbolLayerDefinition : ClusterLayerDefinition
         TextColor = textColor;
     }
 
+    /// <summary>
+    /// The label text content.
+    /// </summary>
     public StyleValue<string>? TextField { get; init; }
 
+    /// <summary>
+    /// The label text size in pixels.
+    /// </summary>
     public StyleValue<double>? TextSize { get; init; }
 
+    /// <summary>
+    /// The label text color.
+    /// </summary>
     public StyleValue<string>? TextColor { get; init; }
 }

@@ -1,0 +1,110 @@
+@page "/engine-display-functional-test"
+
+<main class="e2e-shell">
+    <h1>Engine display + overlay functional test</h1>
+    <p>Display toggles (runtime layers, feature filters) and overlays with composed-style and runtime-layer parts.</p>
+
+    <section style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+        <button type="button" data-testid="toggle-points" @onclick="@(() => _display.Toggle("points"))">Toggle points</button>
+        <button type="button" data-testid="toggle-express" @onclick="@(() => _display.Toggle("express"))">Toggle express</button>
+        <button type="button" data-testid="toggle-overlay" @onclick="ToggleOverlayAsync">Toggle overlay</button>
+        <button type="button" data-testid="toggle-part" @onclick="TogglePartAsync">Toggle runtime part</button>
+    </section>
+
+    @if (_lastError is not null)
+    {
+        <p style="color: #b91c1c;" data-testid="map-error">@_lastError</p>
+    }
+
+    <div id="engine-display-frame" class="stress-map-frame">
+        <SgbMap @ref="_map"
+                  Style="@BaseStyle"
+                  Display="@_display"
+                  Center="@(new Coordinate(49.61, 6.14))"
+                  Zoom="12"
+                  Height="480px"
+                  Width="100%"
+                  OnMapError="@HandleMapError">
+            <GeoJsonSource Id="disp" Data="@DataJson">
+                <CircleLayer Id="disp-points"
+                               Radius="8"
+                               Color="@("#dc2626")"
+                               Filter="@BaselineFilter" />
+            </GeoJsonSource>
+            <MapOverlay Id="annotations" Label="Annotations" Style="@OverlayStyle">
+                <MapOverlayPart Id="composed" Label="Composed" LayerIds="@(new[] { "overlay-circle" })" />
+                <MapOverlayPart Id="runtime" Label="Runtime">
+                    <GeoJsonSource Id="overlay-runtime" Data="@RuntimePartDataJson">
+                        <CircleLayer Id="overlay-runtime-circle" Radius="6" Color="@("#16a34a")" />
+                    </GeoJsonSource>
+                </MapOverlayPart>
+            </MapOverlay>
+        </SgbMap>
+    </div>
+</main>
+
+@code {
+    private static readonly MapStyle BaseStyle = MapStyle
+        .FromRasterUrl(
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGM4YWMDAAMQAUEiFmcFAAAAAElFTkSuQmCC",
+            "base"
+        )
+        .WithId("base");
+
+    private static readonly MapStyle OverlayStyle = MapStyle.FromUrl("/test-overlay-style.json").WithId("annotations");
+
+    private static readonly object BaselineFilter = new object[] { "has", "name" };
+
+    private const string DataJson = """
+        {"type":"FeatureCollection","features":[
+            {"type":"Feature","geometry":{"type":"Point","coordinates":[6.13,49.605]},"properties":{"name":"a","kind":"normal"}},
+            {"type":"Feature","geometry":{"type":"Point","coordinates":[6.15,49.615]},"properties":{"name":"b","kind":"express"}}
+        ]}
+        """;
+
+    private const string RuntimePartDataJson = """
+        {"type":"FeatureCollection","features":[
+            {"type":"Feature","geometry":{"type":"Point","coordinates":[6.14,49.608]},"properties":{"name":"part"}}
+        ]}
+        """;
+
+    private readonly MapDisplayState _display = new(
+        [
+            new MapDisplayItem("points", [MapDisplayTarget.RuntimeLayers("disp-points")], Label: "Points"),
+            new MapDisplayItem(
+                "express",
+                [
+                    MapDisplayTarget.StyleLayerFeatures(
+                        "base",
+                        new object[] { "==", new object[] { "get", "kind" }, "express" },
+                        "disp-points"
+                    ),
+                ],
+                Label: "Express features"
+            ),
+        ]
+    );
+
+    private SgbMap? _map;
+    private bool _overlayVisible = true;
+    private bool _partVisible = true;
+    private string? _lastError;
+
+    private async Task ToggleOverlayAsync()
+    {
+        _overlayVisible = !_overlayVisible;
+        await _map!.SetOverlayVisibleAsync("annotations", _overlayVisible);
+    }
+
+    private async Task TogglePartAsync()
+    {
+        _partVisible = !_partVisible;
+        await _map!.SetOverlayPartVisibleAsync("annotations", "runtime", _partVisible);
+    }
+
+    private void HandleMapError(Exception exception)
+    {
+        _lastError = exception.Message;
+        StateHasChanged();
+    }
+}

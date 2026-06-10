@@ -8,33 +8,6 @@ export interface IPixelPoint {
   y: number;
 }
 
-export interface IMapOptions {
-  center: ICoordinate;
-  zoom: number;
-  style: IMapStyle | null;
-  styles: IMapStyle[] | null;
-  composedGlyphsUrl: string | null;
-  pitch: number;
-  bearing: number;
-  projection: "mercator" | "globe";
-  terrain: boolean;
-  terrainExaggeration: number;
-  fitBoundsOptions: IFitBoundsOptions | null;
-  minZoom: number | null;
-  maxZoom: number | null;
-  maxBounds: IMapBounds | null;
-  interactive: boolean;
-  cooperativeGestures: boolean;
-  webFonts: string[] | null;
-  pixelRatioMode: "browserDefault" | "roundedUpDevicePixelRatio";
-  pixelRatio: number | null;
-}
-
-export interface IMapBounds {
-  southwest: ICoordinate;
-  northeast: ICoordinate;
-}
-
 export interface IMapStyle {
   id: string | null;
   url: string | null;
@@ -69,29 +42,4 @@ export interface IWmsTileSource {
   version: string;
   tileSize: number;
   referrerPolicy?: ReferrerPolicy | null;
-}
-
-export interface ITileOverlay {
-  id: string;
-  urlTemplate: string;
-  attribution: string;
-  tileSize: number;
-  opacity: number;
-  referrerPolicy?: ReferrerPolicy | null;
-}
-
-export interface IFitBoundsOptions {
-  featureIds: string[];
-  padding: IPixelPoint | null;
-  topLeftPadding: IPixelPoint | null;
-  bottomRightPadding: IPixelPoint | null;
-}
-
-export interface IMapImage {
-  id: string;
-  url: string;
-  width: number;
-  height: number;
-  pixelRatio: number;
-  isSdf: boolean;
 }

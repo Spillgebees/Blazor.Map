@@ -10,5 +10,5 @@ public sealed record MapLegend(IReadOnlyList<MapLegendSection> Sections, string?
     /// <summary>
     /// Returns all legend items in declaration order.
     /// </summary>
-    public IReadOnlyList<MapLegendItem> GetItems() => Sections.SelectMany(section => section.Items).ToArray();
+    public IReadOnlyList<MapLegendItem> GetItems() => [.. Sections.SelectMany(section => section.Items)];
 }

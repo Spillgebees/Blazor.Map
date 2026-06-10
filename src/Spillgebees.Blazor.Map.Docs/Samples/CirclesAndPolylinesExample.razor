@@ -1,4 +1,5 @@
-<SgbMap MapOptions="@_mapOptions"
+<SgbMap Center="@(new Coordinate(49.75, 6.10))"
+        Zoom="10"
         Circles="@_circles"
         Polylines="@_polylines"
         Height="400px"
@@ -9,11 +10,6 @@
 </SgbMap>
 
 @code {
-    private readonly MapOptions _mapOptions = new(
-        Center: new Coordinate(49.75, 6.10),
-        Zoom: 10
-    );
-
     private readonly List<Circle> _circles =
     [
         new(

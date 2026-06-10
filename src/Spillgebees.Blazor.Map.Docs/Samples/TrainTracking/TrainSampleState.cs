@@ -1,41 +1,28 @@
-using Spillgebees.Blazor.Map;
-
 namespace Spillgebees.Blazor.Map.Docs.Samples.TrainTracking;
 
-public sealed class TrainSampleState
-{
-    public TrainSampleState(
-        string id,
-        string serviceNumber,
-        string route,
-        string @operator,
-        string color,
-        double speed,
-        IReadOnlyList<Coordinate> waypoints
+public sealed class TrainSampleState(
+    string id,
+    string serviceNumber,
+    string route,
+    string @operator,
+    string color,
+    double speed,
+    IReadOnlyList<Coordinate> waypoints
     )
-    {
-        Id = id;
-        ServiceNumber = serviceNumber;
-        Route = route;
-        Operator = @operator;
-        Color = color;
-        Speed = speed;
-        Waypoints = waypoints;
-    }
+{
+    public string Id { get; } = id;
 
-    public string Id { get; }
+    public string ServiceNumber { get; } = serviceNumber;
 
-    public string ServiceNumber { get; }
+    public string Route { get; } = route;
 
-    public string Route { get; }
+    public string Operator { get; } = @operator;
 
-    public string Operator { get; }
+    public string Color { get; } = color;
 
-    public string Color { get; }
+    public double Speed { get; } = speed;
 
-    public double Speed { get; }
-
-    public IReadOnlyList<Coordinate> Waypoints { get; }
+    public IReadOnlyList<Coordinate> Waypoints { get; } = waypoints;
 
     public int WaypointIndex { get; set; }
 

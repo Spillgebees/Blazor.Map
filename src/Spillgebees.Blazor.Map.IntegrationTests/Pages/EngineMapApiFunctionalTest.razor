@@ -1,0 +1,98 @@
+@page "/engine-map-api-functional-test"
+
+<main class="e2e-shell">
+    <h1>Engine map API functional test</h1>
+    <p>
+        Map options (pitch/bearing/projection/limits), camera methods (FlyTo/FitBounds),
+        transient popups, view reads, and tile overlays on the engine map.
+    </p>
+
+    <section style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+        <button type="button" data-testid="fly-to" @onclick="FlyToAsync">Fly to</button>
+        <button type="button" data-testid="fit-features" @onclick="FitFeaturesAsync">Fit features</button>
+        <button type="button" data-testid="show-popup" @onclick="ShowPopupAsync">Show popup</button>
+        <button type="button" data-testid="close-popup" @onclick="ClosePopupAsync">Close popup</button>
+        <button type="button" data-testid="read-view" @onclick="ReadViewAsync">Read view</button>
+        <button type="button" data-testid="toggle-pitch" @onclick="TogglePitch">Toggle pitch</button>
+        <button type="button" data-testid="toggle-overlay" @onclick="ToggleOverlay">Toggle overlay</button>
+        <span data-testid="view-log">@_viewLog</span>
+        <span data-testid="moveend-log">@_moveEndCount</span>
+    </section>
+
+    @if (_lastError is not null)
+    {
+        <p style="color: #b91c1c;" data-testid="map-error">@_lastError</p>
+    }
+
+    <div id="engine-map-api-frame" class="stress-map-frame">
+        <SgbMap @ref="_map"
+                  StyleSpec="@BaseStyleJson"
+                  Center="@(new Coordinate(49.61, 6.14))"
+                  Zoom="12"
+                  Pitch="@_pitch"
+                  Bearing="15"
+                  MinZoom="3"
+                  MaxZoom="18"
+                  ContainerId="map-api-container"
+                  ContainerClass="map-api-extra-class"
+                  Height="480px"
+                  Width="100%"
+                  Markers="@_markers"
+                  Circles="@_circles"
+                  Overlays="@_overlays"
+                  OnMoveEnd="@(() => _moveEndCount++)"
+                  OnMapError="@HandleMapError" />
+    </div>
+</main>
+
+@code {
+    private const string BaseStyleJson = """
+        {"version":8,"sources":{"base":{"type":"raster","tiles":["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGM4YWMDAAMQAUEiFmcFAAAAAElFTkSuQmCC"],"tileSize":256,"attribution":"Integration test"}},"layers":[{"id":"base","type":"raster","source":"base"}]}
+        """;
+
+    private SgbMap? _map;
+    private double _pitch = 30;
+    private string _viewLog = "";
+    private int _moveEndCount;
+    private string? _lastError;
+
+    private readonly IReadOnlyList<Marker> _markers = [new Marker("m1", new Coordinate(49.62, 6.10))];
+
+    private readonly IReadOnlyList<Circle> _circles =
+    [
+        new Circle("c1", new Coordinate(49.58, 6.20), Radius: 10, Color: "#f59e0b"),
+    ];
+
+    private IReadOnlyList<TileOverlay>? _overlays;
+
+    private Task FlyToAsync() => _map!.FlyToAsync(new Coordinate(50.0, 7.0), zoom: 9);
+
+    private Task FitFeaturesAsync() => _map!.FitBoundsAsync(new FitBoundsOptions(["m1", "c1"], Padding: new PixelPoint(20, 20)));
+
+    private Task ShowPopupAsync() => _map!.ShowPopupAsync(new Coordinate(49.61, 6.14), "Transient popup");
+
+    private Task ClosePopupAsync() => _map!.ClosePopupAsync();
+
+    private async Task ReadViewAsync()
+    {
+        var center = await _map!.GetCenterAsync();
+        var zoom = await _map.GetZoomAsync();
+        var bounds = await _map.GetBoundsAsync();
+        _viewLog = FormattableString.Invariant(
+            $"center={center?.Latitude:F2},{center?.Longitude:F2} zoom={zoom:F1} bounds={(bounds is null ? "none" : "ok")}"
+        );
+    }
+
+    private void TogglePitch() => _pitch = _pitch == 30 ? 60 : 30;
+
+    private void ToggleOverlay() =>
+        _overlays = _overlays is null
+            ? [new TileOverlay("test-overlay", "https://tiles.invalid/{z}/{x}/{y}.png", Opacity: 0.5)]
+            : null;
+
+    private void HandleMapError(Exception exception)
+    {
+        _lastError = exception.Message;
+        StateHasChanged();
+    }
+}
