@@ -52,21 +52,30 @@ public class CustomControlsExampleTests : BunitContext
         // act
         cut.Find("button.sgb-map-action-control-button").Click();
 
-        // assert
-        cut.Markup.Should().Contain("Focused Central Station");
-        cut.Find("button.sgb-map-action-control-button").GetAttribute("aria-label").Should().Be("Focus North Station");
+        // assert — the focus label re-renders in a continuation after the awaited
+        // fly-to interop, so poll instead of asserting on the click's synchronous result
+        cut.WaitForAssertion(() =>
+        {
+            cut.Markup.Should().Contain("Focused Central Station");
+            cut.Find("button.sgb-map-action-control-button")
+                .GetAttribute("aria-label")
+                .Should()
+                .Be("Focus North Station");
+        });
         CountFeatures(source.Instance.Data).Should().Be(4);
 
         var opsPayloads = JSInterop
             .Invocations[ApplyOpsIdentifier]
             .Select(invocation => invocation.Arguments[1] as string ?? "");
-        opsPayloads
-            .Should()
-            .Contain(payload =>
-                payload.Contains("\"op\":\"camera.flyTo\"")
-                && payload.Contains("\"latitude\":49.6117")
-                && payload.Contains("\"zoom\":14")
-            );
+        cut.WaitForAssertion(() =>
+            opsPayloads
+                .Should()
+                .Contain(payload =>
+                    payload.Contains("\"op\":\"camera.flyTo\"")
+                    && payload.Contains("\"latitude\":49.6117")
+                    && payload.Contains("\"zoom\":14")
+                )
+        );
     }
 
     private static int CountFeatures(object? data)
