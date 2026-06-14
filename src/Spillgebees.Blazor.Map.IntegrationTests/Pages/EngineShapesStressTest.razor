@@ -51,6 +51,7 @@
             <select @bind:get="_updatePattern" @bind:set="OnUpdatePatternChanged">
                 <option value="AllFeatures">Update all features</option>
                 <option value="TenPercent">Update 10%</option>
+                <option value="NoChanges">Rebuild without changes</option>
             </select>
         </label>
 
@@ -322,7 +323,14 @@
     }
 
     private static bool ShouldUpdateFeature(int index, int tick, UpdatePattern updatePattern) =>
-        updatePattern != UpdatePattern.TenPercent || index % 10 == tick % 10;
+        updatePattern switch
+        {
+            // value-identical rebuild per tick: the idiomatic "list recreated on every
+            // render" Blazor pattern, where no map work should happen at all
+            UpdatePattern.NoChanges => false,
+            UpdatePattern.TenPercent => index % 10 == tick % 10,
+            _ => true,
+        };
 
     public async ValueTask DisposeAsync()
     {
@@ -345,5 +353,6 @@
     {
         AllFeatures,
         TenPercent,
+        NoChanges,
     }
 }

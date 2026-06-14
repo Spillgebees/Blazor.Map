@@ -78,3 +78,11 @@ ASP.NET Core package versions are pinned in `src/Directory.Packages.props`.
 - **CSharpier**: formats `.cs`, `.csproj`, `.props`, `.targets`, `.slnx`, `.xml`
 - **Husky.Net**: pre-commit hook runs CSharpier on staged files
 - **Biome**: formats + lints TypeScript (configured in `src/Spillgebees.Blazor.Map.Assets/biome.json`)
+
+## Code style
+
+Soft guidelines (not build-enforced), C# side:
+
+- **Member order**: `[Inject]` → `[CascadingParameter]` → `[Parameter]` first, then everything
+  else public-before-private, with nested types and `DisposeAsync` last. Keep fields/consts at
+  the top of their group. For non-component classes this is just the usual public-before-private.
