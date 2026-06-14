@@ -160,16 +160,70 @@ test.describe("map update benchmarks", () => {
       frameId: ENGINE_VECTOR_FRAME_ID,
       query: { interval: "100" },
     },
+    // Pan smoothness — the everyday "moving around the map" use-case. The NoChanges
+    // pattern rebuilds value-identical feature lists every tick (the idiomatic Blazor
+    // "list recreated on every render" shape), so the only legitimate map work during
+    // the drag-pans is camera rendering. Redundant shape re-uploads show up both as
+    // frame gaps and as a climbing setData counter, so the counter ceiling pins the
+    // coordinator's unchanged-payload skip.
+    {
+      name: "i-pan-circles-rerender-only",
+      route: "/engine-shapes-stress-test",
+      frameId: ENGINE_SHAPES_FRAME_ID,
+      query: { entities: "2000", interval: "100", pattern: "NoChanges", mode: "Circles" },
+      duringMeasure: dragPanAcrossMap,
+      maxCounters: { setData: 2 },
+    },
+    {
+      name: "i-pan-polylines-rerender-only",
+      route: "/engine-shapes-stress-test",
+      frameId: ENGINE_SHAPES_FRAME_ID,
+      query: { entities: "2000", interval: "100", pattern: "NoChanges", mode: "Polylines" },
+      duringMeasure: dragPanAcrossMap,
+      maxCounters: { setData: 2 },
+    },
+    // Pan smoothness with genuinely changing data — the legitimate update cost that
+    // must coexist with camera movement.
+    {
+      name: "i-pan-circles-live-data",
+      route: "/engine-shapes-stress-test",
+      frameId: ENGINE_SHAPES_FRAME_ID,
+      query: { entities: "2000", interval: "100", pattern: "TenPercent", mode: "Circles" },
+      duringMeasure: dragPanAcrossMap,
+    },
   ];
 
   for (const scenario of scenarios) {
     test(scenario.name, async ({ page }, testInfo) => {
       const snapshot = await runStressScenario(page, scenario);
       await reportResults(testInfo, scenario, snapshot);
-      assertBudgets(snapshot);
+      assertBudgets(snapshot, scenario);
     });
   }
 });
+
+/** Out-and-back drag-pans around the feature field, with a settle pause per gesture. */
+async function dragPanAcrossMap(page: Page): Promise<void> {
+  const box = await page.locator(".sgb-map-container canvas").boundingBox();
+  expect(box, "map canvas must be visible for drag pans").not.toBeNull();
+  if (!box) {
+    return;
+  }
+
+  const centerX = box.x + box.width / 2;
+  const centerY = box.y + box.height / 2;
+  for (const direction of [1, -1]) {
+    await page.mouse.move(centerX, centerY);
+    await page.mouse.down();
+    for (let step = 1; step <= 10; step++) {
+      await page.mouse.move(centerX + direction * step * 18, centerY + direction * step * 6, { steps: 2 });
+      await page.waitForTimeout(16);
+    }
+    await page.mouse.up();
+    // let inertia finish so moveend (and the re-render it triggers) lands in-measure
+    await page.waitForTimeout(150);
+  }
+}
 
 async function sweepPointerAcrossMap(page: Page): Promise<void> {
   const box = await page.locator(".sgb-map-container canvas").boundingBox();

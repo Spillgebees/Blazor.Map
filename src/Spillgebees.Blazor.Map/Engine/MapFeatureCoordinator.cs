@@ -20,11 +20,21 @@ internal sealed class MapFeatureCoordinator(MapEngineChannel channel)
     private const string PolylinesSourceId = "sgb-polylines-source";
     private const string PolylinesLayerId = "sgb-polylines-layer";
     private const string ParameterFeaturesOwnerId = "map-parameters";
+    private const string EmptyCollectionJson = """{"type":"FeatureCollection","features":[]}""";
 
     private static readonly JsonSerializerOptions _popupJsonOptions = new(JsonSerializerDefaults.Web);
 
     // reused across flushes — a 2,000-circle collection is ~300 KB of JSON per tick
     private readonly ArrayBufferWriter<byte> _flushBuffer = new(512 * 1024);
+
+    // Last payload flushed per shapes source. Hosts re-render on every UI event
+    // (each moveend/zoomend included) and idiomatic Blazor rebuilds the feature lists
+    // each time, so flushes run constantly with unchanged content — and a redundant
+    // push costs a JS-side JSON.parse plus a full MapLibre source re-tile, which is
+    // exactly what makes panning stutter. Both sources start empty JS-side
+    // (EnsureShapeInfrastructure), hence the empty-collection sentinel.
+    private byte[] _flushedCirclesPayload = Encoding.UTF8.GetBytes(EmptyCollectionJson);
+    private byte[] _flushedPolylinesPayload = Encoding.UTF8.GetBytes(EmptyCollectionJson);
 
     private readonly Dictionary<string, IReadOnlyList<Marker>> _markersByOwner = [];
     private readonly Dictionary<string, IReadOnlyList<Circle>> _circlesByOwner = [];
@@ -147,11 +157,10 @@ internal sealed class MapFeatureCoordinator(MapEngineChannel channel)
         }
 
         _shapeInfrastructureQueued = true;
-        var emptyCollection = """{"type":"FeatureCollection","features":[]}""";
         channel.Queue(
             new SourceAddOp(
                 CirclesSourceId,
-                new JsonObject { ["type"] = "geojson", ["data"] = JsonNode.Parse(emptyCollection) }
+                new JsonObject { ["type"] = "geojson", ["data"] = JsonNode.Parse(EmptyCollectionJson) }
             )
         );
         channel.Queue(
@@ -172,11 +181,7 @@ internal sealed class MapFeatureCoordinator(MapEngineChannel channel)
                             EngineSpec.Expr("get", "strokeColor"),
                             "transparent"
                         ),
-                        ["circle-stroke-width"] = EngineSpec.Expr(
-                            "coalesce",
-                            EngineSpec.Expr("get", "strokeWidth"),
-                            0
-                        ),
+                        ["circle-stroke-width"] = EngineSpec.Expr("coalesce", EngineSpec.Expr("get", "strokeWidth"), 0),
                         ["circle-stroke-opacity"] = EngineSpec.Expr(
                             "coalesce",
                             EngineSpec.Expr("get", "strokeOpacity"),
@@ -189,7 +194,7 @@ internal sealed class MapFeatureCoordinator(MapEngineChannel channel)
         channel.Queue(
             new SourceAddOp(
                 PolylinesSourceId,
-                new JsonObject { ["type"] = "geojson", ["data"] = JsonNode.Parse(emptyCollection) }
+                new JsonObject { ["type"] = "geojson", ["data"] = JsonNode.Parse(EmptyCollectionJson) }
             )
         );
         channel.Queue(
@@ -256,6 +261,12 @@ internal sealed class MapFeatureCoordinator(MapEngineChannel channel)
             writer.WriteEndObject();
         }
 
+        if (_flushBuffer.WrittenSpan.SequenceEqual(_flushedCirclesPayload))
+        {
+            return;
+        }
+
+        _flushedCirclesPayload = _flushBuffer.WrittenSpan.ToArray();
         channel.PushSourceData(CirclesSourceId, Encoding.UTF8.GetString(_flushBuffer.WrittenSpan), animateMs: null);
     }
 
@@ -303,6 +314,12 @@ internal sealed class MapFeatureCoordinator(MapEngineChannel channel)
             writer.WriteEndObject();
         }
 
+        if (_flushBuffer.WrittenSpan.SequenceEqual(_flushedPolylinesPayload))
+        {
+            return;
+        }
+
+        _flushedPolylinesPayload = _flushBuffer.WrittenSpan.ToArray();
         channel.PushSourceData(PolylinesSourceId, Encoding.UTF8.GetString(_flushBuffer.WrittenSpan), animateMs: null);
     }
 

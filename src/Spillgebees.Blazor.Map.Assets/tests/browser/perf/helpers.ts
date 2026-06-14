@@ -50,6 +50,11 @@ export interface StressScenario {
    * something or the scenario is silently measuring an empty map.
    */
   rendersGlFeatures?: boolean;
+  /**
+   * Ceilings on MapLibre call counters during the measure window (e.g.
+   * `{ setData: 2 }` pins a scenario whose data never changes to ~zero re-uploads).
+   */
+  maxCounters?: Record<string, number>;
 }
 
 export const ENGINE_FRAME_ID = "engine-entity-stress-frame";
@@ -134,7 +139,7 @@ export async function reportResults(
   });
 }
 
-export function assertBudgets(snapshot: StressSnapshot): void {
+export function assertBudgets(snapshot: StressSnapshot, scenario?: Pick<StressScenario, "maxCounters">): void {
   if (RECORD_ONLY) {
     return;
   }
@@ -148,6 +153,16 @@ export function assertBudgets(snapshot: StressSnapshot): void {
   expect
     .soft(snapshot.frameGaps.p95, `frame gap p95 must stay under ${BUDGETS.frameGapP95Ms}ms`)
     .toBeLessThan(BUDGETS.frameGapP95Ms);
+
+  // counter ceilings are exact call counts, not timings — no BUDGET_SCALE
+  for (const [counter, ceiling] of Object.entries(scenario?.maxCounters ?? {})) {
+    expect
+      .soft(
+        snapshot.counters[counter] ?? 0,
+        `${counter} calls during the measure window must stay at or under ${ceiling}`,
+      )
+      .toBeLessThanOrEqual(ceiling);
+  }
 }
 
 declare global {
