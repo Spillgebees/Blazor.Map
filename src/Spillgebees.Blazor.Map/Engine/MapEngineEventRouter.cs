@@ -28,9 +28,6 @@ internal sealed class MapEngineEventRouter : IDisposable
 
     public event Func<MarkerDragEventArgs, Task>? MarkerDragEnd;
 
-    /// <summary>Raised when the engine clears an active follow (user interaction or missing entity).</summary>
-    public event Func<MapFollowChangedEventArgs, Task>? FollowChanged;
-
     public int Register(Func<JsonElement, Task> handler)
     {
         var handlerId = _nextHandlerId++;
@@ -54,10 +51,6 @@ internal sealed class MapEngineEventRouter : IDisposable
     [JSInvokable]
     public Task OnMarkerDragEndCallbackAsync(MarkerDragEventArgs args) =>
         MarkerDragEnd?.Invoke(args) ?? Task.CompletedTask;
-
-    [JSInvokable]
-    public Task OnFollowChangedCallbackAsync(MapFollowChangedEventArgs args) =>
-        FollowChanged?.Invoke(args) ?? Task.CompletedTask;
 
     public void Dispose()
     {

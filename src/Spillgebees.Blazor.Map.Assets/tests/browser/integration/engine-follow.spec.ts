@@ -1,25 +1,11 @@
 import { expect, type Page, test } from "@playwright/test";
+import { evaluateOnMap } from "./helpers";
 
 // Map-level camera follow against the real map: engaging on a tracked entity, tracking it as
 // it moves, and clearing on a real user pan (with the .NET callback echo).
 
 const PAGE_ROUTE = "/engine-follow-functional-test";
 const SYMBOL_LAYER_ID = "vehicles-symbols";
-
-function evaluateOnMap<T>(page: Page, body: string): Promise<T> {
-  return page.evaluate(
-    ({ evalBody }) => {
-      const maps = window.Spillgebees?.Map?.maps;
-      const map = maps ? [...maps.values()][0] : undefined;
-      if (!map) {
-        throw new Error("map not found");
-      }
-
-      return new Function("map", evalBody)(map) as T;
-    },
-    { evalBody: body },
-  );
-}
 
 async function openFixture(page: Page): Promise<void> {
   await page.goto(PAGE_ROUTE, { waitUntil: "domcontentloaded" });

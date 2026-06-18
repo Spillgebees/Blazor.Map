@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Components;
 using Spillgebees.Blazor.Map.Engine;
 
@@ -97,12 +98,18 @@ public partial class SgbMap
         await RaiseFollowChangedAsync(options, reason);
     }
 
-    // Subscribed to MapEngineEventRouter.FollowChanged; fires when the engine clears follow
-    // (user interaction or missing entity). Mirrors the marker callback wiring.
-    private Task HandleFollowClearedAsync(MapFollowChangedEventArgs args)
+    // Routed from the map-event channel ("followcleared"): the engine cleared the follow on its own
+    // (a user gesture or the entity going missing). The payload carries only the lowercase reason.
+    private Task HandleFollowClearedAsync(JsonElement payload)
     {
+        var reason = payload.GetProperty("reason").GetString() switch
+        {
+            "featuremissing" => MapFollowChangeReason.FeatureMissing,
+            _ => MapFollowChangeReason.UserInteraction,
+        };
+
         _appliedFollow = null;
-        return RaiseFollowChangedAsync(args.Follow, args.Reason);
+        return RaiseFollowChangedAsync(null, reason);
     }
 
     private async Task RaiseFollowChangedAsync(MapFollowOptions? value, MapFollowChangeReason reason)

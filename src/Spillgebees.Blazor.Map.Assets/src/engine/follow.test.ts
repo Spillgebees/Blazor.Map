@@ -580,6 +580,25 @@ describe("follow controller", () => {
       expect(alive).toBe(false);
       expect(fake.onCleared).toHaveBeenCalledExactlyOnceWith("featuremissing");
     });
+
+    it("throttles the full rescan while the entity is absent", () => {
+      // arrange: follow a target that is not in the store yet
+      fake.controller.apply(follow());
+
+      // act + assert: the first frame scans, finds nothing, and arms the rescan throttle
+      fake.step(0);
+      expect(fake.easeTo).not.toHaveBeenCalled();
+
+      // the entity appears, but a frame inside the throttle window does not rescan for it yet
+      fake.setEntity(6, 49);
+      fake.step(100);
+      expect(fake.easeTo).not.toHaveBeenCalled();
+
+      // a frame past the window rescans, finds it, and engages
+      fake.step(300);
+      expect(fake.easeTo).toHaveBeenCalledTimes(1);
+      expect(fake.lastEaseTo()?.center).toEqual([6, 49]);
+    });
   });
 
   describe("lifecycle", () => {

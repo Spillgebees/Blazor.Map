@@ -228,7 +228,6 @@ public partial class SgbMap
         _display = new MapDisplayCoordinator(Channel);
         _tileOverlays = new MapTileOverlayCoordinator(Channel);
         _follow = new MapFollowCoordinator(Channel);
-        Router.FollowChanged += HandleFollowClearedAsync;
         ControlRegistry = new MapControlRegistryContext(this);
         RootContext = new MapRootContext(this);
     }
@@ -478,6 +477,9 @@ public partial class SgbMap
                     ? messageProperty.GetString()
                     : null;
                 await OnMapError.InvokeAsync(new InvalidOperationException(message ?? "Unknown map engine error."));
+                break;
+            case "followcleared":
+                await HandleFollowClearedAsync(payload);
                 break;
         }
     }

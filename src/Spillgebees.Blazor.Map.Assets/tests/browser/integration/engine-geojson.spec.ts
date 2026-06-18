@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { evaluateOnMap } from "./helpers";
 
 // Functional coverage for raw GeoJSON sources + typed layers on the engine path:
 // rendering, data updates, runtime paint changes, layer click events, and clustering
@@ -8,21 +9,6 @@ const PAGE_ROUTE = "/engine-geojson-functional-test";
 const CIRCLE_LAYER_ID = "places-circles";
 const LINE_LAYER_ID = "places-lines";
 const CLUSTER_LAYER_ID = "places-clusters";
-
-function evaluateOnMap<T>(page: Page, body: string): Promise<T> {
-  return page.evaluate(
-    ({ evalBody }) => {
-      const maps = window.Spillgebees?.Map?.maps;
-      const map = maps ? [...maps.values()][0] : undefined;
-      if (!map) {
-        throw new Error("map not found");
-      }
-
-      return new Function("map", evalBody)(map) as T;
-    },
-    { evalBody: body },
-  );
-}
 
 function renderedNames(page: Page, layerId: string): Promise<string[]> {
   return evaluateOnMap<string[]>(

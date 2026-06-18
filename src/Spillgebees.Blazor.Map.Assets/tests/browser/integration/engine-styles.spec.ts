@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { evaluateOnMap } from "./helpers";
 
 // Functional coverage for V2 typed styles: overlay composition, base style switching
 // with full scene replay (entities, images, overlays survive), and theme switching.
@@ -6,21 +7,6 @@ import { expect, type Page, test } from "@playwright/test";
 const PAGE_ROUTE = "/engine-style-functional-test";
 const SYMBOL_LAYER_ID = "entities-symbols";
 const OVERLAY_LAYER_PREFIX = "sgb-overlay-style-test-overlay-";
-
-function evaluateOnMap<T>(page: Page, body: string): Promise<T> {
-  return page.evaluate(
-    ({ evalBody }) => {
-      const maps = window.Spillgebees?.Map?.maps;
-      const map = maps ? [...maps.values()][0] : undefined;
-      if (!map) {
-        throw new Error("map not found");
-      }
-
-      return new Function("map", evalBody)(map) as T;
-    },
-    { evalBody: body },
-  );
-}
 
 function renderedEntityCount(page: Page): Promise<number> {
   return evaluateOnMap<number>(

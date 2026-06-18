@@ -247,9 +247,7 @@ function createMap(container: HTMLElement, optionsJson: string, router: DotNetOb
     {
       onEvent: emit,
       onError: reportError,
-      onFollowCleared: (reason) =>
-        // biome-ignore lint/security/noSecrets: this is a .NET [JSInvokable] method name, not a secret
-        void router.invokeMethodAsync("OnFollowChangedCallbackAsync", { follow: null, reason }),
+      onFollowCleared: (reason) => void router.invokeMethodAsync("OnMapEvent", "followcleared", { reason }),
     },
   );
 

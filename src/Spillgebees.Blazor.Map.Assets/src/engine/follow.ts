@@ -19,6 +19,10 @@ const BEARING_EPSILON = 0.05;
 // Time constant for easing the camera bearing toward a feature heading. Larger is gentler; this gives a
 // smooth ~0.3s settle that takes the jarring snap out of sharp turns without feeling laggy.
 const BEARING_SMOOTHING_TAU_MS = 150;
+// While the followed entity is absent the cache misses, so resolveRecord would otherwise re-scan the
+// whole store every frame. Throttle those failed scans so a large layer pays the O(n) cost at most this
+// often (a present entity is still resolved every frame via the O(1) index cache).
+const MISSING_RESCAN_MS = 250;
 // How long tracking stays paused after a wheel tick. Wheel zoom has no end event, so we hold off the
 // recentre for a short window after the last notch (refreshed on each one) and resume once it settles.
 const WHEEL_PAUSE_MS = 400;
@@ -103,6 +107,8 @@ function holdsTarget(mode: FollowGestureMode): boolean {
 export function createFollowController(deps: FollowControllerDeps): FollowController {
   let target: FollowTarget | null = null;
   let cachedIndex: number | null = null;
+  // Frame time before which a failed full scan is not retried, throttling rescans while the entity is absent.
+  let nextScanAt = 0;
   let hasEngaged = false;
   // Frame time until which the animated engage move owns the camera; per-frame tracking is held off
   // until then so a moving entity's recentres don't interrupt (and freeze) the engage animation.
@@ -148,6 +154,7 @@ export function createFollowController(deps: FollowControllerDeps): FollowContro
       interaction: op.interaction ?? DEFAULT_INTERACTION,
     };
     cachedIndex = null;
+    nextScanAt = 0;
     hasEngaged = false;
     engageUntil = 0;
     paused = false;
@@ -280,6 +287,12 @@ export function createFollowController(deps: FollowControllerDeps): FollowContro
       }
     }
 
+    // A cache miss needs a full O(n) scan. While the entity is absent this would repeat every frame, so
+    // throttle the failed scans; an entity that only changed index still resolves on the next attempt.
+    if (lastFrameNow < nextScanAt) {
+      return undefined;
+    }
+
     for (const [index, record] of store.records) {
       if (record.id === active.entityId) {
         cachedIndex = index;
@@ -288,6 +301,7 @@ export function createFollowController(deps: FollowControllerDeps): FollowContro
     }
 
     cachedIndex = null;
+    nextScanAt = lastFrameNow + MISSING_RESCAN_MS;
     return undefined;
   }
 

@@ -1,24 +1,10 @@
 import { expect, type Page, test } from "@playwright/test";
+import { evaluateOnMap } from "./helpers";
 
 // Map options, camera methods, transient popups, view reads, and tile overlays —
 // the full map options/camera/query surface of the engine map.
 
 const PAGE_ROUTE = "/engine-map-api-functional-test";
-
-function evaluateOnMap<T>(page: Page, body: string): Promise<T> {
-  return page.evaluate(
-    ({ evalBody }) => {
-      const maps = window.Spillgebees?.Map?.maps;
-      const map = maps ? [...maps.values()][0] : undefined;
-      if (!map) {
-        throw new Error("map not found");
-      }
-
-      return new Function("map", evalBody)(map) as T;
-    },
-    { evalBody: body },
-  );
-}
 
 async function openFixture(page: Page): Promise<void> {
   await page.goto(PAGE_ROUTE, { waitUntil: "domcontentloaded" });

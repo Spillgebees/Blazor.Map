@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { evaluateOnMap } from "./helpers";
 
 // Functional coverage for markers/circles/polylines hosted on SgbMap — the component
 // family (feature-host seam) plus the Markers/Circles/Polylines parameters, including
@@ -7,21 +8,6 @@ import { expect, type Page, test } from "@playwright/test";
 const PAGE_ROUTE = "/engine-features-functional-test";
 const CIRCLES_LAYER_ID = "sgb-circles-layer";
 const POLYLINES_LAYER_ID = "sgb-polylines-layer";
-
-function evaluateOnMap<T>(page: Page, body: string): Promise<T> {
-  return page.evaluate(
-    ({ evalBody }) => {
-      const maps = window.Spillgebees?.Map?.maps;
-      const map = maps ? [...maps.values()][0] : undefined;
-      if (!map) {
-        throw new Error("map not found");
-      }
-
-      return new Function("map", evalBody)(map) as T;
-    },
-    { evalBody: body },
-  );
-}
 
 function renderedCount(page: Page, layerId: string): Promise<number> {
   return evaluateOnMap<number>(

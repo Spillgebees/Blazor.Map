@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { evaluateOnMap } from "./helpers";
 
 // Functional coverage for the engine tracked entity layer: rendering, motion,
 // membership, click/hover events, selection, decorations, clustering, and
@@ -27,21 +28,6 @@ async function openFixture(page: Page, query = "", readyLayerId = SYMBOL_LAYER_I
       { timeout: 60000 },
     )
     .toBeGreaterThan(0);
-}
-
-function evaluateOnMap<T>(page: Page, body: string): Promise<T> {
-  return page.evaluate(
-    ({ evalBody }) => {
-      const maps = window.Spillgebees?.Map?.maps;
-      const map = maps ? [...maps.values()][0] : undefined;
-      if (!map) {
-        throw new Error("map not found");
-      }
-
-      return new Function("map", evalBody)(map) as T;
-    },
-    { evalBody: body },
-  );
 }
 
 function uniqueEntityIds(page: Page, layerId: string): Promise<string[]> {
