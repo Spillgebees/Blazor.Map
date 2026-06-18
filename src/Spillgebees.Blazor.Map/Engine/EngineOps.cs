@@ -47,6 +47,8 @@ namespace Spillgebees.Blazor.Map.Engine;
 [JsonDerivedType(typeof(MapRequestPolicyOp), "map.requestPolicy")]
 [JsonDerivedType(typeof(CameraFlyToOp), "camera.flyTo")]
 [JsonDerivedType(typeof(CameraFitFeaturesOp), "camera.fitFeatures")]
+[JsonDerivedType(typeof(CameraFollowOp), "camera.follow")]
+[JsonDerivedType(typeof(CameraClearFollowOp), "camera.clearFollow")]
 [JsonDerivedType(typeof(SourceFeatureStateOp), "source.featureState")]
 [JsonDerivedType(typeof(EventsSetOp), "events.set")]
 [JsonDerivedType(typeof(EventsClearOp), "events.clear")]
@@ -282,12 +284,32 @@ internal sealed record CameraFitFeaturesOp(
     PixelPoint? BottomRightPadding = null
 ) : EngineOp;
 
-internal sealed record SourceFeatureStateOp(
-    string Id,
-    JsonNode FeatureId,
-    JsonObject State,
-    string? SourceLayer = null
+/// <summary>Starts (or re-targets) camera follow for an entity in a tracked entity layer.</summary>
+internal sealed record CameraFollowOp(
+    string LayerId,
+    string EntityId,
+    EngineFollowCamera? Camera = null,
+    EngineAnimation? Animation = null,
+    EngineFollowInteraction? Interaction = null
 ) : EngineOp;
+
+/// <summary>Clears the active camera follow.</summary>
+internal sealed record CameraClearFollowOp() : EngineOp;
+
+internal sealed record EngineFollowCamera(
+    string ZoomMode = "free",
+    double? Zoom = null,
+    string OrientationMode = "free",
+    double? Pitch = null,
+    string BearingSource = "keepcurrent",
+    double? Bearing = null,
+    PixelPoint? Offset = null
+);
+
+internal sealed record EngineFollowInteraction(bool ClearOnUserPan = true, bool ClearWhenFeatureMissing = false);
+
+internal sealed record SourceFeatureStateOp(string Id, JsonNode FeatureId, JsonObject State, string? SourceLayer = null)
+    : EngineOp;
 
 internal sealed record EngineMapConfig(
     double Pitch,

@@ -596,6 +596,61 @@ Spillgebees.Blazor.Map.MapFeatures
 Spillgebees.Blazor.Map.MapFeatures.ChildContent.get -> Microsoft.AspNetCore.Components.RenderFragment?
 Spillgebees.Blazor.Map.MapFeatures.ChildContent.set -> void
 Spillgebees.Blazor.Map.MapFeatures.MapFeatures() -> void
+Spillgebees.Blazor.Map.MapFollowBearingSource
+Spillgebees.Blazor.Map.MapFollowBearingSource.Fixed = 1 -> Spillgebees.Blazor.Map.MapFollowBearingSource
+Spillgebees.Blazor.Map.MapFollowBearingSource.KeepCurrent = 0 -> Spillgebees.Blazor.Map.MapFollowBearingSource
+Spillgebees.Blazor.Map.MapFollowBearingSource.MatchHeading = 2 -> Spillgebees.Blazor.Map.MapFollowBearingSource
+Spillgebees.Blazor.Map.MapFollowCameraOptions
+Spillgebees.Blazor.Map.MapFollowCameraOptions.Bearing.get -> double?
+Spillgebees.Blazor.Map.MapFollowCameraOptions.Bearing.init -> void
+Spillgebees.Blazor.Map.MapFollowCameraOptions.BearingSource.get -> Spillgebees.Blazor.Map.MapFollowBearingSource
+Spillgebees.Blazor.Map.MapFollowCameraOptions.BearingSource.init -> void
+Spillgebees.Blazor.Map.MapFollowCameraOptions.MapFollowCameraOptions(Spillgebees.Blazor.Map.MapFollowGestureMode ZoomMode = Spillgebees.Blazor.Map.MapFollowGestureMode.Free, double? Zoom = null, Spillgebees.Blazor.Map.MapFollowGestureMode OrientationMode = Spillgebees.Blazor.Map.MapFollowGestureMode.Free, double? Pitch = null, Spillgebees.Blazor.Map.MapFollowBearingSource BearingSource = Spillgebees.Blazor.Map.MapFollowBearingSource.KeepCurrent, double? Bearing = null, Spillgebees.Blazor.Map.PixelPoint? Offset = null) -> void
+Spillgebees.Blazor.Map.MapFollowCameraOptions.Offset.get -> Spillgebees.Blazor.Map.PixelPoint?
+Spillgebees.Blazor.Map.MapFollowCameraOptions.Offset.init -> void
+Spillgebees.Blazor.Map.MapFollowCameraOptions.OrientationMode.get -> Spillgebees.Blazor.Map.MapFollowGestureMode
+Spillgebees.Blazor.Map.MapFollowCameraOptions.OrientationMode.init -> void
+Spillgebees.Blazor.Map.MapFollowCameraOptions.Pitch.get -> double?
+Spillgebees.Blazor.Map.MapFollowCameraOptions.Pitch.init -> void
+Spillgebees.Blazor.Map.MapFollowCameraOptions.Zoom.get -> double?
+Spillgebees.Blazor.Map.MapFollowCameraOptions.Zoom.init -> void
+Spillgebees.Blazor.Map.MapFollowCameraOptions.ZoomMode.get -> Spillgebees.Blazor.Map.MapFollowGestureMode
+Spillgebees.Blazor.Map.MapFollowCameraOptions.ZoomMode.init -> void
+Spillgebees.Blazor.Map.MapFollowChangeReason
+Spillgebees.Blazor.Map.MapFollowChangeReason.Cleared = 2 -> Spillgebees.Blazor.Map.MapFollowChangeReason
+Spillgebees.Blazor.Map.MapFollowChangeReason.FeatureMissing = 4 -> Spillgebees.Blazor.Map.MapFollowChangeReason
+Spillgebees.Blazor.Map.MapFollowChangeReason.Started = 0 -> Spillgebees.Blazor.Map.MapFollowChangeReason
+Spillgebees.Blazor.Map.MapFollowChangeReason.Updated = 1 -> Spillgebees.Blazor.Map.MapFollowChangeReason
+Spillgebees.Blazor.Map.MapFollowChangeReason.UserInteraction = 3 -> Spillgebees.Blazor.Map.MapFollowChangeReason
+Spillgebees.Blazor.Map.MapFollowChangedEventArgs
+Spillgebees.Blazor.Map.MapFollowChangedEventArgs.Follow.get -> Spillgebees.Blazor.Map.MapFollowOptions?
+Spillgebees.Blazor.Map.MapFollowChangedEventArgs.Follow.init -> void
+Spillgebees.Blazor.Map.MapFollowChangedEventArgs.MapFollowChangedEventArgs(Spillgebees.Blazor.Map.MapFollowOptions? Follow, Spillgebees.Blazor.Map.MapFollowChangeReason Reason) -> void
+Spillgebees.Blazor.Map.MapFollowChangedEventArgs.Reason.get -> Spillgebees.Blazor.Map.MapFollowChangeReason
+Spillgebees.Blazor.Map.MapFollowChangedEventArgs.Reason.init -> void
+Spillgebees.Blazor.Map.MapFollowGestureMode
+Spillgebees.Blazor.Map.MapFollowGestureMode.Anchored = 1 -> Spillgebees.Blazor.Map.MapFollowGestureMode
+Spillgebees.Blazor.Map.MapFollowGestureMode.Clear = 3 -> Spillgebees.Blazor.Map.MapFollowGestureMode
+Spillgebees.Blazor.Map.MapFollowGestureMode.Free = 0 -> Spillgebees.Blazor.Map.MapFollowGestureMode
+Spillgebees.Blazor.Map.MapFollowGestureMode.Locked = 2 -> Spillgebees.Blazor.Map.MapFollowGestureMode
+Spillgebees.Blazor.Map.MapFollowInteractionOptions
+Spillgebees.Blazor.Map.MapFollowInteractionOptions.ClearOnUserPan.get -> bool
+Spillgebees.Blazor.Map.MapFollowInteractionOptions.ClearOnUserPan.init -> void
+Spillgebees.Blazor.Map.MapFollowInteractionOptions.ClearWhenFeatureMissing.get -> bool
+Spillgebees.Blazor.Map.MapFollowInteractionOptions.ClearWhenFeatureMissing.init -> void
+Spillgebees.Blazor.Map.MapFollowInteractionOptions.MapFollowInteractionOptions(bool ClearOnUserPan = true, bool ClearWhenFeatureMissing = false) -> void
+Spillgebees.Blazor.Map.MapFollowOptions
+Spillgebees.Blazor.Map.MapFollowOptions.Animation.get -> Spillgebees.Blazor.Map.AnimationOptions?
+Spillgebees.Blazor.Map.MapFollowOptions.Animation.init -> void
+Spillgebees.Blazor.Map.MapFollowOptions.Camera.get -> Spillgebees.Blazor.Map.MapFollowCameraOptions?
+Spillgebees.Blazor.Map.MapFollowOptions.Camera.init -> void
+Spillgebees.Blazor.Map.MapFollowOptions.EntityId.get -> string!
+Spillgebees.Blazor.Map.MapFollowOptions.EntityId.init -> void
+Spillgebees.Blazor.Map.MapFollowOptions.Interaction.get -> Spillgebees.Blazor.Map.MapFollowInteractionOptions?
+Spillgebees.Blazor.Map.MapFollowOptions.Interaction.init -> void
+Spillgebees.Blazor.Map.MapFollowOptions.LayerId.get -> string!
+Spillgebees.Blazor.Map.MapFollowOptions.LayerId.init -> void
+Spillgebees.Blazor.Map.MapFollowOptions.MapFollowOptions(string! LayerId, string! EntityId, Spillgebees.Blazor.Map.MapFollowCameraOptions? Camera = null, Spillgebees.Blazor.Map.AnimationOptions? Animation = null, Spillgebees.Blazor.Map.MapFollowInteractionOptions? Interaction = null) -> void
 Spillgebees.Blazor.Map.MapImage
 Spillgebees.Blazor.Map.MapImage.Height.get -> int
 Spillgebees.Blazor.Map.MapImage.Id.get -> string!
@@ -1146,6 +1201,7 @@ Spillgebees.Blazor.Map.SgbMap.ChildContent.get -> Microsoft.AspNetCore.Component
 Spillgebees.Blazor.Map.SgbMap.ChildContent.set -> void
 Spillgebees.Blazor.Map.SgbMap.Circles.get -> System.Collections.Generic.IReadOnlyList<Spillgebees.Blazor.Map.Circle!>?
 Spillgebees.Blazor.Map.SgbMap.Circles.set -> void
+Spillgebees.Blazor.Map.SgbMap.ClearFollowAsync() -> System.Threading.Tasks.Task!
 Spillgebees.Blazor.Map.SgbMap.ClosePopupAsync() -> System.Threading.Tasks.Task!
 Spillgebees.Blazor.Map.SgbMap.ComposedGlyphsUrl.get -> string?
 Spillgebees.Blazor.Map.SgbMap.ComposedGlyphsUrl.set -> void
@@ -1162,6 +1218,10 @@ Spillgebees.Blazor.Map.SgbMap.FitBounds.get -> Spillgebees.Blazor.Map.FitBoundsO
 Spillgebees.Blazor.Map.SgbMap.FitBounds.set -> void
 Spillgebees.Blazor.Map.SgbMap.FitBoundsAsync(Spillgebees.Blazor.Map.FitBoundsOptions! options) -> System.Threading.Tasks.Task!
 Spillgebees.Blazor.Map.SgbMap.FlyToAsync(Spillgebees.Blazor.Map.Coordinate! center, double? zoom = null, double? bearing = null, double? pitch = null) -> System.Threading.Tasks.Task!
+Spillgebees.Blazor.Map.SgbMap.Follow.get -> Spillgebees.Blazor.Map.MapFollowOptions?
+Spillgebees.Blazor.Map.SgbMap.Follow.set -> void
+Spillgebees.Blazor.Map.SgbMap.FollowChanged.get -> Microsoft.AspNetCore.Components.EventCallback<Spillgebees.Blazor.Map.MapFollowOptions?>
+Spillgebees.Blazor.Map.SgbMap.FollowChanged.set -> void
 Spillgebees.Blazor.Map.SgbMap.GetBoundsAsync() -> System.Threading.Tasks.ValueTask<Spillgebees.Blazor.Map.MapBounds?>
 Spillgebees.Blazor.Map.SgbMap.GetCenterAsync() -> System.Threading.Tasks.ValueTask<Spillgebees.Blazor.Map.Coordinate?>
 Spillgebees.Blazor.Map.SgbMap.GetZoomAsync() -> System.Threading.Tasks.ValueTask<double?>
@@ -1182,6 +1242,8 @@ Spillgebees.Blazor.Map.SgbMap.MaxZoom.set -> void
 Spillgebees.Blazor.Map.SgbMap.MinZoom.get -> double?
 Spillgebees.Blazor.Map.SgbMap.MinZoom.set -> void
 Spillgebees.Blazor.Map.SgbMap.MoveLayerAsync(string! layerId, string? beforeLayerId = null) -> System.Threading.Tasks.Task!
+Spillgebees.Blazor.Map.SgbMap.OnFollowChanged.get -> Microsoft.AspNetCore.Components.EventCallback<Spillgebees.Blazor.Map.MapFollowChangedEventArgs!>
+Spillgebees.Blazor.Map.SgbMap.OnFollowChanged.set -> void
 Spillgebees.Blazor.Map.SgbMap.OnMapClick.get -> Microsoft.AspNetCore.Components.EventCallback<Spillgebees.Blazor.Map.MapClickEventArgs!>
 Spillgebees.Blazor.Map.SgbMap.OnMapClick.set -> void
 Spillgebees.Blazor.Map.SgbMap.OnMapError.get -> Microsoft.AspNetCore.Components.EventCallback<System.Exception!>
@@ -1219,6 +1281,7 @@ Spillgebees.Blazor.Map.SgbMap.SetOverlayVisibleAsync(string! overlayId, bool vis
 Spillgebees.Blazor.Map.SgbMap.SgbMap() -> void
 Spillgebees.Blazor.Map.SgbMap.ShowPopupAsync(Spillgebees.Blazor.Map.Coordinate! position, string! text, Spillgebees.Blazor.Map.PopupOptions? options = null) -> System.Threading.Tasks.Task!
 Spillgebees.Blazor.Map.SgbMap.ShowRawHtmlPopupAsync(Spillgebees.Blazor.Map.Coordinate! position, string! html, Spillgebees.Blazor.Map.PopupOptions? options = null) -> System.Threading.Tasks.Task!
+Spillgebees.Blazor.Map.SgbMap.StartFollowAsync(Spillgebees.Blazor.Map.MapFollowOptions! options) -> System.Threading.Tasks.Task!
 Spillgebees.Blazor.Map.SgbMap.Style.get -> Spillgebees.Blazor.Map.MapStyle?
 Spillgebees.Blazor.Map.SgbMap.Style.set -> void
 Spillgebees.Blazor.Map.SgbMap.StyleSpec.get -> string?

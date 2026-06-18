@@ -15,7 +15,7 @@
          must be fully documented. RS0041 (no oblivious types in public API) cannot be
          satisfied by Razor-generated BuildRenderTree overrides — the ~-prefixed
          PublicAPI.txt entries still track them. -->
-    <NoWarn>1701;1702;RS0041</NoWarn>
+    <NoWarn>$(NoWarn);RS0041</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,14 +34,7 @@
   <ItemGroup>
     <PackageReference Include="BlazorComponentUtilities" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
-    <!-- fails the build (RS0016/RS0017) when the public API changes without a matching
-         edit to PublicAPI.Shipped.txt / PublicAPI.Unshipped.txt -->
     <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="All" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Include="PublicAPI.Shipped.txt" />
-    <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
   </ItemGroup>
 
   <ItemGroup>

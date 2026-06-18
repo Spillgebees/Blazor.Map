@@ -342,6 +342,15 @@ dotnet_diagnostic.IDE0161.severity = warning
 dotnet_style_allow_multiple_blank_lines_experimental = false
 dotnet_diagnostic.IDE2000.severity = warning
 
+# disable discard variables for unused return values
+csharp_style_unused_value_assignment_preference = local_variable:none
+
+# require API files to be created
+dotnet_public_api_analyzer.require_api_files = true
+
+# don't prompt for namespace changes, this project uses a global namespace for simpler user API
+resharper_check_namespace_highlighting = none
+
 ### Naming conventions ###
 
 # name all constant fields using PascalCase
@@ -377,7 +386,3 @@ dotnet_naming_rule.camel_case_for_internal_fields.symbols  = internal_fields
 dotnet_naming_rule.camel_case_for_internal_fields.style    = camel_case_underscore_style
 dotnet_naming_symbols.internal_fields.applicable_kinds = field
 dotnet_naming_symbols.internal_fields.applicable_accessibilities = internal
-
-
-# disable discard variables for unused return values
-csharp_style_unused_value_assignment_preference = local_variable:none

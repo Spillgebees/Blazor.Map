@@ -227,6 +227,8 @@ public partial class SgbMap
         _popups = new MapPopupCoordinator(Channel, Router);
         _display = new MapDisplayCoordinator(Channel);
         _tileOverlays = new MapTileOverlayCoordinator(Channel);
+        _follow = new MapFollowCoordinator(Channel);
+        Router.FollowChanged += HandleFollowClearedAsync;
         ControlRegistry = new MapControlRegistryContext(this);
         RootContext = new MapRootContext(this);
     }
@@ -249,6 +251,7 @@ public partial class SgbMap
         // overlay styles registered by children while CreateMapAsync was in flight
         // missed both the create options and the runtime path — catch up now.
         await ApplyStylesIfChangedAsync();
+        await SyncFollowAsync();
     }
 
     /// <summary>Applies parameter changes (config, features, overlays, styles, theme) to the running map.</summary>
@@ -297,6 +300,8 @@ public partial class SgbMap
             _appliedTheme = Theme;
             await MapEngineJs.SetThemeAsync(_jsRuntime, _container, EngineStyleJson.ThemeName(Theme));
         }
+
+        await SyncFollowAsync();
     }
 
     private void QueueImages()

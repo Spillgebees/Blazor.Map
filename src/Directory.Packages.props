@@ -1,7 +1,6 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-
     <AspNetCoreVersion>10.0.7</AspNetCoreVersion>
   </PropertyGroup>
   <ItemGroup>

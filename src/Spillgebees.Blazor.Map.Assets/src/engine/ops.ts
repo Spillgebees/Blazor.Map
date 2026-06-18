@@ -9,6 +9,26 @@ export interface AnimationConfig {
   easing?: AnimationEasing;
 }
 
+/** How a camera gesture behaves while following: leave it free, hold a target (with or without letting
+ * the user nudge it back), or clear the follow when the user uses it. */
+export type FollowGestureMode = "free" | "anchored" | "locked" | "clear";
+
+export interface FollowCameraConfig {
+  zoomMode: FollowGestureMode;
+  zoom?: number | null;
+  // Pitch and bearing share one MapLibre gesture, so they share one mode.
+  orientationMode: FollowGestureMode;
+  pitch?: number | null;
+  bearingSource: "keepcurrent" | "fixed" | "matchheading";
+  bearing?: number | null;
+  offset?: { x: number; y: number } | null;
+}
+
+export interface FollowInteractionConfig {
+  clearOnUserPan: boolean;
+  clearWhenFeatureMissing: boolean;
+}
+
 export interface EntityLayerConfig {
   /** MapLibre GeoJSON source cluster options, passed through (cluster, clusterRadius, …). */
   cluster?: Record<string, unknown> | null;
@@ -230,6 +250,15 @@ export type Op =
       topLeftPadding?: { x: number; y: number } | null;
       bottomRightPadding?: { x: number; y: number } | null;
     }
+  | {
+      op: "camera.follow";
+      layerId: string;
+      entityId: string;
+      camera?: FollowCameraConfig | null;
+      animation?: AnimationConfig | null;
+      interaction?: FollowInteractionConfig | null;
+    }
+  | { op: "camera.clearFollow" }
   | {
       op: "source.featureState";
       id: string;

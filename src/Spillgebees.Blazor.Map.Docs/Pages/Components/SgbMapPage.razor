@@ -26,6 +26,14 @@
     <FitBoundsPaddingExample />
 </ExampleView>
 
+<h2 id="camera_follow">// camera_follow</h2>
+<p><code>Follow</code> makes the camera track a single entity in a tracked entity layer as it moves. It is a map-level parameter, so it lives on <code>SgbMap</code> rather than on the layer: give it a layer id and an entity id, and the camera rides along. Each camera gesture has a mode: <code>Free</code> leaves it to the user, <code>Anchored</code> holds a target but lets the user nudge it and springs back, <code>Locked</code> holds a target and disables the gesture, and <code>Clear</code> ends the follow when the user uses it. Zoom is its own gesture; pitch and bearing share one (drag-to-rotate tilts and turns together), so they share <code>OrientationMode</code>.</p>
+<p>The example runs three trains on preset loops. Pick one to follow, then change the options live; each change re-applies the follow. While orientation holds, <code>MapFollowBearingSource.MatchHeading</code> ("match heading") reads the entity's <code>Rotation</code>, so the map turns with the train, easing into each turn so sharp changes stay smooth. Prefer <code>@@bind-Follow</code> so a follow the user breaks (a pan, by default) flows back into your state, and use <code>OnFollowChanged</code> when you need the reason: <code>Started</code>, <code>Updated</code>, <code>Cleared</code>, <code>UserInteraction</code>, or <code>FeatureMissing</code>.</p>
+<p>Two things worth trying: drag the map while following to break it (the "clear on user pan" default), and despawn the followed train to watch <code>ClearWhenFeatureMissing</code> choose between clearing the follow and holding the camera in place.</p>
+<ExampleView TComponent="CameraFollowExample" AdditionalSources="@([typeof(FollowSampleTrain)])">
+    <CameraFollowExample />
+</ExampleView>
+
 <h2 id="controls">// controls</h2>
 <p>Use control subcomponents inside <code>MapControls</code>. The component-first control API uses discoverable names such as <code>NavigationMapControl</code>, <code>ButtonMapControl</code>, <code>PanelMapControl</code>, <code>DisplayMapControl</code>, <code>LegendMapControl</code>, and <code>CustomMapControl</code>.</p>
 <p>The complete control selection guide, advanced examples, icon guidance, accessibility notes, and performance guidance live on the dedicated <a href="/components/controls">Map Controls</a> page.</p>

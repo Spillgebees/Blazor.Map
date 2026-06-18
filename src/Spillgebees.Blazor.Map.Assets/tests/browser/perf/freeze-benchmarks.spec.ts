@@ -66,6 +66,14 @@ test.describe("map update benchmarks", () => {
       query: { entities: "2000", interval: "100", pattern: "TenPercent", animation: "1" },
     },
     {
+      // Camera follow runs a per-frame tick (resolve entity by index, recentre) on top of the
+      // entity churn. The budget guards that the follow controller adds no main-thread freeze.
+      name: "f-engine-follow",
+      route: "/engine-entity-stress-test",
+      frameId: ENGINE_FRAME_ID,
+      query: { entities: "2000", interval: "100", pattern: "TenPercent", follow: "1" },
+    },
+    {
       // zoom 15: at the default zoom 11 the whole stress spiral fits inside a few
       // clusters, so no individual symbols or decorations render and the variant
       // silently measures an idle map. Zoomed in, singles + clusters + labels all

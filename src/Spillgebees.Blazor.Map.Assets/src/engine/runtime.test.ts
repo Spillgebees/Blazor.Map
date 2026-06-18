@@ -96,6 +96,10 @@ function createHarness(options: { sourcesSupportUpdateData?: boolean } = {}): Ha
     easeTo(options) {
       log.push(`easeTo:${JSON.stringify(options)}`);
     },
+    getZoom: () => 0,
+    getBearing: () => 0,
+    getPitch: () => 0,
+    lockInteraction: () => () => {},
     addImage(id) {
       addedImages.push(id);
     },
@@ -104,11 +108,15 @@ function createHarness(options: { sourcesSupportUpdateData?: boolean } = {}): Ha
     },
     hasImage: (id) => addedImages.includes(id),
     loadImageData: (url) => Promise.resolve({ data: `image:${url}` }),
-    on(event, layerId, handler) {
-      handlers.set(`${event}:${layerId}`, handler);
+    on(event: string, layerIdOrHandler: string | ((event: unknown) => void), handler?: (event: unknown) => void) {
+      if (typeof layerIdOrHandler === "function") {
+        handlers.set(event, layerIdOrHandler);
+      } else if (handler) {
+        handlers.set(`${event}:${layerIdOrHandler}`, handler);
+      }
     },
-    off(event, layerId) {
-      handlers.delete(`${event}:${layerId}`);
+    off(event: string, layerIdOrHandler: string | ((event: unknown) => void)) {
+      handlers.delete(typeof layerIdOrHandler === "function" ? event : `${event}:${layerIdOrHandler}`);
     },
     listStyleLayers: () => [...layers.values()].map((layer) => layer.spec as { id: string }),
     resolveComposedLayer: () => null,
