@@ -115,6 +115,9 @@ export function createFullscreenController(target: HTMLElement): FullscreenContr
       if (apiSupported) {
         document.removeEventListener(changeEvent, onNativeChange);
       }
+      // a pseudo-fullscreen fallback would otherwise strand the container fixed/full-viewport
+      pseudoActive = false;
+      target.classList.remove(PSEUDO_FULLSCREEN_CLASS);
       subscribers.clear();
     },
   };

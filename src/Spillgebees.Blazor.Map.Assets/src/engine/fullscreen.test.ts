@@ -132,5 +132,18 @@ describe("createFullscreenController", () => {
       expect(target.classList.contains("sgb-map-pseudo-fullscreen")).toBe(false);
       expect(observed).toEqual([true, false]);
     });
+
+    it("clears the fallback class and state on dispose", async () => {
+      const target = document.createElement("div");
+      withoutNativeApi(target);
+      const controller = createFullscreenController(target);
+      await controller.enter();
+      expect(target.classList.contains("sgb-map-pseudo-fullscreen")).toBe(true);
+
+      controller.dispose();
+
+      expect(target.classList.contains("sgb-map-pseudo-fullscreen")).toBe(false);
+      expect(controller.isFullscreen()).toBe(false);
+    });
   });
 });

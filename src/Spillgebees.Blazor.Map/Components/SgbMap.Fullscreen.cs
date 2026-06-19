@@ -14,14 +14,6 @@ namespace Spillgebees.Blazor.Map;
 public partial class SgbMap
 {
     /// <summary>
-    /// Whether the map is currently presented fullscreen. Updated from every source — the built-in
-    /// control, the imperative API, and the browser (e.g. the user pressing Esc). Observe-only: the
-    /// browser owns fullscreen state, so this is not a two-way-bindable parameter (there is no
-    /// <c>@bind-IsFullscreen</c>); use <see cref="OnFullscreenChanged"/> to react to changes.
-    /// </summary>
-    public bool IsFullscreen { get; private set; }
-
-    /// <summary>
     /// Raised whenever the fullscreen state changes, regardless of what triggered it. This is the
     /// observe-only counterpart to <c>@bind</c> — fullscreen state cannot be pushed via a bound
     /// parameter because the browser grants and revokes it; drive changes with
@@ -29,6 +21,14 @@ public partial class SgbMap
     /// </summary>
     [Parameter]
     public EventCallback<bool> OnFullscreenChanged { get; set; }
+
+    /// <summary>
+    /// Whether the map is currently presented fullscreen. Updated from every source — the built-in
+    /// control, the imperative API, and the browser (e.g. the user pressing Esc). Observe-only: the
+    /// browser owns fullscreen state, so this is not a two-way-bindable parameter (there is no
+    /// <c>@bind-IsFullscreen</c>); use <see cref="OnFullscreenChanged"/> to react to changes.
+    /// </summary>
+    public bool IsFullscreen { get; private set; }
 
     /// <summary>
     /// Presents the map fullscreen. Browsers only grant fullscreen in response to a user gesture,
