@@ -472,6 +472,9 @@ public partial class SgbMap
                     )
                 );
                 break;
+            case "fullscreenchanged":
+                await HandleFullscreenChangedAsync(payload);
+                break;
             case "error":
                 var message = payload.TryGetProperty("message", out var messageProperty)
                     ? messageProperty.GetString()

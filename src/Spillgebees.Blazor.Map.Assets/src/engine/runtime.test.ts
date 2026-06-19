@@ -130,6 +130,9 @@ function createHarness(options: { sourcesSupportUpdateData?: boolean } = {}): Ha
     setControl(control) {
       log.push(`setControl:${control.controlId}`);
     },
+    setFullscreen(state) {
+      log.push(`setFullscreen:${state}`);
+    },
     removeControl(id) {
       log.push(`removeControl:${id}`);
     },

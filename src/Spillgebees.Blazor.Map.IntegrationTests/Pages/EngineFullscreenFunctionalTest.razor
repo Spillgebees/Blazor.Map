@@ -1,0 +1,66 @@
+@page "/engine-fullscreen-functional-test"
+
+<main class="e2e-shell">
+    <h1>Engine fullscreen functional test</h1>
+    <p>Fullscreen control with a custom UX-supplied SVG, plus a custom toggle button driving the imperative API.</p>
+
+    @if (_lastError is not null)
+    {
+        <p style="color: #b91c1c;" data-testid="map-error">@_lastError</p>
+    }
+
+    <button type="button" data-testid="custom-toggle" @onclick="ToggleAsync">Toggle fullscreen</button>
+    <p data-testid="fullscreen-state">fullscreen: @_isFullscreen.ToString().ToLowerInvariant()</p>
+
+    <div id="engine-fullscreen-frame" class="stress-map-frame">
+        <SgbMap @ref="_map"
+                Style="@BaseStyle"
+                Center="@(new Coordinate(49.61, 6.14))"
+                Zoom="12"
+                Height="480px"
+                Width="100%"
+                OnFullscreenChanged="HandleFullscreenChanged"
+                OnMapError="@HandleMapError">
+            <MapControls>
+                <FullscreenMapControl Id="fs-custom"
+                                      Position="ControlPosition.TopRight"
+                                      EnterIcon="@CustomEnterIcon"
+                                      ExitIcon="@CustomExitIcon" />
+                <FullscreenMapControl Id="fs-default" Position="ControlPosition.TopLeft" />
+            </MapControls>
+        </SgbMap>
+    </div>
+</main>
+
+@code {
+    private const string CustomEnterIcon =
+        """<svg data-testid="fs-custom-enter" viewBox="0 0 24 24" width="20" height="20"><path d="M3 3h6M3 3v6" /></svg>""";
+
+    private const string CustomExitIcon =
+        """<svg data-testid="fs-custom-exit" viewBox="0 0 24 24" width="20" height="20"><path d="M9 9H3M9 9V3" /></svg>""";
+
+    private static readonly MapStyle BaseStyle = MapStyle
+        .FromRasterUrl(
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGM4YWMDAAMQAUEiFmcFAAAAAElFTkSuQmCC",
+            "base"
+        )
+        .WithId("base");
+
+    private SgbMap? _map;
+    private bool _isFullscreen;
+    private string? _lastError;
+
+    private Task ToggleAsync() => _map?.ToggleFullscreenAsync() ?? Task.CompletedTask;
+
+    private void HandleFullscreenChanged(bool isFullscreen)
+    {
+        _isFullscreen = isFullscreen;
+        StateHasChanged();
+    }
+
+    private void HandleMapError(Exception exception)
+    {
+        _lastError = exception.Message;
+        StateHasChanged();
+    }
+}

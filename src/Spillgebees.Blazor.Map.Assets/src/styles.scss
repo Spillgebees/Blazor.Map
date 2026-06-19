@@ -241,6 +241,26 @@
   }
 }
 
+.sgb-map-fullscreen-control {
+  .sgb-map-fullscreen-control-button {
+    // button styling inherited from .sgb-map-ctrl-group button; size a custom icon to match
+    svg {
+      width: var(--sgb-map-ctrl-icon-size);
+      height: var(--sgb-map-ctrl-icon-size);
+    }
+  }
+}
+
+// pseudo-fullscreen fallback for browsers without the Fullscreen API (e.g. iPhone Safari);
+// maplibre resizes the canvas via its container ResizeObserver once the element fills the viewport
+.sgb-map-pseudo-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 99999;
+}
+
 // generic Blazor-rendered custom control
 .sgb-map-custom-control {
   color: var(--sgb-map-ctrl-text);

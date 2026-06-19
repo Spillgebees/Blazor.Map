@@ -169,6 +169,13 @@ export interface ControlData {
   label?: string | null;
   isOpen?: boolean | null;
   maxWidth?: string | null;
+  /** Custom SVG icon for single-glyph controls we own (e.g. center). */
+  icon?: string | null;
+  /** Custom SVG icons + titles for the two-state fullscreen control. */
+  enterIcon?: string | null;
+  exitIcon?: string | null;
+  enterTitle?: string | null;
+  exitTitle?: string | null;
   /** Engine event handler ids (e.g. center-control click). */
   events?: { click?: number | null } | null;
 }
@@ -241,6 +248,7 @@ export type Op =
   | { op: "popup.close" }
   | { op: "map.configure"; config: MapConfigData }
   | { op: "map.resize" }
+  | { op: "fullscreen.set"; fullscreen?: boolean | null }
   | { op: "map.requestPolicy"; origin: string; policy?: string | null }
   | { op: "camera.flyTo"; center?: LatLng | null; zoom?: number | null; bearing?: number | null; pitch?: number | null }
   | {

@@ -8,6 +8,7 @@ import type { OverlayStyleRequestOptions } from "../interfaces/spillgebees";
 import { buildStyleFromOptions } from "../styles/base-style";
 import { applyOverlayStyles, validateComposedGlyphs } from "../styles/composition";
 import { type ControlsController, createControlsController } from "./controls";
+import { createFullscreenController, type FullscreenController } from "./fullscreen";
 import { createMarkerController, createMarkerPopup, type MarkerController } from "./markers";
 import type { MapConfigData, Op } from "./ops";
 import { createPopupController, type PopupController } from "./popups";
@@ -44,6 +45,7 @@ interface EngineInstance {
   engine: Engine;
   markers: MarkerController;
   controls: ControlsController;
+  fullscreen: FullscreenController;
   popups: PopupController;
   router: DotNetObjectReference;
   baseStyleKey: string;
@@ -240,10 +242,16 @@ function createMap(container: HTMLElement, optionsJson: string, router: DotNetOb
   // Blazor renders component content (control placeholders, popup content) as a
   // sibling of the map container — resolve DOM conventions from the component root.
   const contentRoot = container.parentElement ?? container;
-  const controls = createControlsController(map, contentRoot, emit);
+  // one fullscreen primitive per map, shared by the built-in control and the imperative API;
+  // state changes (control, API, or the user pressing Esc) surface to .NET as a map event
+  const fullscreen = createFullscreenController(container);
+  fullscreen.onChange(
+    (isFullscreen) => void router.invokeMethodAsync("OnMapEvent", "fullscreenchanged", { isFullscreen }),
+  );
+  const controls = createControlsController(map, contentRoot, emit, fullscreen);
   const popups = createPopupController(map, contentRoot, emit);
   const engine = createEngine(
-    toEngineMap(() => instance, map, markers, controls, popups),
+    toEngineMap(() => instance, map, markers, controls, fullscreen, popups),
     {
       onEvent: emit,
       onError: reportError,
@@ -256,6 +264,7 @@ function createMap(container: HTMLElement, optionsJson: string, router: DotNetOb
     engine,
     markers,
     controls,
+    fullscreen,
     popups,
     router,
     baseStyleKey: styleKey(baseStyle),
@@ -377,6 +386,7 @@ function dispose(container: HTMLElement): void {
   instance.activePopup?.remove();
   instance.popups.dispose();
   instance.controls.dispose();
+  instance.fullscreen.dispose();
   instance.markers.dispose();
   instance.engine.dispose();
   instance.map.remove();
@@ -554,6 +564,7 @@ function toEngineMap(
   map: MapLibreMap,
   markers: MarkerController,
   controls: ControlsController,
+  fullscreen: FullscreenController,
   popups: PopupController,
 ): EngineMap {
   return {
@@ -572,6 +583,15 @@ function toEngineMap(
     },
     configure: (config) => applyConfig(getInstance(), config),
     resize: () => void map.resize(),
+    setFullscreen(state) {
+      if (state == null) {
+        void fullscreen.toggle();
+      } else if (state) {
+        void fullscreen.enter();
+      } else {
+        void fullscreen.exit();
+      }
+    },
     setRequestPolicy(origin, policy) {
       const policies = getInstance().originPolicies;
       if (policy) {

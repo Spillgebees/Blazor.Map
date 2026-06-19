@@ -25,6 +25,28 @@ public sealed class FullscreenMapControl : ComponentBase, IAsyncDisposable
     [Parameter]
     public bool Visible { get; set; } = true;
 
+    /// <summary>
+    /// Optional custom SVG markup for the "enter fullscreen" glyph. Trusted markup; do not pass
+    /// user-supplied content. Defaults to the built-in glyph when null.
+    /// </summary>
+    [Parameter]
+    public string? EnterIcon { get; set; }
+
+    /// <summary>
+    /// Optional custom SVG markup for the "exit fullscreen" glyph. Trusted markup; do not pass
+    /// user-supplied content. Defaults to the built-in glyph when null.
+    /// </summary>
+    [Parameter]
+    public string? ExitIcon { get; set; }
+
+    /// <summary>Optional accessible label/tooltip shown while collapsed. Defaults to "Enter fullscreen".</summary>
+    [Parameter]
+    public string? EnterTitle { get; set; }
+
+    /// <summary>Optional accessible label/tooltip shown while expanded. Defaults to "Exit fullscreen".</summary>
+    [Parameter]
+    public string? ExitTitle { get; set; }
+
     [CascadingParameter]
     private MapControlRegistryContext? _registry { get; set; }
 
@@ -41,5 +63,6 @@ public sealed class FullscreenMapControl : ComponentBase, IAsyncDisposable
     /// <inheritdoc />
     public ValueTask DisposeAsync() => _registration.DisposeAsync(_registry);
 
-    private FullscreenControlDefinition BuildControl() => new(Id, Visible, Position, Order);
+    private FullscreenControlDefinition BuildControl() =>
+        new(Id, Visible, Position, Order, EnterIcon, ExitIcon, EnterTitle, ExitTitle);
 }

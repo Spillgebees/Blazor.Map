@@ -6,7 +6,6 @@
 // surfaces through an engine event handler id instead of a DotNet reference.
 
 import {
-  FullscreenControl,
   GeolocateControl,
   type IControl,
   type Map as MapLibreMap,
@@ -16,9 +15,11 @@ import {
 } from "maplibre-gl";
 import { CenterControl } from "../controls/centerControl";
 import { ContentControl } from "../controls/contentControl";
+import { FullscreenControl } from "../controls/fullscreenControl";
 import { LegendControl } from "../controls/legendControl";
 import { PanelControl } from "../controls/panelControl";
 import type { IContentMapControl, ILegendMapControl, IPanelMapControl } from "../interfaces/controls";
+import { createFullscreenController, type FullscreenController } from "./fullscreen";
 import type { ControlContentEvents, ControlData } from "./ops";
 
 export interface ControlsController {
@@ -55,6 +56,8 @@ function findByAttribute(container: HTMLElement, attribute: string, id: string):
 }
 
 function nativeSignature(control: ControlData): string {
+  // computed only on the cold control-set/recompose path, never per frame — a changed icon must
+  // force a rebuild, so the raw markup is part of the key
   return JSON.stringify([
     control.kind,
     control.showCompass,
@@ -62,6 +65,11 @@ function nativeSignature(control: ControlData): string {
     control.unit,
     control.trackUser,
     control.sourceId,
+    control.icon,
+    control.enterIcon,
+    control.exitIcon,
+    control.enterTitle,
+    control.exitTitle,
     control.events?.click,
   ]);
 }
@@ -70,6 +78,7 @@ function createNativeControl(
   map: MapLibreMap,
   control: ControlData,
   emit: (handlerId: number, payload: unknown) => void,
+  getFullscreenController: () => FullscreenController,
 ): IControl | null {
   switch (control.kind) {
     case "navigation":
@@ -80,7 +89,12 @@ function createNativeControl(
     case "scale":
       return new ScaleControl({ unit: control.unit as "metric" | "imperial" | "nautical" | undefined });
     case "fullscreen":
-      return new FullscreenControl();
+      return new FullscreenControl(getFullscreenController(), {
+        enterIcon: control.enterIcon,
+        exitIcon: control.exitIcon,
+        enterTitle: control.enterTitle,
+        exitTitle: control.exitTitle,
+      });
     case "geolocate":
       return new GeolocateControl({ trackUserLocation: control.trackUser ?? undefined });
     case "terrain":
@@ -95,7 +109,7 @@ function createNativeControl(
       return new TerrainControl({ source: control.sourceId });
     case "center": {
       const clickHandlerId = control.events?.click;
-      return new CenterControl(clickHandlerId != null ? () => emit(clickHandlerId, {}) : undefined);
+      return new CenterControl(clickHandlerId != null ? () => emit(clickHandlerId, {}) : undefined, control.icon);
     }
     default:
       return null;
@@ -106,12 +120,19 @@ export function createControlsController(
   map: MapLibreMap,
   container: HTMLElement,
   emit: (handlerId: number, payload: unknown) => void,
+  fullscreenController?: FullscreenController,
 ): ControlsController {
   // definitions in set order — set order doubles as declaration order for sorting
   const definitions = new Map<string, ControlData>();
   const nativeControls = new Map<string, NativeControlEntry>();
   const customControls = new Map<string, CustomControlEntry>();
   const attached: { id: string; control: IControl }[] = [];
+
+  // One fullscreen primitive per map, shared with the imperative API when bootstrap supplies
+  // it. When it doesn't (standalone controller use), create one lazily on first fullscreen use.
+  let fullscreen = fullscreenController ?? null;
+  const getFullscreenController = (): FullscreenController =>
+    (fullscreen ??= createFullscreenController(map.getContainer()));
 
   function resolveContentElements(id: string): { placeholder: HTMLElement; content: HTMLElement } | null {
     const placeholder = findByAttribute(container, "data-sgb-control-placeholder", id);
@@ -208,7 +229,7 @@ export function createControlsController(
       return existing.control;
     }
 
-    const control = createNativeControl(map, definition, emit);
+    const control = createNativeControl(map, definition, emit, getFullscreenController);
     if (!control) {
       nativeControls.delete(definition.controlId);
       return null;

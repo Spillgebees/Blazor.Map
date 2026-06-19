@@ -62,13 +62,19 @@ public sealed record ScaleControlDefinition(
 ) : MapControlDefinition(ControlId, Position, Order, Visible);
 
 /// <summary>
-/// A fullscreen control entry.
+/// A fullscreen control entry. <c>EnterIcon</c>/<c>ExitIcon</c> accept custom SVG markup for the
+/// two glyphs (trusted markup; do not pass user-supplied content), and <c>EnterTitle</c>/<c>ExitTitle</c>
+/// override the accessible labels. All default to the built-in values when null.
 /// </summary>
 public sealed record FullscreenControlDefinition(
     string ControlId = "fullscreen",
     bool Visible = true,
     ControlPosition Position = ControlPosition.TopRight,
-    int Order = 200
+    int Order = 200,
+    string? EnterIcon = null,
+    string? ExitIcon = null,
+    string? EnterTitle = null,
+    string? ExitTitle = null
 ) : MapControlDefinition(ControlId, Position, Order, Visible);
 
 /// <summary>
@@ -94,13 +100,16 @@ public sealed record TerrainControlDefinition(
 ) : MapControlDefinition(ControlId, Position, Order, Visible);
 
 /// <summary>
-/// A center control entry that re-centers to current the map options.
+/// A center control entry that re-centers to the current map options. <c>Icon</c> accepts custom
+/// SVG markup for the glyph (trusted markup; do not pass user-supplied content), defaulting to the
+/// built-in glyph when null.
 /// </summary>
 public sealed record CenterControlDefinition(
     string ControlId = "center",
     bool Visible = true,
     ControlPosition Position = ControlPosition.TopLeft,
-    int Order = 100
+    int Order = 100,
+    string? Icon = null
 ) : MapControlDefinition(ControlId, Position, Order, Visible);
 
 /// <summary>

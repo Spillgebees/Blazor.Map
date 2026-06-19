@@ -109,6 +109,79 @@ public class EngineOpsSerializationTests
     }
 
     [Test]
+    public void Should_serialize_fullscreen_control_with_custom_icons()
+    {
+        // arrange
+        var setOp = new ControlSetOp(
+            EngineControl.From(
+                new FullscreenControlDefinition(
+                    EnterIcon: "\u003Csvg data-enter\u003E\u003C/svg\u003E",
+                    ExitIcon: "\u003Csvg data-exit\u003E\u003C/svg\u003E",
+                    EnterTitle: "Go big",
+                    ExitTitle: "Go small"
+                )
+            )
+        );
+
+        // act
+        var json = Serialize(setOp);
+
+        // assert — System.Text.Json HTML-escapes the SVG angle brackets on the wire (JSON.parse
+        // decodes them back JS-side); this is the safe default and is intentional
+        json.Should()
+            .Be(
+                """[{"op":"control.set","control":{"kind":"fullscreen","controlId":"fullscreen","visible":true,"position":"top-right","order":200,"enterIcon":"\u003Csvg data-enter\u003E\u003C/svg\u003E","exitIcon":"\u003Csvg data-exit\u003E\u003C/svg\u003E","enterTitle":"Go big","exitTitle":"Go small"}}]"""
+            );
+    }
+
+    [Test]
+    public void Should_keep_the_default_fullscreen_wire_shape_when_no_icons_are_set()
+    {
+        // arrange — the icon fields are purely additive; an un-customised control is byte-for-byte
+        // identical to the pre-feature wire shape
+        var setOp = new ControlSetOp(EngineControl.From(new FullscreenControlDefinition()));
+
+        // act
+        var json = Serialize(setOp);
+
+        // assert
+        json.Should()
+            .Be(
+                """[{"op":"control.set","control":{"kind":"fullscreen","controlId":"fullscreen","visible":true,"position":"top-right","order":200}}]"""
+            );
+    }
+
+    [Test]
+    public void Should_serialize_center_control_with_a_custom_icon()
+    {
+        // arrange
+        var setOp = new ControlSetOp(EngineControl.From(new CenterControlDefinition(Icon: "\u003Csvg data-center\u003E\u003C/svg\u003E")));
+
+        // act
+        var json = Serialize(setOp);
+
+        // assert
+        json.Should()
+            .Be(
+                """[{"op":"control.set","control":{"kind":"center","controlId":"center","visible":true,"position":"top-left","order":100,"icon":"\u003Csvg data-center\u003E\u003C/svg\u003E"}}]"""
+            );
+    }
+
+    [Test]
+    public void Should_serialize_fullscreen_set_ops_with_toggle_when_state_is_null()
+    {
+        // arrange — null means "toggle", a concrete bool means "force into that state"
+        // act
+        var json = Serialize(new FullscreenSetOp(true), new FullscreenSetOp(false), new FullscreenSetOp(null));
+
+        // assert
+        json.Should()
+            .Be(
+                """[{"op":"fullscreen.set","fullscreen":true},{"op":"fullscreen.set","fullscreen":false},{"op":"fullscreen.set"}]"""
+            );
+    }
+
+    [Test]
     public void Should_serialize_map_config_and_camera_ops()
     {
         // arrange
