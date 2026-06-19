@@ -25,6 +25,13 @@ public sealed class CenterMapControl : ComponentBase, IAsyncDisposable
     [Parameter]
     public bool Visible { get; set; } = true;
 
+    /// <summary>
+    /// Optional custom SVG markup for the control glyph. Trusted markup; do not pass user-supplied
+    /// content. Defaults to the built-in glyph when null.
+    /// </summary>
+    [Parameter]
+    public string? Icon { get; set; }
+
     [CascadingParameter]
     private MapControlRegistryContext? _registry { get; set; }
 
@@ -41,5 +48,5 @@ public sealed class CenterMapControl : ComponentBase, IAsyncDisposable
     /// <inheritdoc />
     public ValueTask DisposeAsync() => _registration.DisposeAsync(_registry);
 
-    private CenterControlDefinition BuildControl() => new(Id, Visible, Position, Order);
+    private CenterControlDefinition BuildControl() => new(Id, Visible, Position, Order, Icon);
 }

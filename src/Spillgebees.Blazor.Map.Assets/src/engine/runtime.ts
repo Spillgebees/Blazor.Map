@@ -83,6 +83,8 @@ export interface EngineMap {
   /** Map-level configuration (camera limits, projection, pixel ratio). */
   configure(config: MapConfigData): void;
   resize(): void;
+  /** Drives the shared fullscreen primitive; null toggles, a bool forces the state. */
+  setFullscreen(fullscreen: boolean | null): void;
   /** Per-origin referrer policy for tile requests (transformRequest). */
   setRequestPolicy(origin: string, policy: string | null): void;
   flyTo(options: Record<string, unknown>): void;
@@ -776,6 +778,9 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
         break;
       case "map.resize":
         map.resize();
+        break;
+      case "fullscreen.set":
+        map.setFullscreen(op.fullscreen ?? null);
         break;
       case "map.requestPolicy":
         map.setRequestPolicy(op.origin, op.policy ?? null);

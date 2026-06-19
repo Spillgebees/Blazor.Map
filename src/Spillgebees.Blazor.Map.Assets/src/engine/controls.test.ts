@@ -20,6 +20,14 @@ function panel(overrides?: Partial<ControlData>): ControlData {
   };
 }
 
+function fullscreen(overrides?: Partial<ControlData>): ControlData {
+  return { kind: "fullscreen", controlId: "fs", visible: true, position: "top-right", order: 200, ...overrides };
+}
+
+function center(overrides?: Partial<ControlData>): ControlData {
+  return { kind: "center", controlId: "center", visible: true, position: "top-left", order: 100, ...overrides };
+}
+
 interface Harness {
   controller: ControlsController;
   map: MockMapInstance;
@@ -128,6 +136,38 @@ describe("engine controls controller", () => {
 
     controller.removeContent("content-1");
     expect(controller.ids()).toEqual([]);
+  });
+
+  it("mounts the fullscreen control as a first-class IControl with a custom icon", () => {
+    const { controller, container } = createHarness();
+
+    controller.set(fullscreen({ enterIcon: '<svg data-testid="fs-enter"></svg>' }));
+
+    expect(controller.ids()).toEqual(["fs"]);
+    expect(container.querySelector(".sgb-map-fullscreen-control")).not.toBeNull();
+    expect(container.querySelector("[data-testid=fs-enter]")).not.toBeNull();
+  });
+
+  it("rebuilds the fullscreen control instance when its icon changes, but reuses it otherwise", () => {
+    const { controller, map } = createHarness();
+    controller.set(fullscreen({ enterIcon: '<svg data-testid="a"></svg>' }));
+    const first = (map.addControl as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[0];
+
+    controller.set(fullscreen({ enterIcon: '<svg data-testid="b"></svg>' }));
+    const second = (map.addControl as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[0];
+    expect(second).not.toBe(first);
+
+    controller.set(fullscreen({ enterIcon: '<svg data-testid="b"></svg>', order: 250 }));
+    const third = (map.addControl as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[0];
+    expect(third).toBe(second);
+  });
+
+  it("threads a custom icon into the center control", () => {
+    const { controller, container } = createHarness();
+
+    controller.set(center({ icon: '<svg data-testid="center-custom"></svg>' }));
+
+    expect(container.querySelector("[data-testid=center-custom]")).not.toBeNull();
   });
 
   it("routes panel open state through the engine event channel", () => {

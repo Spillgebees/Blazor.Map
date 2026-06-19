@@ -55,10 +55,14 @@ Spillgebees.Blazor.Map.ButtonMapControl.Variant.set -> void
 Spillgebees.Blazor.Map.ButtonMapControl.Visible.get -> bool
 Spillgebees.Blazor.Map.ButtonMapControl.Visible.set -> void
 Spillgebees.Blazor.Map.CenterControlDefinition
-Spillgebees.Blazor.Map.CenterControlDefinition.CenterControlDefinition(string! ControlId = "center", bool Visible = true, Spillgebees.Blazor.Map.ControlPosition Position = Spillgebees.Blazor.Map.ControlPosition.TopLeft, int Order = 100) -> void
+Spillgebees.Blazor.Map.CenterControlDefinition.CenterControlDefinition(string! ControlId = "center", bool Visible = true, Spillgebees.Blazor.Map.ControlPosition Position = Spillgebees.Blazor.Map.ControlPosition.TopLeft, int Order = 100, string? Icon = null) -> void
+Spillgebees.Blazor.Map.CenterControlDefinition.Icon.get -> string?
+Spillgebees.Blazor.Map.CenterControlDefinition.Icon.init -> void
 Spillgebees.Blazor.Map.CenterMapControl
 Spillgebees.Blazor.Map.CenterMapControl.CenterMapControl() -> void
 Spillgebees.Blazor.Map.CenterMapControl.DisposeAsync() -> System.Threading.Tasks.ValueTask
+Spillgebees.Blazor.Map.CenterMapControl.Icon.get -> string?
+Spillgebees.Blazor.Map.CenterMapControl.Icon.set -> void
 Spillgebees.Blazor.Map.CenterMapControl.Id.get -> string!
 Spillgebees.Blazor.Map.CenterMapControl.Id.set -> void
 Spillgebees.Blazor.Map.CenterMapControl.Order.get -> int
@@ -284,9 +288,25 @@ Spillgebees.Blazor.Map.FitBoundsOptions.Padding.init -> void
 Spillgebees.Blazor.Map.FitBoundsOptions.TopLeftPadding.get -> Spillgebees.Blazor.Map.PixelPoint?
 Spillgebees.Blazor.Map.FitBoundsOptions.TopLeftPadding.init -> void
 Spillgebees.Blazor.Map.FullscreenControlDefinition
-Spillgebees.Blazor.Map.FullscreenControlDefinition.FullscreenControlDefinition(string! ControlId = "fullscreen", bool Visible = true, Spillgebees.Blazor.Map.ControlPosition Position = Spillgebees.Blazor.Map.ControlPosition.TopRight, int Order = 200) -> void
+Spillgebees.Blazor.Map.FullscreenControlDefinition.EnterIcon.get -> string?
+Spillgebees.Blazor.Map.FullscreenControlDefinition.EnterIcon.init -> void
+Spillgebees.Blazor.Map.FullscreenControlDefinition.EnterTitle.get -> string?
+Spillgebees.Blazor.Map.FullscreenControlDefinition.EnterTitle.init -> void
+Spillgebees.Blazor.Map.FullscreenControlDefinition.ExitIcon.get -> string?
+Spillgebees.Blazor.Map.FullscreenControlDefinition.ExitIcon.init -> void
+Spillgebees.Blazor.Map.FullscreenControlDefinition.ExitTitle.get -> string?
+Spillgebees.Blazor.Map.FullscreenControlDefinition.ExitTitle.init -> void
+Spillgebees.Blazor.Map.FullscreenControlDefinition.FullscreenControlDefinition(string! ControlId = "fullscreen", bool Visible = true, Spillgebees.Blazor.Map.ControlPosition Position = Spillgebees.Blazor.Map.ControlPosition.TopRight, int Order = 200, string? EnterIcon = null, string? ExitIcon = null, string? EnterTitle = null, string? ExitTitle = null) -> void
 Spillgebees.Blazor.Map.FullscreenMapControl
 Spillgebees.Blazor.Map.FullscreenMapControl.DisposeAsync() -> System.Threading.Tasks.ValueTask
+Spillgebees.Blazor.Map.FullscreenMapControl.EnterIcon.get -> string?
+Spillgebees.Blazor.Map.FullscreenMapControl.EnterIcon.set -> void
+Spillgebees.Blazor.Map.FullscreenMapControl.EnterTitle.get -> string?
+Spillgebees.Blazor.Map.FullscreenMapControl.EnterTitle.set -> void
+Spillgebees.Blazor.Map.FullscreenMapControl.ExitIcon.get -> string?
+Spillgebees.Blazor.Map.FullscreenMapControl.ExitIcon.set -> void
+Spillgebees.Blazor.Map.FullscreenMapControl.ExitTitle.get -> string?
+Spillgebees.Blazor.Map.FullscreenMapControl.ExitTitle.set -> void
 Spillgebees.Blazor.Map.FullscreenMapControl.FullscreenMapControl() -> void
 Spillgebees.Blazor.Map.FullscreenMapControl.Id.get -> string!
 Spillgebees.Blazor.Map.FullscreenMapControl.Id.set -> void
@@ -1214,6 +1234,8 @@ Spillgebees.Blazor.Map.SgbMap.CooperativeGestures.set -> void
 Spillgebees.Blazor.Map.SgbMap.Display.get -> Spillgebees.Blazor.Map.MapDisplayState?
 Spillgebees.Blazor.Map.SgbMap.Display.set -> void
 Spillgebees.Blazor.Map.SgbMap.DisposeAsync() -> System.Threading.Tasks.ValueTask
+Spillgebees.Blazor.Map.SgbMap.EnterFullscreenAsync() -> System.Threading.Tasks.Task!
+Spillgebees.Blazor.Map.SgbMap.ExitFullscreenAsync() -> System.Threading.Tasks.Task!
 Spillgebees.Blazor.Map.SgbMap.FitBounds.get -> Spillgebees.Blazor.Map.FitBoundsOptions?
 Spillgebees.Blazor.Map.SgbMap.FitBounds.set -> void
 Spillgebees.Blazor.Map.SgbMap.FitBoundsAsync(Spillgebees.Blazor.Map.FitBoundsOptions! options) -> System.Threading.Tasks.Task!
@@ -1233,6 +1255,7 @@ Spillgebees.Blazor.Map.SgbMap.Images.get -> System.Collections.Generic.IReadOnly
 Spillgebees.Blazor.Map.SgbMap.Images.set -> void
 Spillgebees.Blazor.Map.SgbMap.Interactive.get -> bool
 Spillgebees.Blazor.Map.SgbMap.Interactive.set -> void
+Spillgebees.Blazor.Map.SgbMap.IsFullscreen.get -> bool
 Spillgebees.Blazor.Map.SgbMap.Markers.get -> System.Collections.Generic.IReadOnlyList<Spillgebees.Blazor.Map.Marker!>?
 Spillgebees.Blazor.Map.SgbMap.Markers.set -> void
 Spillgebees.Blazor.Map.SgbMap.MaxBounds.get -> Spillgebees.Blazor.Map.MapBounds?
@@ -1244,6 +1267,8 @@ Spillgebees.Blazor.Map.SgbMap.MinZoom.set -> void
 Spillgebees.Blazor.Map.SgbMap.MoveLayerAsync(string! layerId, string? beforeLayerId = null) -> System.Threading.Tasks.Task!
 Spillgebees.Blazor.Map.SgbMap.OnFollowChanged.get -> Microsoft.AspNetCore.Components.EventCallback<Spillgebees.Blazor.Map.MapFollowChangedEventArgs!>
 Spillgebees.Blazor.Map.SgbMap.OnFollowChanged.set -> void
+Spillgebees.Blazor.Map.SgbMap.OnFullscreenChanged.get -> Microsoft.AspNetCore.Components.EventCallback<bool>
+Spillgebees.Blazor.Map.SgbMap.OnFullscreenChanged.set -> void
 Spillgebees.Blazor.Map.SgbMap.OnMapClick.get -> Microsoft.AspNetCore.Components.EventCallback<Spillgebees.Blazor.Map.MapClickEventArgs!>
 Spillgebees.Blazor.Map.SgbMap.OnMapClick.set -> void
 Spillgebees.Blazor.Map.SgbMap.OnMapError.get -> Microsoft.AspNetCore.Components.EventCallback<System.Exception!>
@@ -1290,6 +1315,7 @@ Spillgebees.Blazor.Map.SgbMap.Styles.get -> System.Collections.Generic.IReadOnly
 Spillgebees.Blazor.Map.SgbMap.Styles.set -> void
 Spillgebees.Blazor.Map.SgbMap.Theme.get -> Spillgebees.Blazor.Map.MapTheme
 Spillgebees.Blazor.Map.SgbMap.Theme.set -> void
+Spillgebees.Blazor.Map.SgbMap.ToggleFullscreenAsync() -> System.Threading.Tasks.Task!
 Spillgebees.Blazor.Map.SgbMap.WebFonts.get -> System.Collections.Generic.IReadOnlyList<string!>?
 Spillgebees.Blazor.Map.SgbMap.WebFonts.set -> void
 Spillgebees.Blazor.Map.SgbMap.Width.get -> string!

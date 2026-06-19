@@ -44,6 +44,7 @@ namespace Spillgebees.Blazor.Map.Engine;
 [JsonDerivedType(typeof(PopupCloseOp), "popup.close")]
 [JsonDerivedType(typeof(MapConfigureOp), "map.configure")]
 [JsonDerivedType(typeof(MapResizeOp), "map.resize")]
+[JsonDerivedType(typeof(FullscreenSetOp), "fullscreen.set")]
 [JsonDerivedType(typeof(MapRequestPolicyOp), "map.requestPolicy")]
 [JsonDerivedType(typeof(CameraFlyToOp), "camera.flyTo")]
 [JsonDerivedType(typeof(CameraFitFeaturesOp), "camera.fitFeatures")]
@@ -158,6 +159,11 @@ internal sealed record EngineControl(
     string? Label = null,
     bool? IsOpen = null,
     string? MaxWidth = null,
+    string? Icon = null,
+    string? EnterIcon = null,
+    string? ExitIcon = null,
+    string? EnterTitle = null,
+    string? ExitTitle = null,
     EngineControlEvents? Events = null
 )
 {
@@ -190,7 +196,11 @@ internal sealed record EngineControl(
                 fullscreen.ControlId,
                 fullscreen.Visible,
                 fullscreen.Position,
-                fullscreen.Order
+                fullscreen.Order,
+                EnterIcon: fullscreen.EnterIcon,
+                ExitIcon: fullscreen.ExitIcon,
+                EnterTitle: fullscreen.EnterTitle,
+                ExitTitle: fullscreen.ExitTitle
             ),
             GeolocateControlDefinition geolocate => new(
                 "geolocate",
@@ -214,6 +224,7 @@ internal sealed record EngineControl(
                 center.Visible,
                 center.Position,
                 center.Order,
+                Icon: center.Icon,
                 Events: centerClickHandlerId is null ? null : new EngineControlEvents(Click: centerClickHandlerId)
             ),
             LegendControlDefinition legend => new(
@@ -265,6 +276,12 @@ internal sealed record PopupCloseOp : EngineOp;
 internal sealed record MapConfigureOp(EngineMapConfig Config) : EngineOp;
 
 internal sealed record MapResizeOp : EngineOp;
+
+/// <summary>
+/// Drives the shared fullscreen primitive. <see cref="Fullscreen"/> null toggles; a concrete
+/// value forces the map into that state.
+/// </summary>
+internal sealed record FullscreenSetOp(bool? Fullscreen = null) : EngineOp;
 
 /// <summary>Per-origin referrer policy for tile requests (tile overlays).</summary>
 internal sealed record MapRequestPolicyOp(string Origin, string? Policy = null) : EngineOp;
