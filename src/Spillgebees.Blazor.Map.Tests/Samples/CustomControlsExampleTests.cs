@@ -64,18 +64,27 @@ public class CustomControlsExampleTests : BunitContext
         });
         CountFeatures(source.Instance.Data).Should().Be(4);
 
-        var opsPayloads = JSInterop
-            .Invocations[ApplyOpsIdentifier]
-            .Select(invocation => invocation.Arguments[1] as string ?? "");
         cut.WaitForAssertion(() =>
+        {
+            string[] opsPayloads = [];
+            cut.InvokeAsync(() =>
+                    opsPayloads = [
+                        .. JSInterop
+                            .Invocations[ApplyOpsIdentifier]
+                            .Select(invocation => invocation.Arguments[1] as string ?? ""),
+                    ]
+                )
+                .GetAwaiter()
+                .GetResult();
+
             opsPayloads
                 .Should()
                 .Contain(payload =>
                     payload.Contains("\"op\":\"camera.flyTo\"")
                     && payload.Contains("\"latitude\":49.6117")
                     && payload.Contains("\"zoom\":14")
-                )
-        );
+                );
+        });
     }
 
     private static int CountFeatures(object? data)

@@ -127,6 +127,22 @@ function resolveBaseStyle(options: EngineStyleOptions): string | object {
   return options.style ?? buildStyleFromOptions(null);
 }
 
+// The MapLibre interaction handlers behind each follow gesture group.
+// - zoom covers the desktop zoom handlers
+// - orientation covers drag-to-rotate (which tilts and turns together) plus touch pitch
+// - pinch zoom/rotate is left alone since one touch gesture drives both and cannot be split per group
+interface InteractionHandler {
+  enable(): void;
+  disable(): void;
+  isEnabled(): boolean;
+}
+
+function interactionHandlers(map: MapLibreMap, group: "zoom" | "orientation"): InteractionHandler[] {
+  const handler = map as unknown as Record<string, InteractionHandler | undefined>;
+  const names = group === "zoom" ? ["scrollZoom", "doubleClickZoom", "boxZoom"] : ["dragRotate", "touchPitch"];
+  return names.map((name) => handler[name]).filter((value): value is InteractionHandler => value != null);
+}
+
 function styleKey(style: string | object): string {
   return typeof style === "string" ? style : JSON.stringify(style);
 }
@@ -228,7 +244,11 @@ function createMap(container: HTMLElement, optionsJson: string, router: DotNetOb
   const popups = createPopupController(map, contentRoot, emit);
   const engine = createEngine(
     toEngineMap(() => instance, map, markers, controls, popups),
-    { onEvent: emit, onError: reportError },
+    {
+      onEvent: emit,
+      onError: reportError,
+      onFollowCleared: (reason) => void router.invokeMethodAsync("OnMapEvent", "followcleared", { reason }),
+    },
   );
 
   const instance: EngineInstance = {
@@ -582,12 +602,33 @@ function toEngineMap(
     setFeatureState: (target, state) => void map.setFeatureState(target as never, state),
     removeFeatureState: (target) => void map.removeFeatureState(target as never),
     easeTo: (options) => void map.easeTo(options as never),
+    getZoom: () => map.getZoom(),
+    getBearing: () => map.getBearing(),
+    getPitch: () => map.getPitch(),
+    // Assumes one active lock per group (the follow controller holds at most one and restores before
+    // re-locking); it captures absolute enabled state rather than reference counting, so overlapping
+    // unreleased locks on the same group would not compose.
+    lockInteraction: (group) => {
+      const handlers = interactionHandlers(map, group);
+      const wasEnabled = handlers.map((handler) => handler.isEnabled());
+      for (const handler of handlers) {
+        handler.disable();
+      }
+      return () => {
+        handlers.forEach((handler, index) => {
+          if (wasEnabled[index]) {
+            handler.enable();
+          }
+        });
+      };
+    },
     addImage: (id, image, options) => void map.addImage(id, image as never, options as never),
     removeImage: (id) => void map.removeImage(id),
     hasImage: (id) => map.hasImage(id),
     loadImageData: renderImageData,
-    on: (event, layerId, handler) => void map.on(event as never, layerId, handler as never),
-    off: (event, layerId, handler) => void map.off(event as never, layerId, handler as never),
+    // Forwards both the layer-scoped (event, layerId, handler) and map-level (event, handler) forms.
+    on: (...args: unknown[]) => void (map.on as (...a: unknown[]) => unknown)(...args),
+    off: (...args: unknown[]) => void (map.off as (...a: unknown[]) => unknown)(...args),
     listStyleLayers: () => (map.getStyle()?.layers ?? []) as never,
     resolveComposedLayer: (styleId, layerId) => {
       const registration = window.Spillgebees.Map?.composedStyleLayerIds?.get(map)?.get(`${styleId}\u0000${layerId}`);

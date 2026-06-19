@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { evaluateOnMap } from "./helpers";
 
 // Functional coverage for the shared control component family hosted on SgbMap:
 // native MapLibre controls, panel controls with Blazor-rendered content, and the
@@ -7,21 +8,6 @@ import { expect, type Page, test } from "@playwright/test";
 const PAGE_ROUTE = "/engine-controls-functional-test";
 const POINTS_LAYER_ID = "ctrl-points";
 const NOTES_LAYER_ID = "notes-circle";
-
-function evaluateOnMap<T>(page: Page, body: string): Promise<T> {
-  return page.evaluate(
-    ({ evalBody }) => {
-      const maps = window.Spillgebees?.Map?.maps;
-      const map = maps ? [...maps.values()][0] : undefined;
-      if (!map) {
-        throw new Error("map not found");
-      }
-
-      return new Function("map", evalBody)(map) as T;
-    },
-    { evalBody: body },
-  );
-}
 
 function layerVisibility(page: Page, layerId: string): Promise<string> {
   return evaluateOnMap<string>(

@@ -19,6 +19,7 @@ import {
   setHoverBoost,
   sourceForFeatureId,
 } from "./entities";
+import { createFollowController, type FollowClearReason } from "./follow";
 import { decodeMotionFrame } from "./motion";
 import type {
   ControlContentEvents,
@@ -52,6 +53,11 @@ export interface EngineMap {
   setFeatureState(target: { source: string; id: number | string }, state: Record<string, unknown>): void;
   removeFeatureState(target: { source: string; id: number | string }): void;
   easeTo(options: Record<string, unknown>): void;
+  getZoom(): number;
+  getBearing(): number;
+  getPitch(): number;
+  /** Disables a gesture group's interaction handlers and returns a thunk that restores their prior state. */
+  lockInteraction(group: "zoom" | "orientation"): () => void;
   addImage(id: string, image: unknown, options?: Record<string, unknown>): void;
   removeImage(id: string): void;
   hasImage(id: string): boolean;
@@ -83,7 +89,9 @@ export interface EngineMap {
   fitBounds(bounds: [[number, number], [number, number]], options: Record<string, unknown>): void;
   /** Live DOM marker position lookup (camera.fitFeatures). */
   markerPosition(id: string): { lng: number; lat: number } | null;
+  on(event: string, handler: (event: unknown) => void): unknown;
   on(event: string, layerId: string, handler: (event: unknown) => void): unknown;
+  off(event: string, handler: (event: unknown) => void): unknown;
   off(event: string, layerId: string, handler: (event: unknown) => void): unknown;
   /** All layers of the current style (including engine-managed ones; the runtime filters). */
   listStyleLayers(): { id: string; layout?: { visibility?: string }; filter?: unknown; metadata?: unknown }[];
@@ -112,6 +120,8 @@ export interface EngineOptions {
   onEvent?: (handlerId: number, event: EngineEvent) => void;
   /** Receives async failures (image loads, flush errors). */
   onError?: (error: unknown) => void;
+  /** Receives a camera-follow cleared by the engine (user interaction or missing entity). */
+  onFollowCleared?: (reason: FollowClearReason) => void;
   scheduler?: Scheduler;
   now?: () => number;
 }
@@ -162,11 +172,18 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
   const now = options.now ?? (() => performance.now());
   const onEvent = options.onEvent ?? (() => {});
   const onError = options.onError ?? (() => {});
+  const onFollowCleared = options.onFollowCleared ?? (() => {});
 
   const slots = new Map<string, { before: string | null }>();
   const sources = new Map<string, Record<string, unknown>>();
   const layers = new Map<string, LayerRecord>();
   const entityLayers = new Map<string, EntityLayerStore>();
+  const follow = createFollowController({
+    map,
+    scheduler,
+    getStore: (layerId) => entityLayers.get(layerId),
+    onCleared: onFollowCleared,
+  });
   const visibilityController = createVisibilityController({
     getRuntimeLayer(layerId) {
       const record = layers.get(layerId);
@@ -784,6 +801,12 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
       case "camera.fitFeatures":
         fitFeatures(op.featureIds, op.padding, op.topLeftPadding, op.bottomRightPadding);
         break;
+      case "camera.follow":
+        follow.apply(op);
+        break;
+      case "camera.clearFollow":
+        follow.clear();
+        break;
       case "source.featureState": {
         const target: { source: string; id: string | number; sourceLayer?: string } = {
           source: op.id,
@@ -939,6 +962,7 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
       }
     },
     dispose() {
+      follow.dispose();
       for (const layerId of [...events.keys()]) {
         unwireLayerEvents(layerId);
       }

@@ -1,0 +1,189 @@
+@page "/engine-follow-functional-test"
+@implements IAsyncDisposable
+
+<main class="e2e-shell">
+    <h1>Engine follow functional test</h1>
+    <p>Deterministic fixture for Playwright: map-level camera follow of a moving tracked entity.</p>
+
+    <section style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+        <button type="button" data-testid="start-follow" @onclick="StartFollow">Start follow</button>
+        <button type="button" data-testid="start-follow-animated" @onclick="StartFollowAnimated">Start follow (animated)</button>
+        <button type="button" data-testid="start-follow-clear-missing" @onclick="StartFollowClearMissing">Start follow (clear if missing)</button>
+        <button type="button" data-testid="start-follow-fixed-zoom" @onclick="StartFollowFixedZoom">Start follow (fixed zoom)</button>
+        <button type="button" data-testid="clear-follow" @onclick="ClearFollow">Clear follow</button>
+        <button type="button" data-testid="move-e1" @onclick="MoveE1">Move e1</button>
+        <button type="button" data-testid="start-moving" @onclick="StartMoving">Start moving e1</button>
+        <button type="button" data-testid="remove-e1" @onclick="RemoveE1">Remove e1</button>
+        <span>Follow target: <strong data-testid="follow-target">@(_follow?.EntityId ?? "none")</strong></span>
+        <span>Last reason: <strong data-testid="last-reason">@(_lastReason?.ToString() ?? "none")</strong></span>
+    </section>
+
+    @if (_lastError is not null)
+    {
+        <p style="color: #b91c1c;" data-testid="map-error">@_lastError</p>
+    }
+
+    <div id="engine-functional-frame" class="stress-map-frame">
+        <SgbMap StyleSpec="@BaseStyleJson"
+                  Center="@(new Coordinate(49.61, 6.14))"
+                  Zoom="12"
+                  Images="_images"
+                  Height="560px"
+                  Width="100%"
+                  @bind-Follow="_follow"
+                  OnFollowChanged="HandleFollowChanged"
+                  OnMapError="@HandleMapError">
+            <TrackedEntityLayer TItem="@Vehicle"
+                                  Id="vehicles"
+                                  Items="@_vehicles"
+                                  ItemId="@(vehicle => vehicle.Id)"
+                                  Position="@(vehicle => vehicle.Position)"
+                                  Rotation="@(vehicle => vehicle.Heading)"
+                                  IconImage="functional-dot"
+                                  IconSize="0.75"
+                                  Animate="@(_autoMoving ? TimeSpan.FromMilliseconds(200) : null)" />
+        </SgbMap>
+    </div>
+</main>
+
+@code {
+    private const string BaseStyleJson = """
+        {"version":8,"sources":{"base":{"type":"raster","tiles":["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII="],"tileSize":256,"attribution":"Integration test"}},"layers":[{"id":"base","type":"raster","source":"base"}]}
+        """;
+
+    private readonly List<MapImage> _images =
+    [
+        new(
+            "functional-dot",
+            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='10' fill='%232563eb' stroke='white' stroke-width='4'/%3E%3C/svg%3E",
+            32,
+            32
+        ),
+    ];
+
+    private List<Vehicle> _vehicles =
+    [
+        new Vehicle("e1", "Vehicle 1", new Coordinate(49.61, 6.14), 0),
+    ];
+
+    private MapFollowOptions? _follow;
+    private MapFollowChangeReason? _lastReason;
+    private string? _lastError;
+    private bool _autoMoving;
+    private int _moveTick;
+    private CancellationTokenSource? _moveCts;
+    private Task? _moveTask;
+
+    private void StartFollow() =>
+        _follow = new MapFollowOptions(
+            "vehicles",
+            "e1",
+            Camera: new MapFollowCameraOptions(ZoomMode: MapFollowGestureMode.Anchored, Zoom: 14),
+            Animation: new AnimationOptions(Duration: 0)
+        );
+
+    // Long engage so the test can observe the camera mid-animation rather than an instant jump.
+    private void StartFollowAnimated() =>
+        _follow = new MapFollowOptions(
+            "vehicles",
+            "e1",
+            Camera: new MapFollowCameraOptions(ZoomMode: MapFollowGestureMode.Anchored, Zoom: 14),
+            Animation: new AnimationOptions(Duration: 1500)
+        );
+
+    // An anchored zoom so the test can confirm the follow holds it: a later camera zoom should be pulled
+    // back to this value rather than left where the user moved it.
+    private void StartFollowFixedZoom() =>
+        _follow = new MapFollowOptions(
+            "vehicles",
+            "e1",
+            Camera: new MapFollowCameraOptions(ZoomMode: MapFollowGestureMode.Anchored, Zoom: 15),
+            Animation: new AnimationOptions(Duration: 0)
+        );
+
+    private void StartFollowClearMissing() =>
+        _follow = new MapFollowOptions(
+            "vehicles",
+            "e1",
+            Animation: new AnimationOptions(Duration: 0),
+            Interaction: new MapFollowInteractionOptions(ClearWhenFeatureMissing: true)
+        );
+
+    private void ClearFollow() => _follow = null;
+
+    private void MoveE1()
+    {
+        _vehicles = _vehicles
+            .Select(vehicle =>
+                vehicle.Id == "e1"
+                    ? vehicle with { Position = new Coordinate(vehicle.Position.Latitude + 0.03, vehicle.Position.Longitude + 0.05) }
+                    : vehicle
+            )
+            .ToList();
+    }
+
+    // Continuously orbits e1 so the follow recentres every frame, the condition under which a tracking
+    // recentre would otherwise swallow user gestures.
+    private void StartMoving()
+    {
+        if (_autoMoving)
+        {
+            return;
+        }
+
+        _autoMoving = true;
+        _moveCts = new CancellationTokenSource();
+        _moveTask = RunMoveLoopAsync(_moveCts.Token);
+    }
+
+    private async Task RunMoveLoopAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(200));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                _moveTick++;
+                var angle = _moveTick * 0.4;
+                var position = new Coordinate(49.61 + (Math.Sin(angle) * 0.012), 6.14 + (Math.Cos(angle) * 0.012));
+                _vehicles = [new Vehicle("e1", "Vehicle 1", position, (angle * 180 / Math.PI) % 360)];
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private void RemoveE1() => _vehicles = [];
+
+    private void HandleFollowChanged(MapFollowChangedEventArgs args)
+    {
+        _lastReason = args.Reason;
+        StateHasChanged();
+    }
+
+    private void HandleMapError(Exception exception)
+    {
+        _lastError = exception.Message;
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_moveCts is not null)
+        {
+            await _moveCts.CancelAsync();
+            _moveCts.Dispose();
+        }
+
+        if (_moveTask is not null)
+        {
+            try
+            {
+                await _moveTask;
+            }
+            catch (OperationCanceledException) { }
+        }
+    }
+
+    private sealed record Vehicle(string Id, string Name, Coordinate Position, double Heading);
+}

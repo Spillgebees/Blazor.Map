@@ -1,25 +1,11 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+import { evaluateOnMap } from "./helpers";
 
 // Functional coverage for VectorTileSource: vector tiles decode and render through
 // the engine path, and layer paint updates apply at runtime.
 
 const PAGE_ROUTE = "/engine-vector-functional-test";
 const FILL_LAYER_ID = "vector-fill";
-
-function evaluateOnMap<T>(page: Page, body: string): Promise<T> {
-  return page.evaluate(
-    ({ evalBody }) => {
-      const maps = window.Spillgebees?.Map?.maps;
-      const map = maps ? [...maps.values()][0] : undefined;
-      if (!map) {
-        throw new Error("map not found");
-      }
-
-      return new Function("map", evalBody)(map) as T;
-    },
-    { evalBody: body },
-  );
-}
 
 test.describe("engine vector tile sources", () => {
   test("renders vector tile features and applies paint updates", async ({ page }) => {

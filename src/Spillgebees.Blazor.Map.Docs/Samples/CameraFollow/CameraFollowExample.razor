@@ -1,0 +1,137 @@
+@implements IAsyncDisposable
+
+<div class="follow-layout">
+    <div class="follow-panel">
+        <section class="follow-group">
+            <h4 class="follow-group-title">Target</h4>
+            <div class="follow-field">
+                <span class="follow-field-label">Follow</span>
+                <div class="follow-options">
+                    @foreach (var train in _trains)
+                    {
+                        <button type="button"
+                                class="sample-btn @(_targetId == train.Id ? "active" : "")"
+                                aria-pressed="@(_targetId == train.Id)"
+                                @onclick="@(() => SelectTarget(train.Id))">
+                            @train.Label
+                        </button>
+                    }
+                    <button type="button"
+                            class="sample-btn @(_targetId is null ? "active" : "")"
+                            aria-pressed="@(_targetId is null)"
+                            @onclick="StopFollowing">
+                        Stop
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section class="follow-group">
+            <h4 class="follow-group-title">Camera <span class="follow-group-note">held while following</span></h4>
+
+            <div class="follow-field">
+                <span class="follow-field-label">Zoom</span>
+                <div class="follow-options">
+                    <button type="button" class="sample-btn @(_zoomMode == MapFollowGestureMode.Free ? "active" : "")" aria-pressed="@(_zoomMode == MapFollowGestureMode.Free)" @onclick="@(() => SetZoomMode(MapFollowGestureMode.Free))">Free</button>
+                    <button type="button" class="sample-btn @(_zoomMode == MapFollowGestureMode.Anchored ? "active" : "")" aria-pressed="@(_zoomMode == MapFollowGestureMode.Anchored)" @onclick="@(() => SetZoomMode(MapFollowGestureMode.Anchored))">Anchored 15</button>
+                    <button type="button" class="sample-btn @(_zoomMode == MapFollowGestureMode.Locked ? "active" : "")" aria-pressed="@(_zoomMode == MapFollowGestureMode.Locked)" @onclick="@(() => SetZoomMode(MapFollowGestureMode.Locked))">Locked 15</button>
+                    <button type="button" class="sample-btn @(_zoomMode == MapFollowGestureMode.Clear ? "active" : "")" aria-pressed="@(_zoomMode == MapFollowGestureMode.Clear)" @onclick="@(() => SetZoomMode(MapFollowGestureMode.Clear))">Clear</button>
+                </div>
+            </div>
+
+            <div class="follow-field">
+                <span class="follow-field-label">Orientation <span class="follow-field-note">drives pitch &amp; bearing</span></span>
+                <div class="follow-options">
+                    <button type="button" class="sample-btn @(_orientationMode == MapFollowGestureMode.Free ? "active" : "")" aria-pressed="@(_orientationMode == MapFollowGestureMode.Free)" @onclick="@(() => SetOrientationMode(MapFollowGestureMode.Free))">Free</button>
+                    <button type="button" class="sample-btn @(_orientationMode == MapFollowGestureMode.Anchored ? "active" : "")" aria-pressed="@(_orientationMode == MapFollowGestureMode.Anchored)" @onclick="@(() => SetOrientationMode(MapFollowGestureMode.Anchored))">Anchored</button>
+                    <button type="button" class="sample-btn @(_orientationMode == MapFollowGestureMode.Locked ? "active" : "")" aria-pressed="@(_orientationMode == MapFollowGestureMode.Locked)" @onclick="@(() => SetOrientationMode(MapFollowGestureMode.Locked))">Locked</button>
+                    <button type="button" class="sample-btn @(_orientationMode == MapFollowGestureMode.Clear ? "active" : "")" aria-pressed="@(_orientationMode == MapFollowGestureMode.Clear)" @onclick="@(() => SetOrientationMode(MapFollowGestureMode.Clear))">Clear</button>
+                </div>
+            </div>
+
+            <div class="follow-subfields">
+                <div class="follow-field">
+                    <span class="follow-field-label">Pitch</span>
+                    <div class="follow-options">
+                        <button type="button" class="sample-btn @(_pitch == PitchChoice.Flat ? "active" : "")" aria-pressed="@(_pitch == PitchChoice.Flat)" @onclick="@(() => SetPitch(PitchChoice.Flat))">Flat</button>
+                        <button type="button" class="sample-btn @(_pitch == PitchChoice.MaxTilt ? "active" : "")" aria-pressed="@(_pitch == PitchChoice.MaxTilt)" @onclick="@(() => SetPitch(PitchChoice.MaxTilt))">Max tilt</button>
+                    </div>
+                </div>
+
+                <div class="follow-field">
+                    <span class="follow-field-label">Bearing</span>
+                    <div class="follow-options">
+                        <button type="button" class="sample-btn @(_bearingSource == MapFollowBearingSource.KeepCurrent ? "active" : "")" aria-pressed="@(_bearingSource == MapFollowBearingSource.KeepCurrent)" @onclick="@(() => SetBearingSource(MapFollowBearingSource.KeepCurrent))">Keep current</button>
+                        <button type="button" class="sample-btn @(_bearingSource == MapFollowBearingSource.Fixed ? "active" : "")" aria-pressed="@(_bearingSource == MapFollowBearingSource.Fixed)" @onclick="@(() => SetBearingSource(MapFollowBearingSource.Fixed))">Fixed 90&deg;</button>
+                        <button type="button" class="sample-btn @(_bearingSource == MapFollowBearingSource.MatchHeading ? "active" : "")" aria-pressed="@(_bearingSource == MapFollowBearingSource.MatchHeading)" @onclick="@(() => SetBearingSource(MapFollowBearingSource.MatchHeading))">Match heading</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="follow-field">
+                <span class="follow-field-label">Offset</span>
+                <div class="follow-options">
+                    <button type="button" class="sample-btn @(_offset == OffsetChoice.Centered ? "active" : "")" aria-pressed="@(_offset == OffsetChoice.Centered)" @onclick="@(() => SetOffset(OffsetChoice.Centered))">Centered</button>
+                    <button type="button" class="sample-btn @(_offset == OffsetChoice.Right ? "active" : "")" aria-pressed="@(_offset == OffsetChoice.Right)" @onclick="@(() => SetOffset(OffsetChoice.Right))">Offset right</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="follow-group">
+            <h4 class="follow-group-title">On engage &amp; interaction</h4>
+
+            <div class="follow-field">
+                <span class="follow-field-label">Engage</span>
+                <div class="follow-options">
+                    <button type="button" class="sample-btn @(_animation == AnimationChoice.Instant ? "active" : "")" aria-pressed="@(_animation == AnimationChoice.Instant)" @onclick="@(() => SetAnimation(AnimationChoice.Instant))">Instant</button>
+                    <button type="button" class="sample-btn @(_animation == AnimationChoice.EaseInOut ? "active" : "")" aria-pressed="@(_animation == AnimationChoice.EaseInOut)" @onclick="@(() => SetAnimation(AnimationChoice.EaseInOut))">Ease in-out</button>
+                    <button type="button" class="sample-btn @(_animation == AnimationChoice.Linear ? "active" : "")" aria-pressed="@(_animation == AnimationChoice.Linear)" @onclick="@(() => SetAnimation(AnimationChoice.Linear))">Linear</button>
+                </div>
+            </div>
+
+            <div class="follow-field">
+                <span class="follow-field-label">Clearing</span>
+                <div class="follow-options">
+                    <button type="button" class="sample-btn @(_clearOnPan ? "active" : "")" aria-pressed="@_clearOnPan" @onclick="ToggleClearOnPan">Clear on pan</button>
+                    <button type="button" class="sample-btn @(_clearWhenMissing ? "active" : "")" aria-pressed="@_clearWhenMissing" @onclick="ToggleClearWhenMissing">Clear on despawn</button>
+                    <button type="button" class="sample-btn" @onclick="DespawnTarget" disabled="@(_targetId is null)">Despawn</button>
+                    <button type="button" class="sample-btn" @onclick="RespawnAll" disabled="@(_despawned.Count == 0)">Respawn</button>
+                </div>
+            </div>
+        </section>
+
+        <p class="follow-status" role="status" aria-live="polite">
+            Following: <strong>@(_targetId is null ? "nobody" : _trains.First(train => train.Id == _targetId).Label)</strong>
+            @if (_lastReason is not null)
+            {
+                <span><br />last change: <strong>@_lastReason</strong></span>
+            }
+        </p>
+    </div>
+
+    <div class="follow-map">
+        <SgbMap Center="@(new Coordinate(49.61, 6.13))"
+                Zoom="11"
+                Style="@(MapStyle.OpenFreeMap.Positron)"
+                Images="_images"
+                Height="680px"
+                Width="100%"
+                @bind-Follow="_follow"
+                OnFollowChanged="HandleFollowChanged">
+            <MapControls>
+                <NavigationMapControl />
+            </MapControls>
+            <TrackedEntityLayer TItem="FollowSampleTrain"
+                                Id="trains"
+                                Items="@_visibleTrains"
+                                ItemId="@(train => train.Id)"
+                                Position="@(train => train.Position)"
+                                Rotation="@(train => train.Heading)"
+                                Icon="@(train => $"follow-train-{train.Id}")"
+                                IconSize="1"
+                                Animate="@(TimeSpan.FromMilliseconds(1000))"
+                                Interactive="true"
+                                OnClick="@(interaction => SelectTarget(interaction.Item.Id))" />
+        </SgbMap>
+    </div>
+</div>

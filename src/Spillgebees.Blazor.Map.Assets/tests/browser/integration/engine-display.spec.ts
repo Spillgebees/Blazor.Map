@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { evaluateOnMap } from "./helpers";
 
 // Functional coverage for the engine visibility system: display items toggling runtime
 // layers and feature filters, plus overlays composing overlay-style layers and runtime
@@ -8,21 +9,6 @@ const PAGE_ROUTE = "/engine-display-functional-test";
 const POINTS_LAYER_ID = "disp-points";
 const RUNTIME_PART_LAYER_ID = "overlay-runtime-circle";
 const COMPOSED_LAYER_PREFIX = "sgb-overlay-style-annotations-";
-
-function evaluateOnMap<T>(page: Page, body: string): Promise<T> {
-  return page.evaluate(
-    ({ evalBody }) => {
-      const maps = window.Spillgebees?.Map?.maps;
-      const map = maps ? [...maps.values()][0] : undefined;
-      if (!map) {
-        throw new Error("map not found");
-      }
-
-      return new Function("map", evalBody)(map) as T;
-    },
-    { evalBody: body },
-  );
-}
 
 function layerVisibility(page: Page, layerId: string): Promise<string> {
   return evaluateOnMap<string>(

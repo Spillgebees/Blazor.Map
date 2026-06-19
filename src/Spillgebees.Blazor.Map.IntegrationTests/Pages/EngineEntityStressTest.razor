@@ -105,6 +105,7 @@
                   Images="_images"
                   Height="560px"
                   Width="100%"
+                  Follow="@_follow"
                   OnMapError="HandleMapError">
             <TrackedEntityLayer TItem="@StressEntity"
                                   Id="engine-stress"
@@ -170,6 +171,7 @@
     private bool _decorationsEnabled;
     private bool _clusteringEnabled;
     private double _zoom = 11;
+    private MapFollowOptions? _follow;
     private UpdatePattern _updatePattern = UpdatePattern.AllFeatures;
     private DateTimeOffset? _lastTickAt;
     private double _lastTickDeltaMs;
@@ -195,6 +197,13 @@
         if (query.TryGetEnum<UpdatePattern>("pattern", out var pattern))
         {
             _updatePattern = pattern;
+        }
+
+        // Follow entity-0 (always present outside membership churn) so the per-frame follow tick
+        // runs under load: the perf budget then guards the follow controller's frame cost.
+        if (query.GetBool("follow", false))
+        {
+            _follow = new MapFollowOptions("engine-stress", "entity-0");
         }
 
         _entities = BuildEntities(_tickCount, _entityCount, _updatePattern);
