@@ -120,7 +120,7 @@ public class MapFeatureCoordinatorTests
     }
 
     [Test]
-    public async Task Should_keep_polylines_below_circles_when_polylines_are_added_after_circles()
+    public async Task Should_queue_shape_infrastructure_with_polylines_before_circles_even_when_circles_arrive_first()
     {
         // arrange
         var (coordinator, js) = await CreateReadyCoordinatorAsync();
