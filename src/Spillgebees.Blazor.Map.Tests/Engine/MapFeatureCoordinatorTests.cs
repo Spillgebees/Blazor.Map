@@ -104,6 +104,7 @@ public class MapFeatureCoordinatorTests
             circles: [BuildCircle("c1")],
             polylines: [BuildPolyline("p1")]
         );
+        await Task.Yield();
 
         // assert
         DescribeAppliedOps(js)
