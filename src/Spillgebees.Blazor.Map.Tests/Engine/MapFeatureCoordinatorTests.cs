@@ -12,6 +12,7 @@ namespace Spillgebees.Blazor.Map.Tests.Engine;
 /// </summary>
 public class MapFeatureCoordinatorTests
 {
+    private const string ApplyOpsIdentifier = "Spillgebees.Engine.applyOps";
     private const string SetSourceDataIdentifier = "Spillgebees.Engine.setSourceData";
 
     [Test]
@@ -91,6 +92,48 @@ public class MapFeatureCoordinatorTests
     }
 
     [Test]
+    public async Task Should_sync_top_level_features_in_polyline_circle_marker_order()
+    {
+        // arrange
+        var (coordinator, js) = await CreateReadyCoordinatorAsync();
+
+        // act
+        coordinator.SyncParameters(
+            markers: [BuildMarker("m1")],
+            circles: [BuildCircle("c1")],
+            polylines: [BuildPolyline("p1")]
+        );
+
+        // assert
+        DescribeAppliedOps(js)
+            .Should()
+            .Equal(
+                "source.add:sgb-polylines-source",
+                "layer.add:sgb-polylines-layer",
+                "source.add:sgb-circles-source",
+                "layer.add:sgb-circles-layer",
+                "marker.set:m1"
+            );
+        SetSourceDataSources(js).Should().Equal("sgb-polylines-source", "sgb-circles-source");
+    }
+
+    [Test]
+    public async Task Should_keep_polylines_below_circles_when_polylines_are_added_after_circles()
+    {
+        // arrange
+        var (coordinator, js) = await CreateReadyCoordinatorAsync();
+
+        // act
+        coordinator.SetCircles("owner", [BuildCircle("c1")]);
+        coordinator.SetPolylines("owner", [BuildPolyline("p1")]);
+
+        // assert
+        DescribeAppliedOps(js)
+            .Should()
+            .ContainInOrder("layer.add:sgb-polylines-layer", "layer.add:sgb-circles-layer");
+    }
+
+    [Test]
     public async Task Should_push_the_emptied_collection_when_an_owner_is_removed()
     {
         // arrange
@@ -116,6 +159,9 @@ public class MapFeatureCoordinatorTests
     private static Circle BuildCircle(string id, double latitude = 49.6117, double longitude = 6.1319) =>
         new(id, new Coordinate(latitude, longitude), Radius: 4, Color: "#2563eb");
 
+    private static Marker BuildMarker(string id, double latitude = 49.6117, double longitude = 6.1319) =>
+        new(id, new Coordinate(latitude, longitude), Title: $"marker-{id}");
+
     private static Polyline BuildPolyline(string id, double latitudeOffset = 0) =>
         new(
             id,
@@ -127,13 +173,41 @@ public class MapFeatureCoordinatorTests
     private static int CountSourceDataCalls(RecordingJsRuntime js) =>
         js.Identifiers.Count(identifier => identifier == SetSourceDataIdentifier);
 
+    private static IReadOnlyList<string> DescribeAppliedOps(RecordingJsRuntime js)
+    {
+        var invocation = js.Invocations.Single(call => call.Identifier == ApplyOpsIdentifier);
+        using var document = JsonDocument.Parse((string)invocation.Args[1]!);
+        return document
+            .RootElement.EnumerateArray()
+            .Select(op =>
+            {
+                var opName = op.GetProperty("op").GetString();
+                return opName switch
+                {
+                    "marker.set" => $"marker.set:{op.GetProperty("marker").GetProperty("id").GetString()}",
+                    _ => $"{opName}:{op.GetProperty("id").GetString()}",
+                };
+            })
+            .ToArray();
+    }
+
+    private static IReadOnlyList<string> SetSourceDataSources(RecordingJsRuntime js) =>
+        js.Invocations
+            .Where(call => call.Identifier == SetSourceDataIdentifier)
+            .Select(call => (string)call.Args[1]!)
+            .ToArray();
+
+    private sealed record Invocation(string Identifier, object?[] Args);
+
     private sealed class RecordingJsRuntime : IJSRuntime
     {
         public List<string> Identifiers { get; } = [];
+        public List<Invocation> Invocations { get; } = [];
 
         public ValueTask<TValue> InvokeAsync<TValue>(string identifier, object?[]? args)
         {
             Identifiers.Add(identifier);
+            Invocations.Add(new Invocation(identifier, args ?? []));
             return ValueTask.FromResult(default(TValue)!);
         }
 

@@ -257,7 +257,6 @@ describe("op dispatch", () => {
 describe("slots", () => {
   it("anchors layers to their slot and resolves slot references in before", () => {
     const harness = createHarness();
-
     harness.engine.applyOps([
       { op: "slot.define", id: "overlay" },
       { op: "layer.add", id: "tracks", spec: { id: "tracks", type: "line" }, slot: "overlay" },
@@ -271,6 +270,19 @@ describe("slots", () => {
       "addLayer:halo@sgb-slot:overlay",
       "moveLayer:tracks@sgb-slot:overlay",
     ]);
+  });
+
+  it("inserts late-added convenience polylines below circles", () => {
+    const harness = createHarness();
+    harness.engine.applyOps([{ op: "layer.add", id: "sgb-circles-layer", spec: { id: "sgb-circles-layer", type: "circle" } }]);
+    harness.resetLog();
+
+    harness.engine.applyOps([
+      { op: "layer.add", id: "sgb-polylines-layer", spec: { id: "sgb-polylines-layer", type: "line" } },
+    ]);
+
+    expect(harness.log).toEqual(["addLayer:sgb-polylines-layer@sgb-circles-layer"]);
+    expect(harness.layers.get("sgb-polylines-layer")?.beforeId).toBe("sgb-circles-layer");
   });
 });
 
