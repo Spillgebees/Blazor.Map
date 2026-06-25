@@ -525,6 +525,10 @@ Spillgebees.Blazor.Map.MapCircle.Position.get -> Spillgebees.Blazor.Map.Coordina
 Spillgebees.Blazor.Map.MapCircle.Position.set -> void
 Spillgebees.Blazor.Map.MapCircle.Radius.get -> int
 Spillgebees.Blazor.Map.MapCircle.Radius.set -> void
+Spillgebees.Blazor.Map.MapCircle.StrokeColor.get -> string?
+Spillgebees.Blazor.Map.MapCircle.StrokeColor.set -> void
+Spillgebees.Blazor.Map.MapCircle.StrokeWidth.get -> double?
+Spillgebees.Blazor.Map.MapCircle.StrokeWidth.set -> void
 Spillgebees.Blazor.Map.MapCircles<TItem>
 Spillgebees.Blazor.Map.MapCircles<TItem>.ColorSelector.get -> System.Func<TItem, string?>?
 Spillgebees.Blazor.Map.MapCircles<TItem>.ColorSelector.set -> void
@@ -540,6 +544,10 @@ Spillgebees.Blazor.Map.MapCircles<TItem>.PositionSelector.get -> System.Func<TIt
 Spillgebees.Blazor.Map.MapCircles<TItem>.PositionSelector.set -> void
 Spillgebees.Blazor.Map.MapCircles<TItem>.RadiusSelector.get -> System.Func<TItem, int>?
 Spillgebees.Blazor.Map.MapCircles<TItem>.RadiusSelector.set -> void
+Spillgebees.Blazor.Map.MapCircles<TItem>.StrokeColorSelector.get -> System.Func<TItem, string?>?
+Spillgebees.Blazor.Map.MapCircles<TItem>.StrokeColorSelector.set -> void
+Spillgebees.Blazor.Map.MapCircles<TItem>.StrokeWidthSelector.get -> System.Func<TItem, double?>?
+Spillgebees.Blazor.Map.MapCircles<TItem>.StrokeWidthSelector.set -> void
 Spillgebees.Blazor.Map.MapClickEventArgs
 Spillgebees.Blazor.Map.MapClickEventArgs.MapClickEventArgs(Spillgebees.Blazor.Map.Coordinate! Position) -> void
 Spillgebees.Blazor.Map.MapClickEventArgs.Position.get -> Spillgebees.Blazor.Map.Coordinate!

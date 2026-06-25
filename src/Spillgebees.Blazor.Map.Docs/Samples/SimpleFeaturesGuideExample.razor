@@ -1,0 +1,107 @@
+﻿<SgbMap Center="@(new Coordinate(49.75, 6.10))"
+        FitBounds="@_fitBoundsOptions"
+        Zoom="10"
+        Style="@MapStyle.OpenFreeMap.Positron"
+        Markers="@_markers"
+        Circles="@_circles"
+        Polylines="@_polylines"
+        Height="400px"
+        Width="100%"/>
+
+@code {
+    private const string TrackColor = "#dc2626";
+
+    private readonly FitBoundsOptions _fitBoundsOptions = new(
+        [
+            "marker-findel-airport",
+            "station-luxembourg",
+            "station-esch-sur-alzette",
+            "station-mersch",
+            "station-ettelbruck",
+            "track-esch-luxembourg",
+            "track-luxembourg-mersch",
+            "track-mersch-ettelbruck"
+        ],
+        new PixelPoint(20, 20));
+
+    private readonly List<Marker> _markers =
+    [
+        new(
+            "marker-findel-airport",
+            new Coordinate(49.6266, 6.2115),
+            Title: "Luxembourg Airport (Findel)",
+            Popup: PopupOptions.FromText(content: "Luxembourg Airport (Findel)", trigger: PopupTrigger.Hover, closeButton: false)
+        ),
+    ];
+
+    private readonly List<Circle> _circles =
+    [
+        new(
+            "station-luxembourg",
+            new Coordinate(49.6000, 6.1347),
+            Radius: 7,
+            Color: "#ffffff",
+            StrokeColor: TrackColor,
+            StrokeWidth: 1.5,
+            Popup: PopupOptions.FromText(content: "Luxembourg", trigger: PopupTrigger.Hover, closeButton: false)
+        ),
+        new(
+            "station-esch-sur-alzette",
+            new Coordinate(49.4936, 5.9856),
+            Radius: 7,
+            Color: "#ffffff",
+            StrokeColor: TrackColor,
+            StrokeWidth: 1.5,
+            Popup: PopupOptions.FromText(content: "Esch-sur-Alzette", trigger: PopupTrigger.Hover, closeButton: false)
+        ),
+        new(
+            "station-mersch",
+            new Coordinate(49.7489, 6.1060),
+            Radius: 7,
+            Color: "#ffffff",
+            StrokeColor: TrackColor,
+            StrokeWidth: 1.5,
+            Popup: PopupOptions.FromText(content: "Mersch", trigger: PopupTrigger.Hover, closeButton: false)
+        ),
+        new(
+            "station-ettelbruck",
+            new Coordinate(49.8477, 6.1042),
+            Radius: 7,
+            Color: "#ffffff",
+            StrokeColor: TrackColor,
+            StrokeWidth: 1.5,
+            Popup: PopupOptions.FromText(content: "Ettelbruck", trigger: PopupTrigger.Hover, closeButton: false)
+        ),
+    ];
+
+    private readonly List<Polyline> _polylines =
+    [
+        new(
+            "track-esch-luxembourg",
+            [
+                new Coordinate(49.4936, 5.9856),
+                new Coordinate(49.6000, 6.1347),
+            ],
+            Color: TrackColor,
+            Width: 3
+        ),
+        new(
+            "track-luxembourg-mersch",
+            [
+                new Coordinate(49.6000, 6.1347),
+                new Coordinate(49.7489, 6.1060),
+            ],
+            Color: TrackColor,
+            Width: 3
+        ),
+        new(
+            "track-mersch-ettelbruck",
+            [
+                new Coordinate(49.7489, 6.1060),
+                new Coordinate(49.8477, 6.1042),
+            ],
+            Color: TrackColor,
+            Width: 3
+        ),
+    ];
+}

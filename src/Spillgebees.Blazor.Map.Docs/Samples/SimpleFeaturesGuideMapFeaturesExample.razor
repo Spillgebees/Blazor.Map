@@ -1,0 +1,72 @@
+<SgbMap Center="@(new Coordinate(49.75, 6.10))"
+        FitBounds="@_fitBoundsOptions"
+        Style="@MapStyle.OpenFreeMap.Positron"
+        Zoom="10"
+        Height="400px"
+        Width="100%">
+    <MapFeatures>
+        <MapMarker Id="marker-findel-airport"
+                   Position="@(new Coordinate(49.6266, 6.2115))"
+                   Title="Luxembourg Airport (Findel)"
+                   Popup="@PopupOptions.FromText(content: "Luxembourg Airport (Findel)", trigger: PopupTrigger.Hover, closeButton: false)" />
+
+        <MapPolyline Id="track-esch-luxembourg"
+                     Coordinates="@([new Coordinate(49.4936, 5.9856), new Coordinate(49.6000, 6.1347)])"
+                     Color="@TrackColor"
+                     Width="3" />
+        <MapPolyline Id="track-luxembourg-mersch"
+                     Coordinates="@([new Coordinate(49.6000, 6.1347), new Coordinate(49.7489, 6.1060)])"
+                     Color="@TrackColor"
+                     Width="3" />
+        <MapPolyline Id="track-mersch-ettelbruck"
+                     Coordinates="@([new Coordinate(49.7489, 6.1060), new Coordinate(49.8477, 6.1042)])"
+                     Color="@TrackColor"
+                     Width="3" />
+
+        <MapCircle Id="station-luxembourg"
+                   Position="@(new Coordinate(49.6000, 6.1347))"
+                   Radius="7"
+                   Color="#ffffff"
+                   StrokeColor="@TrackColor"
+                   StrokeWidth="1.5"
+                   Popup="@PopupOptions.FromText(content: "Luxembourg", trigger: PopupTrigger.Hover, closeButton: false)" />
+        <MapCircle Id="station-esch-sur-alzette"
+                   Position="@(new Coordinate(49.4936, 5.9856))"
+                   Radius="7"
+                   Color="#ffffff"
+                   StrokeColor="@TrackColor"
+                   StrokeWidth="1.5"
+                   Popup="@PopupOptions.FromText(content: "Esch-sur-Alzette", trigger: PopupTrigger.Hover, closeButton: false)" />
+        <MapCircle Id="station-mersch"
+                   Position="@(new Coordinate(49.7489, 6.1060))"
+                   Radius="7"
+                   Color="#ffffff"
+                   StrokeColor="@TrackColor"
+                   StrokeWidth="1.5"
+                   Popup="@PopupOptions.FromText(content: "Mersch", trigger: PopupTrigger.Hover, closeButton: false)" />
+        <MapCircle Id="station-ettelbruck"
+                   Position="@(new Coordinate(49.8477, 6.1042))"
+                   Radius="7"
+                   Color="#ffffff"
+                   StrokeColor="@TrackColor"
+                   StrokeWidth="1.5"
+                   Popup="@PopupOptions.FromText(content: "Ettelbruck", trigger: PopupTrigger.Hover, closeButton: false)" />
+    </MapFeatures>
+</SgbMap>
+
+@code {
+    private readonly FitBoundsOptions _fitBoundsOptions = new(
+        [
+            "marker-findel-airport",
+            "station-luxembourg",
+            "station-esch-sur-alzette",
+            "station-mersch",
+            "station-ettelbruck",
+            "track-esch-luxembourg",
+            "track-luxembourg-mersch",
+            "track-mersch-ettelbruck"
+        ],
+        new PixelPoint(20, 20));
+
+    private const string TrackColor = "#dc2626";
+}
