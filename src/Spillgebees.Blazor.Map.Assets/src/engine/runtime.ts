@@ -36,6 +36,8 @@ import { createScheduler, type Scheduler } from "./scheduler";
 import { createVisibilityController, styleLayerInfo } from "./visibility";
 
 const SLOT_LAYER_PREFIX = "sgb-slot:";
+const CIRCLES_LAYER_ID = "sgb-circles-layer";
+const POLYLINES_LAYER_ID = "sgb-polylines-layer";
 
 /** The MapLibre surface the engine touches — structural, so tests can stub it. */
 export interface EngineMap {
@@ -241,6 +243,15 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
       },
       resolveBeforeId(null, before),
     );
+  }
+
+  function resolveLayerBeforeId(record: LayerRecord): string | undefined {
+    const beforeId = resolveBeforeId(record.slot, record.before);
+    if (beforeId || record.id !== POLYLINES_LAYER_ID || map.getLayer(CIRCLES_LAYER_ID) === undefined) {
+      return beforeId;
+    }
+
+    return CIRCLES_LAYER_ID;
   }
 
   function entitySourceSpec(store: EntityLayerStore): Record<string, unknown> {
@@ -593,7 +604,7 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
       case "layer.add": {
         const record: LayerRecord = { id: op.id, spec: op.spec, slot: op.slot ?? null, before: op.before ?? null };
         layers.set(op.id, record);
-        map.addLayer(op.spec, resolveBeforeId(record.slot, record.before));
+        map.addLayer(op.spec, resolveLayerBeforeId(record));
         visibilityController.onLayerAdded(op.id);
         break;
       }
@@ -955,7 +966,7 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
       }
 
       for (const record of layers.values()) {
-        map.addLayer(record.spec, resolveBeforeId(record.slot, record.before));
+        map.addLayer(record.spec, resolveLayerBeforeId(record));
       }
 
       visibilityController.replay();

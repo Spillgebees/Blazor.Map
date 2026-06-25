@@ -68,8 +68,8 @@ internal sealed class MapFeatureCoordinator(MapEngineChannel channel)
         _markersByOwner.Remove(ownerId);
         _circlesByOwner.Remove(ownerId);
         _polylinesByOwner.Remove(ownerId);
-        FlushCircles();
         FlushPolylines();
+        FlushCircles();
         SyncMarkers();
     }
 
@@ -80,10 +80,10 @@ internal sealed class MapFeatureCoordinator(MapEngineChannel channel)
         IReadOnlyList<Polyline>? polylines
     )
     {
-        if (!ReferenceEquals(markers, _appliedMarkersParameter))
+        if (!ReferenceEquals(polylines, _appliedPolylinesParameter))
         {
-            _appliedMarkersParameter = markers;
-            SetMarkers(ParameterFeaturesOwnerId, markers ?? []);
+            _appliedPolylinesParameter = polylines;
+            SetPolylines(ParameterFeaturesOwnerId, polylines ?? []);
         }
 
         if (!ReferenceEquals(circles, _appliedCirclesParameter))
@@ -92,10 +92,10 @@ internal sealed class MapFeatureCoordinator(MapEngineChannel channel)
             SetCircles(ParameterFeaturesOwnerId, circles ?? []);
         }
 
-        if (!ReferenceEquals(polylines, _appliedPolylinesParameter))
+        if (!ReferenceEquals(markers, _appliedMarkersParameter))
         {
-            _appliedPolylinesParameter = polylines;
-            SetPolylines(ParameterFeaturesOwnerId, polylines ?? []);
+            _appliedMarkersParameter = markers;
+            SetMarkers(ParameterFeaturesOwnerId, markers ?? []);
         }
     }
 
@@ -159,6 +159,30 @@ internal sealed class MapFeatureCoordinator(MapEngineChannel channel)
         _shapeInfrastructureQueued = true;
         channel.Queue(
             new SourceAddOp(
+                PolylinesSourceId,
+                new JsonObject { ["type"] = "geojson", ["data"] = JsonNode.Parse(EmptyCollectionJson) }
+            )
+        );
+        channel.Queue(
+            new LayerAddOp(
+                PolylinesLayerId,
+                new JsonObject
+                {
+                    ["id"] = PolylinesLayerId,
+                    ["type"] = "line",
+                    ["source"] = PolylinesSourceId,
+                    ["layout"] = new JsonObject { ["line-join"] = "round", ["line-cap"] = "round" },
+                    ["paint"] = new JsonObject
+                    {
+                        ["line-color"] = EngineSpec.Expr("coalesce", EngineSpec.Expr("get", "color"), "#3388ff"),
+                        ["line-width"] = EngineSpec.Expr("coalesce", EngineSpec.Expr("get", "width"), 3),
+                        ["line-opacity"] = EngineSpec.Expr("coalesce", EngineSpec.Expr("get", "opacity"), 1),
+                    },
+                }
+            )
+        );
+        channel.Queue(
+            new SourceAddOp(
                 CirclesSourceId,
                 new JsonObject { ["type"] = "geojson", ["data"] = JsonNode.Parse(EmptyCollectionJson) }
             )
@@ -187,30 +211,6 @@ internal sealed class MapFeatureCoordinator(MapEngineChannel channel)
                             EngineSpec.Expr("get", "strokeOpacity"),
                             1
                         ),
-                    },
-                }
-            )
-        );
-        channel.Queue(
-            new SourceAddOp(
-                PolylinesSourceId,
-                new JsonObject { ["type"] = "geojson", ["data"] = JsonNode.Parse(EmptyCollectionJson) }
-            )
-        );
-        channel.Queue(
-            new LayerAddOp(
-                PolylinesLayerId,
-                new JsonObject
-                {
-                    ["id"] = PolylinesLayerId,
-                    ["type"] = "line",
-                    ["source"] = PolylinesSourceId,
-                    ["layout"] = new JsonObject { ["line-join"] = "round", ["line-cap"] = "round" },
-                    ["paint"] = new JsonObject
-                    {
-                        ["line-color"] = EngineSpec.Expr("coalesce", EngineSpec.Expr("get", "color"), "#3388ff"),
-                        ["line-width"] = EngineSpec.Expr("coalesce", EngineSpec.Expr("get", "width"), 3),
-                        ["line-opacity"] = EngineSpec.Expr("coalesce", EngineSpec.Expr("get", "opacity"), 1),
                     },
                 }
             )
