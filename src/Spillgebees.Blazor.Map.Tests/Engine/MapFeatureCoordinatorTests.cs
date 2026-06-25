@@ -176,20 +176,24 @@ public class MapFeatureCoordinatorTests
 
     private static IReadOnlyList<string> DescribeAppliedOps(RecordingJsRuntime js)
     {
-        var invocation = js.Invocations.Single(call => call.Identifier == ApplyOpsIdentifier);
-        using var document = JsonDocument.Parse((string)invocation.Args[1]!);
-        return document
-            .RootElement.EnumerateArray()
-            .Select(op =>
-            {
-                var opName = op.GetProperty("op").GetString();
-                return opName switch
+        var described = new List<string>();
+        foreach (var invocation in js.Invocations.Where(call => call.Identifier == ApplyOpsIdentifier))
+        {
+            using var document = JsonDocument.Parse((string)invocation.Args[1]!);
+            described.AddRange(
+                document.RootElement.EnumerateArray().Select(op =>
                 {
-                    "marker.set" => $"marker.set:{op.GetProperty("marker").GetProperty("id").GetString()}",
-                    _ => $"{opName}:{op.GetProperty("id").GetString()}",
-                };
-            })
-            .ToArray();
+                    var opName = op.GetProperty("op").GetString();
+                    return opName switch
+                    {
+                        "marker.set" => $"marker.set:{op.GetProperty("marker").GetProperty("id").GetString()}",
+                        _ => $"{opName}:{op.GetProperty("id").GetString()}",
+                    };
+                })
+            );
+        }
+
+        return described;
     }
 
     private static IReadOnlyList<string> SetSourceDataSources(RecordingJsRuntime js) =>
