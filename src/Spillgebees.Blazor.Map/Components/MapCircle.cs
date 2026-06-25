@@ -32,6 +32,14 @@ public sealed class MapCircle : ComponentBase, IAsyncDisposable
     [Parameter]
     public string? Color { get; set; }
 
+    /// <summary>Circle stroke color (any CSS color).</summary>
+    [Parameter]
+    public string? StrokeColor { get; set; }
+
+    /// <summary>Circle stroke width.</summary>
+    [Parameter]
+    public double? StrokeWidth { get; set; }
+
     /// <summary>Popup shown when the circle is clicked.</summary>
     [Parameter]
     public PopupOptions? Popup { get; set; }
@@ -39,7 +47,15 @@ public sealed class MapCircle : ComponentBase, IAsyncDisposable
     /// <summary>Registers or updates the circle on the host map.</summary>
     protected override async Task OnParametersSetAsync()
     {
-        var circle = new Circle(Id, Position, Radius, Color, Popup: Popup);
+        var circle = new Circle(
+            Id,
+            Position,
+            Radius,
+            Color,
+            StrokeColor: StrokeColor,
+            StrokeWidth: StrokeWidth,
+            Popup: Popup
+        );
 
         await _registration.RegisterAsync(_map, _sectionContext, nameof(MapCircle), circle, SetOverlayCirclesAsync);
     }

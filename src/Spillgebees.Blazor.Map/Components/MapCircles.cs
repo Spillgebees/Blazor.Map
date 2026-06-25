@@ -37,6 +37,14 @@ public sealed class MapCircles<TItem> : ComponentBase, IAsyncDisposable
     [Parameter]
     public Func<TItem, string?>? ColorSelector { get; set; }
 
+    /// <summary>Extracts the circle stroke color (any CSS color) per item.</summary>
+    [Parameter]
+    public Func<TItem, string?>? StrokeColorSelector { get; set; }
+
+    /// <summary>Extracts the circle stroke width per item.</summary>
+    [Parameter]
+    public Func<TItem, double?>? StrokeWidthSelector { get; set; }
+
     /// <summary>Extracts the click popup per item.</summary>
     [Parameter]
     public Func<TItem, PopupOptions?>? PopupSelector { get; set; }
@@ -66,6 +74,8 @@ public sealed class MapCircles<TItem> : ComponentBase, IAsyncDisposable
             PositionSelector!(item),
             RadiusSelector?.Invoke(item) ?? 8,
             ColorSelector?.Invoke(item),
+            StrokeColor: StrokeColorSelector?.Invoke(item),
+            StrokeWidth: StrokeWidthSelector?.Invoke(item),
             Popup: PopupSelector?.Invoke(item)
         );
 

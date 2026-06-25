@@ -1,0 +1,24 @@
+﻿@page "/guides/simple-features"
+
+<PageTitle>Simple Features | Spillgebees.Blazor.Map</PageTitle>
+
+<Breadcrumb Section="guides" PageName="Simple Features" />
+<OnThisPage />
+
+<h1>Simple Features</h1>
+<p>Placing simple features such as a small set of markers, circles, or lines directly on a map without creating a custom GeoJSON source or a tracked entity layer can be done in two ways:</p>
+
+<h2 id="parameter_api">// parameter_api</h2>
+<p>Pass the necessary data to <code>SgbMap</code> with the <code>Markers</code>, <code>Circles</code>, and <code>Polylines</code> parameters. Good fit for dynamic data.</p>
+<ExampleView TComponent="SimpleFeaturesGuideExample">
+    <SimpleFeaturesGuideExample />
+</ExampleView>
+
+<h2 id="mapFeatures_api">// mapFeatures_api</h2>
+<p>Use the declarative <code>MapFeatures</code> component markup. Same behavior as the previous example but easier to read when using a simple example with static data.</p>
+<ExampleView TComponent="SimpleFeaturesGuideMapFeaturesExample">
+    <SimpleFeaturesGuideMapFeaturesExample />
+</ExampleView>
+
+<h2 id="when_to_use">// when_to_use</h2>
+<p>This API is best used for static or simple data sets such as stations markers, railway tracks, POIs, and so on. For larger static datasets consider using <code>GeoJsonSource</code>. For more dynamic data sets that require more interactivity such as real-time data, consider using <code>TrackedEntityLayer</code>.</p>

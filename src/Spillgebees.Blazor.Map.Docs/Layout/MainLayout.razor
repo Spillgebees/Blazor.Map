@@ -3,16 +3,19 @@
 <DocSite ProjectName="Spillgebees.Blazor.Map"
          LogoEmoji="🗺️"
          GitHubUrl="https://github.com/Spillgebees/Blazor.Map"
-         Navigation="@Navigation">
+         Navigation="@_navigation">
     @Body
 </DocSite>
 
 @code {
-    private static readonly NavSection[] Navigation =
+    private static readonly NavSection[] _navigation =
     [
         new("Getting Started", [
             new NavPage("Home", ""),
             new NavPage("Installation", "installation"),
+        ]),
+        new("Guides", [
+            new NavPage("Simple features", "guides/simple-features"),
         ]),
         new("Components", [
             new NavPage("SgbMap", "components/sgb-map"),
