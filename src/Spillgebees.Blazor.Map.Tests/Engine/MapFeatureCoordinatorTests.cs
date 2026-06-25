@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using Microsoft.JSInterop;
 using Spillgebees.Blazor.Map.Engine;
+using System.Text.Json;
 
 namespace Spillgebees.Blazor.Map.Tests.Engine;
 

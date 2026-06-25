@@ -274,7 +274,9 @@ describe("slots", () => {
 
   it("inserts late-added convenience polylines below circles", () => {
     const harness = createHarness();
-    harness.engine.applyOps([{ op: "layer.add", id: "sgb-circles-layer", spec: { id: "sgb-circles-layer", type: "circle" } }]);
+    harness.engine.applyOps([
+      { op: "layer.add", id: "sgb-circles-layer", spec: { id: "sgb-circles-layer", type: "circle" } },
+    ]);
     harness.resetLog();
 
     harness.engine.applyOps([
