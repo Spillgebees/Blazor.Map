@@ -291,10 +291,7 @@ describe("slots", () => {
 
     harness.engine.replay();
 
-    expect(harness.log).toEqual([
-      "addLayer:sgb-circles-layer",
-      "addLayer:sgb-polylines-layer@sgb-circles-layer",
-    ]);
+    expect(harness.log).toEqual(["addLayer:sgb-circles-layer", "addLayer:sgb-polylines-layer@sgb-circles-layer"]);
     expect(harness.layers.get("sgb-polylines-layer")?.beforeId).toBe("sgb-circles-layer");
   });
 });
