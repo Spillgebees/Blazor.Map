@@ -277,6 +277,7 @@
 }
 
 .sgb-map-container:fullscreen,
+// stylelint-disable-next-line selector-no-vendor-prefix
 .sgb-map-container:-webkit-full-screen,
 .sgb-map-container.sgb-map-pseudo-fullscreen {
   background: #ffffff;

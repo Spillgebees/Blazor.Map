@@ -27,8 +27,9 @@ public class SgbMapOverlayContentTests : BunitContext
 
         // assert
         var container = cut.Find(".sgb-map-container");
-        container.QuerySelector(".sgb-map-overlay-root")!.Should().NotBeNull();
-        container.QuerySelector("[data-testid='overlay-action']")!.TextContent.Should().Be("Overlay action");
+        var overlayRoot = container.QuerySelector(".sgb-map-overlay-root");
+        overlayRoot.Should().NotBeNull();
+        overlayRoot!.QuerySelector("[data-testid='overlay-action']")!.TextContent.Should().Be("Overlay action");
         cut.Find(".sgb-map-root > .sgb-map-container > .sgb-map-overlay-root").Should().NotBeNull();
     }
 

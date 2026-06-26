@@ -1,18 +1,18 @@
 @namespace Spillgebees.Blazor.Map
 
 <div class="sgb-map-root">
-    <div @ref="_container" id="@ContainerId" class="sgb-map-container @ContainerClass" style="height: @Height; width: @Width;">
-        @if (OverlayContent is not null)
-        {
-            <div class="sgb-map-overlay-root">
-                @OverlayContent
-            </div>
-        }
-    </div>
     <CascadingValue Value="this" IsFixed="true">
         <CascadingValue Value="ControlRegistry" IsFixed="true">
             <CascadingValue Value="RootContext" IsFixed="true">
                 <CascadingValue Value="Display">
+                    <div @ref="_container" id="@ContainerId" class="sgb-map-container @ContainerClass" style="height: @Height; width: @Width;">
+                        @if (OverlayContent is not null)
+                        {
+                            <div class="sgb-map-overlay-root">
+                                @OverlayContent
+                            </div>
+                        }
+                    </div>
                     @ChildContent
                 </CascadingValue>
             </CascadingValue>
