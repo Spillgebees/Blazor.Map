@@ -1,6 +1,10 @@
 @use "maplibre-gl/dist/maplibre-gl.css";
 
 // base container
+.sgb-map-root {
+  display: contents;
+}
+
 .sgb-map-container {
   // mirror maplibregl-map's critical layout properties so they survive
   // Blazor's class attribute re-renders (which can strip maplibregl-map).

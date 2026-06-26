@@ -1,0 +1,23 @@
+@page "/engine-percent-sizing-functional-test"
+
+<main class="e2e-shell">
+    <h1>Engine percent sizing functional test</h1>
+    <p>Percent-sized maps should fill a fixed-size parent.</p>
+
+    <div data-testid="percent-map-parent" style="width: 640px; height: 360px; outline: 1px solid #94a3b8;">
+        <SgbMap Style="@_baseStyle"
+                Center="@(new Coordinate(49.61, 6.14))"
+                Zoom="12"
+                Height="100%"
+                Width="100%" />
+    </div>
+</main>
+
+@code {
+    private static readonly MapStyle _baseStyle = MapStyle
+        .FromRasterUrl(
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGM4YWMDAAMQAUEiFmcFAAAAAElFTkSuQmCC",
+            "base"
+        )
+        .WithId("base");
+}
