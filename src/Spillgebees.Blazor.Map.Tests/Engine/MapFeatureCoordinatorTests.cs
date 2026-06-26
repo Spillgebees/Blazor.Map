@@ -1,7 +1,7 @@
+using System.Text.Json;
 using AwesomeAssertions;
 using Microsoft.JSInterop;
 using Spillgebees.Blazor.Map.Engine;
-using System.Text.Json;
 
 namespace Spillgebees.Blazor.Map.Tests.Engine;
 
@@ -104,19 +104,26 @@ public class MapFeatureCoordinatorTests
             circles: [BuildCircle("c1")],
             polylines: [BuildPolyline("p1")]
         );
-        await Task.Yield();
+        await WaitForQuiescenceAsync(
+            js,
+            snapshot =>
+                DescribeAppliedOps(snapshot).Contains("marker.set:m1") && SetSourceDataSources(snapshot).Count >= 2
+        );
 
         // assert
-        DescribeAppliedOps(js)
+        var snapshot = js.Snapshot();
+
+        DescribeAppliedOps(snapshot)
             .Should()
-            .Equal(
+            .ContainInOrder(
                 "source.add:sgb-polylines-source",
                 "layer.add:sgb-polylines-layer",
                 "source.add:sgb-circles-source",
                 "layer.add:sgb-circles-layer",
                 "marker.set:m1"
             );
-        SetSourceDataSources(js).Should().Equal("sgb-polylines-source", "sgb-circles-source");
+        DescribeAppliedOps(snapshot).Should().ContainSingle(op => op == "marker.set:m1");
+        SetSourceDataSources(snapshot).Take(2).Should().Equal("sgb-polylines-source", "sgb-circles-source");
     }
 
     [Test]
@@ -129,8 +136,15 @@ public class MapFeatureCoordinatorTests
         coordinator.SetCircles("owner", [BuildCircle("c1")]);
         coordinator.SetPolylines("owner", [BuildPolyline("p1")]);
 
+        await WaitForQuiescenceAsync(
+            js,
+            snapshot =>
+                DescribeAppliedOps(snapshot).Contains("layer.add:sgb-polylines-layer")
+                && DescribeAppliedOps(snapshot).Contains("layer.add:sgb-circles-layer")
+        );
+
         // assert
-        DescribeAppliedOps(js)
+        DescribeAppliedOps(js.Snapshot())
             .Should()
             .ContainInOrder("layer.add:sgb-polylines-layer", "layer.add:sgb-circles-layer");
     }
@@ -173,47 +187,101 @@ public class MapFeatureCoordinatorTests
         );
 
     private static int CountSourceDataCalls(RecordingJsRuntime js) =>
-        js.Identifiers.Count(identifier => identifier == SetSourceDataIdentifier);
+        js.Snapshot().Count(call => call.Identifier == SetSourceDataIdentifier);
 
-    private static IReadOnlyList<string> DescribeAppliedOps(RecordingJsRuntime js)
+    private static IReadOnlyList<string> DescribeAppliedOps(IReadOnlyList<Invocation> invocations)
     {
         var described = new List<string>();
-        foreach (var invocation in js.Invocations.Where(call => call.Identifier == ApplyOpsIdentifier))
+        foreach (var invocation in invocations.Where(call => call.Identifier == ApplyOpsIdentifier))
         {
             using var document = JsonDocument.Parse((string)invocation.Args[1]!);
             described.AddRange(
-                document.RootElement.EnumerateArray().Select(op =>
-                {
-                    var opName = op.GetProperty("op").GetString();
-                    return opName switch
+                document
+                    .RootElement.EnumerateArray()
+                    .Select(op =>
                     {
-                        "marker.set" => $"marker.set:{op.GetProperty("marker").GetProperty("id").GetString()}",
-                        _ => $"{opName}:{op.GetProperty("id").GetString()}",
-                    };
-                })
+                        var opName = op.GetProperty("op").GetString();
+                        return opName switch
+                        {
+                            "marker.set" => $"marker.set:{op.GetProperty("marker").GetProperty("id").GetString()}",
+                            _ => $"{opName}:{op.GetProperty("id").GetString()}",
+                        };
+                    })
             );
         }
 
         return described;
     }
 
-    private static IReadOnlyList<string> SetSourceDataSources(RecordingJsRuntime js) =>
-        js.Invocations
+    private static IReadOnlyList<string> SetSourceDataSources(IReadOnlyList<Invocation> invocations) =>
+        invocations
             .Where(call => call.Identifier == SetSourceDataIdentifier)
             .Select(call => (string)call.Args[1]!)
             .ToArray();
+
+    private static async Task WaitForQuiescenceAsync(
+        RecordingJsRuntime js,
+        Func<IReadOnlyList<Invocation>, bool> isReadyToAssert
+    )
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var stablePolls = 0;
+        var previousCount = -1;
+        while (!timeout.IsCancellationRequested)
+        {
+            var snapshot = js.Snapshot();
+            var count = snapshot.Count;
+            if (count == previousCount)
+            {
+                stablePolls++;
+                if (stablePolls == 3 && isReadyToAssert(snapshot))
+                {
+                    return;
+                }
+            }
+            else
+            {
+                previousCount = count;
+                stablePolls = 0;
+            }
+
+            try
+            {
+                await Task.Delay(1, timeout.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+        }
+
+        var finalSnapshot = js.Snapshot();
+        stablePolls.Should().Be(3, "the channel should become quiescent before assertions run");
+        isReadyToAssert(finalSnapshot).Should().BeTrue("the expected calls should be recorded before assertions run");
+    }
 
     private sealed record Invocation(string Identifier, object?[] Args);
 
     private sealed class RecordingJsRuntime : IJSRuntime
     {
-        public List<string> Identifiers { get; } = [];
-        public List<Invocation> Invocations { get; } = [];
+        private readonly Lock _lock = new();
+        private readonly List<Invocation> _invocations = [];
+
+        public IReadOnlyList<Invocation> Snapshot()
+        {
+            lock (_lock)
+            {
+                return _invocations.ToArray();
+            }
+        }
 
         public ValueTask<TValue> InvokeAsync<TValue>(string identifier, object?[]? args)
         {
-            Identifiers.Add(identifier);
-            Invocations.Add(new Invocation(identifier, args ?? []));
+            lock (_lock)
+            {
+                _invocations.Add(new Invocation(identifier, args ?? []));
+            }
+
             return ValueTask.FromResult(default(TValue)!);
         }
 
