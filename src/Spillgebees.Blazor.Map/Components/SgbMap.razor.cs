@@ -174,6 +174,10 @@ public partial class SgbMap
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
+    /// <summary>Consumer-rendered overlay content placed inside the map/fullscreen container.</summary>
+    [Parameter]
+    public RenderFragment? OverlayContent { get; set; }
+
     /// <summary>Fires once the underlying map has loaded and is ready for operations.</summary>
     [Parameter]
     public EventCallback OnMapReady { get; set; }
@@ -530,7 +534,11 @@ public partial class SgbMap
         Channel.QueueAndFlushAsync(
             new PopupShowOp(
                 position,
-                (options ?? PopupOptions.FromRawHtml(html)) with { Content = html, ContentMode = PopupContentMode.RawHtml }
+                (options ?? PopupOptions.FromRawHtml(html)) with
+                {
+                    Content = html,
+                    ContentMode = PopupContentMode.RawHtml,
+                }
             )
         );
 
@@ -588,8 +596,7 @@ public partial class SgbMap
     }
 
     /// <summary>Whether a layer with the given id currently exists on the map.</summary>
-    public ValueTask<bool> HasLayerAsync(string layerId) =>
-        MapEngineJs.HasLayerAsync(_jsRuntime, _container, layerId);
+    public ValueTask<bool> HasLayerAsync(string layerId) => MapEngineJs.HasLayerAsync(_jsRuntime, _container, layerId);
 
     /// <summary>Whether a layer exists for the given composed style, by its original id.</summary>
     public ValueTask<bool> HasStyleLayerAsync(string styleId, string layerId) =>

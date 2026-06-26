@@ -37,6 +37,17 @@
   }
 }
 
+.sgb-map-overlay-root {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+}
+
 // rise-on-hover for markers (needs !important to override inline z-index)
 .maplibregl-marker:hover {
   z-index: 10 !important;
@@ -257,12 +268,21 @@
 
 // pseudo-fullscreen fallback for browsers without the Fullscreen API (e.g. iPhone Safari);
 // maplibre resizes the canvas via its container ResizeObserver once the element fills the viewport
-.sgb-map-pseudo-fullscreen {
+.sgb-map-container.sgb-map-pseudo-fullscreen {
   position: fixed !important;
   inset: 0 !important;
   width: 100% !important;
   height: 100% !important;
   z-index: 99999;
+}
+
+.sgb-map-container:fullscreen,
+// stylelint-disable-next-line selector-no-vendor-prefix
+.sgb-map-container:-webkit-full-screen,
+.sgb-map-container.sgb-map-pseudo-fullscreen {
+  background: #ffffff;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 // generic Blazor-rendered custom control

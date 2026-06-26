@@ -15,19 +15,31 @@
     <div id="engine-fullscreen-frame" class="stress-map-frame">
         <SgbMap @ref="_map"
                 Style="@BaseStyle"
-                Center="@(new Coordinate(49.61, 6.14))"
-                Zoom="12"
-                Height="480px"
-                Width="100%"
-                OnFullscreenChanged="HandleFullscreenChanged"
-                OnMapError="@HandleMapError">
-            <MapControls>
-                <FullscreenMapControl Id="fs-custom"
-                                      Position="ControlPosition.TopRight"
-                                      EnterIcon="@CustomEnterIcon"
-                                      ExitIcon="@CustomExitIcon" />
-                <FullscreenMapControl Id="fs-default" Position="ControlPosition.TopLeft" />
-            </MapControls>
+                 Center="@(new Coordinate(49.61, 6.14))"
+                 Zoom="12"
+                 Height="480px"
+                 Width="100%"
+                 OnFullscreenChanged="HandleFullscreenChanged"
+                 OnMapError="@HandleMapError">
+            <OverlayContent>
+                <button type="button"
+                        class="fullscreen-test-overlay"
+                        data-testid="fullscreen-overlay"
+                        style="position: absolute; left: 24px; top: 24px; z-index: 1;"
+                        @onclick="MarkOverlayClicked">
+                    Overlay action
+                </button>
+                <p data-testid="fullscreen-overlay-clicked">overlay clicked: @_overlayClicked.ToString().ToLowerInvariant()</p>
+            </OverlayContent>
+            <ChildContent>
+                <MapControls>
+                    <FullscreenMapControl Id="fs-custom"
+                                          Position="ControlPosition.TopRight"
+                                          EnterIcon="@CustomEnterIcon"
+                                          ExitIcon="@CustomExitIcon" />
+                    <FullscreenMapControl Id="fs-default" Position="ControlPosition.TopLeft" />
+                </MapControls>
+            </ChildContent>
         </SgbMap>
     </div>
 </main>
@@ -48,9 +60,15 @@
 
     private SgbMap? _map;
     private bool _isFullscreen;
+    private bool _overlayClicked;
     private string? _lastError;
 
     private Task ToggleAsync() => _map?.ToggleFullscreenAsync() ?? Task.CompletedTask;
+
+    private void MarkOverlayClicked()
+    {
+        _overlayClicked = true;
+    }
 
     private void HandleFullscreenChanged(bool isFullscreen)
     {
