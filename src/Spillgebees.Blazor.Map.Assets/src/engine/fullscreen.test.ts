@@ -48,6 +48,26 @@ afterEach(() => {
 });
 
 describe("createFullscreenController", () => {
+  describe("targeting", () => {
+    it("enters fullscreen on the map container when the map container is rendered inside a component root", async () => {
+      // arrange
+      const root = document.createElement("div");
+      root.className = "sgb-map-root";
+      const container = document.createElement("div");
+      container.className = "sgb-map-container";
+      root.appendChild(container);
+      const api = withNativeApi(container);
+      const controller = createFullscreenController(container);
+
+      // act
+      await controller.enter();
+
+      // assert
+      expect(api.requestFullscreen).toHaveBeenCalledTimes(1);
+      expect(document.fullscreenElement).toBe(container);
+    });
+  });
+
   describe("native Fullscreen API", () => {
     it("enters fullscreen on the target and reflects state", async () => {
       const target = document.createElement("div");

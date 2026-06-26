@@ -1293,6 +1293,8 @@ Spillgebees.Blazor.Map.SgbMap.OnStyleReloaded.get -> Microsoft.AspNetCore.Compon
 Spillgebees.Blazor.Map.SgbMap.OnStyleReloaded.set -> void
 Spillgebees.Blazor.Map.SgbMap.OnZoomEnd.get -> Microsoft.AspNetCore.Components.EventCallback<Spillgebees.Blazor.Map.MapViewEventArgs!>
 Spillgebees.Blazor.Map.SgbMap.OnZoomEnd.set -> void
+Spillgebees.Blazor.Map.SgbMap.OverlayContent.get -> Microsoft.AspNetCore.Components.RenderFragment?
+Spillgebees.Blazor.Map.SgbMap.OverlayContent.set -> void
 Spillgebees.Blazor.Map.SgbMap.Overlays.get -> System.Collections.Generic.IReadOnlyList<Spillgebees.Blazor.Map.TileOverlay!>?
 Spillgebees.Blazor.Map.SgbMap.Overlays.set -> void
 Spillgebees.Blazor.Map.SgbMap.Pitch.get -> double
