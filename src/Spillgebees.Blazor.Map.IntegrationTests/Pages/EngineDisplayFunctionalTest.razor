@@ -7,6 +7,8 @@
     <section style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
         <button type="button" data-testid="toggle-points" @onclick="@(() => _display.Toggle("points"))">Toggle points</button>
         <button type="button" data-testid="toggle-express" @onclick="@(() => _display.Toggle("express"))">Toggle express</button>
+        <button type="button" data-testid="toggle-display-overlay-style" @onclick="@(() => _display.Toggle("overlay-style"))">Toggle display overlay style</button>
+        <button type="button" data-testid="toggle-display-overlay-secondary" @onclick="@(() => _display.Toggle("overlay-secondary"))">Toggle display secondary</button>
         <button type="button" data-testid="toggle-overlay" @onclick="ToggleOverlayAsync">Toggle overlay</button>
         <button type="button" data-testid="toggle-part" @onclick="TogglePartAsync">Toggle runtime part</button>
     </section>
@@ -71,6 +73,12 @@
     private readonly MapDisplayState _display = new(
         [
             new MapDisplayItem("points", [MapDisplayTarget.RuntimeLayers("disp-points")], Label: "Points"),
+            new MapDisplayItem("overlay-style", [MapDisplayTarget.StyleLayers("annotations")], Label: "Overlay style"),
+            new MapDisplayItem(
+                "overlay-secondary",
+                [MapDisplayTarget.StyleLayers("annotations", "overlay-secondary-circle")],
+                Label: "Overlay secondary"
+            ),
             new MapDisplayItem(
                 "express",
                 [

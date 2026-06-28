@@ -135,6 +135,8 @@ export interface Engine {
   pushMotion(layerId: string, bytes: Uint8Array): void;
   /** Re-applies the full scene in canonical order (after map.setStyle). */
   replay(): void;
+  /** Re-applies display visibility/filter registrations without replaying sources/layers. */
+  replayVisibility(): void;
   dispose(): void;
 }
 
@@ -976,6 +978,9 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
           loadAndAddImage(id, image.url, image.options);
         }
       }
+    },
+    replayVisibility() {
+      visibilityController.replay();
     },
     dispose() {
       follow.dispose();
