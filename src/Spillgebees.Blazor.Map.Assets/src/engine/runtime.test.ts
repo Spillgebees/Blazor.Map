@@ -771,8 +771,6 @@ describe("replay", () => {
 
     harness.engine.replayVisibility();
 
-    expect(harness.log).toEqual([
-      "setLayout:sgb-overlay-style-railway-railway-lifecycle-construction:visibility=none",
-    ]);
+    expect(harness.log).toEqual(["setLayout:sgb-overlay-style-railway-railway-lifecycle-construction:visibility=none"]);
   });
 });
