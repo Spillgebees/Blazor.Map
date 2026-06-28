@@ -193,6 +193,7 @@ async function composeOverlays(instance: EngineInstance, onError: (error: unknow
     }
 
     await applyOverlayStyles(instance.map, instance.overlayStyles, { forceReapply: true });
+    instance.engine.replayVisibility();
   } catch (error) {
     onError(error);
   }

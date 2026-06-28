@@ -103,6 +103,44 @@ describe("visibility controller", () => {
     expect(visibilityCalls).toEqual([["sgb-overlay-style-railway-tracks", false]]);
   });
 
+  it("composes whole-style and layer-specific visibility groups", () => {
+    const wholeStyle = [{ kind: "styleLayer" as const, styleId: "railway", layerIds: [] }];
+    const lifecycle = [
+      {
+        kind: "styleLayer" as const,
+        styleId: "railway",
+        layerIds: ["railway-lifecycle-construction"],
+      },
+    ];
+    const cases = [
+      { wholeOn: false, lifecycleOn: true, expectedLifecycle: false, expectedSwitches: false },
+      { wholeOn: true, lifecycleOn: false, expectedLifecycle: false, expectedSwitches: true },
+      { wholeOn: false, lifecycleOn: false, expectedLifecycle: false, expectedSwitches: false },
+      { wholeOn: true, lifecycleOn: true, expectedLifecycle: true, expectedSwitches: true },
+    ];
+
+    for (const item of cases) {
+      const { host, visibilityCalls } = createHost({
+        composed: {
+          railway: [
+            { layerId: "sgb-overlay-style-railway-railway-lifecycle-construction", visible: true },
+            { layerId: "sgb-overlay-style-railway-railway-switches", visible: true },
+          ],
+        },
+      });
+      const controller = createVisibilityController(host);
+
+      controller.setGroup("whole", item.wholeOn, wholeStyle);
+      controller.setGroup("lifecycle", item.lifecycleOn, lifecycle);
+
+      const finalVisibility = new Map(visibilityCalls);
+      expect(finalVisibility.get("sgb-overlay-style-railway-railway-lifecycle-construction")).toBe(
+        item.expectedLifecycle,
+      );
+      expect(finalVisibility.get("sgb-overlay-style-railway-railway-switches")).toBe(item.expectedSwitches);
+    }
+  });
+
   it("never shows a layer the style originally hid", () => {
     const { host, visibilityCalls } = createHost({
       styleLayers: [styleLayerInfo({ id: "hidden-by-style", layout: { visibility: "none" } })],

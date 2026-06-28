@@ -10,6 +10,11 @@
                         "type": "Feature",
                         "geometry": { "type": "Point", "coordinates": [6.14, 49.61] },
                         "properties": { "name": "overlay-marker" }
+                    },
+                    {
+                        "type": "Feature",
+                        "geometry": { "type": "Point", "coordinates": [6.145, 49.61] },
+                        "properties": { "name": "overlay-secondary-marker" }
                     }
                 ]
             }
@@ -20,7 +25,15 @@
             "id": "overlay-circle",
             "type": "circle",
             "source": "overlay-points",
+            "filter": ["==", ["get", "name"], "overlay-marker"],
             "paint": { "circle-radius": 10, "circle-color": "#d946ef" }
+        },
+        {
+            "id": "overlay-secondary-circle",
+            "type": "circle",
+            "source": "overlay-points",
+            "filter": ["==", ["get", "name"], "overlay-secondary-marker"],
+            "paint": { "circle-radius": 10, "circle-color": "#22c55e" }
         }
     ]
 }

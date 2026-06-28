@@ -16,6 +16,7 @@ interface Harness {
   log: string[];
   sources: Map<string, SourceStub>;
   layers: Map<string, { spec: Record<string, unknown>; beforeId: string | undefined }>;
+  composedLayers: Map<string, { runtimeLayerId: string; originalVisible: boolean }>;
   featureStates: { source: string; id: number | string; state: Record<string, unknown> }[];
   events: EngineEvent[];
   errors: unknown[];
@@ -30,6 +31,7 @@ function createHarness(options: { sourcesSupportUpdateData?: boolean } = {}): Ha
   const log: string[] = [];
   const sources = new Map<string, SourceStub>();
   const layers = new Map<string, { spec: Record<string, unknown>; beforeId: string | undefined }>();
+  const composedLayers = new Map<string, { runtimeLayerId: string; originalVisible: boolean }>();
   const featureStates: Harness["featureStates"] = [];
   const events: EngineEvent[] = [];
   const errors: unknown[] = [];
@@ -119,8 +121,14 @@ function createHarness(options: { sourcesSupportUpdateData?: boolean } = {}): Ha
       handlers.delete(typeof layerIdOrHandler === "function" ? event : `${event}:${layerIdOrHandler}`);
     },
     listStyleLayers: () => [...layers.values()].map((layer) => layer.spec as { id: string }),
-    resolveComposedLayer: () => null,
-    listComposedLayers: () => [],
+    resolveComposedLayer: (styleId, layerId) => {
+      const layer = composedLayers.get(`${styleId}\u0000${layerId}`);
+      return layer ? { layerId: layer.runtimeLayerId, visible: layer.originalVisible } : null;
+    },
+    listComposedLayers: (styleId) =>
+      [...composedLayers.entries()]
+        .filter(([key]) => key.startsWith(`${styleId}\u0000`))
+        .map(([, layer]) => ({ layerId: layer.runtimeLayerId, visible: layer.originalVisible })),
     setMarker(marker) {
       log.push(`setMarker:${marker.id}`);
     },
@@ -185,6 +193,7 @@ function createHarness(options: { sourcesSupportUpdateData?: boolean } = {}): Ha
     log,
     sources,
     layers,
+    composedLayers,
     featureStates,
     events,
     markerPositions,
@@ -738,5 +747,30 @@ describe("replay", () => {
       "addLayer:l1@sgb-slot:overlay",
       "setLayout:l1:visibility=none",
     ]);
+  });
+
+  it("re-applies visibility after composed overlay layers become available", () => {
+    const harness = createHarness();
+    harness.engine.applyOps([
+      {
+        op: "visibility.set",
+        id: "lifecycle",
+        visible: false,
+        targets: [{ kind: "styleLayer", styleId: "railway", layerIds: ["railway-lifecycle-construction"] }],
+      },
+    ]);
+    harness.layers.set("sgb-overlay-style-railway-railway-lifecycle-construction", {
+      spec: { id: "sgb-overlay-style-railway-railway-lifecycle-construction" },
+      beforeId: undefined,
+    });
+    harness.composedLayers.set("railway\u0000railway-lifecycle-construction", {
+      runtimeLayerId: "sgb-overlay-style-railway-railway-lifecycle-construction",
+      originalVisible: true,
+    });
+    harness.resetLog();
+
+    harness.engine.replayVisibility();
+
+    expect(harness.log).toEqual(["setLayout:sgb-overlay-style-railway-railway-lifecycle-construction:visibility=none"]);
   });
 });
