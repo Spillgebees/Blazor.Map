@@ -8,7 +8,7 @@
 .sgb-map-container {
   // mirror maplibregl-map's critical layout properties so they survive
   // Blazor's class attribute re-renders (which can strip maplibregl-map).
-  font: 12px/20px "Helvetica Neue", Arial, Helvetica, sans-serif;
+  font: 12px / 20px "Helvetica Neue", Arial, Helvetica, sans-serif;
   position: relative;
   overflow: hidden;
   z-index: 1;
@@ -30,7 +30,6 @@
   // attribution info icon (dark icon for light backgrounds)
   --sgb-map-attrib-icon: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 20 20' fill-rule='evenodd'%3E%3Cpath d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E");
 
-
   // popups: ensure readable text regardless of host page theme
   .maplibregl-popup-content {
     color: var(--sgb-map-ctrl-text);
@@ -50,6 +49,7 @@
 
 // rise-on-hover for markers (needs !important to override inline z-index)
 .maplibregl-marker:hover {
+  // biome-ignore lint/complexity/noImportantStyles: must override MapLibre's inline marker z-index while hovered
   z-index: 10 !important;
 }
 
@@ -249,6 +249,7 @@
 .sgb-map-center-control {
   .sgb-map-center-control-button {
     // button styling inherited from .sgb-map-ctrl-group button
+    // biome-ignore lint/style/noDescendingSpecificity: custom Blazor control icon sizing intentionally follows shared MapLibre icon sizing
     svg {
       width: var(--sgb-map-ctrl-icon-size);
       height: var(--sgb-map-ctrl-icon-size);
@@ -259,6 +260,7 @@
 .sgb-map-fullscreen-control {
   .sgb-map-fullscreen-control-button {
     // button styling inherited from .sgb-map-ctrl-group button; size a custom icon to match
+    // biome-ignore lint/style/noDescendingSpecificity: custom Blazor control icon sizing intentionally follows shared MapLibre icon sizing
     svg {
       width: var(--sgb-map-ctrl-icon-size);
       height: var(--sgb-map-ctrl-icon-size);
@@ -269,19 +271,24 @@
 // pseudo-fullscreen fallback for browsers without the Fullscreen API (e.g. iPhone Safari);
 // maplibre resizes the canvas via its container ResizeObserver once the element fills the viewport
 .sgb-map-container.sgb-map-pseudo-fullscreen {
+  // biome-ignore lint/complexity/noImportantStyles: fallback must win over host layout and MapLibre container styles
   position: fixed !important;
+  // biome-ignore lint/complexity/noImportantStyles: fallback must pin the map to the viewport regardless of host layout
   inset: 0 !important;
+  // biome-ignore lint/complexity/noImportantStyles: fallback must win over host layout and MapLibre container styles
   width: 100% !important;
+  // biome-ignore lint/complexity/noImportantStyles: fallback must win over host layout and MapLibre container styles
   height: 100% !important;
   z-index: 99999;
 }
 
 .sgb-map-container:fullscreen,
-// stylelint-disable-next-line selector-no-vendor-prefix
 .sgb-map-container:-webkit-full-screen,
 .sgb-map-container.sgb-map-pseudo-fullscreen {
   background: #ffffff;
+  // biome-ignore lint/complexity/noImportantStyles: fullscreen maps must fill the viewport even when host pages set fixed dimensions
   width: 100% !important;
+  // biome-ignore lint/complexity/noImportantStyles: fullscreen maps must fill the viewport even when host pages set fixed dimensions
   height: 100% !important;
 }
 
@@ -306,6 +313,7 @@
     width: var(--sgb-map-ctrl-btn-size);
     height: var(--sgb-map-ctrl-btn-size);
 
+    // biome-ignore lint/style/noDescendingSpecificity: panel toggle icon sizing intentionally follows shared MapLibre icon sizing
     svg {
       width: var(--sgb-map-ctrl-icon-size);
       height: var(--sgb-map-ctrl-icon-size);
@@ -407,6 +415,7 @@
   --sgb-map-legend-max-width: 320px;
 
   .sgb-map-legend-toggle {
+    // biome-ignore lint/style/noDescendingSpecificity: legend toggle icon sizing intentionally follows shared MapLibre icon sizing
     svg {
       width: var(--sgb-map-ctrl-icon-size);
       height: var(--sgb-map-ctrl-icon-size);
@@ -556,6 +565,7 @@
   transition: background 0.15s;
   user-select: none;
 
+  // biome-ignore lint/style/noDescendingSpecificity: legend rows are independent from control buttons despite sharing hover tokens
   &:hover {
     background: var(--sgb-map-ctrl-bg-hover);
   }
@@ -688,6 +698,7 @@
   --sgb-map-attrib-icon: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 20 20' fill-rule='evenodd'%3E%3Cpath fill='%23f1f5f9' d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E");
 
   // non-compass button icons: invert for visibility on dark backgrounds
+  // biome-ignore lint/style/noDescendingSpecificity: dark theme overrides must appear with the dark token block
   .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
     filter: brightness(0) invert(1);
   }
