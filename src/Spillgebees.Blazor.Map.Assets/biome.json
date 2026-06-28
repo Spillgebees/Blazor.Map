@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -35,19 +35,19 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "correctness": {
-        "recommended": true,
+        "preset": "recommended",
         "noUnresolvedImports": "off",
         "useImportExtensions": "off",
         "noNodejsModules": "off"
       },
       "suspicious": {
-        "recommended": true,
+        "preset": "recommended",
         "noConsole": "on"
       },
       "style": {
-        "recommended": true,
+        "preset": "recommended",
         "noDefaultExport": "off",
         "noNonNullAssertion": "off",
         "noProcessEnv": "off",
@@ -56,20 +56,20 @@
         "useFilenamingConvention": "off"
       },
       "complexity": {
-        "recommended": true,
+        "preset": "recommended",
         "noExcessiveLinesPerFunction": "off",
         "noExcessiveCognitiveComplexity": "off"
       },
       "performance": {
-        "recommended": true,
+        "preset": "recommended",
         "noBarrelFile": "off"
       },
       "security": {
-        "recommended": true,
+        "preset": "recommended",
         "noSecrets": "on"
       },
       "a11y": {
-        "recommended": true
+        "preset": "recommended"
       }
     }
   },
@@ -77,7 +77,7 @@
     "enabled": true,
     "actions": {
       "source": {
-        "recommended": true
+        "preset": "recommended"
       }
     }
   }
