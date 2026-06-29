@@ -97,13 +97,16 @@ export function createVisibilityController(host: VisibilityHost): VisibilityCont
   const styleBaselineFilters = new Map<string, unknown>();
   /** Original visibility of style layers, captured on first resolution. */
   const styleOriginalVisible = new Map<string, boolean>();
+  /** Original visibility of composed overlay layers, captured on first resolution. */
+  const composedOriginalVisible = new Map<string, boolean>();
   /** Layers currently carrying a composed (baseline + hidden) filter. */
   const composedFilterLayers = new Set<string>();
 
   function resolveStyleLayer(styleId: string, layerId: string): ResolvedLayer | null {
     const composed = host.resolveComposedLayer(styleId, layerId);
     if (composed) {
-      return { layerId: composed.layerId, originalVisible: composed.visible };
+      rememberComposedLayer(composed);
+      return { layerId: composed.layerId, originalVisible: composedOriginalVisible.get(composed.layerId) ?? true };
     }
 
     const styleLayer = host.listStyleLayers().find((layer) => layer.id === layerId);
@@ -125,6 +128,12 @@ export function createVisibilityController(host: VisibilityHost): VisibilityCont
     }
   }
 
+  function rememberComposedLayer(layer: { layerId: string; visible: boolean }): void {
+    if (!composedOriginalVisible.has(layer.layerId)) {
+      composedOriginalVisible.set(layer.layerId, layer.visible);
+    }
+  }
+
   function resolveTarget(target: VisibilityTarget): ResolvedLayer[] {
     switch (target.kind) {
       case "runtimeLayer":
@@ -136,7 +145,10 @@ export function createVisibilityController(host: VisibilityHost): VisibilityCont
         if (target.layerIds.length === 0) {
           const composed = host.listComposedLayers(target.styleId);
           if (composed.length > 0) {
-            return composed.map((layer) => ({ layerId: layer.layerId, originalVisible: layer.visible }));
+            return composed.map((layer) => {
+              rememberComposedLayer(layer);
+              return { layerId: layer.layerId, originalVisible: composedOriginalVisible.get(layer.layerId) ?? true };
+            });
           }
 
           return host.listStyleLayers().map((layer) => {
@@ -210,7 +222,7 @@ export function createVisibilityController(host: VisibilityHost): VisibilityCont
       return runtime.visible;
     }
 
-    return styleOriginalVisible.get(layerId) ?? true;
+    return composedOriginalVisible.get(layerId) ?? styleOriginalVisible.get(layerId) ?? true;
   }
 
   function applyVisibilityFor(layerId: string): void {
@@ -386,6 +398,7 @@ export function createVisibilityController(host: VisibilityHost): VisibilityCont
       // the new style starts fresh: recapture originals lazily
       styleBaselineFilters.clear();
       styleOriginalVisible.clear();
+      composedOriginalVisible.clear();
       composedFilterLayers.clear();
       applyTargets(allRegisteredTargets());
     },

@@ -6,6 +6,41 @@ interface HostOptions {
   composed?: Record<string, { layerId: string; visible: boolean }[]>;
 }
 
+const overlayStyleId = "railway";
+
+function railwayLifecycleProposedLayer(layoutVisibility?: "visible" | "none") {
+  return {
+    id: "railway-lifecycle-proposed",
+    type: "line",
+    source: "railway",
+    "source-layer": "railway_lines_lifecycle",
+    minzoom: 10,
+    metadata: { group: "lifecycle" },
+    filter: [
+      "all",
+      ["==", ["get", "railway"], "proposed"],
+      ["!", ["in", ["coalesce", ["get", "railway"], ""], ["literal", ["tram", "light_rail"]]]],
+    ],
+    layout: {
+      "line-join": "round",
+      "line-cap": "butt",
+      ...(layoutVisibility ? { visibility: layoutVisibility } : {}),
+    },
+    paint: {
+      "line-color": "#ca8a04",
+      "line-width": 2,
+      "line-opacity": 0.9,
+    },
+  };
+}
+
+function composedOverlayLayer(layer: ReturnType<typeof railwayLifecycleProposedLayer>) {
+  return {
+    layerId: `sgb-overlay-style-${overlayStyleId}-${layer.id}`,
+    visible: layer.layout.visibility !== "none",
+  };
+}
+
 function createHost(options: HostOptions = {}) {
   const visibilityCalls: [string, boolean][] = [];
   const filterCalls: [string, unknown][] = [];
@@ -154,6 +189,39 @@ describe("visibility controller", () => {
       ["hidden-by-style", false],
       ["hidden-by-style", false],
     ]);
+  });
+
+  it("keeps a composed overlay layer hidden when its original style visibility is none", () => {
+    // arrange
+    const lifecycleLayer = railwayLifecycleProposedLayer("none");
+    const { host, visibilityCalls } = createHost({
+      composed: { [overlayStyleId]: [composedOverlayLayer(lifecycleLayer)] },
+    });
+    const controller = createVisibilityController(host);
+
+    // act
+    controller.setGroup("whole-overlay", true, [{ kind: "styleLayer", styleId: overlayStyleId, layerIds: [] }]);
+
+    // assert
+    expect(visibilityCalls).toEqual([["sgb-overlay-style-railway-railway-lifecycle-proposed", false]]);
+  });
+
+  it("ANDs broad composed overlay visibility with a narrower hidden lifecycle layer target", () => {
+    // arrange
+    const lifecycleLayer = railwayLifecycleProposedLayer();
+    const { host, visibilityCalls } = createHost({
+      composed: { [overlayStyleId]: [composedOverlayLayer(lifecycleLayer)] },
+    });
+    const controller = createVisibilityController(host);
+
+    // act
+    controller.setGroup("lifecycle", false, [
+      { kind: "styleLayer", styleId: overlayStyleId, layerIds: [lifecycleLayer.id] },
+    ]);
+    controller.setGroup("whole-overlay", true, [{ kind: "styleLayer", styleId: overlayStyleId, layerIds: [] }]);
+
+    // assert
+    expect(new Map(visibilityCalls).get("sgb-overlay-style-railway-railway-lifecycle-proposed")).toBe(false);
   });
 
   it("captures and restores style layer baseline filters", () => {
