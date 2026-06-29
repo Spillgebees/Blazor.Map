@@ -16,7 +16,10 @@ interface Harness {
   log: string[];
   sources: Map<string, SourceStub>;
   layers: Map<string, { spec: Record<string, unknown>; beforeId: string | undefined }>;
-  composedLayers: Map<string, { runtimeLayerId: string; originalVisible: boolean }>;
+  composedLayers: Map<
+    string,
+    { runtimeLayerId: string; originalVisible: boolean; originalFilter: unknown | undefined }
+  >;
   featureStates: { source: string; id: number | string; state: Record<string, unknown> }[];
   events: EngineEvent[];
   errors: unknown[];
@@ -31,7 +34,10 @@ function createHarness(options: { sourcesSupportUpdateData?: boolean } = {}): Ha
   const log: string[] = [];
   const sources = new Map<string, SourceStub>();
   const layers = new Map<string, { spec: Record<string, unknown>; beforeId: string | undefined }>();
-  const composedLayers = new Map<string, { runtimeLayerId: string; originalVisible: boolean }>();
+  const composedLayers = new Map<
+    string,
+    { runtimeLayerId: string; originalVisible: boolean; originalFilter: unknown | undefined }
+  >();
   const featureStates: Harness["featureStates"] = [];
   const events: EngineEvent[] = [];
   const errors: unknown[] = [];
@@ -123,12 +129,18 @@ function createHarness(options: { sourcesSupportUpdateData?: boolean } = {}): Ha
     listStyleLayers: () => [...layers.values()].map((layer) => layer.spec as { id: string }),
     resolveComposedLayer: (styleId, layerId) => {
       const layer = composedLayers.get(`${styleId}\u0000${layerId}`);
-      return layer ? { layerId: layer.runtimeLayerId, visible: layer.originalVisible } : null;
+      return layer
+        ? { layerId: layer.runtimeLayerId, visible: layer.originalVisible, filter: layer.originalFilter }
+        : null;
     },
     listComposedLayers: (styleId) =>
       [...composedLayers.entries()]
         .filter(([key]) => key.startsWith(`${styleId}\u0000`))
-        .map(([, layer]) => ({ layerId: layer.runtimeLayerId, visible: layer.originalVisible })),
+        .map(([, layer]) => ({
+          layerId: layer.runtimeLayerId,
+          visible: layer.originalVisible,
+          filter: layer.originalFilter,
+        })),
     setMarker(marker) {
       log.push(`setMarker:${marker.id}`);
     },
@@ -766,6 +778,7 @@ describe("replay", () => {
     harness.composedLayers.set("railway\u0000railway-lifecycle-construction", {
       runtimeLayerId: "sgb-overlay-style-railway-railway-lifecycle-construction",
       originalVisible: true,
+      originalFilter: undefined,
     });
     harness.resetLog();
 

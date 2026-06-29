@@ -56,6 +56,7 @@ export interface OverlayStyleState {
     originalLayerId: string;
     runtimeLayerId: string;
     originalVisible: boolean;
+    originalFilter: unknown;
   }>;
 }
 
@@ -81,6 +82,10 @@ function getOverlayMap(map: MapLibreMap): Map<string, OverlayStyleState> {
     appliedOverlays.set(map, overlays);
   }
   return overlays;
+}
+
+function layerFilter(layer: StyleSpecification["layers"][number]): unknown {
+  return "filter" in layer ? layer.filter : null;
 }
 
 /**
@@ -155,7 +160,16 @@ export async function applyOverlayStyles(
 }
 
 function registerComposedLayerIds(
-  store: Map<string, { runtimeLayerId: string; styleId: string; originalLayerId: string; originalVisible?: boolean }>,
+  store: Map<
+    string,
+    {
+      runtimeLayerId: string;
+      styleId: string;
+      originalLayerId: string;
+      originalVisible?: boolean;
+      originalFilter: unknown | undefined;
+    }
+  >,
   state: OverlayStyleState,
 ): void {
   for (const layer of state.composedLayerIds) {
@@ -295,6 +309,7 @@ async function mergeStyleIntoMap(
           originalLayerId: layer.id,
           runtimeLayerId: prefixedLayerId,
           originalVisible: layer.layout?.visibility !== "none",
+          originalFilter: layerFilter(layer),
         });
         continue;
       }
@@ -323,6 +338,7 @@ async function mergeStyleIntoMap(
           originalLayerId: layer.id,
           runtimeLayerId: prefixedLayerId,
           originalVisible: layer.layout?.visibility !== "none",
+          originalFilter: layerFilter(layer),
         });
       } catch (error) {
         // biome-ignore lint/suspicious/noConsole: library warning for developers

@@ -9,6 +9,9 @@
         <button type="button" data-testid="toggle-express" @onclick="@(() => _display.Toggle("express"))">Toggle express</button>
         <button type="button" data-testid="toggle-display-overlay-style" @onclick="@(() => _display.Toggle("overlay-style"))">Toggle display overlay style</button>
         <button type="button" data-testid="toggle-display-overlay-secondary" @onclick="@(() => _display.Toggle("overlay-secondary"))">Toggle display secondary</button>
+        <button type="button"
+                data-testid="toggle-planned-corridor"
+                @onclick="@(() => _display.Toggle("planned-corridor"))">Toggle planned corridor</button>
         <button type="button" data-testid="toggle-overlay" @onclick="ToggleOverlayAsync">Toggle overlay</button>
         <button type="button" data-testid="toggle-part" @onclick="TogglePartAsync">Toggle runtime part</button>
     </section>
@@ -20,7 +23,7 @@
 
     <div id="engine-display-frame" class="stress-map-frame">
         <SgbMap @ref="_map"
-                  Style="@BaseStyle"
+                  Style="@_baseStyle"
                   Display="@_display"
                   Center="@(new Coordinate(49.61, 6.14))"
                   Zoom="12"
@@ -31,10 +34,12 @@
                 <CircleLayer Id="disp-points"
                                Radius="8"
                                Color="@("#dc2626")"
-                               Filter="@BaselineFilter" />
+                               Filter="@_baselineFilter" />
             </GeoJsonSource>
-            <MapOverlay Id="annotations" Label="Annotations" Style="@OverlayStyle">
-                <MapOverlayPart Id="composed" Label="Composed" LayerIds="@(new[] { "overlay-circle" })" />
+            <MapOverlay Id="annotations" Label="Annotations" Style="@_overlayStyle">
+                <MapOverlayPart Id="composed"
+                                Label="Composed"
+                                LayerIds="@(["overlay-circle", "planned-corridor-line"])" />
                 <MapOverlayPart Id="runtime" Label="Runtime">
                     <GeoJsonSource Id="overlay-runtime" Data="@RuntimePartDataJson">
                         <CircleLayer Id="overlay-runtime-circle" Radius="6" Color="@("#16a34a")" />
@@ -46,16 +51,16 @@
 </main>
 
 @code {
-    private static readonly MapStyle BaseStyle = MapStyle
+    private static readonly MapStyle _baseStyle = MapStyle
         .FromRasterUrl(
             "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGM4YWMDAAMQAUEiFmcFAAAAAElFTkSuQmCC",
             "base"
         )
         .WithId("base");
 
-    private static readonly MapStyle OverlayStyle = MapStyle.FromUrl("/test-overlay-style.json").WithId("annotations");
+    private static readonly MapStyle _overlayStyle = MapStyle.FromUrl("/test-overlay-style.json").WithId("annotations");
 
-    private static readonly object BaselineFilter = new object[] { "has", "name" };
+    private static readonly object _baselineFilter = new object[] { "has", "name" };
 
     private const string DataJson = """
         {"type":"FeatureCollection","features":[
@@ -74,6 +79,12 @@
         [
             new MapDisplayItem("points", [MapDisplayTarget.RuntimeLayers("disp-points")], Label: "Points"),
             new MapDisplayItem("overlay-style", [MapDisplayTarget.StyleLayers("annotations")], Label: "Overlay style"),
+            new MapDisplayItem(
+                "planned-corridor",
+                [MapDisplayTarget.StyleLayers("annotations", "planned-corridor-line")],
+                IsOn: false,
+                Label: "Planned corridor"
+            ),
             new MapDisplayItem(
                 "overlay-secondary",
                 [MapDisplayTarget.StyleLayers("annotations", "overlay-secondary-circle")],

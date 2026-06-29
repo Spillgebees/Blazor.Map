@@ -15,6 +15,19 @@
                         "type": "Feature",
                         "geometry": { "type": "Point", "coordinates": [6.145, 49.61] },
                         "properties": { "name": "overlay-secondary-marker" }
+                    },
+                    {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "LineString",
+                            "coordinates": [
+                                [6.105, 49.598],
+                                [6.125, 49.605],
+                                [6.15, 49.618],
+                                [6.172, 49.626]
+                            ]
+                        },
+                        "properties": { "name": "planned-corridor" }
                     }
                 ]
             }
@@ -34,6 +47,14 @@
             "source": "overlay-points",
             "filter": ["==", ["get", "name"], "overlay-secondary-marker"],
             "paint": { "circle-radius": 10, "circle-color": "#22c55e" }
+        },
+        {
+            "id": "planned-corridor-line",
+            "type": "line",
+            "source": "overlay-points",
+            "filter": ["==", ["get", "name"], "planned-corridor"],
+            "layout": { "line-join": "round", "line-cap": "round" },
+            "paint": { "line-color": "#f59e0b", "line-width": 5, "line-opacity": 0.9 }
         }
     ]
 }
