@@ -18,6 +18,12 @@ export interface StyleLayerInfo {
   tags: string[];
 }
 
+export interface ComposedLayerInfo {
+  layerId: string;
+  visible: boolean;
+  filter: unknown | undefined;
+}
+
 /** Map surface + engine lookups the controller needs; injectable for tests. */
 export interface VisibilityHost {
   getRuntimeLayer(layerId: string): { visible: boolean } | null;
@@ -25,8 +31,8 @@ export interface VisibilityHost {
   /** Layers of the base style (excluding engine-managed runtime layers). */
   listStyleLayers(): StyleLayerInfo[];
   /** Resolves a composed overlay-style layer to its runtime id, if composed. */
-  resolveComposedLayer(styleId: string, layerId: string): { layerId: string; visible: boolean } | null;
-  listComposedLayers(styleId: string): { layerId: string; visible: boolean }[];
+  resolveComposedLayer(styleId: string, layerId: string): ComposedLayerInfo | null;
+  listComposedLayers(styleId: string): ComposedLayerInfo[];
   setLayerVisibility(layerId: string, visible: boolean): void;
   setLayerFilter(layerId: string, filter: unknown): void;
   hasLayer(layerId: string): boolean;
@@ -99,6 +105,8 @@ export function createVisibilityController(host: VisibilityHost): VisibilityCont
   const styleOriginalVisible = new Map<string, boolean>();
   /** Original visibility of composed overlay layers, captured on first resolution. */
   const composedOriginalVisible = new Map<string, boolean>();
+  /** Original filters of composed overlay layers, captured on first resolution. */
+  const composedBaselineFilters = new Map<string, unknown>();
   /** Layers currently carrying a composed (baseline + hidden) filter. */
   const composedFilterLayers = new Set<string>();
 
@@ -128,9 +136,13 @@ export function createVisibilityController(host: VisibilityHost): VisibilityCont
     }
   }
 
-  function rememberComposedLayer(layer: { layerId: string; visible: boolean }): void {
+  function rememberComposedLayer(layer: ComposedLayerInfo): void {
     if (!composedOriginalVisible.has(layer.layerId)) {
       composedOriginalVisible.set(layer.layerId, layer.visible);
+    }
+
+    if (!composedBaselineFilters.has(layer.layerId)) {
+      composedBaselineFilters.set(layer.layerId, layer.filter ?? null);
     }
   }
 
@@ -286,7 +298,9 @@ export function createVisibilityController(host: VisibilityHost): VisibilityCont
 
     const baseline = host.getRuntimeLayer(layerId)
       ? host.getRuntimeBaselineFilter(layerId)
-      : styleBaselineFilters.get(layerId);
+      : composedBaselineFilters.has(layerId)
+        ? composedBaselineFilters.get(layerId)
+        : styleBaselineFilters.get(layerId);
     if (hidden.length === 0) {
       composedFilterLayers.delete(layerId);
       host.setLayerFilter(layerId, baseline ?? null);
@@ -399,6 +413,7 @@ export function createVisibilityController(host: VisibilityHost): VisibilityCont
       styleBaselineFilters.clear();
       styleOriginalVisible.clear();
       composedOriginalVisible.clear();
+      composedBaselineFilters.clear();
       composedFilterLayers.clear();
       applyTargets(allRegisteredTargets());
     },

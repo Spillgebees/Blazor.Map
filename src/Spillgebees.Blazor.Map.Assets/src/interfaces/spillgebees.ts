@@ -7,6 +7,7 @@ export interface ComposedStyleLayerRegistration {
   styleId: string;
   originalLayerId: string;
   originalVisible?: boolean;
+  originalFilter: unknown | undefined;
 }
 
 export interface OverlayStyleRequestOptions {

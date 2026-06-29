@@ -100,8 +100,11 @@ export interface EngineMap {
   /** All layers of the current style (including engine-managed ones; the runtime filters). */
   listStyleLayers(): { id: string; layout?: { visibility?: string }; filter?: unknown; metadata?: unknown }[];
   /** Composed overlay-style layer lookups (styles/composition.ts registry). */
-  resolveComposedLayer(styleId: string, layerId: string): { layerId: string; visible: boolean } | null;
-  listComposedLayers(styleId: string): { layerId: string; visible: boolean }[];
+  resolveComposedLayer(
+    styleId: string,
+    layerId: string,
+  ): { layerId: string; visible: boolean; filter: unknown | undefined } | null;
+  listComposedLayers(styleId: string): { layerId: string; visible: boolean; filter: unknown | undefined }[];
 }
 
 interface GeoJsonSourceLike {

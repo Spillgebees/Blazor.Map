@@ -654,7 +654,11 @@ function toEngineMap(
     resolveComposedLayer: (styleId, layerId) => {
       const registration = window.Spillgebees.Map?.composedStyleLayerIds?.get(map)?.get(`${styleId}\u0000${layerId}`);
       return registration
-        ? { layerId: registration.runtimeLayerId, visible: registration.originalVisible ?? true }
+        ? {
+            layerId: registration.runtimeLayerId,
+            visible: registration.originalVisible ?? true,
+            filter: registration.originalFilter,
+          }
         : null;
     },
     listComposedLayers: (styleId) => {
@@ -668,6 +672,7 @@ function toEngineMap(
         .map((registration) => ({
           layerId: registration.runtimeLayerId,
           visible: registration.originalVisible ?? true,
+          filter: registration.originalFilter,
         }));
     },
   };
