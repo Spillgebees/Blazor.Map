@@ -22,6 +22,7 @@ export interface FollowCameraConfig {
   bearingSource: "keepcurrent" | "fixed" | "matchheading";
   bearing?: number | null;
   offset?: { x: number; y: number } | null;
+  trackingAnimation?: AnimationConfig | null;
 }
 
 export interface FollowInteractionConfig {

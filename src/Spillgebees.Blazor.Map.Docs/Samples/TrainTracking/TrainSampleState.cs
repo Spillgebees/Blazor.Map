@@ -8,7 +8,7 @@ public sealed class TrainSampleState(
     string color,
     double speed,
     IReadOnlyList<Coordinate> waypoints
-    )
+)
 {
     public string Id { get; } = id;
 

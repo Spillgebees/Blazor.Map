@@ -131,7 +131,8 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
 
     private bool GetItemOn(MapLegendItem item) => _displayBinder.GetItemOn(item);
 
-    private Task ToggleItemAsync(MapLegendItem item, ChangeEventArgs args) => _displayBinder.ToggleItemAsync(item, args);
+    private Task ToggleItemAsync(MapLegendItem item, ChangeEventArgs args) =>
+        _displayBinder.ToggleItemAsync(item, args);
 
     private MapLegendItemTemplateContext BuildTemplateContext(MapLegendItem item) =>
         _displayBinder.BuildTemplateContext(item);
@@ -190,9 +191,9 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
             return null;
         }
 
-        var sanitized = new string(
-            [.. cssClass.Where(character => char.IsLetterOrDigit(character) || character is '-' or '_' or ' ')]
-        );
+        var sanitized = new string([
+            .. cssClass.Where(character => char.IsLetterOrDigit(character) || character is '-' or '_' or ' '),
+        ]);
 
         return string.IsNullOrWhiteSpace(sanitized) ? null : sanitized.Trim();
     }

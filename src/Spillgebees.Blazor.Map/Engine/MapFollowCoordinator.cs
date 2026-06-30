@@ -26,7 +26,8 @@ internal sealed class MapFollowCoordinator(MapEngineChannel channel)
                 camera.Pitch,
                 ToWire(camera.BearingSource),
                 camera.Bearing,
-                camera.Offset
+                camera.Offset,
+                ToEngine(camera.TrackingAnimation)
             );
 
     private static string ToWire(MapFollowGestureMode mode) =>

@@ -320,7 +320,8 @@ internal sealed record EngineFollowCamera(
     double? Pitch = null,
     string BearingSource = "keepcurrent",
     double? Bearing = null,
-    PixelPoint? Offset = null
+    PixelPoint? Offset = null,
+    EngineAnimation? TrackingAnimation = null
 );
 
 internal sealed record EngineFollowInteraction(bool ClearOnUserPan = true, bool ClearWhenFeatureMissing = false);

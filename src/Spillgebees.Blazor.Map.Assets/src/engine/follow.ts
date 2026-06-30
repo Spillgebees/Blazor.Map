@@ -26,6 +26,7 @@ const MISSING_RESCAN_MS = 250;
 // How long tracking stays paused after a wheel tick. Wheel zoom has no end event, so we hold off the
 // recentre for a short window after the last notch (refreshed on each one) and resume once it settles.
 const WHEEL_PAUSE_MS = 400;
+const CONTINUOUS_TRACKING_FRAME_MS = 50;
 
 /** Why the engine cleared a follow, mirrored by the lowercase names of the .NET MapFollowChangeReason. */
 export type FollowClearReason = "userinteraction" | "featuremissing";
@@ -95,6 +96,8 @@ interface FollowTarget {
   // The engage move honours the requested easing. easeTo's native curve is already ease-in-out,
   // so we only override it for a linear request; the follow default (no animation) stays ease-in-out.
   linearEngage: boolean;
+  trackingAnimationMs: number;
+  linearTracking: boolean;
   interaction: FollowInteractionConfig;
 }
 
@@ -121,6 +124,7 @@ export function createFollowController(deps: FollowControllerDeps): FollowContro
   // paused (wheel has no press to hold, so it gets a grace window instead).
   let lastFrameNow = 0;
   let pausedUntil = 0;
+  let lastMoveAt = Number.NEGATIVE_INFINITY;
   let lastLng = Number.NaN;
   let lastLat = Number.NaN;
   // Resolved targets, fixed at engage. null zoom/pitch means that gesture's mode does not hold a target.
@@ -151,6 +155,8 @@ export function createFollowController(deps: FollowControllerDeps): FollowContro
       camera: op.camera ?? null,
       animationMs: op.animation?.durationMs ?? DEFAULT_ANIMATION_MS,
       linearEngage: op.animation?.easing === "linear",
+      trackingAnimationMs: op.camera?.trackingAnimation?.durationMs ?? 0,
+      linearTracking: op.camera?.trackingAnimation?.easing === "linear",
       interaction: op.interaction ?? DEFAULT_INTERACTION,
     };
     cachedIndex = null;
@@ -160,6 +166,7 @@ export function createFollowController(deps: FollowControllerDeps): FollowContro
     paused = false;
     lastFrameNow = 0;
     pausedUntil = 0;
+    lastMoveAt = Number.NEGATIVE_INFINITY;
     lastLng = Number.NaN;
     lastLat = Number.NaN;
     holdZoom = null;
@@ -221,6 +228,7 @@ export function createFollowController(deps: FollowControllerDeps): FollowContro
       applyEngageMove(target, lng, lat);
       hasEngaged = true;
       engageUntil = now + target.animationMs;
+      lastMoveAt = now;
       lastLng = lng;
       lastLat = lat;
       return true;
@@ -264,7 +272,8 @@ export function createFollowController(deps: FollowControllerDeps): FollowContro
       trackBearing != null && Math.abs(shortestAngleDelta(trackBearing, deps.map.getBearing())) > BEARING_EPSILON;
 
     if (positionMoved || bearingConverging || zoomDrifted || pitchDrifted || bearingDrifted) {
-      applyTrackMove(target, lng, lat, trackBearing);
+      applyTrackMove(target, lng, lat, trackBearing, shouldAnimateTrackMove(target, now, positionMoved));
+      lastMoveAt = now;
       lastLng = lng;
       lastLat = lat;
     }
@@ -353,8 +362,24 @@ export function createFollowController(deps: FollowControllerDeps): FollowContro
     deps.map.easeTo(options);
   }
 
-  function applyTrackMove(active: FollowTarget, lng: number, lat: number, bearing: number | undefined): void {
-    const options: Record<string, unknown> = { center: [lng, lat], duration: 0 };
+  function shouldAnimateTrackMove(active: FollowTarget, now: number, positionMoved: boolean): boolean {
+    // Interpolated entities update every frame. A non-zero easeTo duration would be cancelled and
+    // restarted on each frame, so only apply tracking ease after a short gap that marks a discrete jump.
+    return positionMoved && active.trackingAnimationMs > 0 && now - lastMoveAt >= CONTINUOUS_TRACKING_FRAME_MS;
+  }
+
+  function applyTrackMove(
+    active: FollowTarget,
+    lng: number,
+    lat: number,
+    bearing: number | undefined,
+    animate: boolean,
+  ): void {
+    const options: Record<string, unknown> = { center: [lng, lat], duration: animate ? active.trackingAnimationMs : 0 };
+
+    if (animate && active.linearTracking) {
+      options.easing = LINEAR_EASING;
+    }
 
     if (active.camera?.offset) {
       options.offset = [active.camera.offset.x, active.camera.offset.y];

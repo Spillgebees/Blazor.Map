@@ -16,7 +16,8 @@ internal sealed class MapEngineChannel(IJSRuntime jsRuntime)
 {
     private readonly List<EngineOp> _pendingOps = [];
     private readonly Dictionary<string, byte[]> _pendingMotion = [];
-    private readonly Dictionary<string, (string DataJson, int? AnimateMs, string? AnimateEasing)> _pendingSourceData = [];
+    private readonly Dictionary<string, (string DataJson, int? AnimateMs, string? AnimateEasing)> _pendingSourceData =
+    [];
     private ElementReference _container;
     private bool _isReady;
     private bool _flushScheduled;

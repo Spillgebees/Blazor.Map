@@ -8,8 +8,7 @@ namespace Spillgebees.Blazor.Map;
 /// </summary>
 public sealed class MapControls : ComponentBase
 {
-    private MapSectionContext _sectionContext =>
-        field ??= new MapSectionContext(MapContentSectionKind.Controls);
+    private MapSectionContext _sectionContext => field ??= new MapSectionContext(MapContentSectionKind.Controls);
 
     [CascadingParameter]
     private MapRootContext? _rootContext { get; set; }

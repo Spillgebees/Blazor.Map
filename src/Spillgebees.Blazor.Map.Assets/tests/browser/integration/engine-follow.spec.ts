@@ -98,6 +98,19 @@ test.describe("engine camera follow", () => {
     await expect.poll(() => centerLat(page), { timeout: 20000 }).toBeCloseTo(49.64, 2);
   });
 
+  test("eases tracking for jumped entity camera moves when configured", async ({ page }) => {
+    await openFixture(page);
+    await page.getByTestId("start-follow-tracking-animated").click();
+    await expect.poll(() => centerLng(page), { timeout: 20000 }).toBeCloseTo(6.14, 2);
+
+    await page.getByTestId("move-e1").click();
+
+    // Tracking animation is opt-in, so a jumped entity starts a camera transition instead of snapping.
+    await expect.poll(() => evaluateOnMap<boolean>(page, "return map.isMoving();"), { timeout: 5000 }).toBe(true);
+    await expect.poll(() => centerLng(page), { timeout: 20000 }).toBeCloseTo(6.19, 2);
+    await expect.poll(() => centerLat(page), { timeout: 20000 }).toBeCloseTo(49.64, 2);
+  });
+
   test("holds a fixed zoom, restoring it after the camera zooms away", async ({ page }) => {
     await openFixture(page);
     await page.getByTestId("start-follow-fixed-zoom").click();

@@ -21,6 +21,8 @@ public partial class CameraFollowExample : IAsyncDisposable
     private MapFollowBearingSource _bearingSource = MapFollowBearingSource.KeepCurrent;
     private OffsetChoice _offset = OffsetChoice.Centered;
     private AnimationChoice _animation = AnimationChoice.EaseInOut;
+    private AnimationChoice _trackingAnimation = AnimationChoice.Instant;
+    private TrainMotionChoice _trainMotion = TrainMotionChoice.Ease;
     private bool _clearOnPan = true;
     private bool _clearWhenMissing = true;
 
@@ -147,6 +149,14 @@ public partial class CameraFollowExample : IAsyncDisposable
         RebuildFollow();
     }
 
+    private void SetTrackingAnimation(AnimationChoice value)
+    {
+        _trackingAnimation = value;
+        RebuildFollow();
+    }
+
+    private void SetTrainMotion(TrainMotionChoice value) => _trainMotion = value;
+
     private void ToggleClearOnPan()
     {
         _clearOnPan = !_clearOnPan;
@@ -179,20 +189,24 @@ public partial class CameraFollowExample : IAsyncDisposable
                 Pitch: _pitch == PitchChoice.MaxTilt ? 60 : null,
                 BearingSource: _bearingSource,
                 Bearing: _bearingSource == MapFollowBearingSource.Fixed ? 90 : null,
-                Offset: _offset == OffsetChoice.Right ? new PixelPoint(140, 0) : null
+                Offset: _offset == OffsetChoice.Right ? new PixelPoint(140, 0) : null,
+                TrackingAnimation: ToAnimationOptions(_trackingAnimation)
             ),
-            Animation: _animation switch
-            {
-                AnimationChoice.Instant => new AnimationOptions(0),
-                AnimationChoice.Linear => new AnimationOptions(600, AnimationEasing.Linear),
-                _ => new AnimationOptions(600, AnimationEasing.EaseInOut),
-            },
+            Animation: ToAnimationOptions(_animation) ?? new AnimationOptions(0),
             Interaction: new MapFollowInteractionOptions(
                 ClearOnUserPan: _clearOnPan,
                 ClearWhenFeatureMissing: _clearWhenMissing
             )
         );
     }
+
+    private static AnimationOptions? ToAnimationOptions(AnimationChoice value) =>
+        value switch
+        {
+            AnimationChoice.Instant => null,
+            AnimationChoice.Linear => new AnimationOptions(600, AnimationEasing.Linear),
+            _ => new AnimationOptions(600, AnimationEasing.EaseInOut),
+        };
 
     private void HandleFollowChanged(MapFollowChangedEventArgs args)
     {
@@ -255,5 +269,11 @@ public partial class CameraFollowExample : IAsyncDisposable
         Instant,
         EaseInOut,
         Linear,
+    }
+
+    private enum TrainMotionChoice
+    {
+        Ease,
+        Jump,
     }
 }

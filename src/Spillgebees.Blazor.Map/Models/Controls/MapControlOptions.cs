@@ -1,7 +1,7 @@
-
 using Microsoft.AspNetCore.Components;
 
 namespace Spillgebees.Blazor.Map;
+
 /// <summary>
 /// Shared placement options for map controls.
 /// </summary>

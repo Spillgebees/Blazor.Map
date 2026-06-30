@@ -633,13 +633,15 @@ Spillgebees.Blazor.Map.MapFollowCameraOptions.Bearing.get -> double?
 Spillgebees.Blazor.Map.MapFollowCameraOptions.Bearing.init -> void
 Spillgebees.Blazor.Map.MapFollowCameraOptions.BearingSource.get -> Spillgebees.Blazor.Map.MapFollowBearingSource
 Spillgebees.Blazor.Map.MapFollowCameraOptions.BearingSource.init -> void
-Spillgebees.Blazor.Map.MapFollowCameraOptions.MapFollowCameraOptions(Spillgebees.Blazor.Map.MapFollowGestureMode ZoomMode = Spillgebees.Blazor.Map.MapFollowGestureMode.Free, double? Zoom = null, Spillgebees.Blazor.Map.MapFollowGestureMode OrientationMode = Spillgebees.Blazor.Map.MapFollowGestureMode.Free, double? Pitch = null, Spillgebees.Blazor.Map.MapFollowBearingSource BearingSource = Spillgebees.Blazor.Map.MapFollowBearingSource.KeepCurrent, double? Bearing = null, Spillgebees.Blazor.Map.PixelPoint? Offset = null) -> void
+Spillgebees.Blazor.Map.MapFollowCameraOptions.MapFollowCameraOptions(Spillgebees.Blazor.Map.MapFollowGestureMode ZoomMode = Spillgebees.Blazor.Map.MapFollowGestureMode.Free, double? Zoom = null, Spillgebees.Blazor.Map.MapFollowGestureMode OrientationMode = Spillgebees.Blazor.Map.MapFollowGestureMode.Free, double? Pitch = null, Spillgebees.Blazor.Map.MapFollowBearingSource BearingSource = Spillgebees.Blazor.Map.MapFollowBearingSource.KeepCurrent, double? Bearing = null, Spillgebees.Blazor.Map.PixelPoint? Offset = null, Spillgebees.Blazor.Map.AnimationOptions? TrackingAnimation = null) -> void
 Spillgebees.Blazor.Map.MapFollowCameraOptions.Offset.get -> Spillgebees.Blazor.Map.PixelPoint?
 Spillgebees.Blazor.Map.MapFollowCameraOptions.Offset.init -> void
 Spillgebees.Blazor.Map.MapFollowCameraOptions.OrientationMode.get -> Spillgebees.Blazor.Map.MapFollowGestureMode
 Spillgebees.Blazor.Map.MapFollowCameraOptions.OrientationMode.init -> void
 Spillgebees.Blazor.Map.MapFollowCameraOptions.Pitch.get -> double?
 Spillgebees.Blazor.Map.MapFollowCameraOptions.Pitch.init -> void
+Spillgebees.Blazor.Map.MapFollowCameraOptions.TrackingAnimation.get -> Spillgebees.Blazor.Map.AnimationOptions?
+Spillgebees.Blazor.Map.MapFollowCameraOptions.TrackingAnimation.init -> void
 Spillgebees.Blazor.Map.MapFollowCameraOptions.Zoom.get -> double?
 Spillgebees.Blazor.Map.MapFollowCameraOptions.Zoom.init -> void
 Spillgebees.Blazor.Map.MapFollowCameraOptions.ZoomMode.get -> Spillgebees.Blazor.Map.MapFollowGestureMode

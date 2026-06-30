@@ -8,8 +8,7 @@ namespace Spillgebees.Blazor.Map;
 /// </summary>
 public sealed class MapOverlays : ComponentBase
 {
-    private MapSectionContext _sectionContext =>
-        field ??= new MapSectionContext(MapContentSectionKind.Overlays);
+    private MapSectionContext _sectionContext => field ??= new MapSectionContext(MapContentSectionKind.Overlays);
 
     [CascadingParameter]
     private MapRootContext? _rootContext { get; set; }

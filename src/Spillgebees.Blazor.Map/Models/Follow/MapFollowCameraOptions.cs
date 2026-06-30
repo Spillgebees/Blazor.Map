@@ -16,6 +16,7 @@ namespace Spillgebees.Blazor.Map;
 /// <param name="BearingSource">Where the held bearing comes from while <paramref name="OrientationMode"/> holds a target; ignored otherwise.</param>
 /// <param name="Bearing">Bearing to hold when <paramref name="BearingSource"/> is <see cref="MapFollowBearingSource.Fixed"/>; ignored otherwise.</param>
 /// <param name="Offset">Pixel offset of the followed entity from the screen centre. Null centres exactly.</param>
+/// <param name="TrackingAnimation">Animation for post-engage tracking moves after discrete or jumped updates. Null keeps tracking instant.</param>
 public sealed record MapFollowCameraOptions(
     MapFollowGestureMode ZoomMode = MapFollowGestureMode.Free,
     double? Zoom = null,
@@ -23,5 +24,6 @@ public sealed record MapFollowCameraOptions(
     double? Pitch = null,
     MapFollowBearingSource BearingSource = MapFollowBearingSource.KeepCurrent,
     double? Bearing = null,
-    PixelPoint? Offset = null
+    PixelPoint? Offset = null,
+    AnimationOptions? TrackingAnimation = null
 );
