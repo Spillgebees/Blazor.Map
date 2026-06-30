@@ -126,6 +126,32 @@ public class MapFollowCoordinatorTests
     }
 
     [Test]
+    public async Task Should_map_tracking_animation_inside_camera_options()
+    {
+        // arrange
+        static Task Act(MapFollowCoordinator c) =>
+            c.FollowAsync(
+                new MapFollowOptions(
+                    "vehicles",
+                    "bus-1",
+                    Camera: new MapFollowCameraOptions(
+                        TrackingAnimation: new AnimationOptions(Duration: 250, Easing: AnimationEasing.EaseInOut)
+                    ),
+                    Animation: new AnimationOptions(Duration: 600, Easing: AnimationEasing.Linear)
+                )
+            );
+
+        // act
+        var json = await CaptureFollowOps(Act);
+
+        // assert
+        json.Should()
+            .Be(
+                """[{"op":"camera.follow","layerId":"vehicles","entityId":"bus-1","camera":{"zoomMode":"free","orientationMode":"free","bearingSource":"keepcurrent","trackingAnimation":{"durationMs":250,"easing":"easeInOut"}},"animation":{"durationMs":600,"easing":"linear"}}]"""
+            );
+    }
+
+    [Test]
     public async Task Should_default_animation_easing_to_linear()
     {
         // arrange & act

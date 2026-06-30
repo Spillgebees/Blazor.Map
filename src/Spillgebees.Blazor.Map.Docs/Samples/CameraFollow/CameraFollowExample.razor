@@ -75,6 +75,16 @@
                     <button type="button" class="sample-btn @(_offset == OffsetChoice.Right ? "active" : "")" aria-pressed="@(_offset == OffsetChoice.Right)" @onclick="@(() => SetOffset(OffsetChoice.Right))">Offset right</button>
                 </div>
             </div>
+
+            <div class="follow-field">
+                <span class="follow-field-label">Tracking</span>
+                <div class="follow-options">
+                    <button type="button" class="sample-btn @(_trackingAnimation == AnimationChoice.Instant ? "active" : "")" aria-pressed="@(_trackingAnimation == AnimationChoice.Instant)" @onclick="@(() => SetTrackingAnimation(AnimationChoice.Instant))">Instant</button>
+                    <button type="button" class="sample-btn @(_trackingAnimation == AnimationChoice.EaseInOut ? "active" : "")" aria-pressed="@(_trackingAnimation == AnimationChoice.EaseInOut)" @onclick="@(() => SetTrackingAnimation(AnimationChoice.EaseInOut))">Ease in-out</button>
+                    <button type="button" class="sample-btn @(_trackingAnimation == AnimationChoice.Linear ? "active" : "")" aria-pressed="@(_trackingAnimation == AnimationChoice.Linear)" @onclick="@(() => SetTrackingAnimation(AnimationChoice.Linear))">Linear</button>
+                </div>
+                <p class="follow-note">Camera tracking ease is intended for jumped updates. Continuous motion still recentres instantly so each frame does not restart the ease.</p>
+            </div>
         </section>
 
         <section class="follow-group">
@@ -86,6 +96,14 @@
                     <button type="button" class="sample-btn @(_animation == AnimationChoice.Instant ? "active" : "")" aria-pressed="@(_animation == AnimationChoice.Instant)" @onclick="@(() => SetAnimation(AnimationChoice.Instant))">Instant</button>
                     <button type="button" class="sample-btn @(_animation == AnimationChoice.EaseInOut ? "active" : "")" aria-pressed="@(_animation == AnimationChoice.EaseInOut)" @onclick="@(() => SetAnimation(AnimationChoice.EaseInOut))">Ease in-out</button>
                     <button type="button" class="sample-btn @(_animation == AnimationChoice.Linear ? "active" : "")" aria-pressed="@(_animation == AnimationChoice.Linear)" @onclick="@(() => SetAnimation(AnimationChoice.Linear))">Linear</button>
+                </div>
+            </div>
+
+            <div class="follow-field">
+                <span class="follow-field-label">Train motion</span>
+                <div class="follow-options">
+                    <button type="button" class="sample-btn @(_trainMotion == TrainMotionChoice.Ease ? "active" : "")" aria-pressed="@(_trainMotion == TrainMotionChoice.Ease)" @onclick="@(() => SetTrainMotion(TrainMotionChoice.Ease))">Ease</button>
+                    <button type="button" class="sample-btn @(_trainMotion == TrainMotionChoice.Jump ? "active" : "")" aria-pressed="@(_trainMotion == TrainMotionChoice.Jump)" @onclick="@(() => SetTrainMotion(TrainMotionChoice.Jump))">Jump</button>
                 </div>
             </div>
 
@@ -129,7 +147,7 @@
                                 Rotation="@(train => train.Heading)"
                                 Icon="@(train => $"follow-train-{train.Id}")"
                                 IconSize="1"
-                                Animate="@(TimeSpan.FromMilliseconds(1000))"
+                                Animate="@(_trainMotion == TrainMotionChoice.Ease ? TimeSpan.FromMilliseconds(1000) : null)"
                                 Interactive="true"
                                 OnClick="@(interaction => SelectTarget(interaction.Item.Id))" />
         </SgbMap>

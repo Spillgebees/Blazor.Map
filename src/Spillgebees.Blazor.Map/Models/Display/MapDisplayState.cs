@@ -23,8 +23,8 @@ public sealed class MapDisplayState
     [AllowNull]
     public IReadOnlyList<MapDisplayItem> Items
     {
-        get =>
-        field ??= Array.AsReadOnly(_itemIds.Select(id => _items[id]).ToArray()); private set;
+        get => field ??= Array.AsReadOnly(_itemIds.Select(id => _items[id]).ToArray());
+        private set;
     }
 
     /// <summary>Returns whether an item exists.</summary>

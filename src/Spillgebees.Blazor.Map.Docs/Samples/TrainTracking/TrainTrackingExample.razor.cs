@@ -98,10 +98,7 @@ public partial class TrainTrackingExample : IAsyncDisposable
     }
 
     private static Dictionary<string, object?> BuildTrainProperties(TrainSampleState train) =>
-        new()
-        {
-            ["internationalPresence"] = TrainSampleSimulation.IsInternational(train) ? 1 : 0,
-        };
+        new() { ["internationalPresence"] = TrainSampleSimulation.IsInternational(train) ? 1 : 0 };
 
     private async Task HandleTrainClick(EntityEventArgs<TrainSampleState> interaction)
     {

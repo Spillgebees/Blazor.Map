@@ -155,7 +155,9 @@ public class EngineOpsSerializationTests
     public void Should_serialize_center_control_with_a_custom_icon()
     {
         // arrange
-        var setOp = new ControlSetOp(EngineControl.From(new CenterControlDefinition(Icon: "\u003Csvg data-center\u003E\u003C/svg\u003E")));
+        var setOp = new ControlSetOp(
+            EngineControl.From(new CenterControlDefinition(Icon: "\u003Csvg data-center\u003E\u003C/svg\u003E"))
+        );
 
         // act
         var json = Serialize(setOp);

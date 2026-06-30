@@ -51,6 +51,26 @@ public class CameraFollowOpSerializationTests
     }
 
     [Test]
+    public void Should_serialize_follow_camera_tracking_animation()
+    {
+        // arrange
+        var op = new CameraFollowOp(
+            "vehicles",
+            "bus-1",
+            new EngineFollowCamera(TrackingAnimation: new EngineAnimation(250, "linear"))
+        );
+
+        // act
+        var json = Serialize(op);
+
+        // assert
+        json.Should()
+            .Be(
+                """[{"op":"camera.follow","layerId":"vehicles","entityId":"bus-1","camera":{"zoomMode":"free","orientationMode":"free","bearingSource":"keepcurrent","trackingAnimation":{"durationMs":250,"easing":"linear"}}}]"""
+            );
+    }
+
+    [Test]
     public void Should_serialize_clear_follow_op()
     {
         // arrange & act

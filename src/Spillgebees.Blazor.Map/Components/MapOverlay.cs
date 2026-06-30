@@ -129,7 +129,15 @@ public sealed class MapOverlay : ComponentBase, IAsyncDisposable
             Visible,
             Description,
             Symbol,
-            [.. _parts.Select(part => new MapOverlayPartItem(part.Id, part.Label ?? part.Id, part.Visible, part.Description, part.Symbol))]
+            [
+                .. _parts.Select(part => new MapOverlayPartItem(
+                    part.Id,
+                    part.Label ?? part.Id,
+                    part.Visible,
+                    part.Description,
+                    part.Symbol
+                )),
+            ]
         );
 
     internal void SetVisible(bool visible)

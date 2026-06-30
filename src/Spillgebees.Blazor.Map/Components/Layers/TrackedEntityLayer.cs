@@ -243,12 +243,12 @@ public sealed class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
             ["hoverEnter"] = OnHoverEnter.HasDelegate,
             ["hoverLeave"] = OnHoverLeave.HasDelegate,
             ["symbol"] = BuildSymbolLayerSpec(),
-            ["clusterLayers"] = new JsonArray(
-                [.. _clusterLayerDefinitions.Select(definition => (JsonNode)BuildClusterLayerSpec(definition))]
-            ),
-            ["decorations"] = new JsonArray(
-                [.. _decorations.Select(decoration => (JsonNode)BuildDecorationLayerSpec(decoration))]
-            ),
+            ["clusterLayers"] = new JsonArray([
+                .. _clusterLayerDefinitions.Select(definition => (JsonNode)BuildClusterLayerSpec(definition)),
+            ]),
+            ["decorations"] = new JsonArray([
+                .. _decorations.Select(decoration => (JsonNode)BuildDecorationLayerSpec(decoration)),
+            ]),
         };
 
         return node.ToJsonString();
@@ -260,8 +260,7 @@ public sealed class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
         || OnHoverEnter.HasDelegate
         || _decorations.Any(decoration => decoration.DisplayMode != EntityDecorationDisplayMode.Always);
 
-    private bool _interactionIsRelevant =>
-        _hoverIsRelevant || OnClick.HasDelegate || OnHoverLeave.HasDelegate;
+    private bool _interactionIsRelevant => _hoverIsRelevant || OnClick.HasDelegate || OnHoverLeave.HasDelegate;
 
     /// <summary>
     /// Every layer that participates in hover/click: the invisible hit area, the
@@ -487,10 +486,7 @@ public sealed class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
             layout["icon-ignore-placement"] = true;
         }
 
-        var paint = new JsonObject
-        {
-            ["text-color"] = Expr("coalesce", Expr("get", "color"), "#0f172a"),
-        };
+        var paint = new JsonObject { ["text-color"] = Expr("coalesce", Expr("get", "color"), "#0f172a") };
 
         if (decoration.HaloColor is not null)
         {
@@ -527,7 +523,12 @@ public sealed class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
         mode switch
         {
             EntityDecorationDisplayMode.OnHover => Expr("case", HoverState(), 1, 0),
-            EntityDecorationDisplayMode.OnHoverOrSelect => Expr("case", Expr("any", HoverState(), SelectedState()), 1, 0),
+            EntityDecorationDisplayMode.OnHoverOrSelect => Expr(
+                "case",
+                Expr("any", HoverState(), SelectedState()),
+                1,
+                0
+            ),
             _ => null,
         };
 
@@ -640,8 +641,7 @@ public sealed class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
         );
     }
 
-    private static readonly IReadOnlyDictionary<string, object?> _emptyProperties =
-        new Dictionary<string, object?>();
+    private static readonly IReadOnlyDictionary<string, object?> _emptyProperties = new Dictionary<string, object?>();
 
     private JsonObject? BuildProps(TItem item)
     {

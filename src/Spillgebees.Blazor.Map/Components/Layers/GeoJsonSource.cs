@@ -99,7 +99,11 @@ public sealed class GeoJsonSource : ComponentBase, IAsyncDisposable, IEngineSour
             else
             {
                 Map.Channel.Queue(
-                    new SourceSetDataOp(Id, BuildDataNode(), animateMs is { } ms ? new EngineAnimation(ms, easing) : null)
+                    new SourceSetDataOp(
+                        Id,
+                        BuildDataNode(),
+                        animateMs is { } ms ? new EngineAnimation(ms, easing) : null
+                    )
                 );
             }
         }
@@ -133,7 +137,8 @@ public sealed class GeoJsonSource : ComponentBase, IAsyncDisposable, IEngineSour
         var spec = new JsonObject
         {
             ["type"] = "geojson",
-            ["data"] = BuildDataNode() ?? new JsonObject { ["type"] = "FeatureCollection", ["features"] = new JsonArray() },
+            ["data"] =
+                BuildDataNode() ?? new JsonObject { ["type"] = "FeatureCollection", ["features"] = new JsonArray() },
         };
         if (GenerateIds)
         {
@@ -168,7 +173,12 @@ public sealed class GeoJsonSource : ComponentBase, IAsyncDisposable, IEngineSour
 
         foreach (var definition in _clusterLayerDefinitions)
         {
-            Map.Channel.Queue(new LayerAddOp(ClusterLayerId(definition), EngineSpec.BuildClusterLayerSpec(ClusterLayerId(definition), Id, definition)));
+            Map.Channel.Queue(
+                new LayerAddOp(
+                    ClusterLayerId(definition),
+                    EngineSpec.BuildClusterLayerSpec(ClusterLayerId(definition), Id, definition)
+                )
+            );
         }
 
         if (Cluster is { ClickBehavior: ClusterClickBehavior.ZoomToDissolve })

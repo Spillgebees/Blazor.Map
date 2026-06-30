@@ -8,6 +8,7 @@
     <section style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
         <button type="button" data-testid="start-follow" @onclick="StartFollow">Start follow</button>
         <button type="button" data-testid="start-follow-animated" @onclick="StartFollowAnimated">Start follow (animated)</button>
+        <button type="button" data-testid="start-follow-tracking-animated" @onclick="StartFollowTrackingAnimated">Start follow (tracking animated)</button>
         <button type="button" data-testid="start-follow-clear-missing" @onclick="StartFollowClearMissing">Start follow (clear if missing)</button>
         <button type="button" data-testid="start-follow-fixed-zoom" @onclick="StartFollowFixedZoom">Start follow (fixed zoom)</button>
         <button type="button" data-testid="clear-follow" @onclick="ClearFollow">Clear follow</button>
@@ -89,6 +90,18 @@
             "e1",
             Camera: new MapFollowCameraOptions(ZoomMode: MapFollowGestureMode.Anchored, Zoom: 14),
             Animation: new AnimationOptions(Duration: 1500)
+        );
+
+    private void StartFollowTrackingAnimated() =>
+        _follow = new MapFollowOptions(
+            "vehicles",
+            "e1",
+            Camera: new MapFollowCameraOptions(
+                ZoomMode: MapFollowGestureMode.Anchored,
+                Zoom: 14,
+                TrackingAnimation: new AnimationOptions(Duration: 1200, Easing: AnimationEasing.EaseInOut)
+            ),
+            Animation: new AnimationOptions(Duration: 0)
         );
 
     // An anchored zoom so the test can confirm the follow holds it: a later camera zoom should be pulled

@@ -208,9 +208,9 @@ public partial class OverlayMapControl : ComponentBase, IDisposable
             return null;
         }
 
-        var sanitized = new string(
-            [.. cssClass.Where(character => char.IsLetterOrDigit(character) || character is '-' or '_' or ' ')]
-        );
+        var sanitized = new string([
+            .. cssClass.Where(character => char.IsLetterOrDigit(character) || character is '-' or '_' or ' '),
+        ]);
 
         return string.IsNullOrWhiteSpace(sanitized) ? null : sanitized.Trim();
     }

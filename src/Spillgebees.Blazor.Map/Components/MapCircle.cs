@@ -63,6 +63,9 @@ public sealed class MapCircle : ComponentBase, IAsyncDisposable
     /// <summary>Removes the circle from the host map.</summary>
     public async ValueTask DisposeAsync() => await _registration.DisposeAsync();
 
-    private static ValueTask SetOverlayCirclesAsync(IMapFeatureHost map, string ownerId, IReadOnlyList<Circle> circles) =>
-        map.SetOverlayCirclesAsync(ownerId, circles);
+    private static ValueTask SetOverlayCirclesAsync(
+        IMapFeatureHost map,
+        string ownerId,
+        IReadOnlyList<Circle> circles
+    ) => map.SetOverlayCirclesAsync(ownerId, circles);
 }

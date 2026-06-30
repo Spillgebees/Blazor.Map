@@ -11,7 +11,8 @@ namespace Spillgebees.Blazor.Map.Engine;
 /// </summary>
 internal static class EngineJson
 {
-    public static JsonNode? ToNode<T>(StyleValue<T>? style) => style is { } value ? ToNode(value.ToSerializable()) : null;
+    public static JsonNode? ToNode<T>(StyleValue<T>? style) =>
+        style is { } value ? ToNode(value.ToSerializable()) : null;
 
     public static JsonNode? ToNode(object? value) =>
         value switch

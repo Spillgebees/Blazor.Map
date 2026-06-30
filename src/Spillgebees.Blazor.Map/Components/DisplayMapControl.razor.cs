@@ -77,7 +77,9 @@ public partial class DisplayMapControl : ComponentBase, IDisposable
 
         if (_display is null)
         {
-            throw new InvalidOperationException("DisplayMapControl requires a cascading MapDisplayState (SgbMap Display parameter).");
+            throw new InvalidOperationException(
+                "DisplayMapControl requires a cascading MapDisplayState (SgbMap Display parameter)."
+            );
         }
 
         if (ReferenceEquals(_subscribedDisplay, _display))

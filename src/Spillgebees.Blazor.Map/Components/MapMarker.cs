@@ -63,6 +63,9 @@ public sealed class MapMarker : ComponentBase, IAsyncDisposable
     /// <summary>Removes the marker from the host map.</summary>
     public async ValueTask DisposeAsync() => await _registration.DisposeAsync();
 
-    private static ValueTask SetOverlayMarkersAsync(IMapFeatureHost map, string ownerId, IReadOnlyList<Marker> markers) =>
-        map.SetOverlayMarkersAsync(ownerId, markers);
+    private static ValueTask SetOverlayMarkersAsync(
+        IMapFeatureHost map,
+        string ownerId,
+        IReadOnlyList<Marker> markers
+    ) => map.SetOverlayMarkersAsync(ownerId, markers);
 }

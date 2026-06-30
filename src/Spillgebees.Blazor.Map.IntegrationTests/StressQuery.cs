@@ -40,9 +40,7 @@ public sealed class StressQuery
         _values.TryGetValue(name, out var value) && int.TryParse(value, out var parsed) ? parsed : fallback;
 
     public bool GetBool(string name, bool fallback) =>
-        _values.TryGetValue(name, out var value)
-            ? value is "1" or "true" or "True" or "yes"
-            : fallback;
+        _values.TryGetValue(name, out var value) ? value is "1" or "true" or "True" or "yes" : fallback;
 
     public bool TryGetEnum<TEnum>(string name, out TEnum result)
         where TEnum : struct =>

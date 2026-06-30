@@ -45,6 +45,5 @@ public sealed class GeolocateMapControl : ComponentBase, IAsyncDisposable
     /// <inheritdoc />
     public ValueTask DisposeAsync() => _registration.DisposeAsync(_registry);
 
-    private GeolocateControlDefinition BuildControl() =>
-        new(Id, Visible, Position, TrackUser, Order);
+    private GeolocateControlDefinition BuildControl() => new(Id, Visible, Position, TrackUser, Order);
 }

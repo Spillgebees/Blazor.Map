@@ -13,10 +13,10 @@ namespace Spillgebees.Blazor.Map;
 /// </param>
 /// <param name="Camera">Camera behaviour while following. <c>null</c> preserves current zoom, pitch, and bearing.</param>
 /// <param name="Animation">
-/// Animation for discrete camera moves (engage and non-animated updates). When <c>null</c>, defaults to a
-/// 500ms ease-in-out engage; when set, only <see cref="AnimationOptions.Duration"/> and
-/// <see cref="AnimationOptions.Easing"/> apply. While the entity is interpolating, the camera rides
-/// the motion frames and this is unused.
+/// Initial animation when the follow engages. When <c>null</c>, defaults to a 500ms ease-in-out
+/// engage; when set, only <see cref="AnimationOptions.Duration"/> and
+/// <see cref="AnimationOptions.Easing"/> apply. Post-engage tracking uses
+/// <see cref="MapFollowCameraOptions.TrackingAnimation"/>.
 /// </param>
 /// <param name="Interaction">Which user interactions clear the follow. <c>null</c> uses the defaults.</param>
 public sealed record MapFollowOptions(

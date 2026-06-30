@@ -76,8 +76,6 @@ public class MotionFrameEncoderTests
         );
 
         // assert
-        base64
-            .Should()
-            .Be("AUJHUyoAAAABAAAABwAAAAMAAACeXinLEIcYQEp7gy9MzkhAAAC0QgAAoEA=");
+        base64.Should().Be("AUJHUyoAAAABAAAABwAAAAMAAACeXinLEIcYQEp7gy9MzkhAAAC0QgAAoEA=");
     }
 }

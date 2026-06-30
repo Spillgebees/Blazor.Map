@@ -28,9 +28,7 @@ internal static class EngineStyleJson
             onError(new InvalidOperationException("Overlay styles require a typed base style (Style or Styles)."));
         }
 
-        var effectiveStyles = baseStyles is null
-            ? null
-            : (IReadOnlyList<MapStyle>)[.. baseStyles, .. overlayStyles];
+        var effectiveStyles = baseStyles is null ? null : (IReadOnlyList<MapStyle>)[.. baseStyles, .. overlayStyles];
         if (effectiveStyles is { Count: > 0 })
         {
             var array = new JsonArray();

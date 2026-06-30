@@ -284,6 +284,157 @@ describe("follow controller", () => {
       expect(options?.pitch).toBe(30);
     });
 
+    it("uses instant tracking moves by default", () => {
+      // arrange
+      fake.setEntity(6, 49);
+      fake.controller.apply(follow({ animation: { durationMs: 0 } }));
+      fake.step();
+
+      // act
+      fake.setEntity(6.3, 49.3);
+      fake.step();
+
+      // assert
+      expect(fake.lastEaseTo()?.duration).toBe(0);
+      expect(fake.lastEaseTo()?.easing).toBeUndefined();
+    });
+
+    it("applies configured ease-in-out tracking animation without overriding native easing", () => {
+      // arrange
+      fake.setEntity(6, 49);
+      fake.controller.apply(
+        follow({
+          camera: camera({ trackingAnimation: { durationMs: 250, easing: "easeInOut" } }),
+          animation: { durationMs: 0 },
+        }),
+      );
+      fake.step();
+
+      // act
+      fake.setEntity(6.3, 49.3);
+      fake.step();
+
+      // assert
+      expect(fake.lastEaseTo()?.duration).toBe(250);
+      expect(fake.lastEaseTo()?.easing).toBeUndefined();
+    });
+
+    it("keeps configured tracking animation for jumped updates after idle", () => {
+      // arrange
+      fake.setEntity(6, 49);
+      fake.controller.apply(
+        follow({
+          camera: camera({ trackingAnimation: { durationMs: 250, easing: "easeInOut" } }),
+          animation: { durationMs: 0 },
+        }),
+      );
+      fake.step(0);
+
+      // act
+      fake.setEntity(6.3, 49.3);
+      fake.step(1000);
+
+      // assert
+      expect(fake.lastEaseTo()?.duration).toBe(250);
+      expect(fake.lastEaseTo()?.easing).toBeUndefined();
+    });
+
+    it("keeps jumped tracking animation after stationary match-heading correction", () => {
+      // arrange
+      fake.setEntity(6, 49, 0);
+      fake.controller.apply(
+        follow({
+          camera: camera({
+            orientationMode: "anchored",
+            bearingSource: "matchheading",
+            trackingAnimation: { durationMs: 250, easing: "easeInOut" },
+          }),
+          animation: { durationMs: 0 },
+        }),
+      );
+      fake.step(0);
+
+      // act: heading drifts while parked, then the next frame carries a real jumped position update
+      fake.setEntity(6, 49, 90);
+      fake.step(1000);
+      fake.setEntity(6.3, 49.3, 90);
+      fake.step(1016);
+
+      // assert
+      expect(fake.easeTo).toHaveBeenCalledTimes(3);
+      expect(fake.easeTo.mock.calls[1]?.[0].center).toEqual([6, 49]);
+      expect(fake.easeTo.mock.calls[1]?.[0].duration).toBe(0);
+      expect(fake.lastEaseTo()?.center).toEqual([6.3, 49.3]);
+      expect(fake.lastEaseTo()?.duration).toBe(250);
+    });
+
+    it("does not restart configured tracking animation for continuous updates", () => {
+      // arrange
+      fake.setEntity(6, 49);
+      fake.controller.apply(
+        follow({
+          camera: camera({ trackingAnimation: { durationMs: 250, easing: "easeInOut" } }),
+          animation: { durationMs: 0 },
+        }),
+      );
+      fake.step(0);
+
+      // act
+      fake.setEntity(6.01, 49.01);
+      fake.step(16);
+      fake.setEntity(6.02, 49.02);
+      fake.step(32);
+
+      // assert
+      expect(fake.easeTo).toHaveBeenCalledTimes(3);
+      expect(fake.easeTo.mock.calls[1]?.[0].duration).toBe(0);
+      expect(fake.easeTo.mock.calls[2]?.[0].duration).toBe(0);
+    });
+
+    it("applies configured linear tracking animation", () => {
+      // arrange
+      fake.setEntity(6, 49);
+      fake.controller.apply(
+        follow({
+          camera: camera({ trackingAnimation: { durationMs: 250, easing: "linear" } }),
+          animation: { durationMs: 0 },
+        }),
+      );
+      fake.step();
+
+      // act
+      fake.setEntity(6.3, 49.3);
+      fake.step();
+
+      // assert
+      expect(fake.lastEaseTo()?.duration).toBe(250);
+      expect(typeof fake.lastEaseTo()?.easing).toBe("function");
+      expect((fake.lastEaseTo()?.easing as (t: number) => number)(0.5)).toBe(0.5);
+    });
+
+    it("keeps engage animation separate from tracking animation", () => {
+      // arrange
+      fake.setEntity(6, 49);
+      fake.controller.apply(
+        follow({
+          camera: camera({ trackingAnimation: { durationMs: 300, easing: "linear" } }),
+          animation: { durationMs: 700, easing: "easeInOut" },
+        }),
+      );
+
+      // act
+      fake.step(0);
+      const engageOptions = fake.lastEaseTo();
+      fake.setEntity(6.3, 49.3);
+      fake.step(800);
+
+      // assert
+      expect(engageOptions?.duration).toBe(700);
+      expect(engageOptions?.easing).toBeUndefined();
+      expect(fake.lastEaseTo()?.duration).toBe(300);
+      expect(typeof fake.lastEaseTo()?.easing).toBe("function");
+    });
+
     it("pauses tracking while the pointer is held, then resumes on release", () => {
       // arrange
       fake.setEntity(6, 49);

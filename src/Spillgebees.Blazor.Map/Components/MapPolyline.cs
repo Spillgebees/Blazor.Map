@@ -44,7 +44,13 @@ public sealed class MapPolyline : ComponentBase, IAsyncDisposable
     {
         var polyline = new Polyline(Id, GetCoordinateSnapshot(), Color, Width, Popup: Popup);
 
-        await _registration.RegisterAsync(_map, _sectionContext, nameof(MapPolyline), polyline, SetOverlayPolylinesAsync);
+        await _registration.RegisterAsync(
+            _map,
+            _sectionContext,
+            nameof(MapPolyline),
+            polyline,
+            SetOverlayPolylinesAsync
+        );
     }
 
     /// <summary>Removes the polyline from the host map.</summary>
@@ -66,6 +72,9 @@ public sealed class MapPolyline : ComponentBase, IAsyncDisposable
         return _cachedCoordinates;
     }
 
-    private static ValueTask SetOverlayPolylinesAsync(IMapFeatureHost map, string ownerId, IReadOnlyList<Polyline> polylines) =>
-        map.SetOverlayPolylinesAsync(ownerId, polylines);
+    private static ValueTask SetOverlayPolylinesAsync(
+        IMapFeatureHost map,
+        string ownerId,
+        IReadOnlyList<Polyline> polylines
+    ) => map.SetOverlayPolylinesAsync(ownerId, polylines);
 }

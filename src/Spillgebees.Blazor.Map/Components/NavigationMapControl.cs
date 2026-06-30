@@ -56,6 +56,5 @@ public sealed class NavigationMapControl : ComponentBase, IAsyncDisposable
     /// <inheritdoc />
     public ValueTask DisposeAsync() => _registration.DisposeAsync(_registry);
 
-    private NavigationControlDefinition BuildControl() =>
-        new(Id, Visible, Position, ShowCompass, ShowZoom, Order);
+    private NavigationControlDefinition BuildControl() => new(Id, Visible, Position, ShowCompass, ShowZoom, Order);
 }
