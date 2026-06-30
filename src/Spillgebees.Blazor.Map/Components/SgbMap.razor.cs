@@ -212,6 +212,11 @@ public partial class SgbMap
     private readonly List<MapStyle> _overlayStyles = [];
     private readonly List<MapOverlay> _overlays = [];
     private readonly TaskCompletionSource<bool> _readyTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly object _controlSyncStateLock = new();
+    private readonly SemaphoreSlim _controlSyncLock = new(1, 1);
+    private bool _isDisposing;
+    private bool _controlSyncLockDisposed;
+    private int _controlSyncUsers;
 
     internal MapControlRegistryContext ControlRegistry { get; private set; } = null!;
 
@@ -454,7 +459,7 @@ public partial class SgbMap
                 IsReady = true;
                 _readyTcs.TrySetResult(true);
                 await Channel.MarkReadyAsync();
-                _controls.Sync();
+                await SyncControlsAsync();
                 // queue the initial fit after MarkReadyAsync so the feature data the
                 // fit resolves against has already landed JS-side
                 SyncFitBounds();
@@ -627,6 +632,7 @@ public partial class SgbMap
     /// <summary>Disposes the underlying map and releases JS interop resources.</summary>
     public async ValueTask DisposeAsync()
     {
+        MarkDisposing();
         _readyTcs.TrySetResult(false);
         _subscribedDisplay?.Changed -= HandleDisplayChanged;
 
@@ -638,6 +644,7 @@ public partial class SgbMap
         catch (ObjectDisposedException) { }
 
         Router.Dispose();
+        DisposeControlSyncLockIfIdle();
         GC.SuppressFinalize(this);
     }
 
@@ -654,10 +661,88 @@ public partial class SgbMap
 
     Task<bool> IMapControlHost.WhenReadyAsync() => IsReady ? Task.FromResult(true) : _readyTcs.Task;
 
-    ValueTask IMapControlHost.SyncControlsAsync()
+    ValueTask IMapControlHost.SyncControlsAsync() => SyncControlsAsync();
+
+    private async ValueTask SyncControlsAsync()
     {
-        _controls.Sync();
-        return ValueTask.CompletedTask;
+        if (!TryEnterControlSync())
+        {
+            return;
+        }
+
+        await _controlSyncLock.WaitAsync();
+        try
+        {
+            if (IsControlSyncDisposing())
+            {
+                return;
+            }
+
+            _controls.Sync();
+        }
+        finally
+        {
+            _controlSyncLock.Release();
+            ExitControlSync();
+        }
+    }
+
+    private void MarkDisposing()
+    {
+        lock (_controlSyncStateLock)
+        {
+            _isDisposing = true;
+        }
+    }
+
+    private bool IsControlSyncDisposing()
+    {
+        lock (_controlSyncStateLock)
+        {
+            return _isDisposing;
+        }
+    }
+
+    private bool TryEnterControlSync()
+    {
+        lock (_controlSyncStateLock)
+        {
+            if (_isDisposing || _controlSyncLockDisposed)
+            {
+                return false;
+            }
+
+            _controlSyncUsers++;
+            return true;
+        }
+    }
+
+    private void ExitControlSync()
+    {
+        lock (_controlSyncStateLock)
+        {
+            _controlSyncUsers--;
+        }
+
+        DisposeControlSyncLockIfIdle();
+    }
+
+    private void DisposeControlSyncLockIfIdle()
+    {
+        var shouldDispose = false;
+        lock (_controlSyncStateLock)
+        {
+            if (_isDisposing && _controlSyncUsers == 0 && !_controlSyncLockDisposed)
+            {
+                _controlSyncLockDisposed = true;
+                shouldDispose = true;
+            }
+        }
+
+        if (shouldDispose)
+        {
+            _controlSyncLock.Dispose();
+        }
     }
 
     ValueTask IMapControlHost.SetControlContentAsync(

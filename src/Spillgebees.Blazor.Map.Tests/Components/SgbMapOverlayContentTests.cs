@@ -1,3 +1,4 @@
+using System.Reflection;
 using AwesomeAssertions;
 using Microsoft.AspNetCore.Components;
 
@@ -43,5 +44,62 @@ public class SgbMapOverlayContentTests : BunitContext
 
         // assert
         cut.FindAll(".sgb-map-overlay-root").Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Should_skip_control_sync_after_map_is_disposed()
+    {
+        // arrange
+        var map = CreateInitializedMap();
+        var host = (IMapControlHost)map;
+        await map.DisposeAsync();
+
+        // act
+        Func<Task> act = async () => await host.SyncControlsAsync();
+
+        // assert
+        await act.Should().NotThrowAsync();
+    }
+
+    [Test]
+    public async Task Should_complete_pending_control_sync_when_map_is_disposed()
+    {
+        // arrange
+        var map = CreateInitializedMap();
+        var host = (IMapControlHost)map;
+        var syncLock = GetControlSyncLock(map);
+        await syncLock.WaitAsync();
+        var syncTask = host.SyncControlsAsync().AsTask();
+
+        // act
+        Func<Task> act = async () =>
+        {
+            await map.DisposeAsync();
+            syncLock.Release();
+            await syncTask.WaitAsync(TimeSpan.FromSeconds(5));
+        };
+
+        // assert
+        syncTask.IsCompleted.Should().BeFalse();
+        await act.Should().NotThrowAsync();
+    }
+
+    private TestSgbMap CreateInitializedMap()
+    {
+        var map = new TestSgbMap();
+        typeof(SgbMap)
+            .GetProperty("_jsRuntime", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(map, JSInterop.JSRuntime);
+        map.Initialize();
+        return map;
+    }
+
+    private static SemaphoreSlim GetControlSyncLock(SgbMap map) =>
+        (SemaphoreSlim)
+            typeof(SgbMap).GetField("_controlSyncLock", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(map)!;
+
+    private sealed class TestSgbMap : SgbMap
+    {
+        public void Initialize() => OnInitialized();
     }
 }

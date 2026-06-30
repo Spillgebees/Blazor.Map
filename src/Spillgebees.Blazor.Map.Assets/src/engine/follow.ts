@@ -273,9 +273,11 @@ export function createFollowController(deps: FollowControllerDeps): FollowContro
 
     if (positionMoved || bearingConverging || zoomDrifted || pitchDrifted || bearingDrifted) {
       applyTrackMove(target, lng, lat, trackBearing, shouldAnimateTrackMove(target, now, positionMoved));
-      lastMoveAt = now;
-      lastLng = lng;
-      lastLat = lat;
+      if (positionMoved) {
+        lastMoveAt = now;
+        lastLng = lng;
+        lastLat = lat;
+      }
     }
 
     return true;

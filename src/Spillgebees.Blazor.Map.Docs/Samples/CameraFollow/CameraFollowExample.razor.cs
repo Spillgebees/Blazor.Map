@@ -230,28 +230,6 @@ public partial class CameraFollowExample : IAsyncDisposable
             </svg>
             """;
 
-    public async ValueTask DisposeAsync()
-    {
-        GC.SuppressFinalize(this);
-
-        if (_cts is not null)
-        {
-            await _cts.CancelAsync();
-            _cts.Dispose();
-        }
-
-        if (_simulationTask is not null)
-        {
-            try
-            {
-                await _simulationTask;
-            }
-            catch (OperationCanceledException) { }
-        }
-
-        _timer?.Dispose();
-    }
-
     private enum PitchChoice
     {
         Flat,
@@ -275,5 +253,27 @@ public partial class CameraFollowExample : IAsyncDisposable
     {
         Ease,
         Jump,
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        GC.SuppressFinalize(this);
+
+        if (_cts is not null)
+        {
+            await _cts.CancelAsync();
+            _cts.Dispose();
+        }
+
+        if (_simulationTask is not null)
+        {
+            try
+            {
+                await _simulationTask;
+            }
+            catch (OperationCanceledException) { }
+        }
+
+        _timer?.Dispose();
     }
 }

@@ -339,6 +339,35 @@ describe("follow controller", () => {
       expect(fake.lastEaseTo()?.easing).toBeUndefined();
     });
 
+    it("keeps jumped tracking animation after stationary match-heading correction", () => {
+      // arrange
+      fake.setEntity(6, 49, 0);
+      fake.controller.apply(
+        follow({
+          camera: camera({
+            orientationMode: "anchored",
+            bearingSource: "matchheading",
+            trackingAnimation: { durationMs: 250, easing: "easeInOut" },
+          }),
+          animation: { durationMs: 0 },
+        }),
+      );
+      fake.step(0);
+
+      // act: heading drifts while parked, then the next frame carries a real jumped position update
+      fake.setEntity(6, 49, 90);
+      fake.step(1000);
+      fake.setEntity(6.3, 49.3, 90);
+      fake.step(1016);
+
+      // assert
+      expect(fake.easeTo).toHaveBeenCalledTimes(3);
+      expect(fake.easeTo.mock.calls[1]?.[0].center).toEqual([6, 49]);
+      expect(fake.easeTo.mock.calls[1]?.[0].duration).toBe(0);
+      expect(fake.lastEaseTo()?.center).toEqual([6.3, 49.3]);
+      expect(fake.lastEaseTo()?.duration).toBe(250);
+    });
+
     it("does not restart configured tracking animation for continuous updates", () => {
       // arrange
       fake.setEntity(6, 49);
