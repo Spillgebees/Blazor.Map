@@ -70,13 +70,15 @@ public class SgbMapOverlayContentTests : BunitContext
         var syncLock = GetControlSyncLock(map);
         await syncLock.WaitAsync();
         var syncTask = host.SyncControlsAsync().AsTask();
+        var disposeTask = map.DisposeAsync().AsTask();
 
         // act
         Func<Task> act = async () =>
         {
-            await map.DisposeAsync();
+            disposeTask.IsCompleted.Should().BeFalse();
             syncLock.Release();
             await syncTask.WaitAsync(TimeSpan.FromSeconds(5));
+            await disposeTask.WaitAsync(TimeSpan.FromSeconds(5));
         };
 
         // assert

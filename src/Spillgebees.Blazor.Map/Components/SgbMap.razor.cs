@@ -214,6 +214,7 @@ public partial class SgbMap
     private readonly TaskCompletionSource<bool> _readyTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly object _controlSyncStateLock = new();
     private readonly SemaphoreSlim _controlSyncLock = new(1, 1);
+    private TaskCompletionSource? _controlSyncDrained;
     private bool _isDisposing;
     private bool _controlSyncLockDisposed;
     private int _controlSyncUsers;
@@ -629,25 +630,6 @@ public partial class SgbMap
         }
     }
 
-    /// <summary>Disposes the underlying map and releases JS interop resources.</summary>
-    public async ValueTask DisposeAsync()
-    {
-        MarkDisposing();
-        _readyTcs.TrySetResult(false);
-        _subscribedDisplay?.Changed -= HandleDisplayChanged;
-
-        try
-        {
-            await MapEngineJs.DisposeMapAsync(_jsRuntime, _container);
-        }
-        catch (JSDisconnectedException) { }
-        catch (ObjectDisposedException) { }
-
-        Router.Dispose();
-        DisposeControlSyncLockIfIdle();
-        GC.SuppressFinalize(this);
-    }
-
     // --- host interface forwarding (the shared component family binds to these) ---
 
     bool IMapControlHost.RegisterControl(string ownerId, MapControlDefinition control) =>
@@ -684,64 +666,6 @@ public partial class SgbMap
         {
             _controlSyncLock.Release();
             ExitControlSync();
-        }
-    }
-
-    private void MarkDisposing()
-    {
-        lock (_controlSyncStateLock)
-        {
-            _isDisposing = true;
-        }
-    }
-
-    private bool IsControlSyncDisposing()
-    {
-        lock (_controlSyncStateLock)
-        {
-            return _isDisposing;
-        }
-    }
-
-    private bool TryEnterControlSync()
-    {
-        lock (_controlSyncStateLock)
-        {
-            if (_isDisposing || _controlSyncLockDisposed)
-            {
-                return false;
-            }
-
-            _controlSyncUsers++;
-            return true;
-        }
-    }
-
-    private void ExitControlSync()
-    {
-        lock (_controlSyncStateLock)
-        {
-            _controlSyncUsers--;
-        }
-
-        DisposeControlSyncLockIfIdle();
-    }
-
-    private void DisposeControlSyncLockIfIdle()
-    {
-        var shouldDispose = false;
-        lock (_controlSyncStateLock)
-        {
-            if (_isDisposing && _controlSyncUsers == 0 && !_controlSyncLockDisposed)
-            {
-                _controlSyncLockDisposed = true;
-                shouldDispose = true;
-            }
-        }
-
-        if (shouldDispose)
-        {
-            _controlSyncLock.Dispose();
         }
     }
 
@@ -833,4 +757,106 @@ public partial class SgbMap
 
     void IMapOverlayHost.SetOverlayPartVisible(string overlayId, string partId, bool visible) =>
         _ = SetOverlayPartVisibleAsync(overlayId, partId, visible);
+
+    private void MarkDisposing()
+    {
+        lock (_controlSyncStateLock)
+        {
+            _isDisposing = true;
+            if (_controlSyncUsers > 0)
+            {
+                _controlSyncDrained ??= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+        }
+    }
+
+    private bool IsControlSyncDisposing()
+    {
+        lock (_controlSyncStateLock)
+        {
+            return _isDisposing;
+        }
+    }
+
+    private bool TryEnterControlSync()
+    {
+        lock (_controlSyncStateLock)
+        {
+            if (_isDisposing || _controlSyncLockDisposed)
+            {
+                return false;
+            }
+
+            _controlSyncUsers++;
+            return true;
+        }
+    }
+
+    private void ExitControlSync()
+    {
+        TaskCompletionSource? drained = null;
+        lock (_controlSyncStateLock)
+        {
+            _controlSyncUsers--;
+            if (_isDisposing && _controlSyncUsers == 0)
+            {
+                drained = _controlSyncDrained;
+            }
+        }
+
+        drained?.TrySetResult();
+        DisposeControlSyncLockIfIdle();
+    }
+
+    private void DisposeControlSyncLockIfIdle()
+    {
+        var shouldDispose = false;
+        lock (_controlSyncStateLock)
+        {
+            if (_isDisposing && _controlSyncUsers == 0 && !_controlSyncLockDisposed)
+            {
+                _controlSyncLockDisposed = true;
+                shouldDispose = true;
+            }
+        }
+
+        if (shouldDispose)
+        {
+            _controlSyncLock.Dispose();
+        }
+    }
+
+    private Task DrainControlSyncsAsync()
+    {
+        lock (_controlSyncStateLock)
+        {
+            if (_controlSyncUsers == 0)
+            {
+                return Task.CompletedTask;
+            }
+
+            _controlSyncDrained ??= new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            return _controlSyncDrained.Task;
+        }
+    }
+
+    /// <summary>Disposes the underlying map and releases JS interop resources.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        MarkDisposing();
+        await DrainControlSyncsAsync();
+        _readyTcs.TrySetResult(false);
+        _subscribedDisplay?.Changed -= HandleDisplayChanged;
+
+        try
+        {
+            await MapEngineJs.DisposeMapAsync(_jsRuntime, _container);
+        }
+        catch (JSDisconnectedException) { }
+        catch (ObjectDisposedException) { }
+
+        Router.Dispose();
+        DisposeControlSyncLockIfIdle();
+        GC.SuppressFinalize(this);
+    }
 }
