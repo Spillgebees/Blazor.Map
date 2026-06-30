@@ -429,4 +429,40 @@ describe("applyOverlayStyles", () => {
     expect(fetchMock).toHaveBeenNthCalledWith(1, "https://example.com/a.json", { referrerPolicy: "origin" });
     expect(fetchMock).toHaveBeenNthCalledWith(2, "https://example.com/b.json", { referrerPolicy: "no-referrer" });
   });
+
+  it("should register composed layer baseline filters without cloning", async () => {
+    // arrange
+    const map = {
+      getSource: vi.fn().mockReturnValue(undefined),
+      addSource: vi.fn(),
+      hasImage: vi.fn().mockReturnValue(true),
+      getLayer: vi.fn().mockReturnValue(undefined),
+      addLayer: vi.fn(),
+    } as unknown as Parameters<typeof applyOverlayStyles>[0];
+    window.Spillgebees.Map.composedStyleLayerIds.set(map, new Map());
+    const filter = ["==", ["get", "railway"], "proposed"];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        url: "https://example.com/railway.json",
+        json: vi.fn().mockResolvedValue({
+          version: 8,
+          sources: {},
+          layers: [{ id: "railway-lifecycle-proposed", type: "line", filter }],
+        }),
+      }),
+    );
+
+    // act
+    await applyOverlayStyles(map, [
+      { styleId: "railway", url: "https://example.com/railway.json", referrerPolicy: null },
+    ]);
+
+    // assert
+    expect(
+      window.Spillgebees.Map.composedStyleLayerIds.get(map)?.get("railway\u0000railway-lifecycle-proposed")
+        ?.originalFilter,
+    ).toBe(filter);
+  });
 });
