@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <AspNetCoreVersion>10.0.9</AspNetCoreVersion>
+    <AspNetCoreVersion>10.0.10</AspNetCoreVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="AngleSharp" Version="1.5.2" />
@@ -10,9 +10,9 @@
     <PackageVersion Include="BlazorComponentUtilities" Version="1.8.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" />
     <PackageVersion Include="DotNet.ReproducibleBuilds" Version="2.0.5" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.10" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.10" />
-    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="$(AspNetCoreVersion)" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="$(AspNetCoreVersion)" />
+    <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="$(AspNetCoreVersion)" />
     <PackageVersion Include="MinVer" Version="7.0.0" />
     <PackageVersion Include="Spillgebees.Blazor.Docs.Sdk" Version="0.8.0" />
     <PackageVersion Include="TUnit.Core" Version="1.61.0" />
