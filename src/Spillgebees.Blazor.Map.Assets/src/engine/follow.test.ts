@@ -206,8 +206,9 @@ describe("follow controller", () => {
       fake.step();
 
       // assert: linear is passed as an explicit easing function
-      expect(typeof fake.lastEaseTo()?.easing).toBe("function");
-      expect((fake.lastEaseTo()?.easing as (t: number) => number)(0.5)).toBe(0.5);
+      const easingFn = fake.lastEaseTo()?.easing;
+      expect(typeof easingFn).toBe("function");
+      expect((easingFn as (t: number) => number)(0.5)).toBe(0.5);
 
       // arrange + act: default (no animation) keeps easeTo's native ease-in-out
       const other = createFake();
@@ -408,8 +409,9 @@ describe("follow controller", () => {
 
       // assert
       expect(fake.lastEaseTo()?.duration).toBe(250);
-      expect(typeof fake.lastEaseTo()?.easing).toBe("function");
-      expect((fake.lastEaseTo()?.easing as (t: number) => number)(0.5)).toBe(0.5);
+      const easing = fake.lastEaseTo()?.easing;
+      expect(typeof easing).toBe("function");
+      expect((easing as (t: number) => number)(0.5)).toBe(0.5);
     });
 
     it("keeps engage animation separate from tracking animation", () => {
