@@ -37,7 +37,7 @@
     "maplibre-gl": "5.24.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.4",
+    "@biomejs/biome": "2.5.5",
     "@microsoft/dotnet-js-interop": "10.0.0",
     "@playwright/test": "1.61.1",
     "@types/geojson": "7946.0.16",
