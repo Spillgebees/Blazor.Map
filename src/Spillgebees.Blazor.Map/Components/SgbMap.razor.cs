@@ -98,7 +98,9 @@ public partial class SgbMap
     [Parameter]
     public bool Interactive { get; set; } = true;
 
-    /// <summary>Requires ctrl/cmd + scroll to zoom (create-time only).</summary>
+    /// <summary>
+    /// Prevents the map from hijacking page scrolling by requiring Control/Command and two/three finger gestures. Defaults to false (cannot be changed after the map is created).
+    /// </summary>
     [Parameter]
     public bool CooperativeGestures { get; set; }
 

@@ -1,0 +1,189 @@
+<div class="interaction-example">
+    <div class="interaction-example-toolbar">
+        <div>
+            <strong>Cooperative navigation</strong>
+            <span>The page keeps scrolling until the map receives an intentional gesture.</span>
+        </div>
+        <button type="button"
+                class="interaction-help-trigger"
+                popovertarget="map-interaction-reference"
+                aria-haspopup="dialog">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 5.5h5.5A2.5 2.5 0 0 1 12 8v11a2.5 2.5 0 0 0-2.5-2.5H4z" />
+                <path d="M20 5.5h-5.5A2.5 2.5 0 0 0 12 8v11a2.5 2.5 0 0 1 2.5-2.5H20z" />
+            </svg>
+            Interaction guide
+        </button>
+    </div>
+
+    <SgbMap Center="@(new Coordinate(49.6117, 6.1319))"
+            Zoom="12"
+            Style="@(MapStyle.OpenFreeMap.Liberty)"
+            CooperativeGestures="@CooperativeGestures"
+            Height="420px"
+            Width="100%">
+        <MapControls>
+            <NavigationMapControl Position="ControlPosition.TopRight" />
+        </MapControls>
+    </SgbMap>
+
+    <aside id="map-interaction-reference"
+           class="interaction-reference-popover"
+           popover="auto"
+           role="dialog"
+           aria-labelledby="interaction-reference-title">
+        <header class="interaction-reference-header">
+            <div>
+                <h2 id="interaction-reference-title">Move around the map</h2>
+            </div>
+            <button type="button"
+                    class="interaction-reference-close"
+                    popovertarget="map-interaction-reference"
+                    popovertargetaction="hide"
+                    aria-label="Close interaction guide">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="m6 6 12 12M18 6 6 18" />
+                </svg>
+            </button>
+        </header>
+
+        <div class="interaction-reference-groups">
+            @foreach (var group in _groups)
+            {
+                <section class="interaction-reference-group" aria-labelledby="@($"interaction-group-{group.Id}")">
+                    <h3 id="@($"interaction-group-{group.Id}")">@group.Label</h3>
+                    <div class="interaction-reference-list">
+                        @foreach (var input in group.Inputs)
+                        {
+                            if (_interactions.TryGetValue(input, out var effect))
+                            {
+                                <div class="interaction-reference-row" @key="input">
+                                    <InteractionGestureVisual Input="@input" />
+                                    <div class="interaction-reference-copy">
+                                        <strong>@GetInputLabel(input)</strong>
+                                        <span>@GetEffectLabel(effect)</span>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </section>
+            }
+        </div>
+    </aside>
+</div>
+
+@code {
+    private const bool CooperativeGestures = true;
+
+    private static readonly IReadOnlyDictionary<MapInteractionInput, MapInteractionEffect> _interactions =
+        MapInteractionMetadata.GetDefaults(CooperativeGestures);
+
+    private static readonly InteractionGroup[] _groups =
+    [
+        new(
+            "keyboard",
+            "Keyboard",
+            [
+                MapInteractionInput.KeyboardArrowKeys,
+                MapInteractionInput.KeyboardShiftHorizontalArrowKeys,
+                MapInteractionInput.KeyboardShiftVerticalArrowKeys,
+                MapInteractionInput.KeyboardZoomIn,
+                MapInteractionInput.KeyboardZoomOut,
+                MapInteractionInput.KeyboardShiftZoomIn,
+                MapInteractionInput.KeyboardShiftZoomOut,
+                MapInteractionInput.KeyboardEscape,
+            ]
+        ),
+        new(
+            "mouse",
+            "Mouse",
+            [
+                MapInteractionInput.MousePrimaryDrag,
+                MapInteractionInput.MouseShiftPrimaryDrag,
+                MapInteractionInput.MouseSecondaryOrControlPrimaryHorizontalDrag,
+                MapInteractionInput.MouseSecondaryOrControlPrimaryVerticalDrag,
+                MapInteractionInput.MouseDoubleClick,
+                MapInteractionInput.MouseShiftDoubleClick,
+            ]
+        ),
+        new(
+            "scroll",
+            "Wheel & trackpad",
+            [
+                MapInteractionInput.Scroll,
+                MapInteractionInput.ShiftScroll,
+                MapInteractionInput.ControlOrMetaScroll,
+                MapInteractionInput.ControlOrMetaShiftScroll,
+                MapInteractionInput.TrackpadPinch,
+            ]
+        ),
+        new(
+            "touch",
+            "Touch",
+            [
+                MapInteractionInput.TouchOneFingerDrag,
+                MapInteractionInput.TouchTwoFingerDrag,
+                MapInteractionInput.TouchPinch,
+                MapInteractionInput.TouchTwist,
+                MapInteractionInput.TouchTwoFingerVerticalDrag,
+                MapInteractionInput.TouchThreeFingerVerticalDrag,
+                MapInteractionInput.TouchDoubleTap,
+                MapInteractionInput.TouchTwoFingerTap,
+                MapInteractionInput.TouchDoubleTapVerticalDrag,
+            ]
+        ),
+    ];
+
+    private static string GetInputLabel(MapInteractionInput input) =>
+        input switch
+        {
+            MapInteractionInput.KeyboardArrowKeys => "Arrow keys",
+            MapInteractionInput.KeyboardShiftHorizontalArrowKeys => "Shift + Left/Right",
+            MapInteractionInput.KeyboardShiftVerticalArrowKeys => "Shift + Up/Down",
+            MapInteractionInput.KeyboardZoomIn => "+ or =",
+            MapInteractionInput.KeyboardZoomOut => "-",
+            MapInteractionInput.KeyboardShiftZoomIn => "Shift + zoom in",
+            MapInteractionInput.KeyboardShiftZoomOut => "Shift + zoom out",
+            MapInteractionInput.KeyboardEscape => "Escape during box zoom",
+            MapInteractionInput.MousePrimaryDrag => "Primary-button drag",
+            MapInteractionInput.MouseShiftPrimaryDrag => "Shift + primary-button drag",
+            MapInteractionInput.MouseSecondaryOrControlPrimaryHorizontalDrag =>
+                "Secondary or Ctrl + primary horizontal drag",
+            MapInteractionInput.MouseSecondaryOrControlPrimaryVerticalDrag =>
+                "Secondary or Ctrl + primary vertical drag",
+            MapInteractionInput.MouseDoubleClick => "Double-click",
+            MapInteractionInput.MouseShiftDoubleClick => "Shift + double-click",
+            MapInteractionInput.Scroll => "Scroll",
+            MapInteractionInput.ShiftScroll => "Shift + scroll",
+            MapInteractionInput.ControlOrMetaScroll => "Ctrl/Cmd + scroll",
+            MapInteractionInput.ControlOrMetaShiftScroll => "Ctrl/Cmd + Shift + scroll",
+            MapInteractionInput.TrackpadPinch => "Trackpad pinch",
+            MapInteractionInput.TouchOneFingerDrag => "One-finger drag",
+            MapInteractionInput.TouchTwoFingerDrag => "Two-finger drag",
+            MapInteractionInput.TouchPinch => "Two-finger pinch",
+            MapInteractionInput.TouchTwist => "Two-finger twist",
+            MapInteractionInput.TouchTwoFingerVerticalDrag => "Two-finger vertical drag",
+            MapInteractionInput.TouchThreeFingerVerticalDrag => "Three-finger vertical drag",
+            MapInteractionInput.TouchDoubleTap => "Double-tap",
+            MapInteractionInput.TouchTwoFingerTap => "Two-finger tap",
+            MapInteractionInput.TouchDoubleTapVerticalDrag => "Double-tap, hold, then drag",
+            _ => input.ToString(),
+        };
+
+    private static string GetEffectLabel(MapInteractionEffect effect) =>
+        effect switch
+        {
+            MapInteractionEffect.Pan => "Pan the map",
+            MapInteractionEffect.Zoom => "Zoom continuously",
+            MapInteractionEffect.ZoomIn => "Zoom in",
+            MapInteractionEffect.ZoomOut => "Zoom out",
+            MapInteractionEffect.Rotate => "Rotate the map",
+            MapInteractionEffect.Pitch => "Change the pitch",
+            MapInteractionEffect.BoxZoom => "Zoom to a selected area",
+            MapInteractionEffect.CancelBoxZoom => "Cancel the selection",
+            _ => effect.ToString(),
+        };
+
+    private sealed record InteractionGroup(string Id, string Label, MapInteractionInput[] Inputs);
+}

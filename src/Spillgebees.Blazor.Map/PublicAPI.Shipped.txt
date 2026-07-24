@@ -1010,6 +1010,46 @@ Spillgebees.Blazor.Map.MapImage.MapImage(string! id, string! url, int width, int
 Spillgebees.Blazor.Map.MapImage.PixelRatio.get -> double
 Spillgebees.Blazor.Map.MapImage.Url.get -> string!
 Spillgebees.Blazor.Map.MapImage.Width.get -> int
+Spillgebees.Blazor.Map.MapInteractionEffect
+Spillgebees.Blazor.Map.MapInteractionEffect.BoxZoom = 6 -> Spillgebees.Blazor.Map.MapInteractionEffect
+Spillgebees.Blazor.Map.MapInteractionEffect.CancelBoxZoom = 7 -> Spillgebees.Blazor.Map.MapInteractionEffect
+Spillgebees.Blazor.Map.MapInteractionEffect.Pan = 0 -> Spillgebees.Blazor.Map.MapInteractionEffect
+Spillgebees.Blazor.Map.MapInteractionEffect.Pitch = 5 -> Spillgebees.Blazor.Map.MapInteractionEffect
+Spillgebees.Blazor.Map.MapInteractionEffect.Rotate = 4 -> Spillgebees.Blazor.Map.MapInteractionEffect
+Spillgebees.Blazor.Map.MapInteractionEffect.Zoom = 1 -> Spillgebees.Blazor.Map.MapInteractionEffect
+Spillgebees.Blazor.Map.MapInteractionEffect.ZoomIn = 2 -> Spillgebees.Blazor.Map.MapInteractionEffect
+Spillgebees.Blazor.Map.MapInteractionEffect.ZoomOut = 3 -> Spillgebees.Blazor.Map.MapInteractionEffect
+Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.ControlOrMetaScroll = 16 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.ControlOrMetaShiftScroll = 17 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.KeyboardArrowKeys = 0 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.KeyboardEscape = 7 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.KeyboardShiftHorizontalArrowKeys = 1 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.KeyboardShiftVerticalArrowKeys = 2 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.KeyboardShiftZoomIn = 5 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.KeyboardShiftZoomOut = 6 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.KeyboardZoomIn = 3 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.KeyboardZoomOut = 4 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.MouseDoubleClick = 12 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.MousePrimaryDrag = 8 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.MouseSecondaryOrControlPrimaryHorizontalDrag = 10 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.MouseSecondaryOrControlPrimaryVerticalDrag = 11 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.MouseShiftDoubleClick = 13 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.MouseShiftPrimaryDrag = 9 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.Scroll = 14 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.ShiftScroll = 15 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.TouchDoubleTap = 25 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.TouchDoubleTapVerticalDrag = 27 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.TouchOneFingerDrag = 19 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.TouchPinch = 21 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.TouchThreeFingerVerticalDrag = 24 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.TouchTwist = 22 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.TouchTwoFingerDrag = 20 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.TouchTwoFingerTap = 26 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.TouchTwoFingerVerticalDrag = 23 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionInput.TrackpadPinch = 18 -> Spillgebees.Blazor.Map.MapInteractionInput
+Spillgebees.Blazor.Map.MapInteractionMetadata
+static Spillgebees.Blazor.Map.MapInteractionMetadata.GetDefaults(bool cooperativeGestures = false) -> System.Collections.Generic.IReadOnlyDictionary<Spillgebees.Blazor.Map.MapInteractionInput, Spillgebees.Blazor.Map.MapInteractionEffect>!
 Spillgebees.Blazor.Map.MapLegend
 Spillgebees.Blazor.Map.MapLegend.<Clone>$() -> Spillgebees.Blazor.Map.MapLegend!
 Spillgebees.Blazor.Map.MapLegend.ClassName.get -> string?
