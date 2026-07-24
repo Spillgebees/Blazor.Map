@@ -1,0 +1,208 @@
+<div class="interaction-gesture-visual @(_isKeyboard ? "keyboard-gesture-visual" : null)" aria-hidden="true">
+    @if (_isKeyboard)
+    {
+        @if (Input == MapInteractionInput.KeyboardArrowKeys)
+        {
+            <div class="arrow-key-grid">
+                <kbd class="arrow-key-up">
+                    <svg class="key-arrow" viewBox="0 0 12 12"><path d="M6 10V2M2.5 5.5 6 2l3.5 3.5" /></svg>
+                </kbd>
+                <kbd class="arrow-key-left">
+                    <svg class="key-arrow" viewBox="0 0 12 12"><path d="M10 6H2m3.5-3.5L2 6l3.5 3.5" /></svg>
+                </kbd>
+                <kbd class="arrow-key-down">
+                    <svg class="key-arrow" viewBox="0 0 12 12"><path d="M6 2v8m-3.5-3.5L6 10l3.5-3.5" /></svg>
+                </kbd>
+                <kbd class="arrow-key-right">
+                    <svg class="key-arrow" viewBox="0 0 12 12"><path d="M2 6h8M6.5 2.5 10 6 6.5 9.5" /></svg>
+                </kbd>
+            </div>
+        }
+        else
+        {
+            <div class="key-cluster">
+                @foreach (var key in _keyboardKeys)
+                {
+                    <kbd class="@(key is "horizontal" or "vertical" ? "direction-key" : null)">
+                        @switch (key)
+                        {
+                            case "horizontal":
+                                <svg class="key-arrow" viewBox="0 0 16 16">
+                                    <path d="M2 8h12M5 4.5 1.5 8 5 11.5M11 4.5 14.5 8 11 11.5" />
+                                </svg>
+                                break;
+                            case "vertical":
+                                <svg class="key-arrow" viewBox="0 0 16 16">
+                                    <path d="M8 2v12M4.5 5 8 1.5 11.5 5M4.5 11 8 14.5l3.5-3.5" />
+                                </svg>
+                                break;
+                            default:
+                                @key
+                                break;
+                        }
+                    </kbd>
+                }
+            </div>
+        }
+    }
+    else if (_isTouch)
+    {
+        <svg viewBox="0 0 52 42" focusable="false">
+            <rect class="device" x="8" y="3" width="36" height="36" rx="7" />
+            @for (var index = 0; index < _fingerCount; index++)
+            {
+                <circle class="finger" cx="@GetFingerX(index)" cy="21" r="3.2" />
+            }
+            <path class="motion" d="@_motionPath" />
+            @if (_showsTapRings)
+            {
+                <circle class="tap-ring" cx="20" cy="21" r="6" />
+                <circle class="tap-ring tap-ring-outer" cx="20" cy="21" r="9" />
+            }
+            @if (Input == MapInteractionInput.TouchTwoFingerTap)
+            {
+                <circle class="tap-ring" cx="19" cy="21" r="5" />
+                <circle class="tap-ring" cx="33" cy="21" r="5" />
+            }
+        </svg>
+    }
+    else
+    {
+        <svg viewBox="0 0 52 42" focusable="false">
+            @if (Input == MapInteractionInput.MouseShiftPrimaryDrag)
+            {
+                <rect class="selection-box" x="8" y="6" width="32" height="28" rx="2" />
+                <path class="motion" d="M14 28 34 10m-8 0h8v8" />
+            }
+            else if (Input == MapInteractionInput.TrackpadPinch)
+            {
+                <rect class="device" x="5" y="8" width="42" height="27" rx="5" />
+                <circle class="finger" cx="21" cy="21" r="3" />
+                <circle class="finger" cx="31" cy="21" r="3" />
+            }
+            else
+            {
+                <rect class="device" x="14" y="3" width="24" height="36" rx="12" />
+                @if (_isScroll)
+                {
+                    <rect class="active-wheel" x="24" y="6" width="4" height="7" rx="2" />
+                }
+                else
+                {
+                    <path class="active-button" d="@_mouseButtonPath" />
+                }
+                <path class="device-detail" d="M26 3v13M14 16h24" />
+                @if (_isMouseDoubleClick)
+                {
+                    <path class="click-mark" d="M10 10H5m7-5L8 1m4 14-4 4" />
+                }
+                <path class="motion" d="@_motionPath" />
+            }
+            @if (Input == MapInteractionInput.TrackpadPinch)
+            {
+                <path class="motion" d="@_motionPath" />
+            }
+        </svg>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public MapInteractionInput Input { get; set; }
+
+    private bool _isKeyboard =>
+        Input
+        is MapInteractionInput.KeyboardArrowKeys
+            or MapInteractionInput.KeyboardShiftHorizontalArrowKeys
+            or MapInteractionInput.KeyboardShiftVerticalArrowKeys
+            or MapInteractionInput.KeyboardZoomIn
+            or MapInteractionInput.KeyboardZoomOut
+            or MapInteractionInput.KeyboardShiftZoomIn
+            or MapInteractionInput.KeyboardShiftZoomOut
+            or MapInteractionInput.KeyboardEscape;
+
+    private bool _isTouch =>
+        Input
+        is MapInteractionInput.TouchOneFingerDrag
+            or MapInteractionInput.TouchTwoFingerDrag
+            or MapInteractionInput.TouchPinch
+            or MapInteractionInput.TouchTwist
+            or MapInteractionInput.TouchTwoFingerVerticalDrag
+            or MapInteractionInput.TouchThreeFingerVerticalDrag
+            or MapInteractionInput.TouchDoubleTap
+            or MapInteractionInput.TouchTwoFingerTap
+            or MapInteractionInput.TouchDoubleTapVerticalDrag;
+
+    private string[] _keyboardKeys =>
+        Input switch
+        {
+            MapInteractionInput.KeyboardShiftHorizontalArrowKeys => ["Shift", "horizontal"],
+            MapInteractionInput.KeyboardShiftVerticalArrowKeys => ["Shift", "vertical"],
+            MapInteractionInput.KeyboardZoomIn => ["+", "="],
+            MapInteractionInput.KeyboardZoomOut => ["−"],
+            MapInteractionInput.KeyboardShiftZoomIn => ["Shift", "+"],
+            MapInteractionInput.KeyboardShiftZoomOut => ["Shift", "−"],
+            MapInteractionInput.KeyboardEscape => ["Esc"],
+            _ => [],
+        };
+
+    private int _fingerCount =>
+        Input switch
+        {
+            MapInteractionInput.TouchOneFingerDrag or MapInteractionInput.TouchDoubleTap => 1,
+            MapInteractionInput.TouchDoubleTapVerticalDrag => 1,
+            MapInteractionInput.TouchThreeFingerVerticalDrag => 3,
+            _ => 2,
+        };
+
+    private string _motionPath =>
+        Input switch
+        {
+            MapInteractionInput.MousePrimaryDrag
+            or MapInteractionInput.MouseSecondaryOrControlPrimaryHorizontalDrag
+            or MapInteractionInput.TouchOneFingerDrag
+            or MapInteractionInput.TouchTwoFingerDrag => "M7 21h9m-5-4-4 4 4 4M45 21h-9m5-4 4 4-4 4",
+            MapInteractionInput.MouseSecondaryOrControlPrimaryVerticalDrag =>
+                "M44 7v28m-4-24 4-4 4 4m-8 20 4 4 4-4",
+            MapInteractionInput.TouchTwoFingerVerticalDrag
+            or MapInteractionInput.TouchThreeFingerVerticalDrag
+            or MapInteractionInput.TouchDoubleTapVerticalDrag =>
+                "M26 5v9m-4-5 4-4 4 4M26 37v-9m-4 5 4 4 4-4",
+            MapInteractionInput.TouchTwist => "M16 13a14 14 0 0 1 22 4m0-6v6h-6",
+            MapInteractionInput.TouchPinch or MapInteractionInput.TrackpadPinch =>
+                "M7 21h9m-4-4 4 4-4 4M45 21h-9m4-4-4 4 4 4",
+            MapInteractionInput.Scroll
+            or MapInteractionInput.ShiftScroll
+            or MapInteractionInput.ControlOrMetaScroll
+            or MapInteractionInput.ControlOrMetaShiftScroll => "M44 7v28m-4-24 4-4 4 4m-8 20 4 4 4-4",
+            _ => "",
+        };
+
+    private string _mouseButtonPath =>
+        Input
+            is MapInteractionInput.MouseSecondaryOrControlPrimaryHorizontalDrag
+                or MapInteractionInput.MouseSecondaryOrControlPrimaryVerticalDrag
+            ? "M26 3a12 12 0 0 1 12 12v1H26Z"
+            : "M26 3v13H14v-1A12 12 0 0 1 26 3Z";
+
+    private bool _showsTapRings =>
+        Input
+        is MapInteractionInput.MouseDoubleClick
+            or MapInteractionInput.TouchDoubleTap
+            or MapInteractionInput.TouchDoubleTapVerticalDrag;
+
+    private bool _isMouseDoubleClick =>
+        Input is MapInteractionInput.MouseDoubleClick or MapInteractionInput.MouseShiftDoubleClick;
+
+    private bool _isScroll =>
+        Input
+        is MapInteractionInput.Scroll
+            or MapInteractionInput.ShiftScroll
+            or MapInteractionInput.ControlOrMetaScroll
+            or MapInteractionInput.ControlOrMetaShiftScroll;
+
+    private double GetFingerX(int index) =>
+        Input is MapInteractionInput.TouchPinch or MapInteractionInput.TouchTwoFingerTap
+            ? 19 + index * 14
+            : 20 + index * 7;
+}

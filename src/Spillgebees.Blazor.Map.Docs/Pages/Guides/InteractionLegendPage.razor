@@ -1,0 +1,32 @@
+@page "/guides/interaction-legend"
+
+<PageTitle>Interaction Legend | Spillgebees.Blazor.Map</PageTitle>
+
+<Breadcrumb Section="guides" PageName="Interaction Legend" />
+<OnThisPage />
+
+<h1>Interaction Legend</h1>
+<p>
+    Map navigation often goes undiscovered.
+    <code>MapInteractionMetadata</code> exposes MapLibre's default shortcuts and
+    gestures to allow consumers to visualise them in their UI.
+</p>
+
+<h2 id="reference_only">// reference_only</h2>
+<p>The metadata is descriptive only, it does not enable configuring shortcuts and gestures.</p>
+<p>
+    Pass the same
+    <code>CooperativeGestures</code> value to the map and
+    <code>GetDefaults</code>.
+    Cooperative mode replaces ordinary scrolling, one-finger pan, and two-finger pitch with the intentional gestures shown in the guide.
+    This is to allow scrolling through the page without getting locked onto the map.
+</p>
+
+<h2 id="example">// example</h2>
+<p>
+    This example shows how one could use and visualise the shortcuts and gestures.
+</p>
+
+<ExampleView TComponent="InteractionMetadataExample" AdditionalSources="@([typeof(InteractionGestureVisual)])">
+    <InteractionMetadataExample />
+</ExampleView>
