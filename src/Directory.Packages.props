@@ -5,7 +5,7 @@
     <AspNetCoreVersion>10.0.10</AspNetCoreVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="AngleSharp" Version="1.5.2" />
+    <PackageVersion Include="AngleSharp" Version="1.6.0" />
     <PackageVersion Include="AwesomeAssertions" Version="9.5.0" />
     <PackageVersion Include="bunit" Version="2.8.6" />
     <PackageVersion Include="BlazorComponentUtilities" Version="1.8.0" />
