@@ -95,6 +95,27 @@ describe("engine controls controller", () => {
     expect(controller.ids()).toEqual(["a", "b"]);
   });
 
+  it("orders same-position controls when another position is interleaved", () => {
+    const { controller } = createHarness();
+    controller.set(navigation({ controlId: "last", order: 500 }));
+    controller.set(center());
+    controller.set(navigation({ controlId: "first", order: 100 }));
+
+    expect(controller.ids()).toEqual(["first", "last", "center"]);
+  });
+
+  it("preserves same-position order when delayed custom content is attached", () => {
+    const { controller, contentFor } = createHarness();
+    contentFor("content-1");
+    controller.set({ kind: "content", controlId: "content-1", visible: true, position: "top-right", order: 500 });
+    controller.set(center());
+    controller.set(navigation());
+
+    controller.setContent("content-1");
+
+    expect(controller.ids()).toEqual(["nav", "content-1", "center"]);
+  });
+
   it("skips invisible controls and removes dropped ones", () => {
     const { controller, map } = createHarness();
     controller.set(navigation());

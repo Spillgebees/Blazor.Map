@@ -167,7 +167,10 @@ export function createControlsController(
     }
     attached.length = 0;
 
-    const ordered: { id: string; control: IControl; position: string; order: number; declarationOrder: number }[] = [];
+    const groups = new Map<
+      string,
+      { id: string; control: IControl; position: string; order: number; declarationOrder: number }[]
+    >();
     let declarationOrder = 0;
     for (const definition of definitions.values()) {
       const index = declarationOrder++;
@@ -180,35 +183,41 @@ export function createControlsController(
         continue;
       }
 
-      ordered.push({
+      const entry = {
         id: definition.controlId,
         control,
         position: definition.position,
         order: definition.order,
         declarationOrder: index,
-      });
+      };
+      const group = groups.get(definition.position);
+      if (group) {
+        group.push(entry);
+      } else {
+        groups.set(definition.position, [entry]);
+      }
     }
 
-    ordered.sort((left, right) => {
-      if (left.position !== right.position) {
-        // cross-position ordering is irrelevant; stable sort preserves declaration order across buckets
-        return 0;
+    // Order is scoped to one MapLibre corner. Keeping position buckets separate
+    // ensures controls in the same corner are always compared, even when their
+    // definitions are interleaved with controls from other corners.
+    for (const group of groups.values()) {
+      group.sort((left, right) => {
+        if (left.order !== right.order) {
+          return left.order - right.order;
+        }
+
+        if (left.declarationOrder !== right.declarationOrder) {
+          return left.declarationOrder - right.declarationOrder;
+        }
+
+        return left.id.localeCompare(right.id);
+      });
+
+      for (const entry of group) {
+        map.addControl(entry.control, entry.position as never);
+        attached.push({ id: entry.id, control: entry.control });
       }
-
-      if (left.order !== right.order) {
-        return left.order - right.order;
-      }
-
-      if (left.declarationOrder !== right.declarationOrder) {
-        return left.declarationOrder - right.declarationOrder;
-      }
-
-      return left.id.localeCompare(right.id);
-    });
-
-    for (const entry of ordered) {
-      map.addControl(entry.control, entry.position as never);
-      attached.push({ id: entry.id, control: entry.control });
     }
   }
 
