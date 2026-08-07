@@ -41,7 +41,7 @@
     "@microsoft/dotnet-js-interop": "10.0.0",
     "@playwright/test": "1.62.0",
     "@types/geojson": "7946.0.16",
-    "@types/node": "26.1.1",
+    "@types/node": "26.1.2",
     "@vitest/coverage-v8": "4.1.10",
     "jsdom": "29.1.1",
     "rimraf": "6.1.3",
