@@ -6,8 +6,10 @@ export interface ComposedStyleLayerRegistration {
   runtimeLayerId: string;
   styleId: string;
   originalLayerId: string;
-  originalVisible?: boolean;
+  originalVisible: boolean;
   originalFilter: unknown | undefined;
+  /** Metadata tags (`sgb:tags`, or `tags`) from the overlay style JSON. */
+  tags: string[];
 }
 
 export interface OverlayStyleRequestOptions {

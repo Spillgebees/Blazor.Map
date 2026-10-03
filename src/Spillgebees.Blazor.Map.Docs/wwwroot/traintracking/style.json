@@ -234,9 +234,6 @@
       "id": "railway-areas-fill",
       "type": "fill",
       "source": "railway",
-      "layout": {
-        "visibility": "none"
-      },
       "paint": {
         "fill-color": "#f5f0e8",
         "fill-opacity": 0.3
@@ -246,9 +243,6 @@
       "id": "railway-areas-outline",
       "type": "line",
       "source": "railway",
-      "layout": {
-        "visibility": "none"
-      },
       "paint": {
         "line-color": "#d6cebe",
         "line-width": 1,
@@ -261,7 +255,6 @@
       "source": "railway",
       "filter": ["all", ["!=", ["get", "railway"], "tram"], ["==", ["get", "service"], ""]],
       "layout": {
-        "visibility": "none",
         "line-join": "round",
         "line-cap": "round"
       },
@@ -276,7 +269,6 @@
       "source": "railway",
       "filter": ["has", "service"],
       "layout": {
-        "visibility": "none",
         "line-join": "round",
         "line-cap": "round"
       },
@@ -305,9 +297,6 @@
       "type": "line",
       "source": "railway",
       "filter": ["==", ["get", "tunnel"], "yes"],
-      "layout": {
-        "visibility": "none"
-      },
       "paint": {
         "line-color": "#7c8db5",
         "line-width": 2,
@@ -319,7 +308,6 @@
       "type": "symbol",
       "source": "railway",
       "layout": {
-        "visibility": "none",
         "text-field": ["get", "tunnel_name"]
       },
       "paint": {
@@ -344,9 +332,6 @@
       "id": "railway-lifecycle-fill",
       "type": "line",
       "source": "railway",
-      "layout": {
-        "visibility": "none"
-      },
       "paint": {
         "line-color": "#a8a29e",
         "line-width": 2,
@@ -370,9 +355,6 @@
       "id": "railway-platforms-fill",
       "type": "fill",
       "source": "railway",
-      "layout": {
-        "visibility": "none"
-      },
       "paint": {
         "fill-color": "#a78bfa",
         "fill-opacity": 0.5
@@ -382,9 +364,6 @@
       "id": "railway-platforms-3d",
       "type": "fill-extrusion",
       "source": "railway",
-      "layout": {
-        "visibility": "none"
-      },
       "paint": {
         "fill-extrusion-color": "#a78bfa",
         "fill-extrusion-opacity": 0.7,
@@ -646,7 +625,6 @@
       "source": "railway",
       "filter": ["has", "ref"],
       "layout": {
-        "visibility": "none",
         "text-field": ["get", "ref"]
       },
       "paint": {

@@ -176,21 +176,24 @@ public sealed class GeoJsonSource : ComponentBase, IAsyncDisposable, IEngineSour
             Map.Channel.Queue(
                 new LayerAddOp(
                     ClusterLayerId(definition),
-                    EngineSpec.BuildClusterLayerSpec(ClusterLayerId(definition), Id, definition)
+                    EngineSpec.BuildClusterLayerSpec(ClusterLayerId(definition), Id, definition),
+                    Owner: Id
                 )
             );
         }
 
-        if (Cluster is { ClickBehavior: ClusterClickBehavior.ZoomToDissolve })
+        if (Cluster is not { ClickBehavior: ClusterClickBehavior.ZoomToDissolve })
         {
-            var zoomLayerIds = _clusterLayerDefinitions
-                .Where(definition => definition.Interactive)
-                .Select(ClusterLayerId)
-                .ToArray();
-            if (zoomLayerIds.Length > 0)
-            {
-                Map.Channel.Queue(new SourceClusterZoomOp(Id, zoomLayerIds));
-            }
+            return;
+        }
+
+        var zoomLayerIds = _clusterLayerDefinitions
+            .Where(definition => definition.Interactive)
+            .Select(ClusterLayerId)
+            .ToArray();
+        if (zoomLayerIds.Length > 0)
+        {
+            Map.Channel.Queue(new SourceClusterZoomOp(Id, zoomLayerIds));
         }
     }
 
@@ -217,6 +220,5 @@ public sealed class GeoJsonSource : ComponentBase, IAsyncDisposable, IEngineSour
         }
 
         await Map.Channel.QueueAndFlushAsync(new SourceRemoveOp(Id));
-        GC.SuppressFinalize(this);
     }
 }

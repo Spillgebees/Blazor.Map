@@ -1,5 +1,3 @@
-@using Spillgebees.Blazor.Map
-
 <SgbMap Center="@(new Coordinate(49.6117, 6.1319))"
         Zoom="12"
         Style="@(MapStyle.OpenFreeMap.Liberty)"
@@ -16,10 +14,10 @@
         <ButtonMapControl Id="station-focus"
                           Position="ControlPosition.TopLeft"
                           Order="15"
-                          Label="@FocusActionLabel"
-                          Title="@FocusActionLabel"
-                          Text="@FocusText"
-                          OnClick="FocusNextStationAsync">
+                          Label="@_focusActionLabel"
+                          Title="@_focusActionLabel"
+                          Text="@_focusText"
+                          OnClick="@FocusNextStationAsync">
             <Icon>
                 <svg class="docs-station-focus-icon"
                      viewBox="0 0 24 24"
@@ -66,7 +64,7 @@
 
     <MapSources>
         <GeoJsonSource Id="network"
-                       Data="@NetworkData">
+                       Data="@_networkData">
             <LineLayer Id="metro-line"
                        Color="@("#2563eb")"
                        Width="4" />
@@ -88,7 +86,6 @@
     ];
 
     private SgbMap? _map;
-    private object? _networkData;
     private int _nextStationIndex;
     private string? _focusedStationName;
     private bool _showStationNames = true;
@@ -97,27 +94,27 @@
             [
                 new MapDisplayItem(
                     "metro-lines",
-                    [MapDisplayTarget.RuntimeLayers("metro-line")],
+                    [MapDisplayTarget.Layers("metro-line")],
                     Label: "Metro lines"
                 ),
                 new MapDisplayItem(
                     "stations",
-                    [MapDisplayTarget.RuntimeLayers("station-layer")],
+                    [MapDisplayTarget.Layers("station-layer")],
                     Label: "Stations"
                 ),
             ]
         );
 
-    private StationFeature NextStation => _stations[_nextStationIndex];
+    private StationFeature _nextStation => _stations[_nextStationIndex];
 
-    private string FocusLabel => _focusedStationName is null ? NextStation.Name : $"Focused {_focusedStationName}";
+    private string _focusLabel => _focusedStationName is null ? _nextStation.Name : $"Focused {_focusedStationName}";
 
-    private string FocusActionLabel => $"Focus {NextStation.Name}";
+    private string _focusActionLabel => $"Focus {_nextStation.Name}";
 
-    private string FocusText => $"Focus station: {FocusLabel}";
+    private string _focusText => $"Focus station: {_focusLabel}";
 
-    private object NetworkData =>
-        _networkData ??= new
+    private object _networkData =>
+        new
         {
             type = "FeatureCollection",
             features = CreateNetworkFeatures(),
@@ -186,7 +183,7 @@
 
     private async Task FocusNextStationAsync()
     {
-        var station = NextStation;
+        var station = _nextStation;
         _focusedStationName = station.Name;
         _nextStationIndex = (_nextStationIndex + 1) % _stations.Length;
 

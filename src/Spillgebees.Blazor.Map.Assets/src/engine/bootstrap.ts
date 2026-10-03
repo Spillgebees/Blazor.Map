@@ -49,6 +49,8 @@ interface EngineInstance {
   popups: PopupController;
   router: DotNetObjectReference;
   baseStyleKey: string;
+  /** Consumer-given id of the base style (display targets resolve against it). */
+  baseStyleId: string | null;
   overlayStyles: OverlayStyleRequestOptions[];
   composedGlyphsUrl: string | null;
   pendingStyleReload: boolean;
@@ -207,11 +209,12 @@ function createMap(container: HTMLElement, optionsJson: string, router: DotNetOb
     void router.invokeMethodAsync("OnMapEvent", "error", { message: String(error) });
   const baseStyle = resolveBaseStyle(options);
 
-  // preload web fonts (fire-and-forget — fonts load in parallel with map init)
+  // preload web fonts (fire-and-forget: fonts load in parallel with map init)
   for (const font of options.webFonts ?? []) {
-    document.fonts.load(font);
+    document.fonts.load(font).catch(() => {
+      // Silently ignore font load failures; fonts are a progressive enhancement
+    });
   }
-
   const config = options.config;
   let mapForTransform: MapLibreMap | null = null;
   const map = new MapLibreMap({
@@ -257,6 +260,7 @@ function createMap(container: HTMLElement, optionsJson: string, router: DotNetOb
       onEvent: emit,
       onError: reportError,
       onFollowCleared: (reason) => void router.invokeMethodAsync("OnMapEvent", "followcleared", { reason }),
+      onDisplayDefaults: (defaults) => void router.invokeMethodAsync("OnMapEvent", "displaydefaults", { defaults }),
     },
   );
 
@@ -269,6 +273,7 @@ function createMap(container: HTMLElement, optionsJson: string, router: DotNetOb
     popups,
     router,
     baseStyleKey: styleKey(baseStyle),
+    baseStyleId: options.styles?.[0]?.id ?? null,
     overlayStyles: toOverlayRequests(options.styles, reportError),
     composedGlyphsUrl: options.composedGlyphsUrl ?? null,
     pendingStyleReload: false,
@@ -326,6 +331,7 @@ function setStyles(container: HTMLElement, stylesJson: string): void {
   const baseStyle = resolveBaseStyle(options);
   const newKey = styleKey(baseStyle);
   instance.overlayStyles = toOverlayRequests(options.styles, reportError);
+  instance.baseStyleId = options.styles?.[0]?.id ?? null;
   instance.composedGlyphsUrl = options.composedGlyphsUrl ?? null;
   instance.policyStyles = options.styles ?? [];
 
@@ -651,29 +657,27 @@ function toEngineMap(
     on: (...args: unknown[]) => void (map.on as (...a: unknown[]) => unknown)(...args),
     off: (...args: unknown[]) => void (map.off as (...a: unknown[]) => unknown)(...args),
     listStyleLayers: () => (map.getStyle()?.layers ?? []) as never,
-    resolveComposedLayer: (styleId, layerId) => {
-      const registration = window.Spillgebees.Map?.composedStyleLayerIds?.get(map)?.get(`${styleId}\u0000${layerId}`);
-      return registration
-        ? {
-            layerId: registration.runtimeLayerId,
-            visible: registration.originalVisible ?? true,
-            filter: registration.originalFilter,
-          }
-        : null;
+    baseStyleId: () => getInstance().baseStyleId,
+    isKnownStyle: (styleId) => {
+      const instance = getInstance();
+      return (
+        instance.baseStyleId === null ||
+        instance.baseStyleId === styleId ||
+        instance.overlayStyles.some((overlay) => overlay.styleId === styleId)
+      );
     },
-    listComposedLayers: (styleId) => {
+    composedStyleLayers: (styleId) => {
       const registrations = window.Spillgebees.Map?.composedStyleLayerIds?.get(map);
-      if (!registrations) {
-        return [];
-      }
-
-      return [...registrations.values()]
+      const layers = [...(registrations?.values() ?? [])]
         .filter((registration) => registration.styleId === styleId)
         .map((registration) => ({
           layerId: registration.runtimeLayerId,
-          visible: registration.originalVisible ?? true,
-          filter: registration.originalFilter,
+          originalLayerId: registration.originalLayerId,
+          visible: registration.originalVisible,
+          filter: registration.originalFilter ?? null,
+          tags: registration.tags,
         }));
+      return layers.length > 0 ? layers : null;
     },
   };
 }

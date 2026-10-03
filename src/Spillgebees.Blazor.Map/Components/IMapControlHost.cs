@@ -65,17 +65,3 @@ internal interface IMapFeatureHost
 
     ValueTask RemoveOverlayFeaturesAsync(string ownerId);
 }
-
-/// <summary>
-/// The host surface <see cref="OverlayMapControl"/> binds to, implemented by both maps.
-/// </summary>
-internal interface IMapOverlayHost
-{
-    event EventHandler<MapOverlayChangedEventArgs>? OverlayChanged;
-
-    IReadOnlyList<MapOverlayItem> GetOverlayItems();
-
-    void SetOverlayVisible(string overlayId, bool visible);
-
-    void SetOverlayPartVisible(string overlayId, string partId, bool visible);
-}

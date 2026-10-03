@@ -63,6 +63,7 @@
 
 <h2 id="display_map_controls">// display_map_controls</h2>
 <p><code>DisplayMapControl</code> renders <code>SgbMap.Display</code> items. Use <code>ItemIds</code> to choose and order a subset.</p>
+<p>Layers start as their style ships them. An item that is on shows the layers it names, even ones the style hides; an item that is off hides everything it targets; off wins. Leave <code>IsOn</code> unset and the item starts as the style has it, so the control matches the style without repeating its defaults. <code>MapDisplayTarget.Style</code> switches a whole style and only ever hides; <code>.Where(filter)</code> narrows any target to the features hidden while the item is off.</p>
 <CodeBlock Language="razor" Files="@_displayExamples" />
 
 <h2 id="legend_map_controls">// legend_map_controls</h2>
@@ -191,11 +192,26 @@
     private static readonly Dictionary<string, string> _displayExamples = new()
     {
         ["DisplayMapControl.razor"] = """
-            <SgbMap Display="@_display">
+            <SgbMap Styles="@_styles" Display="@_display">
                 <MapControls>
                     <DisplayMapControl Id="display" InitiallyOpen="true" />
                 </MapControls>
             </SgbMap>
+
+            @code {
+                private readonly IReadOnlyList<MapStyle> _styles =
+                [
+                    MapStyle.OpenFreeMap.Positron,
+                    MapStyle.FromUrl("/railway/style.json").WithId("railway"),
+                ];
+
+                private readonly MapDisplayState _display = new([
+                    // follows the style: off when it ships the tram layers hidden
+                    new MapDisplayItem("tram", [MapDisplayTarget.StyleTags("railway", "tram")], Label: "Tram"),
+                    new MapDisplayItem("railway", [MapDisplayTarget.Style("railway")], Label: "Railway overlay"),
+                    new MapDisplayItem("trains", [MapDisplayTarget.Layers("trains")], IsOn: false, Label: "Trains"),
+                ]);
+            }
             """,
     };
 

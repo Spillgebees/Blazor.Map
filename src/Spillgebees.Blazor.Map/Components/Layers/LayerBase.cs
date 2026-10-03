@@ -20,9 +20,6 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
     [CascadingParameter]
     internal IEngineSource? Source { get; set; }
 
-    [CascadingParameter]
-    internal MapOverlayPart? OverlayPart { get; set; }
-
     /// <summary>Unique layer id within the map style.</summary>
     [Parameter, EditorRequired]
     public string Id { get; set; } = "";
@@ -166,7 +163,6 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
 
         Map!.Channel.Queue(new LayerAddOp(Id, spec, Slot, Before));
         RegisterEventHandlers();
-        OverlayPart?.RegisterRuntimeLayer(Id);
     }
 
     private void RegisterEventHandlers()

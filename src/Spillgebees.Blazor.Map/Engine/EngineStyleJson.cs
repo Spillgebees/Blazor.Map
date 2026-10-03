@@ -9,26 +9,17 @@ internal static class EngineStyleJson
 {
     /// <summary>
     /// Resolves the effective style configuration: <paramref name="styles"/> wins over
-    /// <paramref name="style"/> wins over <paramref name="styleSpec"/>; overlay styles
-    /// registered by child components append to the typed list.
+    /// <paramref name="style"/> wins over <paramref name="styleSpec"/>.
     /// </summary>
     public static JsonObject BuildStylesNode(
         IReadOnlyList<MapStyle>? styles,
         MapStyle? style,
         string? styleSpec,
-        IReadOnlyList<MapStyle> overlayStyles,
-        string? composedGlyphsUrl,
-        Action<Exception> onError
+        string? composedGlyphsUrl
     )
     {
         var node = new JsonObject();
-        var baseStyles = styles ?? (style is null ? null : (IReadOnlyList<MapStyle>)[style]);
-        if (baseStyles is null && overlayStyles.Count > 0)
-        {
-            onError(new InvalidOperationException("Overlay styles require a typed base style (Style or Styles)."));
-        }
-
-        var effectiveStyles = baseStyles is null ? null : (IReadOnlyList<MapStyle>)[.. baseStyles, .. overlayStyles];
+        var effectiveStyles = styles ?? (style is null ? null : (IReadOnlyList<MapStyle>)[style]);
         if (effectiveStyles is { Count: > 0 })
         {
             var array = new JsonArray();

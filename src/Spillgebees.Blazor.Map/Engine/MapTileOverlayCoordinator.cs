@@ -95,7 +95,8 @@ internal sealed class MapTileOverlayCoordinator(MapEngineChannel channel)
                     ["type"] = "raster",
                     ["source"] = sourceId,
                     ["paint"] = new JsonObject { ["raster-opacity"] = overlay.Opacity },
-                }
+                },
+                Owner: overlay.Id
             )
         );
     }

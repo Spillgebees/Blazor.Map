@@ -28,8 +28,6 @@ namespace Spillgebees.Blazor.Map.Engine;
 [JsonDerivedType(typeof(EntitiesSelectOp), "entities.select")]
 [JsonDerivedType(typeof(VisibilitySetOp), "visibility.set")]
 [JsonDerivedType(typeof(VisibilityRemoveOp), "visibility.remove")]
-[JsonDerivedType(typeof(OverlaySetOp), "overlay.set")]
-[JsonDerivedType(typeof(OverlayRemoveOp), "overlay.remove")]
 [JsonDerivedType(typeof(ImageAddOp), "image.add")]
 [JsonDerivedType(typeof(ImageRemoveOp), "image.remove")]
 [JsonDerivedType(typeof(MarkerSetOp), "marker.set")]
@@ -63,7 +61,14 @@ internal sealed record SourceSetDataOp(string Id, JsonNode? Data, EngineAnimatio
 
 internal sealed record SourceClusterZoomOp(string Id, IReadOnlyList<string> LayerIds) : EngineOp;
 
-internal sealed record LayerAddOp(string Id, JsonNode Spec, string? Slot = null, string? Before = null) : EngineOp;
+/// <summary>Adds a runtime layer; <c>Owner</c> is the creating component's id when it differs from the layer id.</summary>
+internal sealed record LayerAddOp(
+    string Id,
+    JsonNode Spec,
+    string? Slot = null,
+    string? Before = null,
+    string? Owner = null
+) : EngineOp;
 
 internal sealed record LayerRemoveOp(string Id) : EngineOp;
 
@@ -94,21 +99,11 @@ internal sealed record EntitiesUpsertOp(
 
 internal sealed record EntitiesSelectOp(string Id, IReadOnlyList<uint> Selected) : EngineOp;
 
-internal sealed record VisibilitySetOp(string Id, bool Visible, IReadOnlyList<EngineVisibilityTarget> Targets)
+/// <summary>Sets a display item; a null <c>Visible</c> (omitted on the wire) means the item follows the style.</summary>
+internal sealed record VisibilitySetOp(string Id, bool? Visible, IReadOnlyList<EngineVisibilityTarget> Targets)
     : EngineOp;
 
 internal sealed record VisibilityRemoveOp(string Id) : EngineOp;
-
-internal sealed record OverlaySetOp(
-    string Id,
-    bool Visible,
-    IReadOnlyList<EngineVisibilityTarget> Targets,
-    IReadOnlyList<EngineOverlayPart> Parts
-) : EngineOp;
-
-internal sealed record OverlayRemoveOp(string Id) : EngineOp;
-
-internal sealed record EngineOverlayPart(string Id, bool Visible, IReadOnlyList<EngineVisibilityTarget> Targets);
 
 internal sealed record ImageAddOp(string Id, string Url, JsonNode? Options = null) : EngineOp;
 
@@ -174,7 +169,7 @@ internal sealed record EngineControl(
     public static EngineControl From(MapControlDefinition control, int? centerClickHandlerId = null) =>
         control switch
         {
-            NavigationControlDefinition navigation => new(
+            NavigationControlDefinition navigation => new EngineControl(
                 "navigation",
                 navigation.ControlId,
                 navigation.Visible,
@@ -183,7 +178,7 @@ internal sealed record EngineControl(
                 ShowCompass: navigation.ShowCompass,
                 ShowZoom: navigation.ShowZoom
             ),
-            ScaleControlDefinition scale => new(
+            ScaleControlDefinition scale => new EngineControl(
                 "scale",
                 scale.ControlId,
                 scale.Visible,
@@ -191,7 +186,7 @@ internal sealed record EngineControl(
                 scale.Order,
                 Unit: scale.Unit
             ),
-            FullscreenControlDefinition fullscreen => new(
+            FullscreenControlDefinition fullscreen => new EngineControl(
                 "fullscreen",
                 fullscreen.ControlId,
                 fullscreen.Visible,
@@ -202,7 +197,7 @@ internal sealed record EngineControl(
                 EnterTitle: fullscreen.EnterTitle,
                 ExitTitle: fullscreen.ExitTitle
             ),
-            GeolocateControlDefinition geolocate => new(
+            GeolocateControlDefinition geolocate => new EngineControl(
                 "geolocate",
                 geolocate.ControlId,
                 geolocate.Visible,
@@ -210,7 +205,7 @@ internal sealed record EngineControl(
                 geolocate.Order,
                 TrackUser: geolocate.TrackUser
             ),
-            TerrainControlDefinition terrain => new(
+            TerrainControlDefinition terrain => new EngineControl(
                 "terrain",
                 terrain.ControlId,
                 terrain.Visible,
@@ -218,7 +213,7 @@ internal sealed record EngineControl(
                 terrain.Order,
                 SourceId: terrain.SourceId
             ),
-            CenterControlDefinition center => new(
+            CenterControlDefinition center => new EngineControl(
                 "center",
                 center.ControlId,
                 center.Visible,
@@ -227,7 +222,7 @@ internal sealed record EngineControl(
                 Icon: center.Icon,
                 Events: centerClickHandlerId is null ? null : new EngineControlEvents(Click: centerClickHandlerId)
             ),
-            LegendControlDefinition legend => new(
+            LegendControlDefinition legend => new EngineControl(
                 "legend",
                 legend.ControlId,
                 legend.Visible,
@@ -238,7 +233,7 @@ internal sealed record EngineControl(
                 InitiallyOpen: legend.Chrome.InitiallyOpen,
                 ClassName: legend.Chrome.ClassName
             ),
-            PanelControlDefinition panel => new(
+            PanelControlDefinition panel => new EngineControl(
                 "panel",
                 panel.ControlId,
                 panel.Visible,
@@ -251,7 +246,7 @@ internal sealed record EngineControl(
                 IsOpen: panel.Chrome.IsOpen,
                 MaxWidth: panel.Chrome.MaxWidth
             ),
-            ContentControlDefinition content => new(
+            ContentControlDefinition content => new EngineControl(
                 "content",
                 content.ControlId,
                 content.Visible,
@@ -311,7 +306,7 @@ internal sealed record CameraFollowOp(
 ) : EngineOp;
 
 /// <summary>Clears the active camera follow.</summary>
-internal sealed record CameraClearFollowOp() : EngineOp;
+internal sealed record CameraClearFollowOp : EngineOp;
 
 internal sealed record EngineFollowCamera(
     string ZoomMode = "free",
@@ -370,27 +365,36 @@ internal sealed record EngineEventHandlers(int? Click = null, int? Enter = null,
 
 internal sealed record EngineVisibilityTarget(
     string Kind,
-    IReadOnlyList<string>? LayerIds = null,
+    IReadOnlyList<string>? Ids = null,
     string? StyleId = null,
+    IReadOnlyList<string>? LayerIds = null,
     IReadOnlyList<string>? Tags = null,
     JsonNode? Filter = null
 )
 {
     /// <summary>Maps the public display target model onto the engine vocabulary.</summary>
-    public static EngineVisibilityTarget From(MapDisplayTarget target) =>
-        target.Kind switch
+    public static EngineVisibilityTarget From(MapDisplayTarget target)
+    {
+        var filter = EngineJson.ToNode(target.Filter);
+        return target.Kind switch
         {
-            MapDisplayTargetKind.RuntimeLayer => new("runtimeLayer", LayerIds: target.LayerIds),
-            MapDisplayTargetKind.StyleLayer => new("styleLayer", LayerIds: target.LayerIds, StyleId: target.StyleId),
-            MapDisplayTargetKind.StyleLayerFeatures => new(
-                "styleLayerFeatures",
-                LayerIds: target.LayerIds,
+            MapDisplayTargetKind.Layers => new EngineVisibilityTarget("layers", Ids: target.Names, Filter: filter),
+            MapDisplayTargetKind.StyleLayers => new EngineVisibilityTarget(
+                "styleLayers",
                 StyleId: target.StyleId,
-                Filter: EngineJson.ToNode(target.Filter)
+                LayerIds: target.Names,
+                Filter: filter
             ),
-            MapDisplayTargetKind.StyleLayerTag => new("styleLayerTag", StyleId: target.StyleId, Tags: target.Tags),
+            MapDisplayTargetKind.StyleTags => new EngineVisibilityTarget(
+                "styleTags",
+                StyleId: target.StyleId,
+                Tags: target.Names,
+                Filter: filter
+            ),
+            MapDisplayTargetKind.Style => new EngineVisibilityTarget("style", StyleId: target.StyleId, Filter: filter),
             _ => throw new NotSupportedException($"Unsupported display target kind '{target.Kind}'."),
         };
+    }
 }
 
 internal sealed record EngineEntityHover(double? Scale = null, bool? Raise = null);

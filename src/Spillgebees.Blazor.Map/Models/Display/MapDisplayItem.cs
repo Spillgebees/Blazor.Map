@@ -1,7 +1,8 @@
 namespace Spillgebees.Blazor.Map;
 
 /// <summary>
-/// Defines a named map-level display rule for layers or feature subsets.
+/// A named toggle for map content (layers, whole styles, or feature subsets), typically
+/// shown as a legend or display-control switch.
 /// </summary>
 public sealed record MapDisplayItem
 {
@@ -11,7 +12,7 @@ public sealed record MapDisplayItem
     public MapDisplayItem(
         string Id,
         IReadOnlyList<MapDisplayTarget> Targets,
-        bool IsOn = true,
+        bool? IsOn = null,
         string? Label = null,
         string? Description = null
     )
@@ -40,8 +41,13 @@ public sealed record MapDisplayItem
     /// <summary>Gets display targets controlled by the item.</summary>
     public IReadOnlyList<MapDisplayTarget> Targets { get; }
 
-    /// <summary>Gets whether targeted map content is allowed to display.</summary>
-    public bool IsOn { get; init; }
+    /// <summary>
+    /// Gets whether the item is on: <c>true</c> shows the layers it names (even ones the
+    /// style ships hidden), <c>false</c> hides everything it targets, and <c>null</c>
+    /// (the default) leaves its layers as the style has them until the item is switched.
+    /// Use <see cref="MapDisplayState.IsOn(string)"/> for the effective state.
+    /// </summary>
+    public bool? IsOn { get; init; }
 
     /// <summary>Gets the human-readable display label.</summary>
     public string? Label { get; init; }

@@ -678,6 +678,16 @@
   }
 }
 
+// unset display items before the map has reported its style defaults
+.sgb-map-legend-item-pending {
+  opacity: 0.5;
+  cursor: progress;
+
+  input {
+    cursor: progress;
+  }
+}
+
 .sgb-map-legend-item-copy {
   display: grid;
   gap: 6px;

@@ -12,6 +12,9 @@ public partial class DisplayMapControl : ComponentBase, IDisposable
     [CascadingParameter]
     private MapDisplayState? _display { get; set; }
 
+    [CascadingParameter]
+    private SgbMap? _map { get; set; }
+
     /// <summary>Unique control identifier within the map.</summary>
     [Parameter, EditorRequired]
     public string Id { get; set; } = string.Empty;
@@ -128,7 +131,12 @@ public partial class DisplayMapControl : ComponentBase, IDisposable
     }
 
     private MapDisplayControlItemContext BuildTemplateContext(MapDisplayItem item) =>
-        new(item, item.IsOn, on => SetOnAsync(item.Id, on));
+        new(item, IsOn(item), on => SetOnAsync(item.Id, on));
+
+    // inside a map, unset items show that map's style default
+    private bool IsOn(MapDisplayItem item) => _map is null ? _display!.IsOn(item.Id) : _display!.IsOn(item.Id, _map);
+
+    private bool IsPending(MapDisplayItem item) => _map is not null && _display!.IsPending(item.Id, _map);
 
     private Task ToggleItemAsync(MapDisplayItem item, ChangeEventArgs args)
     {

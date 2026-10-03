@@ -1,15 +1,18 @@
-// Visibility controller for display groups and overlays — see
-// sources/geojson.ts resolveTargets/composeDisplayFilter/applyOverlay):
+// Visibility controller for display items (C# MapDisplayItem → visibility.set ops).
 //
-// - Groups (display items) and overlays (with parts) target layers through the
-//   VisibilityTarget vocabulary; a layer is visible iff its original visibility AND
-//   every group containing it AND every overlay/part containing it are visible.
-// - styleLayerFeatures targets never toggle whole layers: each hidden group's filter is
-//   negated and ANDed onto the layer's baseline filter.
-// - Baseline filters are owned by the engine layer store for runtime layers and
-//   captured from the style on first touch for style layers.
+// Rule: layers start as their style (or layer spec) has them. An item that is off hides
+// every layer it targets; an item that is on shows the layers it names (by id or tag),
+// even ones the style hides; off wins. Unset items (visible === null) leave their layers
+// alone and only report the style's default back to C#. Whole-style targets can hide but
+// never show. Filtered targets never toggle whole layers: while their item is off, the
+// filter is negated and ANDed onto the layer's baseline filter.
+//
+// Originals: runtime layers read the engine layer store, composed overlay layers read
+// their style JSON (composition registry), and base-style layers read a snapshot taken
+// before the controller first touches the style (re-taken after a base style change), so
+// the controller never mistakes its own writes for the style's defaults.
 
-import type { OverlayPartConfig, VisibilityTarget } from "./ops";
+import type { VisibilityTarget } from "./ops";
 
 export interface StyleLayerInfo {
   id: string;
@@ -19,52 +22,71 @@ export interface StyleLayerInfo {
 }
 
 export interface ComposedLayerInfo {
+  /** Runtime (prefixed) layer id. */
   layerId: string;
+  /** Layer id in the overlay style JSON. */
+  originalLayerId: string;
   visible: boolean;
-  filter: unknown | undefined;
+  filter: unknown;
+  tags: string[];
+}
+
+export interface RuntimeLayerInfo {
+  id: string;
+  /** Id of the component that created the layer (entity layers, tile overlays, clusters). */
+  owner: string | null;
+  visible: boolean;
+  filter: unknown;
 }
 
 /** Map surface + engine lookups the controller needs; injectable for tests. */
 export interface VisibilityHost {
-  getRuntimeLayer(layerId: string): { visible: boolean } | null;
-  getRuntimeBaselineFilter(layerId: string): unknown;
-  /** Layers of the base style (excluding engine-managed runtime layers). */
-  listStyleLayers(): StyleLayerInfo[];
-  /** Resolves a composed overlay-style layer to its runtime id, if composed. */
-  resolveComposedLayer(styleId: string, layerId: string): ComposedLayerInfo | null;
-  listComposedLayers(styleId: string): ComposedLayerInfo[];
+  listRuntimeLayers(): Iterable<RuntimeLayerInfo>;
+  getRuntimeLayer(layerId: string): RuntimeLayerInfo | null;
+  /** Live layers of the base style (excluding engine-managed and composed layers). */
+  listBaseStyleLayers(): StyleLayerInfo[];
+  /** Id of the base style, when the consumer gave it one. */
+  baseStyleId(): string | null;
+  /** Layers of a composed overlay style, or null when no such style is composed. */
+  composedStyleLayers(styleId: string): ComposedLayerInfo[] | null;
+  /** Whether the map was configured with a style of this id (base or overlay). */
+  isKnownStyle(styleId: string): boolean;
   setLayerVisibility(layerId: string, visible: boolean): void;
   setLayerFilter(layerId: string, filter: unknown): void;
   hasLayer(layerId: string): boolean;
-}
-
-interface GroupState {
-  visible: boolean;
-  targets: VisibilityTarget[];
-}
-
-interface OverlayState {
-  visible: boolean;
-  targets: VisibilityTarget[];
-  parts: OverlayPartConfig[];
-}
-
-interface ResolvedLayer {
-  layerId: string;
-  originalVisible: boolean;
+  warn?(message: string): void;
 }
 
 export interface VisibilityController {
-  setGroup(id: string, visible: boolean, targets: VisibilityTarget[]): void;
+  setGroup(id: string, visible: boolean | null, targets: VisibilityTarget[]): void;
   removeGroup(id: string): void;
-  setOverlay(id: string, visible: boolean, targets: VisibilityTarget[], parts: OverlayPartConfig[]): void;
-  removeOverlay(id: string): void;
-  /** Recomposes the filter for a layer whose baseline changed. */
+  /** Recomposes the filter for a runtime layer whose baseline changed. */
   onBaselineFilterChanged(layerId: string): void;
-  /** Applies registrations to a layer that was just added. */
+  /** Applies registrations to a runtime layer that was just added. */
   onLayerAdded(layerId: string): void;
-  /** Reapplies everything (after style replay). */
-  replay(): void;
+  onLayerRemoved(layerId: string): void;
+  /** Reapplies everything; `styleChanged` re-snapshots the base style's originals. */
+  replay(styleChanged: boolean): void;
+  /** Style defaults of unset items ({ itemId: on }), or null when unchanged since the last call. */
+  takeDefaults(): Record<string, boolean> | null;
+}
+
+interface GroupState {
+  visible: boolean | null;
+  targets: VisibilityTarget[];
+}
+
+interface ResolvedEntry {
+  layerId: string;
+  /** Whether the target names the layer (id/tag/component), i.e. may show it. */
+  names: boolean;
+  /** Feature filter for filtered targets; undefined for whole-layer targets. */
+  filter: unknown;
+}
+
+interface Registration {
+  group: GroupState;
+  entry: ResolvedEntry;
 }
 
 export function composeDisplayFilter(baseline: unknown, hiddenFilters: unknown[]): unknown {
@@ -76,9 +98,9 @@ export function composeDisplayFilter(baseline: unknown, hiddenFilters: unknown[]
   return baseline == null ? ["all", ...negated] : ["all", baseline, ...negated];
 }
 
-function layerTags(metadata: unknown): string[] {
+export function layerTags(metadata: unknown): string[] {
   const meta = metadata as Record<string, unknown> | null | undefined;
-  const tags = meta?.tags ?? meta?.["sgb:tags"];
+  const tags = meta?.["sgb:tags"] ?? meta?.tags;
   return Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === "string") : [];
 }
 
@@ -98,324 +120,308 @@ export function styleLayerInfo(layer: {
 
 export function createVisibilityController(host: VisibilityHost): VisibilityController {
   const groups = new Map<string, GroupState>();
-  const overlays = new Map<string, OverlayState>();
-  /** Original filters of style layers, captured before display filters compose onto them. */
-  const styleBaselineFilters = new Map<string, unknown>();
-  /** Original visibility of style layers, captured on first resolution. */
-  const styleOriginalVisible = new Map<string, boolean>();
-  /** Original visibility of composed overlay layers, captured on first resolution. */
-  const composedOriginalVisible = new Map<string, boolean>();
-  /** Original filters of composed overlay layers, captured on first resolution. */
-  const composedBaselineFilters = new Map<string, unknown>();
+  /** Per-group resolved layers; cleared whenever the set of layers may have changed. */
+  const resolved = new Map<string, ResolvedEntry[]>();
+  let byLayer: Map<string, Registration[]> | null = null;
+  /** Base-style originals, captured before the controller writes to the style. */
+  let baseSnapshot: Map<string, StyleLayerInfo> | null = null;
+  /** Originals of resolved style layers (base and composed), keyed by runtime layer id. */
+  const styleOriginals = new Map<string, { visible: boolean; filter: unknown }>();
+  /** Layers whose visibility the controller has set. */
+  const touched = new Set<string>();
   /** Layers currently carrying a composed (baseline + hidden) filter. */
-  const composedFilterLayers = new Set<string>();
+  const filteredLayers = new Set<string>();
+  const warned = new Set<string>();
+  let defaultsDirty = false;
+  let lastDefaults: string | null = null;
 
-  function resolveStyleLayer(styleId: string, layerId: string): ResolvedLayer | null {
-    const composed = host.resolveComposedLayer(styleId, layerId);
-    if (composed) {
-      rememberComposedLayer(composed);
-      return { layerId: composed.layerId, originalVisible: composedOriginalVisible.get(composed.layerId) ?? true };
+  function warnOnce(key: string, message: string): void {
+    if (warned.has(key)) {
+      return;
     }
 
-    const styleLayer = host.listStyleLayers().find((layer) => layer.id === layerId);
-    if (!styleLayer) {
+    warned.add(key);
+    // biome-ignore lint/suspicious/noConsole: library warning for developers
+    (host.warn ?? ((text: string) => console.warn(text)))(message);
+  }
+
+  function baseLayers(): Map<string, StyleLayerInfo> {
+    if (!baseSnapshot) {
+      baseSnapshot = new Map(host.listBaseStyleLayers().map((layer) => [layer.id, layer]));
+    }
+
+    return baseSnapshot;
+  }
+
+  /** Layers a style target resolves against, or null when the style isn't on the map. */
+  function styleLayersOf(styleId: string): { layerId: string; originalLayerId: string; info: StyleLayerInfo }[] | null {
+    const composed = host.composedStyleLayers(styleId);
+    if (composed) {
+      return composed.map((layer) => ({
+        layerId: layer.layerId,
+        originalLayerId: layer.originalLayerId,
+        info: { id: layer.layerId, visible: layer.visible, filter: layer.filter ?? null, tags: layer.tags },
+      }));
+    }
+
+    const baseId = host.baseStyleId();
+    if (baseId !== null && baseId !== styleId) {
       return null;
     }
 
-    rememberStyleLayer(styleLayer);
-    return { layerId: styleLayer.id, originalVisible: styleOriginalVisible.get(styleLayer.id) ?? true };
+    return [...baseLayers().values()].map((info) => ({ layerId: info.id, originalLayerId: info.id, info }));
   }
 
-  function rememberStyleLayer(layer: StyleLayerInfo): void {
-    if (!styleOriginalVisible.has(layer.id)) {
-      styleOriginalVisible.set(layer.id, layer.visible);
-    }
-
-    if (!styleBaselineFilters.has(layer.id)) {
-      styleBaselineFilters.set(layer.id, layer.filter);
-    }
+  function isStyleSettled(styleId: string): boolean {
+    return host.composedStyleLayers(styleId) !== null || host.baseStyleId() === styleId;
   }
 
-  function rememberComposedLayer(layer: ComposedLayerInfo): void {
-    if (!composedOriginalVisible.has(layer.layerId)) {
-      composedOriginalVisible.set(layer.layerId, layer.visible);
+  function resolveTarget(groupId: string, target: VisibilityTarget): ResolvedEntry[] {
+    const filter = target.filter ?? undefined;
+    if (target.kind === "layers") {
+      const entries: ResolvedEntry[] = [];
+      for (const layer of host.listRuntimeLayers()) {
+        if (target.ids.includes(layer.id) || (layer.owner !== null && target.ids.includes(layer.owner))) {
+          entries.push({ layerId: layer.id, names: true, filter });
+        }
+      }
+
+      return entries;
     }
 
-    if (!composedBaselineFilters.has(layer.layerId)) {
-      composedBaselineFilters.set(layer.layerId, layer.filter ?? null);
-    }
-  }
+    const layers = styleLayersOf(target.styleId);
+    if (!layers) {
+      if (!host.isKnownStyle(target.styleId)) {
+        warnOnce(
+          `${groupId}\u0000${target.styleId}`,
+          `[Spillgebees.Map] Display item '${groupId}' targets style '${target.styleId}', which is not one of the map's styles.`,
+        );
+      }
 
-  function resolveTarget(target: VisibilityTarget): ResolvedLayer[] {
+      return [];
+    }
+
+    const remember = (layer: { layerId: string; info: StyleLayerInfo }) =>
+      styleOriginals.set(layer.layerId, { visible: layer.info.visible, filter: layer.info.filter });
+
     switch (target.kind) {
-      case "runtimeLayer":
-        return target.layerIds.flatMap((layerId) => {
-          const layer = host.getRuntimeLayer(layerId);
-          return layer ? [{ layerId, originalVisible: layer.visible }] : [];
+      case "style":
+        return layers.map((layer) => {
+          remember(layer);
+          return { layerId: layer.layerId, names: false, filter };
         });
-      case "styleLayer": {
-        if (target.layerIds.length === 0) {
-          const composed = host.listComposedLayers(target.styleId);
-          if (composed.length > 0) {
-            return composed.map((layer) => {
-              rememberComposedLayer(layer);
-              return { layerId: layer.layerId, originalVisible: composedOriginalVisible.get(layer.layerId) ?? true };
-            });
+      case "styleTags":
+        return layers
+          .filter((layer) => layer.info.tags.some((tag) => target.tags.includes(tag)))
+          .map((layer) => {
+            remember(layer);
+            return { layerId: layer.layerId, names: true, filter };
+          });
+      case "styleLayers": {
+        const byOriginalId = new Map(layers.map((layer) => [layer.originalLayerId, layer]));
+        return target.layerIds.flatMap((layerId) => {
+          const layer = byOriginalId.get(layerId);
+          if (!layer) {
+            if (isStyleSettled(target.styleId)) {
+              warnOnce(
+                `${groupId}\u0000${target.styleId}\u0000${layerId}`,
+                `[Spillgebees.Map] Display item '${groupId}' targets layer '${layerId}', which style '${target.styleId}' does not contain.`,
+              );
+            }
+
+            return [];
           }
 
-          return host.listStyleLayers().map((layer) => {
-            rememberStyleLayer(layer);
-            return { layerId: layer.id, originalVisible: styleOriginalVisible.get(layer.id) ?? true };
-          });
-        }
-
-        return target.layerIds.flatMap((layerId) => {
-          const resolved = resolveStyleLayer(target.styleId, layerId);
-          return resolved ? [resolved] : [];
+          remember(layer);
+          return [{ layerId: layer.layerId, names: true, filter }];
         });
       }
-      case "styleLayerTag": {
-        const composed = host.listComposedLayers(target.styleId);
-        if (composed.length > 0) {
-          // composed layers cannot expose metadata through the registry; tags resolve
-          // against the base style only (composed overlay layers resolve separately).
-        }
-
-        return host
-          .listStyleLayers()
-          .filter((layer) => layer.tags.some((tag) => target.tags.includes(tag)))
-          .map((layer) => {
-            rememberStyleLayer(layer);
-            return { layerId: layer.id, originalVisible: styleOriginalVisible.get(layer.id) ?? true };
-          });
-      }
-      case "styleLayerFeatures":
-        // feature targets never toggle whole layers — handled by the filter pass
-        return [];
     }
   }
 
-  function visibilityRegistrationsFor(layerId: string): { hidden: boolean } {
-    let hidden = false;
+  function resolveGroup(id: string): ResolvedEntry[] {
+    const cached = resolved.get(id);
+    if (cached) {
+      return cached;
+    }
 
-    for (const group of groups.values()) {
-      if (!group.visible && group.targets.some((target) => resolveTarget(target).some((r) => r.layerId === layerId))) {
-        hidden = true;
+    const group = groups.get(id);
+    const entries = group ? group.targets.flatMap((target) => resolveTarget(id, target)) : [];
+    resolved.set(id, entries);
+    return entries;
+  }
+
+  function layerIndex(): Map<string, Registration[]> {
+    if (byLayer) {
+      return byLayer;
+    }
+
+    byLayer = new Map();
+    for (const [id, group] of groups) {
+      for (const entry of resolveGroup(id)) {
+        const registrations = byLayer.get(entry.layerId);
+        if (registrations) {
+          registrations.push({ group, entry });
+        } else {
+          byLayer.set(entry.layerId, [{ group, entry }]);
+        }
       }
     }
 
-    for (const overlay of overlays.values()) {
-      const inOverlayTargets = overlay.targets.some((target) =>
-        resolveTarget(target).some((r) => r.layerId === layerId),
-      );
-      const containingParts = overlay.parts.filter((part) =>
-        part.targets.some((target) => resolveTarget(target).some((r) => r.layerId === layerId)),
-      );
+    return byLayer;
+  }
 
-      if (!inOverlayTargets && containingParts.length === 0) {
+  function invalidate(): void {
+    resolved.clear();
+    byLayer = null;
+    defaultsDirty = true;
+  }
+
+  function originalOf(layerId: string): { visible: boolean; filter: unknown } {
+    const runtime = host.getRuntimeLayer(layerId);
+    if (runtime) {
+      return { visible: runtime.visible, filter: runtime.filter };
+    }
+
+    return styleOriginals.get(layerId) ?? { visible: true, filter: null };
+  }
+
+  function applyLayer(layerId: string): void {
+    if (!host.hasLayer(layerId)) {
+      touched.delete(layerId);
+      filteredLayers.delete(layerId);
+      return;
+    }
+
+    const original = originalOf(layerId);
+    let wholeLayer = false;
+    let hide = false;
+    let show = false;
+    const hiddenFilters: unknown[] = [];
+    for (const { group, entry } of layerIndex().get(layerId) ?? []) {
+      if (entry.filter !== undefined) {
+        if (group.visible === false) {
+          hiddenFilters.push(entry.filter);
+        }
+
         continue;
       }
 
-      if (!overlay.visible) {
-        hidden = true;
-      }
-
-      if (containingParts.length > 0 && containingParts.every((part) => !part.visible)) {
-        hidden = true;
-      }
-    }
-
-    return { hidden };
-  }
-
-  function originalVisibleOf(layerId: string): boolean {
-    const runtime = host.getRuntimeLayer(layerId);
-    if (runtime) {
-      return runtime.visible;
-    }
-
-    return composedOriginalVisible.get(layerId) ?? styleOriginalVisible.get(layerId) ?? true;
-  }
-
-  function applyVisibilityFor(layerId: string): void {
-    if (!host.hasLayer(layerId)) {
-      return;
-    }
-
-    const { hidden } = visibilityRegistrationsFor(layerId);
-    host.setLayerVisibility(layerId, originalVisibleOf(layerId) && !hidden);
-  }
-
-  function hiddenFeatureFiltersFor(layerId: string): unknown[] {
-    const filters: unknown[] = [];
-    const collect = (visible: boolean, targets: VisibilityTarget[]) => {
-      if (visible) {
-        return;
-      }
-
-      for (const target of targets) {
-        if (target.kind !== "styleLayerFeatures") {
-          continue;
-        }
-
-        const matches = target.layerIds.some((id) => {
-          if (host.getRuntimeLayer(id) && id === layerId) {
-            return true;
-          }
-
-          return resolveStyleLayer(target.styleId, id)?.layerId === layerId;
-        });
-        if (matches) {
-          filters.push(target.filter);
-        }
-      }
-    };
-
-    for (const group of groups.values()) {
-      collect(group.visible, group.targets);
-    }
-
-    for (const overlay of overlays.values()) {
-      collect(overlay.visible, overlay.targets);
-      for (const part of overlay.parts) {
-        collect(overlay.visible && part.visible, part.targets);
+      wholeLayer = true;
+      if (group.visible === false) {
+        hide = true;
+      } else if (group.visible === true && entry.names) {
+        show = true;
       }
     }
 
-    return filters;
-  }
-
-  function applyFilterFor(layerId: string): void {
-    if (!host.hasLayer(layerId)) {
-      return;
+    if (wholeLayer) {
+      touched.add(layerId);
+      host.setLayerVisibility(layerId, !hide && (original.visible || show));
+    } else if (touched.delete(layerId)) {
+      host.setLayerVisibility(layerId, original.visible);
     }
 
-    const hidden = hiddenFeatureFiltersFor(layerId);
-    if (hidden.length === 0 && !composedFilterLayers.has(layerId)) {
-      // never composed onto this layer — leave its filter untouched
-      return;
-    }
-
-    const baseline = host.getRuntimeLayer(layerId)
-      ? host.getRuntimeBaselineFilter(layerId)
-      : composedBaselineFilters.has(layerId)
-        ? composedBaselineFilters.get(layerId)
-        : styleBaselineFilters.get(layerId);
-    if (hidden.length === 0) {
-      composedFilterLayers.delete(layerId);
-      host.setLayerFilter(layerId, baseline ?? null);
-      return;
-    }
-
-    composedFilterLayers.add(layerId);
-    host.setLayerFilter(layerId, composeDisplayFilter(baseline, hidden));
-  }
-
-  function featureTargetLayerIds(targets: VisibilityTarget[]): string[] {
-    return targets
-      .filter((target): target is Extract<VisibilityTarget, { kind: "styleLayerFeatures" }> => {
-        return target.kind === "styleLayerFeatures";
-      })
-      .flatMap((target) =>
-        target.layerIds.map((id) =>
-          host.getRuntimeLayer(id) ? id : (resolveStyleLayer(target.styleId, id)?.layerId ?? id),
-        ),
-      );
-  }
-
-  function affectedLayerIds(targets: VisibilityTarget[]): string[] {
-    const layerIds = new Set<string>();
-    for (const target of targets) {
-      for (const resolved of resolveTarget(target)) {
-        layerIds.add(resolved.layerId);
-      }
-    }
-
-    for (const layerId of featureTargetLayerIds(targets)) {
-      layerIds.add(layerId);
-    }
-
-    return [...layerIds];
-  }
-
-  function applyTargets(targets: VisibilityTarget[]): void {
-    for (const layerId of affectedLayerIds(targets)) {
-      applyVisibilityFor(layerId);
-      applyFilterFor(layerId);
+    if (hiddenFilters.length > 0) {
+      filteredLayers.add(layerId);
+      host.setLayerFilter(layerId, composeDisplayFilter(original.filter, hiddenFilters));
+    } else if (filteredLayers.delete(layerId)) {
+      host.setLayerFilter(layerId, original.filter ?? null);
     }
   }
 
-  function allRegisteredTargets(): VisibilityTarget[] {
-    const targets: VisibilityTarget[] = [];
-    for (const group of groups.values()) {
-      targets.push(...group.targets);
+  function applyLayers(layerIds: Iterable<string>): void {
+    for (const layerId of new Set(layerIds)) {
+      applyLayer(layerId);
     }
-
-    for (const overlay of overlays.values()) {
-      targets.push(...overlay.targets);
-      for (const part of overlay.parts) {
-        targets.push(...part.targets);
-      }
-    }
-
-    return targets;
   }
 
   return {
     setGroup(id, visible, targets) {
-      const previous = groups.get(id);
+      const previous = groups.has(id) ? resolveGroup(id).map((entry) => entry.layerId) : [];
       groups.set(id, { visible, targets });
-      applyTargets(previous ? [...previous.targets, ...targets] : targets);
+      resolved.delete(id);
+      byLayer = null;
+      defaultsDirty = true;
+      applyLayers([...previous, ...resolveGroup(id).map((entry) => entry.layerId)]);
     },
     removeGroup(id) {
-      const previous = groups.get(id);
+      if (!groups.has(id)) {
+        return;
+      }
+
+      const previous = resolveGroup(id).map((entry) => entry.layerId);
       groups.delete(id);
-      if (previous) {
-        applyTargets(previous.targets);
-      }
-    },
-    setOverlay(id, visible, targets, parts) {
-      const previous = overlays.get(id);
-      overlays.set(id, { visible, targets, parts });
-      const previousTargets = previous ? [...previous.targets, ...previous.parts.flatMap((p) => p.targets)] : [];
-      applyTargets([...previousTargets, ...targets, ...parts.flatMap((part) => part.targets)]);
-    },
-    removeOverlay(id) {
-      const previous = overlays.get(id);
-      overlays.delete(id);
-      if (previous) {
-        applyTargets([...previous.targets, ...previous.parts.flatMap((part) => part.targets)]);
-      }
+      resolved.delete(id);
+      byLayer = null;
+      defaultsDirty = true;
+      applyLayers(previous);
     },
     onBaselineFilterChanged(layerId) {
-      if (composedFilterLayers.has(layerId)) {
-        applyFilterFor(layerId);
+      if (filteredLayers.has(layerId)) {
+        applyLayer(layerId);
         return;
       }
 
       // no display filters active: apply the baseline directly
-      host.setLayerFilter(layerId, host.getRuntimeBaselineFilter(layerId) ?? null);
+      host.setLayerFilter(layerId, host.getRuntimeLayer(layerId)?.filter ?? null);
     },
     onLayerAdded(layerId) {
-      const targets = allRegisteredTargets();
-      const affects =
-        targets.some((target) => resolveTarget(target).some((resolved) => resolved.layerId === layerId)) ||
-        featureTargetLayerIds(targets).includes(layerId);
-      if (!affects) {
+      if (groups.size === 0) {
         return;
       }
 
-      applyVisibilityFor(layerId);
-      applyFilterFor(layerId);
+      invalidate();
+      if (layerIndex().has(layerId)) {
+        applyLayer(layerId);
+      }
     },
-    replay() {
-      // the new style starts fresh: recapture originals lazily
-      styleBaselineFilters.clear();
-      styleOriginalVisible.clear();
-      composedOriginalVisible.clear();
-      composedBaselineFilters.clear();
-      composedFilterLayers.clear();
-      applyTargets(allRegisteredTargets());
+    onLayerRemoved(layerId) {
+      touched.delete(layerId);
+      filteredLayers.delete(layerId);
+      if (groups.size > 0) {
+        invalidate();
+      }
+    },
+    replay(styleChanged) {
+      if (styleChanged) {
+        // the new style starts fresh: nothing carries controller writes yet
+        baseSnapshot = null;
+        styleOriginals.clear();
+        touched.clear();
+        filteredLayers.clear();
+      }
+
+      invalidate();
+      applyLayers([...layerIndex().keys(), ...touched, ...filteredLayers]);
+    },
+    takeDefaults() {
+      if (!defaultsDirty) {
+        return null;
+      }
+
+      defaultsDirty = false;
+      const defaults: Record<string, boolean> = {};
+      for (const [id, group] of groups) {
+        if (group.visible !== null) {
+          continue;
+        }
+
+        const layerIds = resolveGroup(id)
+          .filter((entry) => entry.filter === undefined)
+          .map((entry) => entry.layerId);
+        if (layerIds.length > 0) {
+          defaults[id] = layerIds.some((layerId) => originalOf(layerId).visible);
+        }
+      }
+
+      const key = JSON.stringify(defaults);
+      if (key === lastDefaults) {
+        return null;
+      }
+
+      lastDefaults = key;
+      return defaults;
     },
   };
 }

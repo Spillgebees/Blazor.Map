@@ -465,4 +465,45 @@ describe("applyOverlayStyles", () => {
         ?.originalFilter,
     ).toBe(filter);
   });
+
+  it("should register original visibility and tags from the style JSON", async () => {
+    // arrange
+    const map = {
+      getSource: vi.fn().mockReturnValue(undefined),
+      addSource: vi.fn(),
+      hasImage: vi.fn().mockReturnValue(true),
+      getLayer: vi.fn().mockReturnValue(undefined),
+      addLayer: vi.fn(),
+    } as unknown as Parameters<typeof applyOverlayStyles>[0];
+    window.Spillgebees.Map.composedStyleLayerIds.set(map, new Map());
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        url: "https://example.com/railway.json",
+        json: vi.fn().mockResolvedValue({
+          version: 8,
+          sources: {},
+          layers: [
+            {
+              id: "tram-line-fill",
+              type: "line",
+              layout: { visibility: "none" },
+              metadata: { "sgb:tags": ["tram", "active"] },
+            },
+          ],
+        }),
+      }),
+    );
+
+    // act
+    await applyOverlayStyles(map, [
+      { styleId: "railway", url: "https://example.com/railway.json", referrerPolicy: null },
+    ]);
+
+    // assert
+    const registration = window.Spillgebees.Map.composedStyleLayerIds.get(map)?.get("railway\u0000tram-line-fill");
+    expect(registration?.originalVisible).toBe(false);
+    expect(registration?.tags).toEqual(["tram", "active"]);
+  });
 });

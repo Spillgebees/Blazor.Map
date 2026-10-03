@@ -314,24 +314,26 @@ public sealed class TrackedEntityLayer<TItem> : ComponentBase, IAsyncDisposable
         _appliedLayerIds.Clear();
         foreach (var definition in _clusterLayerDefinitions)
         {
-            channel.Queue(new LayerAddOp(ClusterLayerId(definition), BuildClusterLayerSpec(definition)));
+            channel.Queue(new LayerAddOp(ClusterLayerId(definition), BuildClusterLayerSpec(definition), Owner: Id));
             _appliedLayerIds.Add(ClusterLayerId(definition));
         }
 
-        channel.Queue(new LayerAddOp(_symbolLayerId, BuildSymbolLayerSpec()));
+        channel.Queue(new LayerAddOp(_symbolLayerId, BuildSymbolLayerSpec(), Owner: Id));
         _appliedLayerIds.Add(_symbolLayerId);
 
         if (_interactionIsRelevant)
         {
             // invisible enlarged hit target above the symbols, so small icons stay
             // comfortable to hover and click
-            channel.Queue(new LayerAddOp(_hitAreaLayerId, BuildHitAreaLayerSpec()));
+            channel.Queue(new LayerAddOp(_hitAreaLayerId, BuildHitAreaLayerSpec(), Owner: Id));
             _appliedLayerIds.Add(_hitAreaLayerId);
         }
 
         foreach (var decoration in _decorations)
         {
-            channel.Queue(new LayerAddOp(DecorationLayerId(decoration), BuildDecorationLayerSpec(decoration)));
+            channel.Queue(
+                new LayerAddOp(DecorationLayerId(decoration), BuildDecorationLayerSpec(decoration), Owner: Id)
+            );
             _appliedLayerIds.Add(DecorationLayerId(decoration));
         }
 
