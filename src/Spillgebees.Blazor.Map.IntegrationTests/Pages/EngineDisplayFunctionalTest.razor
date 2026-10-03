@@ -1,8 +1,8 @@
 @page "/engine-display-functional-test"
 
 <main class="e2e-shell">
-    <h1>Engine display + overlay functional test</h1>
-    <p>Display toggles (runtime layers, feature filters) and overlays with composed-style and runtime-layer parts.</p>
+    <h1>Engine display functional test</h1>
+    <p>Display items toggling runtime layers, feature filters, base-style layers and composed overlay-style layers.</p>
 
     <section style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
         <button type="button" data-testid="toggle-points" @onclick="@(() => _display.Toggle("points"))">Toggle points</button>
@@ -12,8 +12,8 @@
         <button type="button"
                 data-testid="toggle-planned-corridor"
                 @onclick="@(() => _display.Toggle("planned-corridor"))">Toggle planned corridor</button>
-        <button type="button" data-testid="toggle-overlay" @onclick="ToggleOverlayAsync">Toggle overlay</button>
-        <button type="button" data-testid="toggle-part" @onclick="TogglePartAsync">Toggle runtime part</button>
+        <button type="button" data-testid="toggle-base" @onclick="@(() => _display.Toggle("base"))">Toggle base raster</button>
+        <button type="button" data-testid="add-overlay-style" @onclick="AddOverlayStyle">Add second overlay style</button>
     </section>
 
     @if (_lastError is not null)
@@ -22,30 +22,27 @@
     }
 
     <div id="engine-display-frame" class="stress-map-frame">
-        <SgbMap @ref="_map"
-                  Style="@_baseStyle"
-                  Display="@_display"
-                  Center="@(new Coordinate(49.61, 6.14))"
-                  Zoom="12"
-                  Height="480px"
-                  Width="100%"
-                  OnMapError="@HandleMapError">
+        <SgbMap Styles="@_styles"
+                Display="@_display"
+                Center="@(new Coordinate(49.61, 6.14))"
+                Zoom="12"
+                Height="480px"
+                Width="100%"
+                OnMapError="@HandleMapError">
             <GeoJsonSource Id="disp" Data="@DataJson">
                 <CircleLayer Id="disp-points"
                                Radius="8"
                                Color="@("#dc2626")"
                                Filter="@_baselineFilter" />
             </GeoJsonSource>
-            <MapOverlay Id="annotations" Label="Annotations" Style="@_overlayStyle">
-                <MapOverlayPart Id="composed"
-                                Label="Composed"
-                                LayerIds="@(["overlay-circle", "planned-corridor-line"])" />
-                <MapOverlayPart Id="runtime" Label="Runtime">
-                    <GeoJsonSource Id="overlay-runtime" Data="@RuntimePartDataJson">
-                        <CircleLayer Id="overlay-runtime-circle" Radius="6" Color="@("#16a34a")" />
-                    </GeoJsonSource>
-                </MapOverlayPart>
-            </MapOverlay>
+
+            <MapControls>
+                <DisplayMapControl Id="display-ctrl"
+                                   Label="Display"
+                                   InitiallyOpen="true"
+                                   Position="ControlPosition.BottomLeft"
+                                   ItemIds="@(["extras"])" />
+            </MapControls>
         </SgbMap>
     </div>
 </main>
@@ -60,6 +57,10 @@
 
     private static readonly MapStyle _overlayStyle = MapStyle.FromUrl("/test-overlay-style.json").WithId("annotations");
 
+    private static readonly MapStyle _secondOverlayStyle = MapStyle
+        .FromUrl("/test-overlay-style.json")
+        .WithId("annotations-2");
+
     private static readonly object _baselineFilter = new object[] { "has", "name" };
 
     private const string DataJson = """
@@ -69,16 +70,13 @@
         ]}
         """;
 
-    private const string RuntimePartDataJson = """
-        {"type":"FeatureCollection","features":[
-            {"type":"Feature","geometry":{"type":"Point","coordinates":[6.14,49.608]},"properties":{"name":"part"}}
-        ]}
-        """;
+    private IReadOnlyList<MapStyle> _styles = [_baseStyle, _overlayStyle];
 
     private readonly MapDisplayState _display = new(
         [
-            new MapDisplayItem("points", [MapDisplayTarget.RuntimeLayers("disp-points")], Label: "Points"),
-            new MapDisplayItem("overlay-style", [MapDisplayTarget.StyleLayers("annotations")], Label: "Overlay style"),
+            new MapDisplayItem("points", [MapDisplayTarget.Layers("disp-points")], Label: "Points"),
+            new MapDisplayItem("base", [MapDisplayTarget.StyleLayers("base", "raster-layer")], Label: "Base raster"),
+            new MapDisplayItem("overlay-style", [MapDisplayTarget.Style("annotations")], Label: "Overlay style"),
             new MapDisplayItem(
                 "planned-corridor",
                 [MapDisplayTarget.StyleLayers("annotations", "planned-corridor-line")],
@@ -90,36 +88,23 @@
                 [MapDisplayTarget.StyleLayers("annotations", "overlay-secondary-circle")],
                 Label: "Overlay secondary"
             ),
+            // unset: follows the overlay style, which ships its tagged layer hidden
+            new MapDisplayItem("extras", [MapDisplayTarget.StyleTags("annotations", "extras")], Label: "Extras"),
             new MapDisplayItem(
                 "express",
                 [
-                    MapDisplayTarget.StyleLayerFeatures(
-                        "base",
-                        new object[] { "==", new object[] { "get", "kind" }, "express" },
-                        "disp-points"
-                    ),
+                    MapDisplayTarget
+                        .Layers("disp-points")
+                        .Where(new object[] { "==", new object[] { "get", "kind" }, "express" }),
                 ],
                 Label: "Express features"
             ),
         ]
     );
 
-    private SgbMap? _map;
-    private bool _overlayVisible = true;
-    private bool _partVisible = true;
     private string? _lastError;
 
-    private async Task ToggleOverlayAsync()
-    {
-        _overlayVisible = !_overlayVisible;
-        await _map!.SetOverlayVisibleAsync("annotations", _overlayVisible);
-    }
-
-    private async Task TogglePartAsync()
-    {
-        _partVisible = !_partVisible;
-        await _map!.SetOverlayPartVisibleAsync("annotations", "runtime", _partVisible);
-    }
+    private void AddOverlayStyle() => _styles = [_baseStyle, _overlayStyle, _secondOverlayStyle];
 
     private void HandleMapError(Exception exception)
     {

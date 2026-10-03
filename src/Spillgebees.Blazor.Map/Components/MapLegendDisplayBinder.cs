@@ -9,11 +9,13 @@ namespace Spillgebees.Blazor.Map;
 /// </summary>
 internal sealed class MapLegendDisplayBinder(Func<Task> requestRender) : IDisposable
 {
-    private readonly Func<Task> _requestRender = requestRender;
     private MapDisplayState? _display;
+    private object? _map;
 
-    public void UpdateDisplaySubscription(MapDisplayState? display)
+    /// <summary>Binds to the map's display state; <paramref name="map"/> scopes unset items to that map's style defaults.</summary>
+    public void UpdateDisplaySubscription(MapDisplayState? display, object? map)
     {
+        _map = map;
         if (ReferenceEquals(_display, display))
         {
             return;
@@ -33,6 +35,7 @@ internal sealed class MapLegendDisplayBinder(Func<Task> requestRender) : IDispos
             .AddClass("sgb-map-legend-item")
             .AddClass("sgb-map-legend-item-toggleable", isToggleable)
             .AddClass("sgb-map-legend-item-off", isToggleable && !GetItemOn(item))
+            .AddClass("sgb-map-legend-item-pending", isToggleable && IsPending(item))
             .AddClass(item.ClassName, !string.IsNullOrWhiteSpace(item.ClassName))
             .Build();
     }
@@ -40,7 +43,16 @@ internal sealed class MapLegendDisplayBinder(Func<Task> requestRender) : IDispos
     public static bool IsToggleable(MapLegendItem item) => item.DisplayItemId is not null;
 
     public bool GetItemOn(MapLegendItem item) =>
-        ResolveDisplayItem(item, required: item.DisplayItemId is not null)?.IsOn ?? true;
+        ResolveDisplayItem(item, required: item.DisplayItemId is not null) is not { } displayItem
+        || IsOn(displayItem);
+
+    /// <summary>Whether an unset item is still waiting for the map's style defaults.</summary>
+    public bool IsPending(MapLegendItem item) =>
+        _map is not null
+        && ResolveDisplayItem(item, required: false) is { } displayItem
+        && _display!.IsPending(displayItem.Id, _map);
+
+    private bool IsOn(MapDisplayItem item) => _map is null ? _display!.IsOn(item.Id) : _display!.IsOn(item.Id, _map);
 
     public async Task ToggleItemAsync(MapLegendItem item, ChangeEventArgs args)
     {
@@ -70,10 +82,10 @@ internal sealed class MapLegendDisplayBinder(Func<Task> requestRender) : IDispos
     public MapLegendItemTemplateContext BuildTemplateContext(MapLegendItem item)
     {
         var displayItem = ResolveDisplayItem(item, required: item.DisplayItemId is not null);
-        return new(
+        return new MapLegendItemTemplateContext(
             item,
             displayItem is not null,
-            displayItem?.IsOn ?? true,
+            displayItem is null || IsOn(displayItem),
             displayItem,
             selected => SetItemOnAsync(item, selected)
         );
@@ -122,5 +134,5 @@ internal sealed class MapLegendDisplayBinder(Func<Task> requestRender) : IDispos
         _display = null;
     }
 
-    private void HandleDisplayChanged(object? sender, MapDisplayChangedEventArgs args) => _ = _requestRender();
+    private void HandleDisplayChanged(object? sender, MapDisplayChangedEventArgs args) => _ = requestRender();
 }

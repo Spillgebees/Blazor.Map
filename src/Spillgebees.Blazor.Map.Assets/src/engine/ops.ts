@@ -88,21 +88,15 @@ export interface EntityUpsert {
 }
 
 /**
- * Visibility targeting vocabulary (mirrors the public MapDisplayTarget model):
- * runtime layers by id, style layers (composed or base; empty layerIds = whole style),
- * feature subsets via filter composition, and metadata-tagged style layers.
+ * Display item targets (mirrors the public MapDisplayTarget factories): runtime layers by
+ * layer or owning component id, style layers by id, style layers by metadata tag, and a
+ * whole style. `filter` narrows any target to matching features (hide-only).
  */
 export type VisibilityTarget =
-  | { kind: "runtimeLayer"; layerIds: string[] }
-  | { kind: "styleLayer"; styleId: string; layerIds: string[] }
-  | { kind: "styleLayerFeatures"; styleId: string; layerIds: string[]; filter: unknown }
-  | { kind: "styleLayerTag"; styleId: string; tags: string[] };
-
-export interface OverlayPartConfig {
-  id: string;
-  visible: boolean;
-  targets: VisibilityTarget[];
-}
+  | { kind: "layers"; ids: string[]; filter?: unknown }
+  | { kind: "styleLayers"; styleId: string; layerIds: string[]; filter?: unknown }
+  | { kind: "styleTags"; styleId: string; tags: string[]; filter?: unknown }
+  | { kind: "style"; styleId: string; filter?: unknown };
 
 export interface EventHandlers {
   click?: number;
@@ -218,7 +212,14 @@ export type Op =
   | { op: "source.remove"; id: string }
   | { op: "source.setData"; id: string; data: unknown; animate?: AnimationConfig | null }
   | { op: "source.clusterZoom"; id: string; layerIds: string[] }
-  | { op: "layer.add"; id: string; spec: Record<string, unknown>; slot?: string | null; before?: string | null }
+  | {
+      op: "layer.add";
+      id: string;
+      spec: Record<string, unknown>;
+      slot?: string | null;
+      before?: string | null;
+      owner?: string | null;
+    }
   | { op: "layer.remove"; id: string }
   | { op: "layer.setPaint"; id: string; name: string; value: unknown }
   | { op: "layer.setLayout"; id: string; name: string; value: unknown }
@@ -231,10 +232,9 @@ export type Op =
   | { op: "entities.remove"; id: string }
   | { op: "entities.upsert"; id: string; epoch: number; upserts: EntityUpsert[]; removes: number[] }
   | { op: "entities.select"; id: string; selected: number[] }
-  | { op: "visibility.set"; id: string; visible: boolean; targets: VisibilityTarget[] }
+  // visible: omitted/null = unset (the item follows the style)
+  | { op: "visibility.set"; id: string; visible?: boolean | null; targets: VisibilityTarget[] }
   | { op: "visibility.remove"; id: string }
-  | { op: "overlay.set"; id: string; visible: boolean; targets: VisibilityTarget[]; parts: OverlayPartConfig[] }
-  | { op: "overlay.remove"; id: string }
   | { op: "image.add"; id: string; url: string; options?: Record<string, unknown> | null }
   | { op: "image.remove"; id: string }
   | { op: "marker.set"; marker: MarkerData }

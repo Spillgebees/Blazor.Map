@@ -1,111 +1,103 @@
 namespace Spillgebees.Blazor.Map;
 
 /// <summary>
-/// Defines layers or feature subsets controlled by a map-level display item.
+/// Map content a <see cref="MapDisplayItem"/> controls. Create targets with the static
+/// factories; narrow any target to a subset of features with <see cref="Where"/>.
 /// </summary>
+/// <remarks>
+/// An item that is off hides everything it targets. An item that is on shows the layers
+/// its targets name (<see cref="Layers"/>, <see cref="StyleLayers"/>,
+/// <see cref="StyleTags"/>), including layers the style ships hidden. A whole-style
+/// target (<see cref="Style"/>) only ever hides.
+/// </remarks>
 public sealed record MapDisplayTarget
 {
-    /// <summary>
-    /// Initializes a new map display target.
-    /// </summary>
-    public MapDisplayTarget(
-        MapDisplayTargetKind Kind,
-        IReadOnlyList<string>? LayerIds = null,
-        string? StyleId = null,
-        IReadOnlyList<string>? Tags = null,
-        object? Filter = null
-    )
+    private MapDisplayTarget(MapDisplayTargetKind kind, IReadOnlyList<string> names, string? styleId)
     {
-        LayerIds ??= [];
-        Tags ??= [];
-
-        if (LayerIds.Any(string.IsNullOrWhiteSpace))
-        {
-            throw new ArgumentException("Display target layer IDs must be non-empty.", nameof(LayerIds));
-        }
-
-        if (Tags.Any(string.IsNullOrWhiteSpace))
-        {
-            throw new ArgumentException("Display target tags must be non-empty.", nameof(Tags));
-        }
-
-        if (Kind == MapDisplayTargetKind.RuntimeLayer && LayerIds.Count == 0)
-        {
-            throw new ArgumentException(
-                "Runtime layer display targets must declare at least one layer ID.",
-                nameof(LayerIds)
-            );
-        }
-
-        if (
-            Kind
-            is MapDisplayTargetKind.StyleLayer
-                or MapDisplayTargetKind.StyleLayerFeatures
-                or MapDisplayTargetKind.StyleLayerTag
-        )
-        {
-            if (string.IsNullOrWhiteSpace(StyleId))
-            {
-                throw new ArgumentException("Style display targets require a non-empty style ID.", nameof(StyleId));
-            }
-        }
-        else if (StyleId is not null)
-        {
-            throw new ArgumentException("Runtime layer display targets must not declare a style ID.", nameof(StyleId));
-        }
-
-        if (Kind == MapDisplayTargetKind.StyleLayerFeatures && Filter is null)
-        {
-            throw new ArgumentException(
-                "Style layer feature display targets require a MapLibre filter.",
-                nameof(Filter)
-            );
-        }
-
-        if (Kind == MapDisplayTargetKind.StyleLayerTag && Tags.Count == 0)
-        {
-            throw new ArgumentException("Style layer tag display targets require at least one tag.", nameof(Tags));
-        }
-
-        this.Kind = Kind;
-        this.LayerIds = Array.AsReadOnly(LayerIds.ToArray());
-        this.StyleId = StyleId;
-        this.Tags = Array.AsReadOnly(Tags.ToArray());
-        this.Filter = Filter;
+        Kind = kind;
+        Names = names;
+        StyleId = styleId;
     }
 
-    /// <summary>Gets how this target should be resolved.</summary>
-    public MapDisplayTargetKind Kind { get; }
+    internal MapDisplayTargetKind Kind { get; }
 
-    /// <summary>Gets the runtime layer IDs or original style layer IDs controlled by this target.</summary>
-    public IReadOnlyList<string> LayerIds { get; }
+    /// <summary>Component ids, style layer ids or tags, depending on <see cref="Kind"/>.</summary>
+    internal IReadOnlyList<string> Names { get; }
 
-    /// <summary>Gets the composed style ID for style targets.</summary>
-    public string? StyleId { get; }
+    internal string? StyleId { get; }
 
-    /// <summary>Gets style layer tags used by tag targets.</summary>
-    public IReadOnlyList<string> Tags { get; }
+    /// <summary>MapLibre filter selecting the features hidden while the item is off.</summary>
+    internal object? Filter { get; private init; }
 
-    /// <summary>Gets the MapLibre filter used to hide matching features when the display item is off.</summary>
-    public object? Filter { get; }
+    /// <summary>
+    /// Targets layers added by components, by component id: a layer component's own id,
+    /// or the id of a component that creates several layers (a tracked entity layer, a
+    /// clustered GeoJSON source, a tile overlay) to target all of them.
+    /// </summary>
+    public static MapDisplayTarget Layers(params string[] ids) =>
+        new(MapDisplayTargetKind.Layers, RequireNames(ids, nameof(ids), "component ID"), null);
 
-    /// <summary>Creates a target for runtime MapLibre layer IDs.</summary>
-    public static MapDisplayTarget RuntimeLayers(params string[] layerIds) =>
-        new(MapDisplayTargetKind.RuntimeLayer, layerIds);
-
-    /// <summary>Creates a target for original layer IDs in a composed style.</summary>
+    /// <summary>Targets layers of a style by their id in that style's JSON.</summary>
+    /// <param name="styleId">The <see cref="MapStyle.Id"/> of the base or an overlay style.</param>
+    /// <param name="layerIds">Layer ids as written in the style JSON.</param>
     public static MapDisplayTarget StyleLayers(string styleId, params string[] layerIds) =>
-        new(MapDisplayTargetKind.StyleLayer, layerIds, styleId);
+        new(
+            MapDisplayTargetKind.StyleLayers,
+            RequireNames(layerIds, nameof(layerIds), "layer ID"),
+            RequireStyleId(styleId)
+        );
 
-    /// <summary>Creates a target for matching features in composed style layers.</summary>
-    public static MapDisplayTarget StyleLayerFeatures(string styleId, object filter, params string[] layerIds) =>
-        new(MapDisplayTargetKind.StyleLayerFeatures, layerIds, styleId, Filter: filter);
+    /// <summary>
+    /// Targets every layer of a style whose <c>metadata["sgb:tags"]</c> (or
+    /// <c>metadata.tags</c>) contains any of the given tags.
+    /// </summary>
+    /// <param name="styleId">The <see cref="MapStyle.Id"/> of the base or an overlay style.</param>
+    /// <param name="tags">Tags to match.</param>
+    public static MapDisplayTarget StyleTags(string styleId, params string[] tags) =>
+        new(MapDisplayTargetKind.StyleTags, RequireNames(tags, nameof(tags), "tag"), RequireStyleId(styleId));
 
-    /// <summary>Creates a target for composed style layers with a matching tag.</summary>
-    public static MapDisplayTarget StyleLayerTag(string styleId, string tag) =>
-        new(MapDisplayTargetKind.StyleLayerTag, StyleId: styleId, Tags: [tag]);
+    /// <summary>
+    /// Targets every layer of a style. Turning the item off hides the whole style; turning
+    /// it on never shows layers the style ships hidden.
+    /// </summary>
+    /// <param name="styleId">The <see cref="MapStyle.Id"/> of the base or an overlay style.</param>
+    public static MapDisplayTarget Style(string styleId) =>
+        new(MapDisplayTargetKind.Style, [], RequireStyleId(styleId));
 
-    /// <summary>Creates a target for composed style layers with any matching tag.</summary>
-    public static MapDisplayTarget StyleLayerTags(string styleId, params string[] tags) =>
-        new(MapDisplayTargetKind.StyleLayerTag, StyleId: styleId, Tags: tags);
+    /// <summary>
+    /// Narrows this target to the features matching <paramref name="filter"/>: while the
+    /// item is off those features are hidden; the layers themselves stay as they are.
+    /// </summary>
+    /// <param name="filter">A MapLibre filter expression.</param>
+    public MapDisplayTarget Where(object filter)
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+        return this with { Filter = filter };
+    }
+
+    private static IReadOnlyList<string> RequireNames(string[] names, string parameterName, string description)
+    {
+        ArgumentNullException.ThrowIfNull(names, parameterName);
+        if (names.Length == 0)
+        {
+            throw new ArgumentException($"Display targets require at least one {description}.", parameterName);
+        }
+
+        if (names.Any(string.IsNullOrWhiteSpace))
+        {
+            throw new ArgumentException($"Display target {description}s must be non-empty.", parameterName);
+        }
+
+        return Array.AsReadOnly(names.ToArray());
+    }
+
+    private static string RequireStyleId(string styleId)
+    {
+        if (string.IsNullOrWhiteSpace(styleId))
+        {
+            throw new ArgumentException("Style display targets require a non-empty style ID.", nameof(styleId));
+        }
+
+        return styleId;
+    }
 }

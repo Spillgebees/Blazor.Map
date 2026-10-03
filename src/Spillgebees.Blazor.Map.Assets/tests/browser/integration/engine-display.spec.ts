@@ -2,15 +2,17 @@ import { expect, type Page, test } from "@playwright/test";
 import { evaluateOnMap } from "./helpers";
 
 // Functional coverage for the engine visibility system: display items toggling runtime
-// layers and feature filters, plus overlays composing overlay-style layers and runtime
-// parts (visible = original AND groups AND overlay AND part).
+// layers, feature filters, base-style layers and composed overlay-style layers. Layers
+// start as their style has them; an item that is on shows the layers it names, one that
+// is off hides everything it targets, and off wins.
 
 const PAGE_ROUTE = "/engine-display-functional-test";
 const POINTS_LAYER_ID = "disp-points";
-const RUNTIME_PART_LAYER_ID = "overlay-runtime-circle";
+const BASE_LAYER_ID = "raster-layer";
 const COMPOSED_LAYER_PREFIX = "sgb-overlay-style-annotations-";
 const PRIMARY_STYLE_LAYER_ID = "overlay-circle";
 const SECONDARY_STYLE_LAYER_ID = "overlay-secondary-circle";
+const EXTRA_STYLE_LAYER_ID = "overlay-extra-circle";
 
 function layerVisibility(page: Page, layerId: string): Promise<string> {
   return evaluateOnMap<string>(
@@ -68,7 +70,7 @@ async function openFixture(page: Page): Promise<void> {
   await expect.poll(() => composedLayerIds(page), { timeout: 30000 }).not.toHaveLength(0);
 }
 
-test.describe("engine display + overlays", () => {
+test.describe("engine display", () => {
   test("display items toggle runtime layer visibility", async ({ page }) => {
     await openFixture(page);
     expect(await layerVisibility(page, POINTS_LAYER_ID)).toBe("visible");
@@ -96,29 +98,51 @@ test.describe("engine display + overlays", () => {
       .toEqual(["has", "name"]);
   });
 
-  test("overlay toggles hide composed style layers and runtime parts together", async ({ page }) => {
+  test("unset items follow the style and can show layers the style hides", async ({ page }) => {
     await openFixture(page);
-    const composed = await composedLayerIds(page);
+    const extraLayerId = await composedLayerId(page, EXTRA_STYLE_LAYER_ID);
+    expect(extraLayerId).not.toBeNull();
+    expect(await layerVisibility(page, extraLayerId!)).toBe("none");
 
-    await page.getByTestId("toggle-overlay").click();
-    await expect.poll(() => layerVisibility(page, composed[0]), { timeout: 10000 }).toBe("none");
-    await expect.poll(() => layerVisibility(page, RUNTIME_PART_LAYER_ID), { timeout: 10000 }).toBe("none");
+    // the display control reflects the style default once the map reported it
+    const toggle = page.getByTestId("map-display-toggle-extras");
+    await expect(toggle).toBeEnabled({ timeout: 20000 });
+    await expect(toggle).not.toBeChecked();
 
-    await page.getByTestId("toggle-overlay").click();
-    await expect.poll(() => layerVisibility(page, composed[0]), { timeout: 10000 }).toBe("visible");
-    await expect.poll(() => layerVisibility(page, RUNTIME_PART_LAYER_ID), { timeout: 10000 }).toBe("visible");
+    await page.locator('label:has([data-testid="map-display-toggle-extras"])').click();
+    await expect.poll(() => layerVisibility(page, extraLayerId!), { timeout: 10000 }).toBe("visible");
+    await expect(toggle).toBeChecked();
+
+    // a whole-style switch hides it, and switching the style back on keeps it shown
+    await page.getByTestId("toggle-display-overlay-style").click();
+    await expect.poll(() => layerVisibility(page, extraLayerId!), { timeout: 10000 }).toBe("none");
+    await page.getByTestId("toggle-display-overlay-style").click();
+    await expect.poll(() => layerVisibility(page, extraLayerId!), { timeout: 10000 }).toBe("visible");
+
+    await page.locator('label:has([data-testid="map-display-toggle-extras"])').click();
+    await expect.poll(() => layerVisibility(page, extraLayerId!), { timeout: 10000 }).toBe("none");
   });
 
-  test("part toggles affect only their own layers", async ({ page }) => {
+  test("base-style layers come back after the overlay styles change", async ({ page }) => {
     await openFixture(page);
-    const composed = await composedLayerIds(page);
 
-    await page.getByTestId("toggle-part").click();
-    await expect.poll(() => layerVisibility(page, RUNTIME_PART_LAYER_ID), { timeout: 10000 }).toBe("none");
-    expect(await layerVisibility(page, composed[0])).toBe("visible");
+    await page.getByTestId("toggle-base").click();
+    await expect.poll(() => layerVisibility(page, BASE_LAYER_ID), { timeout: 10000 }).toBe("none");
 
-    await page.getByTestId("toggle-part").click();
-    await expect.poll(() => layerVisibility(page, RUNTIME_PART_LAYER_ID), { timeout: 10000 }).toBe("visible");
+    await page.getByTestId("add-overlay-style").click();
+    await expect
+      .poll(
+        () =>
+          evaluateOnMap<number>(
+            page,
+            `return (map.getStyle()?.layers ?? []).filter((l) => l.id.startsWith("sgb-overlay-style-annotations-2-")).length;`,
+          ),
+        { timeout: 30000 },
+      )
+      .toBeGreaterThan(0);
+
+    await page.getByTestId("toggle-base").click();
+    await expect.poll(() => layerVisibility(page, BASE_LAYER_ID), { timeout: 10000 }).toBe("visible");
   });
 
   test("display hierarchy composes whole overlay style and individual style layer toggles visually", async ({

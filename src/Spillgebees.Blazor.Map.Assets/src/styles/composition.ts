@@ -1,6 +1,7 @@
 import type { Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
+import { layerTags } from "../engine/visibility";
 import type { ReferrerPolicy } from "../interfaces/map";
-import type { OverlayStyleRequestOptions } from "../interfaces/spillgebees";
+import type { ComposedStyleLayerRegistration, OverlayStyleRequestOptions } from "../interfaces/spillgebees";
 
 /**
  * Prefix used for all overlay-managed sources and layers to avoid ID collisions
@@ -51,13 +52,7 @@ export interface OverlayStyleState {
   sourceIds: string[];
   layerIds: string[];
   imageIds: string[];
-  composedLayerIds: Array<{
-    styleId: string;
-    originalLayerId: string;
-    runtimeLayerId: string;
-    originalVisible: boolean;
-    originalFilter: unknown;
-  }>;
+  composedLayerIds: ComposedStyleLayerRegistration[];
 }
 
 export interface ApplyOverlayStyleOptions {
@@ -159,19 +154,7 @@ export async function applyOverlayStyles(
   window.Spillgebees.Map.composedStyleLayerIds.set(map, composedStyleLayerIds);
 }
 
-function registerComposedLayerIds(
-  store: Map<
-    string,
-    {
-      runtimeLayerId: string;
-      styleId: string;
-      originalLayerId: string;
-      originalVisible?: boolean;
-      originalFilter: unknown | undefined;
-    }
-  >,
-  state: OverlayStyleState,
-): void {
+function registerComposedLayerIds(store: Map<string, ComposedStyleLayerRegistration>, state: OverlayStyleState): void {
   for (const layer of state.composedLayerIds) {
     store.set(`${layer.styleId}\u0000${layer.originalLayerId}`, layer);
   }
@@ -310,6 +293,7 @@ async function mergeStyleIntoMap(
           runtimeLayerId: prefixedLayerId,
           originalVisible: layer.layout?.visibility !== "none",
           originalFilter: layerFilter(layer),
+          tags: layerTags(layer.metadata),
         });
         continue;
       }
@@ -339,6 +323,7 @@ async function mergeStyleIntoMap(
           runtimeLayerId: prefixedLayerId,
           originalVisible: layer.layout?.visibility !== "none",
           originalFilter: layerFilter(layer),
+          tags: layerTags(layer.metadata),
         });
       } catch (error) {
         // biome-ignore lint/suspicious/noConsole: library warning for developers

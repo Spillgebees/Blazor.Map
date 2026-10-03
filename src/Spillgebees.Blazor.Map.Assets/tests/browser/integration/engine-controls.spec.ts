@@ -3,7 +3,7 @@ import { evaluateOnMap } from "./helpers";
 
 // Functional coverage for the shared control component family hosted on SgbMap:
 // native MapLibre controls, panel controls with Blazor-rendered content, and the
-// display/overlay control panels driving the engine visibility system end to end.
+// display/legend control panels driving the engine visibility system end to end.
 
 const PAGE_ROUTE = "/engine-controls-functional-test";
 const POINTS_LAYER_ID = "ctrl-points";
@@ -92,20 +92,17 @@ test.describe("engine controls", () => {
     await expect.poll(() => layerVisibility(page, POINTS_LAYER_ID), { timeout: 10000 }).toBe("visible");
   });
 
-  test("OverlayMapControl toggles drive overlay visibility", async ({ page }) => {
+  test("DisplayMapControl toggles each item independently", async ({ page }) => {
     await openFixture(page);
     await expect.poll(() => layerVisibility(page, NOTES_LAYER_ID), { timeout: 20000 }).toBe("visible");
 
-    const toggleLabel = page.locator('label:has([data-testid="map-overlay-toggle-notes"])');
+    const toggleLabel = page.locator('label:has([data-testid="map-display-toggle-notes"])');
     await expect(toggleLabel).toBeVisible({ timeout: 20000 });
     await toggleLabel.click();
     await expect.poll(() => layerVisibility(page, NOTES_LAYER_ID), { timeout: 10000 }).toBe("none");
+    expect(await layerVisibility(page, POINTS_LAYER_ID)).toBe("visible");
 
     await toggleLabel.click();
     await expect.poll(() => layerVisibility(page, NOTES_LAYER_ID), { timeout: 10000 }).toBe("visible");
-
-    // part-level toggle
-    await page.locator('label:has([data-testid="map-overlay-toggle-notes-markers"])').click();
-    await expect.poll(() => layerVisibility(page, NOTES_LAYER_ID), { timeout: 10000 }).toBe("none");
   });
 });

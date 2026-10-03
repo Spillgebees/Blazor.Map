@@ -18,6 +18,11 @@
                     },
                     {
                         "type": "Feature",
+                        "geometry": { "type": "Point", "coordinates": [6.135, 49.61] },
+                        "properties": { "name": "overlay-extra-marker" }
+                    },
+                    {
+                        "type": "Feature",
                         "geometry": {
                             "type": "LineString",
                             "coordinates": [
@@ -55,6 +60,15 @@
             "filter": ["==", ["get", "name"], "planned-corridor"],
             "layout": { "line-join": "round", "line-cap": "round" },
             "paint": { "line-color": "#f59e0b", "line-width": 5, "line-opacity": 0.9 }
+        },
+        {
+            "id": "overlay-extra-circle",
+            "type": "circle",
+            "source": "overlay-points",
+            "filter": ["==", ["get", "name"], "overlay-extra-marker"],
+            "metadata": { "sgb:tags": ["extras"] },
+            "layout": { "visibility": "none" },
+            "paint": { "circle-radius": 10, "circle-color": "#0ea5e9" }
         }
     ]
 }

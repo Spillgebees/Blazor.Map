@@ -1,30 +1,17 @@
-using System.Text.Json.Serialization;
-
 namespace Spillgebees.Blazor.Map;
 
-/// <summary>
-/// Identifies how a map display target should be resolved.
-/// </summary>
-[JsonConverter(typeof(JsonStringEnumConverter<MapDisplayTargetKind>))]
-public enum MapDisplayTargetKind
+/// <summary>How a <see cref="MapDisplayTarget"/> resolves to map layers.</summary>
+internal enum MapDisplayTargetKind
 {
-    /// <summary>
-    /// Targets runtime MapLibre layer IDs registered by Blazor layer components.
-    /// </summary>
-    RuntimeLayer,
+    /// <summary>Runtime layers by layer id or owning component id.</summary>
+    Layers,
 
-    /// <summary>
-    /// Targets original layer IDs within a composed MapLibre style.
-    /// </summary>
-    StyleLayer,
+    /// <summary>Style layers by their id in the style JSON.</summary>
+    StyleLayers,
 
-    /// <summary>
-    /// Targets matching features within composed MapLibre style layers by composing a display filter.
-    /// </summary>
-    StyleLayerFeatures,
+    /// <summary>Style layers by metadata tag.</summary>
+    StyleTags,
 
-    /// <summary>
-    /// Targets layers in a composed MapLibre style by tags.
-    /// </summary>
-    StyleLayerTag,
+    /// <summary>Every layer of a style; hide-only.</summary>
+    Style,
 }

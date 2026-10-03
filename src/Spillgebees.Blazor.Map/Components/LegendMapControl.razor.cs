@@ -30,6 +30,9 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
     [CascadingParameter]
     private MapDisplayState? _display { get; set; }
 
+    [CascadingParameter]
+    private SgbMap? _map { get; set; }
+
     /// <summary>Unique control identifier within the map. Defaults to <c>"legend"</c>.</summary>
     [Parameter]
     public string Id { get; set; } = "legend";
@@ -80,7 +83,7 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
     protected override void OnParametersSet()
     {
         ValidateControl();
-        _displayBinder.UpdateDisplaySubscription(_display);
+        _displayBinder.UpdateDisplaySubscription(_display, _map);
         ValidateDefinition();
 
         _registration.Register(
@@ -130,6 +133,8 @@ public partial class LegendMapControl : ComponentBase, IAsyncDisposable
     private static bool IsToggleable(MapLegendItem item) => MapLegendDisplayBinder.IsToggleable(item);
 
     private bool GetItemOn(MapLegendItem item) => _displayBinder.GetItemOn(item);
+
+    private bool IsPending(MapLegendItem item) => _displayBinder.IsPending(item);
 
     private Task ToggleItemAsync(MapLegendItem item, ChangeEventArgs args) =>
         _displayBinder.ToggleItemAsync(item, args);

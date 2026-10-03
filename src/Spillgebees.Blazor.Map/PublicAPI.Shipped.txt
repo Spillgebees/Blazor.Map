@@ -167,21 +167,6 @@ override Spillgebees.Blazor.Map.MapLegendSymbol.NoneSymbol.Equals(object? obj) -
 override Spillgebees.Blazor.Map.MapLegendSymbol.NoneSymbol.GetHashCode() -> int
 override Spillgebees.Blazor.Map.MapLegendSymbol.NoneSymbol.ToString() -> string!
 override Spillgebees.Blazor.Map.MapLegendSymbol.ToString() -> string!
-override Spillgebees.Blazor.Map.MapOverlayChangedEventArgs.Equals(object? obj) -> bool
-override Spillgebees.Blazor.Map.MapOverlayChangedEventArgs.GetHashCode() -> int
-override Spillgebees.Blazor.Map.MapOverlayChangedEventArgs.ToString() -> string!
-override Spillgebees.Blazor.Map.MapOverlayControlItemContext.Equals(object? obj) -> bool
-override Spillgebees.Blazor.Map.MapOverlayControlItemContext.GetHashCode() -> int
-override Spillgebees.Blazor.Map.MapOverlayControlItemContext.ToString() -> string!
-override Spillgebees.Blazor.Map.MapOverlayItem.Equals(object? obj) -> bool
-override Spillgebees.Blazor.Map.MapOverlayItem.GetHashCode() -> int
-override Spillgebees.Blazor.Map.MapOverlayItem.ToString() -> string!
-override Spillgebees.Blazor.Map.MapOverlayPartControlItemContext.Equals(object? obj) -> bool
-override Spillgebees.Blazor.Map.MapOverlayPartControlItemContext.GetHashCode() -> int
-override Spillgebees.Blazor.Map.MapOverlayPartControlItemContext.ToString() -> string!
-override Spillgebees.Blazor.Map.MapOverlayPartItem.Equals(object? obj) -> bool
-override Spillgebees.Blazor.Map.MapOverlayPartItem.GetHashCode() -> int
-override Spillgebees.Blazor.Map.MapOverlayPartItem.ToString() -> string!
 override Spillgebees.Blazor.Map.MapPopup.OnAfterRenderAsync(bool firstRender) -> System.Threading.Tasks.Task!
 override Spillgebees.Blazor.Map.MapPopup.OnInitialized() -> void
 override Spillgebees.Blazor.Map.MapPopup.OnParametersSet() -> void
@@ -208,7 +193,6 @@ override Spillgebees.Blazor.Map.NavigationControlDefinition.<Clone>$() -> Spillg
 override Spillgebees.Blazor.Map.NavigationControlDefinition.Equals(object? obj) -> bool
 override Spillgebees.Blazor.Map.NavigationControlDefinition.GetHashCode() -> int
 override Spillgebees.Blazor.Map.NavigationControlDefinition.ToString() -> string!
-override Spillgebees.Blazor.Map.OverlayMapControl.OnParametersSet() -> void
 override Spillgebees.Blazor.Map.PanelChromeOptions.Equals(object? obj) -> bool
 override Spillgebees.Blazor.Map.PanelChromeOptions.GetHashCode() -> int
 override Spillgebees.Blazor.Map.PanelChromeOptions.ToString() -> string!
@@ -896,11 +880,11 @@ Spillgebees.Blazor.Map.MapDisplayItem.Description.get -> string?
 Spillgebees.Blazor.Map.MapDisplayItem.Description.init -> void
 Spillgebees.Blazor.Map.MapDisplayItem.Equals(Spillgebees.Blazor.Map.MapDisplayItem? other) -> bool
 Spillgebees.Blazor.Map.MapDisplayItem.Id.get -> string!
-Spillgebees.Blazor.Map.MapDisplayItem.IsOn.get -> bool
+Spillgebees.Blazor.Map.MapDisplayItem.IsOn.get -> bool?
 Spillgebees.Blazor.Map.MapDisplayItem.IsOn.init -> void
 Spillgebees.Blazor.Map.MapDisplayItem.Label.get -> string?
 Spillgebees.Blazor.Map.MapDisplayItem.Label.init -> void
-Spillgebees.Blazor.Map.MapDisplayItem.MapDisplayItem(string! Id, System.Collections.Generic.IReadOnlyList<Spillgebees.Blazor.Map.MapDisplayTarget!>! Targets, bool IsOn = true, string? Label = null, string? Description = null) -> void
+Spillgebees.Blazor.Map.MapDisplayItem.MapDisplayItem(string! Id, System.Collections.Generic.IReadOnlyList<Spillgebees.Blazor.Map.MapDisplayTarget!>! Targets, bool? IsOn = null, string? Label = null, string? Description = null) -> void
 Spillgebees.Blazor.Map.MapDisplayItem.Targets.get -> System.Collections.Generic.IReadOnlyList<Spillgebees.Blazor.Map.MapDisplayTarget!>!
 Spillgebees.Blazor.Map.MapDisplayState
 Spillgebees.Blazor.Map.MapDisplayState.Changed -> System.EventHandler<Spillgebees.Blazor.Map.MapDisplayChangedEventArgs!>?
@@ -916,17 +900,7 @@ Spillgebees.Blazor.Map.MapDisplayState.Upsert(Spillgebees.Blazor.Map.MapDisplayI
 Spillgebees.Blazor.Map.MapDisplayTarget
 Spillgebees.Blazor.Map.MapDisplayTarget.<Clone>$() -> Spillgebees.Blazor.Map.MapDisplayTarget!
 Spillgebees.Blazor.Map.MapDisplayTarget.Equals(Spillgebees.Blazor.Map.MapDisplayTarget? other) -> bool
-Spillgebees.Blazor.Map.MapDisplayTarget.Filter.get -> object?
-Spillgebees.Blazor.Map.MapDisplayTarget.Kind.get -> Spillgebees.Blazor.Map.MapDisplayTargetKind
-Spillgebees.Blazor.Map.MapDisplayTarget.LayerIds.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Spillgebees.Blazor.Map.MapDisplayTarget.MapDisplayTarget(Spillgebees.Blazor.Map.MapDisplayTargetKind Kind, System.Collections.Generic.IReadOnlyList<string!>? LayerIds = null, string? StyleId = null, System.Collections.Generic.IReadOnlyList<string!>? Tags = null, object? Filter = null) -> void
-Spillgebees.Blazor.Map.MapDisplayTarget.StyleId.get -> string?
-Spillgebees.Blazor.Map.MapDisplayTarget.Tags.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Spillgebees.Blazor.Map.MapDisplayTargetKind
-Spillgebees.Blazor.Map.MapDisplayTargetKind.RuntimeLayer = 0 -> Spillgebees.Blazor.Map.MapDisplayTargetKind
-Spillgebees.Blazor.Map.MapDisplayTargetKind.StyleLayer = 1 -> Spillgebees.Blazor.Map.MapDisplayTargetKind
-Spillgebees.Blazor.Map.MapDisplayTargetKind.StyleLayerFeatures = 2 -> Spillgebees.Blazor.Map.MapDisplayTargetKind
-Spillgebees.Blazor.Map.MapDisplayTargetKind.StyleLayerTag = 3 -> Spillgebees.Blazor.Map.MapDisplayTargetKind
+Spillgebees.Blazor.Map.MapDisplayTarget.Where(object! filter) -> Spillgebees.Blazor.Map.MapDisplayTarget!
 Spillgebees.Blazor.Map.MapFeatures
 Spillgebees.Blazor.Map.MapFeatures.ChildContent.get -> Microsoft.AspNetCore.Components.RenderFragment?
 Spillgebees.Blazor.Map.MapFeatures.ChildContent.set -> void
@@ -1049,7 +1023,6 @@ Spillgebees.Blazor.Map.MapInteractionInput.TouchTwoFingerTap = 26 -> Spillgebees
 Spillgebees.Blazor.Map.MapInteractionInput.TouchTwoFingerVerticalDrag = 23 -> Spillgebees.Blazor.Map.MapInteractionInput
 Spillgebees.Blazor.Map.MapInteractionInput.TrackpadPinch = 18 -> Spillgebees.Blazor.Map.MapInteractionInput
 Spillgebees.Blazor.Map.MapInteractionMetadata
-static Spillgebees.Blazor.Map.MapInteractionMetadata.GetDefaults(bool cooperativeGestures = false) -> System.Collections.Generic.IReadOnlyDictionary<Spillgebees.Blazor.Map.MapInteractionInput, Spillgebees.Blazor.Map.MapInteractionEffect>!
 Spillgebees.Blazor.Map.MapLegend
 Spillgebees.Blazor.Map.MapLegend.<Clone>$() -> Spillgebees.Blazor.Map.MapLegend!
 Spillgebees.Blazor.Map.MapLegend.ClassName.get -> string?
@@ -1173,108 +1146,6 @@ Spillgebees.Blazor.Map.MapMarkers<TItem>.PositionSelector.get -> System.Func<TIt
 Spillgebees.Blazor.Map.MapMarkers<TItem>.PositionSelector.set -> void
 Spillgebees.Blazor.Map.MapMarkers<TItem>.TitleSelector.get -> System.Func<TItem, string?>?
 Spillgebees.Blazor.Map.MapMarkers<TItem>.TitleSelector.set -> void
-Spillgebees.Blazor.Map.MapOverlay
-Spillgebees.Blazor.Map.MapOverlay.ChildContent.get -> Microsoft.AspNetCore.Components.RenderFragment?
-Spillgebees.Blazor.Map.MapOverlay.ChildContent.set -> void
-Spillgebees.Blazor.Map.MapOverlay.Description.get -> string?
-Spillgebees.Blazor.Map.MapOverlay.Description.set -> void
-Spillgebees.Blazor.Map.MapOverlay.DisposeAsync() -> System.Threading.Tasks.ValueTask
-Spillgebees.Blazor.Map.MapOverlay.Id.get -> string!
-Spillgebees.Blazor.Map.MapOverlay.Id.set -> void
-Spillgebees.Blazor.Map.MapOverlay.InitiallyVisible.get -> bool
-Spillgebees.Blazor.Map.MapOverlay.InitiallyVisible.set -> void
-Spillgebees.Blazor.Map.MapOverlay.Label.get -> string?
-Spillgebees.Blazor.Map.MapOverlay.Label.set -> void
-Spillgebees.Blazor.Map.MapOverlay.Map.get -> Spillgebees.Blazor.Map.SgbMap?
-Spillgebees.Blazor.Map.MapOverlay.Map.set -> void
-Spillgebees.Blazor.Map.MapOverlay.MapOverlay() -> void
-Spillgebees.Blazor.Map.MapOverlay.Style.get -> Spillgebees.Blazor.Map.MapStyle?
-Spillgebees.Blazor.Map.MapOverlay.Style.set -> void
-Spillgebees.Blazor.Map.MapOverlay.Symbol.get -> Spillgebees.Blazor.Map.MapLegendSymbol?
-Spillgebees.Blazor.Map.MapOverlay.Symbol.set -> void
-Spillgebees.Blazor.Map.MapOverlayChangedEventArgs
-Spillgebees.Blazor.Map.MapOverlayChangedEventArgs.<Clone>$() -> Spillgebees.Blazor.Map.MapOverlayChangedEventArgs!
-Spillgebees.Blazor.Map.MapOverlayChangedEventArgs.Deconstruct(out string! OverlayId, out string? PartId) -> void
-Spillgebees.Blazor.Map.MapOverlayChangedEventArgs.Equals(Spillgebees.Blazor.Map.MapOverlayChangedEventArgs? other) -> bool
-Spillgebees.Blazor.Map.MapOverlayChangedEventArgs.MapOverlayChangedEventArgs(string! OverlayId, string? PartId = null) -> void
-Spillgebees.Blazor.Map.MapOverlayChangedEventArgs.OverlayId.get -> string!
-Spillgebees.Blazor.Map.MapOverlayChangedEventArgs.OverlayId.init -> void
-Spillgebees.Blazor.Map.MapOverlayChangedEventArgs.PartId.get -> string?
-Spillgebees.Blazor.Map.MapOverlayChangedEventArgs.PartId.init -> void
-Spillgebees.Blazor.Map.MapOverlayControlItemContext
-Spillgebees.Blazor.Map.MapOverlayControlItemContext.<Clone>$() -> Spillgebees.Blazor.Map.MapOverlayControlItemContext!
-Spillgebees.Blazor.Map.MapOverlayControlItemContext.Deconstruct(out Spillgebees.Blazor.Map.MapOverlayItem! Overlay, out System.Func<bool, System.Threading.Tasks.Task!>! SetVisibleAsync, out System.Func<string!, bool, System.Threading.Tasks.Task!>! SetPartVisibleAsync) -> void
-Spillgebees.Blazor.Map.MapOverlayControlItemContext.Equals(Spillgebees.Blazor.Map.MapOverlayControlItemContext? other) -> bool
-Spillgebees.Blazor.Map.MapOverlayControlItemContext.MapOverlayControlItemContext(Spillgebees.Blazor.Map.MapOverlayItem! Overlay, System.Func<bool, System.Threading.Tasks.Task!>! SetVisibleAsync, System.Func<string!, bool, System.Threading.Tasks.Task!>! SetPartVisibleAsync) -> void
-Spillgebees.Blazor.Map.MapOverlayControlItemContext.Overlay.get -> Spillgebees.Blazor.Map.MapOverlayItem!
-Spillgebees.Blazor.Map.MapOverlayControlItemContext.Overlay.init -> void
-Spillgebees.Blazor.Map.MapOverlayControlItemContext.SetPartVisibleAsync.get -> System.Func<string!, bool, System.Threading.Tasks.Task!>!
-Spillgebees.Blazor.Map.MapOverlayControlItemContext.SetPartVisibleAsync.init -> void
-Spillgebees.Blazor.Map.MapOverlayControlItemContext.SetVisibleAsync.get -> System.Func<bool, System.Threading.Tasks.Task!>!
-Spillgebees.Blazor.Map.MapOverlayControlItemContext.SetVisibleAsync.init -> void
-Spillgebees.Blazor.Map.MapOverlayItem
-Spillgebees.Blazor.Map.MapOverlayItem.<Clone>$() -> Spillgebees.Blazor.Map.MapOverlayItem!
-Spillgebees.Blazor.Map.MapOverlayItem.Deconstruct(out string! Id, out string! Label, out bool IsVisible, out string? Description, out Spillgebees.Blazor.Map.MapLegendSymbol? Symbol, out System.Collections.Generic.IReadOnlyList<Spillgebees.Blazor.Map.MapOverlayPartItem!>! Parts) -> void
-Spillgebees.Blazor.Map.MapOverlayItem.Description.get -> string?
-Spillgebees.Blazor.Map.MapOverlayItem.Description.init -> void
-Spillgebees.Blazor.Map.MapOverlayItem.Equals(Spillgebees.Blazor.Map.MapOverlayItem? other) -> bool
-Spillgebees.Blazor.Map.MapOverlayItem.Id.get -> string!
-Spillgebees.Blazor.Map.MapOverlayItem.Id.init -> void
-Spillgebees.Blazor.Map.MapOverlayItem.IsVisible.get -> bool
-Spillgebees.Blazor.Map.MapOverlayItem.IsVisible.init -> void
-Spillgebees.Blazor.Map.MapOverlayItem.Label.get -> string!
-Spillgebees.Blazor.Map.MapOverlayItem.Label.init -> void
-Spillgebees.Blazor.Map.MapOverlayItem.MapOverlayItem(string! Id, string! Label, bool IsVisible, string? Description, Spillgebees.Blazor.Map.MapLegendSymbol? Symbol, System.Collections.Generic.IReadOnlyList<Spillgebees.Blazor.Map.MapOverlayPartItem!>! Parts) -> void
-Spillgebees.Blazor.Map.MapOverlayItem.Parts.get -> System.Collections.Generic.IReadOnlyList<Spillgebees.Blazor.Map.MapOverlayPartItem!>!
-Spillgebees.Blazor.Map.MapOverlayItem.Parts.init -> void
-Spillgebees.Blazor.Map.MapOverlayItem.Symbol.get -> Spillgebees.Blazor.Map.MapLegendSymbol?
-Spillgebees.Blazor.Map.MapOverlayItem.Symbol.init -> void
-Spillgebees.Blazor.Map.MapOverlayPart
-Spillgebees.Blazor.Map.MapOverlayPart.ChildContent.get -> Microsoft.AspNetCore.Components.RenderFragment?
-Spillgebees.Blazor.Map.MapOverlayPart.ChildContent.set -> void
-Spillgebees.Blazor.Map.MapOverlayPart.Description.get -> string?
-Spillgebees.Blazor.Map.MapOverlayPart.Description.set -> void
-Spillgebees.Blazor.Map.MapOverlayPart.Id.get -> string!
-Spillgebees.Blazor.Map.MapOverlayPart.Id.set -> void
-Spillgebees.Blazor.Map.MapOverlayPart.InitiallyVisible.get -> bool
-Spillgebees.Blazor.Map.MapOverlayPart.InitiallyVisible.set -> void
-Spillgebees.Blazor.Map.MapOverlayPart.Label.get -> string?
-Spillgebees.Blazor.Map.MapOverlayPart.Label.set -> void
-Spillgebees.Blazor.Map.MapOverlayPart.LayerIds.get -> System.Collections.Generic.IReadOnlyList<string!>?
-Spillgebees.Blazor.Map.MapOverlayPart.LayerIds.set -> void
-Spillgebees.Blazor.Map.MapOverlayPart.MapOverlayPart() -> void
-Spillgebees.Blazor.Map.MapOverlayPart.Symbol.get -> Spillgebees.Blazor.Map.MapLegendSymbol?
-Spillgebees.Blazor.Map.MapOverlayPart.Symbol.set -> void
-Spillgebees.Blazor.Map.MapOverlayPartControlItemContext
-Spillgebees.Blazor.Map.MapOverlayPartControlItemContext.<Clone>$() -> Spillgebees.Blazor.Map.MapOverlayPartControlItemContext!
-Spillgebees.Blazor.Map.MapOverlayPartControlItemContext.Deconstruct(out Spillgebees.Blazor.Map.MapOverlayItem! Overlay, out Spillgebees.Blazor.Map.MapOverlayPartItem! Part, out System.Func<bool, System.Threading.Tasks.Task!>! SetVisibleAsync) -> void
-Spillgebees.Blazor.Map.MapOverlayPartControlItemContext.Equals(Spillgebees.Blazor.Map.MapOverlayPartControlItemContext? other) -> bool
-Spillgebees.Blazor.Map.MapOverlayPartControlItemContext.MapOverlayPartControlItemContext(Spillgebees.Blazor.Map.MapOverlayItem! Overlay, Spillgebees.Blazor.Map.MapOverlayPartItem! Part, System.Func<bool, System.Threading.Tasks.Task!>! SetVisibleAsync) -> void
-Spillgebees.Blazor.Map.MapOverlayPartControlItemContext.Overlay.get -> Spillgebees.Blazor.Map.MapOverlayItem!
-Spillgebees.Blazor.Map.MapOverlayPartControlItemContext.Overlay.init -> void
-Spillgebees.Blazor.Map.MapOverlayPartControlItemContext.Part.get -> Spillgebees.Blazor.Map.MapOverlayPartItem!
-Spillgebees.Blazor.Map.MapOverlayPartControlItemContext.Part.init -> void
-Spillgebees.Blazor.Map.MapOverlayPartControlItemContext.SetVisibleAsync.get -> System.Func<bool, System.Threading.Tasks.Task!>!
-Spillgebees.Blazor.Map.MapOverlayPartControlItemContext.SetVisibleAsync.init -> void
-Spillgebees.Blazor.Map.MapOverlayPartItem
-Spillgebees.Blazor.Map.MapOverlayPartItem.<Clone>$() -> Spillgebees.Blazor.Map.MapOverlayPartItem!
-Spillgebees.Blazor.Map.MapOverlayPartItem.Deconstruct(out string! Id, out string! Label, out bool IsVisible, out string? Description, out Spillgebees.Blazor.Map.MapLegendSymbol? Symbol) -> void
-Spillgebees.Blazor.Map.MapOverlayPartItem.Description.get -> string?
-Spillgebees.Blazor.Map.MapOverlayPartItem.Description.init -> void
-Spillgebees.Blazor.Map.MapOverlayPartItem.Equals(Spillgebees.Blazor.Map.MapOverlayPartItem? other) -> bool
-Spillgebees.Blazor.Map.MapOverlayPartItem.Id.get -> string!
-Spillgebees.Blazor.Map.MapOverlayPartItem.Id.init -> void
-Spillgebees.Blazor.Map.MapOverlayPartItem.IsVisible.get -> bool
-Spillgebees.Blazor.Map.MapOverlayPartItem.IsVisible.init -> void
-Spillgebees.Blazor.Map.MapOverlayPartItem.Label.get -> string!
-Spillgebees.Blazor.Map.MapOverlayPartItem.Label.init -> void
-Spillgebees.Blazor.Map.MapOverlayPartItem.MapOverlayPartItem(string! Id, string! Label, bool IsVisible, string? Description, Spillgebees.Blazor.Map.MapLegendSymbol? Symbol) -> void
-Spillgebees.Blazor.Map.MapOverlayPartItem.Symbol.get -> Spillgebees.Blazor.Map.MapLegendSymbol?
-Spillgebees.Blazor.Map.MapOverlayPartItem.Symbol.init -> void
-Spillgebees.Blazor.Map.MapOverlays
-Spillgebees.Blazor.Map.MapOverlays.ChildContent.get -> Microsoft.AspNetCore.Components.RenderFragment?
-Spillgebees.Blazor.Map.MapOverlays.ChildContent.set -> void
-Spillgebees.Blazor.Map.MapOverlays.MapOverlays() -> void
 Spillgebees.Blazor.Map.MapPixelRatioMode
 Spillgebees.Blazor.Map.MapPixelRatioMode.BrowserDefault = 0 -> Spillgebees.Blazor.Map.MapPixelRatioMode
 Spillgebees.Blazor.Map.MapPixelRatioMode.RoundedUpDevicePixelRatio = 1 -> Spillgebees.Blazor.Map.MapPixelRatioMode
@@ -1465,35 +1336,6 @@ Spillgebees.Blazor.Map.NavigationMapControl.ShowZoom.get -> bool
 Spillgebees.Blazor.Map.NavigationMapControl.ShowZoom.set -> void
 Spillgebees.Blazor.Map.NavigationMapControl.Visible.get -> bool
 Spillgebees.Blazor.Map.NavigationMapControl.Visible.set -> void
-Spillgebees.Blazor.Map.OverlayMapControl
-Spillgebees.Blazor.Map.OverlayMapControl.Class.get -> string?
-Spillgebees.Blazor.Map.OverlayMapControl.Class.set -> void
-Spillgebees.Blazor.Map.OverlayMapControl.Dispose() -> void
-Spillgebees.Blazor.Map.OverlayMapControl.Id.get -> string!
-Spillgebees.Blazor.Map.OverlayMapControl.Id.set -> void
-Spillgebees.Blazor.Map.OverlayMapControl.InitiallyOpen.get -> bool
-Spillgebees.Blazor.Map.OverlayMapControl.InitiallyOpen.set -> void
-Spillgebees.Blazor.Map.OverlayMapControl.ItemTemplate.get -> Microsoft.AspNetCore.Components.RenderFragment<Spillgebees.Blazor.Map.MapOverlayControlItemContext!>?
-Spillgebees.Blazor.Map.OverlayMapControl.ItemTemplate.set -> void
-Spillgebees.Blazor.Map.OverlayMapControl.Label.get -> string!
-Spillgebees.Blazor.Map.OverlayMapControl.Label.set -> void
-Spillgebees.Blazor.Map.OverlayMapControl.MaxWidth.get -> string?
-Spillgebees.Blazor.Map.OverlayMapControl.MaxWidth.set -> void
-Spillgebees.Blazor.Map.OverlayMapControl.Order.get -> int
-Spillgebees.Blazor.Map.OverlayMapControl.Order.set -> void
-Spillgebees.Blazor.Map.OverlayMapControl.OverlayIds.get -> System.Collections.Generic.IReadOnlyList<string!>?
-Spillgebees.Blazor.Map.OverlayMapControl.OverlayIds.set -> void
-Spillgebees.Blazor.Map.OverlayMapControl.OverlayMapControl() -> void
-Spillgebees.Blazor.Map.OverlayMapControl.PanelClass.get -> string?
-Spillgebees.Blazor.Map.OverlayMapControl.PanelClass.set -> void
-Spillgebees.Blazor.Map.OverlayMapControl.PartTemplate.get -> Microsoft.AspNetCore.Components.RenderFragment<Spillgebees.Blazor.Map.MapOverlayPartControlItemContext!>?
-Spillgebees.Blazor.Map.OverlayMapControl.PartTemplate.set -> void
-Spillgebees.Blazor.Map.OverlayMapControl.Position.get -> Spillgebees.Blazor.Map.ControlPosition
-Spillgebees.Blazor.Map.OverlayMapControl.Position.set -> void
-Spillgebees.Blazor.Map.OverlayMapControl.Title.get -> string!
-Spillgebees.Blazor.Map.OverlayMapControl.Title.set -> void
-Spillgebees.Blazor.Map.OverlayMapControl.Visible.get -> bool
-Spillgebees.Blazor.Map.OverlayMapControl.Visible.set -> void
 Spillgebees.Blazor.Map.PanelChromeOptions
 Spillgebees.Blazor.Map.PanelChromeOptions.<Clone>$() -> Spillgebees.Blazor.Map.PanelChromeOptions!
 Spillgebees.Blazor.Map.PanelChromeOptions.Deconstruct(out string! Label, out string? Title, out bool InitiallyOpen, out bool? IsOpen, out string? MaxWidth) -> void
@@ -1741,8 +1583,6 @@ Spillgebees.Blazor.Map.SgbMap.QueryRenderedFeaturesAsync(Spillgebees.Blazor.Map.
 Spillgebees.Blazor.Map.SgbMap.ReCenterAsync() -> System.Threading.Tasks.Task!
 Spillgebees.Blazor.Map.SgbMap.ResizeAsync() -> System.Threading.Tasks.Task!
 Spillgebees.Blazor.Map.SgbMap.SetFeatureStateAsync(string! sourceId, object! featureId, System.Collections.Generic.IReadOnlyDictionary<string!, object!>! state, string? sourceLayer = null) -> System.Threading.Tasks.Task!
-Spillgebees.Blazor.Map.SgbMap.SetOverlayPartVisibleAsync(string! overlayId, string! partId, bool visible) -> System.Threading.Tasks.Task!
-Spillgebees.Blazor.Map.SgbMap.SetOverlayVisibleAsync(string! overlayId, bool visible) -> System.Threading.Tasks.Task!
 Spillgebees.Blazor.Map.SgbMap.SgbMap() -> void
 Spillgebees.Blazor.Map.SgbMap.ShowPopupAsync(Spillgebees.Blazor.Map.Coordinate! position, string! text, Spillgebees.Blazor.Map.PopupOptions? options = null) -> System.Threading.Tasks.Task!
 Spillgebees.Blazor.Map.SgbMap.ShowRawHtmlPopupAsync(Spillgebees.Blazor.Map.Coordinate! position, string! html, Spillgebees.Blazor.Map.PopupOptions? options = null) -> System.Threading.Tasks.Task!
@@ -2092,13 +1932,12 @@ static Spillgebees.Blazor.Map.MapDisplayControlItemContext.operator !=(Spillgebe
 static Spillgebees.Blazor.Map.MapDisplayControlItemContext.operator ==(Spillgebees.Blazor.Map.MapDisplayControlItemContext? left, Spillgebees.Blazor.Map.MapDisplayControlItemContext? right) -> bool
 static Spillgebees.Blazor.Map.MapDisplayItem.operator !=(Spillgebees.Blazor.Map.MapDisplayItem? left, Spillgebees.Blazor.Map.MapDisplayItem? right) -> bool
 static Spillgebees.Blazor.Map.MapDisplayItem.operator ==(Spillgebees.Blazor.Map.MapDisplayItem? left, Spillgebees.Blazor.Map.MapDisplayItem? right) -> bool
+static Spillgebees.Blazor.Map.MapDisplayTarget.Layers(params string![]! ids) -> Spillgebees.Blazor.Map.MapDisplayTarget!
 static Spillgebees.Blazor.Map.MapDisplayTarget.operator !=(Spillgebees.Blazor.Map.MapDisplayTarget? left, Spillgebees.Blazor.Map.MapDisplayTarget? right) -> bool
 static Spillgebees.Blazor.Map.MapDisplayTarget.operator ==(Spillgebees.Blazor.Map.MapDisplayTarget? left, Spillgebees.Blazor.Map.MapDisplayTarget? right) -> bool
-static Spillgebees.Blazor.Map.MapDisplayTarget.RuntimeLayers(params string![]! layerIds) -> Spillgebees.Blazor.Map.MapDisplayTarget!
-static Spillgebees.Blazor.Map.MapDisplayTarget.StyleLayerFeatures(string! styleId, object! filter, params string![]! layerIds) -> Spillgebees.Blazor.Map.MapDisplayTarget!
+static Spillgebees.Blazor.Map.MapDisplayTarget.Style(string! styleId) -> Spillgebees.Blazor.Map.MapDisplayTarget!
 static Spillgebees.Blazor.Map.MapDisplayTarget.StyleLayers(string! styleId, params string![]! layerIds) -> Spillgebees.Blazor.Map.MapDisplayTarget!
-static Spillgebees.Blazor.Map.MapDisplayTarget.StyleLayerTag(string! styleId, string! tag) -> Spillgebees.Blazor.Map.MapDisplayTarget!
-static Spillgebees.Blazor.Map.MapDisplayTarget.StyleLayerTags(string! styleId, params string![]! tags) -> Spillgebees.Blazor.Map.MapDisplayTarget!
+static Spillgebees.Blazor.Map.MapDisplayTarget.StyleTags(string! styleId, params string![]! tags) -> Spillgebees.Blazor.Map.MapDisplayTarget!
 static Spillgebees.Blazor.Map.MapFollowCameraOptions.operator !=(Spillgebees.Blazor.Map.MapFollowCameraOptions? left, Spillgebees.Blazor.Map.MapFollowCameraOptions? right) -> bool
 static Spillgebees.Blazor.Map.MapFollowCameraOptions.operator ==(Spillgebees.Blazor.Map.MapFollowCameraOptions? left, Spillgebees.Blazor.Map.MapFollowCameraOptions? right) -> bool
 static Spillgebees.Blazor.Map.MapFollowChangedEventArgs.operator !=(Spillgebees.Blazor.Map.MapFollowChangedEventArgs? left, Spillgebees.Blazor.Map.MapFollowChangedEventArgs? right) -> bool
@@ -2109,6 +1948,7 @@ static Spillgebees.Blazor.Map.MapFollowOptions.operator !=(Spillgebees.Blazor.Ma
 static Spillgebees.Blazor.Map.MapFollowOptions.operator ==(Spillgebees.Blazor.Map.MapFollowOptions? left, Spillgebees.Blazor.Map.MapFollowOptions? right) -> bool
 static Spillgebees.Blazor.Map.MapImage.operator !=(Spillgebees.Blazor.Map.MapImage? left, Spillgebees.Blazor.Map.MapImage? right) -> bool
 static Spillgebees.Blazor.Map.MapImage.operator ==(Spillgebees.Blazor.Map.MapImage? left, Spillgebees.Blazor.Map.MapImage? right) -> bool
+static Spillgebees.Blazor.Map.MapInteractionMetadata.GetDefaults(bool cooperativeGestures = false) -> System.Collections.Generic.IReadOnlyDictionary<Spillgebees.Blazor.Map.MapInteractionInput, Spillgebees.Blazor.Map.MapInteractionEffect>!
 static Spillgebees.Blazor.Map.MapLegend.operator !=(Spillgebees.Blazor.Map.MapLegend? left, Spillgebees.Blazor.Map.MapLegend? right) -> bool
 static Spillgebees.Blazor.Map.MapLegend.operator ==(Spillgebees.Blazor.Map.MapLegend? left, Spillgebees.Blazor.Map.MapLegend? right) -> bool
 static Spillgebees.Blazor.Map.MapLegendItem.operator !=(Spillgebees.Blazor.Map.MapLegendItem? left, Spillgebees.Blazor.Map.MapLegendItem? right) -> bool
@@ -2135,16 +1975,6 @@ static Spillgebees.Blazor.Map.MapLegendSymbol.NoneSymbol.operator !=(Spillgebees
 static Spillgebees.Blazor.Map.MapLegendSymbol.NoneSymbol.operator ==(Spillgebees.Blazor.Map.MapLegendSymbol.NoneSymbol? left, Spillgebees.Blazor.Map.MapLegendSymbol.NoneSymbol? right) -> bool
 static Spillgebees.Blazor.Map.MapLegendSymbol.operator !=(Spillgebees.Blazor.Map.MapLegendSymbol? left, Spillgebees.Blazor.Map.MapLegendSymbol? right) -> bool
 static Spillgebees.Blazor.Map.MapLegendSymbol.operator ==(Spillgebees.Blazor.Map.MapLegendSymbol? left, Spillgebees.Blazor.Map.MapLegendSymbol? right) -> bool
-static Spillgebees.Blazor.Map.MapOverlayChangedEventArgs.operator !=(Spillgebees.Blazor.Map.MapOverlayChangedEventArgs? left, Spillgebees.Blazor.Map.MapOverlayChangedEventArgs? right) -> bool
-static Spillgebees.Blazor.Map.MapOverlayChangedEventArgs.operator ==(Spillgebees.Blazor.Map.MapOverlayChangedEventArgs? left, Spillgebees.Blazor.Map.MapOverlayChangedEventArgs? right) -> bool
-static Spillgebees.Blazor.Map.MapOverlayControlItemContext.operator !=(Spillgebees.Blazor.Map.MapOverlayControlItemContext? left, Spillgebees.Blazor.Map.MapOverlayControlItemContext? right) -> bool
-static Spillgebees.Blazor.Map.MapOverlayControlItemContext.operator ==(Spillgebees.Blazor.Map.MapOverlayControlItemContext? left, Spillgebees.Blazor.Map.MapOverlayControlItemContext? right) -> bool
-static Spillgebees.Blazor.Map.MapOverlayItem.operator !=(Spillgebees.Blazor.Map.MapOverlayItem? left, Spillgebees.Blazor.Map.MapOverlayItem? right) -> bool
-static Spillgebees.Blazor.Map.MapOverlayItem.operator ==(Spillgebees.Blazor.Map.MapOverlayItem? left, Spillgebees.Blazor.Map.MapOverlayItem? right) -> bool
-static Spillgebees.Blazor.Map.MapOverlayPartControlItemContext.operator !=(Spillgebees.Blazor.Map.MapOverlayPartControlItemContext? left, Spillgebees.Blazor.Map.MapOverlayPartControlItemContext? right) -> bool
-static Spillgebees.Blazor.Map.MapOverlayPartControlItemContext.operator ==(Spillgebees.Blazor.Map.MapOverlayPartControlItemContext? left, Spillgebees.Blazor.Map.MapOverlayPartControlItemContext? right) -> bool
-static Spillgebees.Blazor.Map.MapOverlayPartItem.operator !=(Spillgebees.Blazor.Map.MapOverlayPartItem? left, Spillgebees.Blazor.Map.MapOverlayPartItem? right) -> bool
-static Spillgebees.Blazor.Map.MapOverlayPartItem.operator ==(Spillgebees.Blazor.Map.MapOverlayPartItem? left, Spillgebees.Blazor.Map.MapOverlayPartItem? right) -> bool
 static Spillgebees.Blazor.Map.MapStyle.FromArcGisMapServer(string! mapServerUrl, string! attribution, int tileSize = 256, Spillgebees.Blazor.Map.ReferrerPolicy? referrerPolicy = null) -> Spillgebees.Blazor.Map.MapStyle!
 static Spillgebees.Blazor.Map.MapStyle.FromRasterUrl(string! urlTemplate, string! attribution, int tileSize = 256, Spillgebees.Blazor.Map.ReferrerPolicy? referrerPolicy = null) -> Spillgebees.Blazor.Map.MapStyle!
 static Spillgebees.Blazor.Map.MapStyle.FromUrl(string! url) -> Spillgebees.Blazor.Map.MapStyle!
@@ -2280,7 +2110,6 @@ virtual Spillgebees.Blazor.Map.TileOverlay.PrintMembers(System.Text.StringBuilde
 ~override Spillgebees.Blazor.Map.MapButton.BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) -> void
 ~override Spillgebees.Blazor.Map.MapPopup.BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) -> void
 ~override Spillgebees.Blazor.Map.MapToggleButton.BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) -> void
-~override Spillgebees.Blazor.Map.OverlayMapControl.BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) -> void
 ~override Spillgebees.Blazor.Map.PanelMapControl.BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) -> void
 ~override Spillgebees.Blazor.Map.SgbMap.BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) -> void
 ~override Spillgebees.Blazor.Map.ToggleButtonMapControl.BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder) -> void

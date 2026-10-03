@@ -90,25 +90,19 @@ public static class TrainTrackingPresentation
             ClassName: "train-overlay-legend-content"
         );
 
+    // Items leave IsOn unset, so each toggle starts as the overlay style ships its layers
+    // (tram and infrastructure hidden) and the legend shows those defaults.
     public static MapDisplayState CreateDisplay() =>
         new([
             new MapDisplayItem(
                 "3d-buildings",
-                [MapDisplayTarget.RuntimeLayers("sgb-buildings-3d")],
+                [MapDisplayTarget.Layers("sgb-buildings-3d")],
                 Label: "3D Buildings"
             ),
             new MapDisplayItem(
                 "trains",
-                [
-                    MapDisplayTarget.RuntimeLayers(
-                        "train-source-clusters",
-                        "train-source-cluster-count",
-                        "train-source-symbols",
-                        "train-source-decoration-service",
-                        "train-source-decoration-route",
-                        "train-source-decoration-operator"
-                    ),
-                ],
+                // the tracked entity layer's id covers its symbol, cluster and decoration layers
+                [MapDisplayTarget.Layers("train-source")],
                 Label: "Trains"
             ),
             new MapDisplayItem(
@@ -141,11 +135,14 @@ public static class TrainTrackingPresentation
                         "tram-line-tunnel",
                         "tram-stations-icon",
                         "subway-entrance-icon",
-                        "tram-lifecycle-fill",
+                        "tram-lifecycle-construction",
+                        "tram-lifecycle-proposed",
+                        "tram-lifecycle-disused",
+                        "tram-lifecycle-abandoned",
+                        "tram-lifecycle-razed",
                         "railway-tram-crossings-circle"
                     ),
                 ],
-                IsOn: false,
                 Label: "Tram & metro"
             ),
             new MapDisplayItem(
@@ -218,7 +215,6 @@ public static class TrainTrackingPresentation
                         "railway-crossings-circle"
                     ),
                 ],
-                IsOn: false,
                 Label: "Infrastructure"
             ),
         ]);

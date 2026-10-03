@@ -6,5 +6,4 @@ internal enum MapContentSectionKind
     Controls,
     Sources,
     Features,
-    Overlays,
 }

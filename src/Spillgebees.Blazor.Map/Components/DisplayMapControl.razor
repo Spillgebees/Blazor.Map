@@ -1,5 +1,3 @@
-@using Spillgebees.Blazor.Map
-
 @namespace Spillgebees.Blazor.Map
 
 <PanelMapControl Id="@Id"
@@ -21,7 +19,7 @@
             }
             else
             {
-                <label class="sgb-map-layer-control-item">
+                <label class="@(IsPending(item) ? "sgb-map-layer-control-item sgb-map-legend-item-pending" : "sgb-map-layer-control-item")">
                     <span class="sgb-map-layer-control-copy">
                         <span class="sgb-map-layer-control-label">@ResolveLabel(item)</span>
                         @if (!string.IsNullOrWhiteSpace(item.Description))
@@ -32,10 +30,11 @@
                     <span class="sgb-map-legend-item-switch">
                         <input type="checkbox"
                                role="switch"
-                               aria-checked="@item.IsOn.ToString().ToLowerInvariant()"
-                               checked="@item.IsOn"
+                               aria-checked="@IsOn(item).ToString().ToLowerInvariant()"
+                               checked="@IsOn(item)"
+                               disabled="@IsPending(item)"
                                data-testid="@($"map-display-toggle-{item.Id}")"
-                               @onchange="@((ChangeEventArgs args) => ToggleItemAsync(item, args))" />
+                               @onchange="@(args => ToggleItemAsync(item, args))" />
                         <span class="sgb-map-legend-item-switch-track"></span>
                     </span>
                 </label>

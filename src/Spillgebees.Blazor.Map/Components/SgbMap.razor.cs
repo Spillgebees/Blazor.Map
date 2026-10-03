@@ -14,13 +14,7 @@ namespace Spillgebees.Blazor.Map;
 /// shared map-control component family (controls render directly inside the map — no
 /// <c>MapControls</c> wrapper needed).
 /// </summary>
-public partial class SgbMap
-    : ComponentBase,
-        IAsyncDisposable,
-        IMapControlHost,
-        IMapOverlayHost,
-        IMapInteropHost,
-        IMapFeatureHost
+public partial class SgbMap : ComponentBase, IAsyncDisposable, IMapControlHost, IMapInteropHost, IMapFeatureHost
 {
     [Inject]
     private IJSRuntime _jsRuntime { get; set; } = null!;
@@ -50,7 +44,7 @@ public partial class SgbMap
 
     /// <summary>
     /// Display toggles (the library's <see cref="MapDisplayState"/> model). Item changes
-    /// apply as JS-local visibility/filter updates.
+    /// apply as JS-local visibility/filter updates. One state may be shared by several maps.
     /// </summary>
     [Parameter]
     public MapDisplayState? Display { get; set; }
@@ -211,10 +205,9 @@ public partial class SgbMap
     private EngineMapConfig? _appliedConfig;
     private FitBoundsOptions? _appliedFitBounds;
     private MapDisplayState? _subscribedDisplay;
-    private readonly List<MapStyle> _overlayStyles = [];
-    private readonly List<MapOverlay> _overlays = [];
+    private IReadOnlyDictionary<string, bool>? _styleDefaults;
     private readonly TaskCompletionSource<bool> _readyTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-    private readonly object _controlSyncStateLock = new();
+    private readonly Lock _controlSyncStateLock = new();
     private readonly SemaphoreSlim _controlSyncLock = new(1, 1);
     private TaskCompletionSource? _controlSyncDrained;
     private bool _isDisposing;
@@ -225,7 +218,7 @@ public partial class SgbMap
 
     internal MapRootContext RootContext { get; private set; } = null!;
 
-    /// <summary>Sets up the ops channel, event router and engine coordinators.</summary>
+    /// <summary>Sets up the ops channel, event router, and engine coordinators.</summary>
     protected override void OnInitialized()
     {
         Channel = new MapEngineChannel(_jsRuntime);
@@ -259,9 +252,6 @@ public partial class SgbMap
         _appliedConfig = BuildConfig();
         await MapEngineJs.CreateMapAsync(_jsRuntime, _container, BuildOptionsJson(), Router.Reference);
         _isCreated = true;
-        // overlay styles registered by children while CreateMapAsync was in flight
-        // missed both the create options and the runtime path — catch up now.
-        await ApplyStylesIfChangedAsync();
         await SyncFollowAsync();
     }
 
@@ -271,9 +261,14 @@ public partial class SgbMap
         if (!ReferenceEquals(Display, _subscribedDisplay))
         {
             _subscribedDisplay?.Changed -= HandleDisplayChanged;
+            _subscribedDisplay?.RemoveStyleDefaults(this);
 
             _subscribedDisplay = Display;
             _subscribedDisplay?.Changed += HandleDisplayChanged;
+            if (_styleDefaults is not null)
+            {
+                _subscribedDisplay?.SetStyleDefaults(this, _styleDefaults);
+            }
 
             _display.Sync(_subscribedDisplay);
         }
@@ -389,70 +384,10 @@ public partial class SgbMap
     }
 
     private JsonObject BuildStylesNode() =>
-        EngineStyleJson.BuildStylesNode(
-            Styles,
-            Style,
-            StyleSpec,
-            _overlayStyles,
-            ComposedGlyphsUrl,
-            exception => _ = OnMapError.InvokeAsync(exception)
-        );
+        EngineStyleJson.BuildStylesNode(Styles, Style, StyleSpec, ComposedGlyphsUrl);
 
     private void HandleDisplayChanged(object? sender, MapDisplayChangedEventArgs args) =>
         _display.Sync(_subscribedDisplay);
-
-    /// <summary>Registers an overlay style into the composed styles list.</summary>
-    internal void RegisterOverlayStyle(MapStyle style)
-    {
-        _overlayStyles.Add(style);
-        _ = ApplyStylesIfChangedAsync();
-    }
-
-    internal void RegisterOverlay(MapOverlay overlay) => _overlays.Add(overlay);
-
-    internal void UnregisterOverlay(MapOverlay overlay) => _overlays.Remove(overlay);
-
-    internal void NotifyOverlayChanged(string overlayId, string? partId = null) =>
-        OverlayChanged?.Invoke(this, new MapOverlayChangedEventArgs(overlayId, partId));
-
-    /// <summary>Toggleable overlay state, raised on registration and visibility changes.</summary>
-    internal event EventHandler<MapOverlayChangedEventArgs>? OverlayChanged;
-
-    /// <summary>Toggles an overlay declared via <see cref="MapOverlay"/>.</summary>
-    public Task SetOverlayVisibleAsync(string overlayId, bool visible)
-    {
-        _overlays.FirstOrDefault(overlay => overlay.Id == overlayId)?.SetVisible(visible);
-        return Task.CompletedTask;
-    }
-
-    /// <summary>Toggles a part of an overlay declared via <see cref="MapOverlayPart"/>.</summary>
-    public Task SetOverlayPartVisibleAsync(string overlayId, string partId, bool visible)
-    {
-        _overlays.FirstOrDefault(overlay => overlay.Id == overlayId)?.SetPartVisible(partId, visible);
-        return Task.CompletedTask;
-    }
-
-    private async Task ApplyStylesIfChangedAsync()
-    {
-        if (!_isCreated)
-        {
-            return;
-        }
-
-        var stylesJson = BuildStylesNode().ToJsonString();
-        if (stylesJson == _appliedStylesJson)
-        {
-            return;
-        }
-
-        _appliedStylesJson = stylesJson;
-        try
-        {
-            await MapEngineJs.SetStylesAsync(_jsRuntime, _container, stylesJson);
-        }
-        catch (JSDisconnectedException) { }
-        catch (ObjectDisposedException) { }
-    }
 
     private async Task HandleMapEventAsync(string kind, JsonElement payload)
     {
@@ -496,7 +431,24 @@ public partial class SgbMap
             case "followcleared":
                 await HandleFollowClearedAsync(payload);
                 break;
+            case "displaydefaults":
+                HandleDisplayDefaults(payload);
+                break;
         }
+    }
+
+    // The engine reports the style defaults of unset display items (per this map's style)
+    // whenever they change; the shared state keeps them per map.
+    private void HandleDisplayDefaults(JsonElement payload)
+    {
+        var defaults = new Dictionary<string, bool>(StringComparer.Ordinal);
+        foreach (var entry in payload.GetProperty("defaults").EnumerateObject())
+        {
+            defaults[entry.Name] = entry.Value.GetBoolean();
+        }
+
+        _styleDefaults = defaults;
+        _subscribedDisplay?.SetStyleDefaults(this, defaults);
     }
 
     private static MapViewEventArgs ToViewEventArgs(JsonElement payload) =>
@@ -745,21 +697,6 @@ public partial class SgbMap
         return ValueTask.CompletedTask;
     }
 
-    event EventHandler<MapOverlayChangedEventArgs>? IMapOverlayHost.OverlayChanged
-    {
-        add => OverlayChanged += value;
-        remove => OverlayChanged -= value;
-    }
-
-    IReadOnlyList<MapOverlayItem> IMapOverlayHost.GetOverlayItems() =>
-        [.. _overlays.Select(overlay => overlay.BuildItem())];
-
-    void IMapOverlayHost.SetOverlayVisible(string overlayId, bool visible) =>
-        _ = SetOverlayVisibleAsync(overlayId, visible);
-
-    void IMapOverlayHost.SetOverlayPartVisible(string overlayId, string partId, bool visible) =>
-        _ = SetOverlayPartVisibleAsync(overlayId, partId, visible);
-
     private void MarkDisposing()
     {
         lock (_controlSyncStateLock)
@@ -849,6 +786,7 @@ public partial class SgbMap
         await DrainControlSyncsAsync();
         _readyTcs.TrySetResult(false);
         _subscribedDisplay?.Changed -= HandleDisplayChanged;
+        _subscribedDisplay?.RemoveStyleDefaults(this);
 
         try
         {

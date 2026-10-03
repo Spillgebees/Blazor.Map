@@ -33,11 +33,12 @@ import type {
   PopupData,
 } from "./ops";
 import { createScheduler, type Scheduler } from "./scheduler";
-import { createVisibilityController, styleLayerInfo } from "./visibility";
+import { type ComposedLayerInfo, createVisibilityController, styleLayerInfo } from "./visibility";
 
 const SLOT_LAYER_PREFIX = "sgb-slot:";
 const CIRCLES_LAYER_ID = "sgb-circles-layer";
 const POLYLINES_LAYER_ID = "sgb-polylines-layer";
+const COMPOSED_LAYER_PREFIX = "sgb-overlay-style-";
 
 /** The MapLibre surface the engine touches — structural, so tests can stub it. */
 export interface EngineMap {
@@ -99,12 +100,12 @@ export interface EngineMap {
   off(event: string, layerId: string, handler: (event: unknown) => void): unknown;
   /** All layers of the current style (including engine-managed ones; the runtime filters). */
   listStyleLayers(): { id: string; layout?: { visibility?: string }; filter?: unknown; metadata?: unknown }[];
-  /** Composed overlay-style layer lookups (styles/composition.ts registry). */
-  resolveComposedLayer(
-    styleId: string,
-    layerId: string,
-  ): { layerId: string; visible: boolean; filter: unknown | undefined } | null;
-  listComposedLayers(styleId: string): { layerId: string; visible: boolean; filter: unknown | undefined }[];
+  /** Id the consumer gave the base style, if any. */
+  baseStyleId(): string | null;
+  /** Layers of a composed overlay style (styles/composition.ts registry), or null if not composed. */
+  composedStyleLayers(styleId: string): ComposedLayerInfo[] | null;
+  /** Whether the map was configured with a style of this id (base or overlay). */
+  isKnownStyle(styleId: string): boolean;
 }
 
 interface GeoJsonSourceLike {
@@ -129,6 +130,8 @@ export interface EngineOptions {
   onError?: (error: unknown) => void;
   /** Receives a camera-follow cleared by the engine (user interaction or missing entity). */
   onFollowCleared?: (reason: FollowClearReason) => void;
+  /** Receives the style defaults of unset display items whenever they change. */
+  onDisplayDefaults?: (defaults: Record<string, boolean>) => void;
   scheduler?: Scheduler;
   now?: () => number;
 }
@@ -138,7 +141,7 @@ export interface Engine {
   pushMotion(layerId: string, bytes: Uint8Array): void;
   /** Re-applies the full scene in canonical order (after map.setStyle). */
   replay(): void;
-  /** Re-applies display visibility/filter registrations without replaying sources/layers. */
+  /** Re-applies display visibility/filter registrations after the composed overlay styles changed. */
   replayVisibility(): void;
   dispose(): void;
 }
@@ -148,6 +151,8 @@ interface LayerRecord {
   spec: Record<string, unknown>;
   slot: string | null;
   before: string | null;
+  /** Component that created the layer, for display targets naming the component. */
+  owner: string | null;
 }
 
 interface EventRecord {
@@ -182,6 +187,7 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
   const onEvent = options.onEvent ?? (() => {});
   const onError = options.onError ?? (() => {});
   const onFollowCleared = options.onFollowCleared ?? (() => {});
+  const onDisplayDefaults = options.onDisplayDefaults ?? (() => {});
 
   const slots = new Map<string, { before: string | null }>();
   const sources = new Map<string, Record<string, unknown>>();
@@ -193,29 +199,51 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
     getStore: (layerId) => entityLayers.get(layerId),
     onCleared: onFollowCleared,
   });
+  function runtimeLayerInfo(record: LayerRecord) {
+    const layout = record.spec.layout as Record<string, unknown> | undefined;
+    return {
+      id: record.id,
+      owner: record.owner,
+      visible: layout?.visibility !== "none",
+      filter: record.spec.filter ?? null,
+    };
+  }
+
   const visibilityController = createVisibilityController({
+    listRuntimeLayers: () => [...layers.values()].map(runtimeLayerInfo),
     getRuntimeLayer(layerId) {
       const record = layers.get(layerId);
-      if (!record) {
-        return null;
-      }
-
-      const layout = record.spec.layout as Record<string, unknown> | undefined;
-      return { visible: layout?.visibility !== "none" };
+      return record ? runtimeLayerInfo(record) : null;
     },
-    getRuntimeBaselineFilter: (layerId) => layers.get(layerId)?.spec.filter ?? null,
-    listStyleLayers: () =>
+    listBaseStyleLayers: () =>
       map
         .listStyleLayers()
-        .filter((layer) => !layers.has(layer.id) && !layer.id.startsWith(SLOT_LAYER_PREFIX))
+        .filter(
+          (layer) =>
+            !layers.has(layer.id) &&
+            !layer.id.startsWith(SLOT_LAYER_PREFIX) &&
+            !layer.id.startsWith(COMPOSED_LAYER_PREFIX),
+        )
         .map(styleLayerInfo),
-    resolveComposedLayer: (styleId, layerId) => map.resolveComposedLayer(styleId, layerId),
-    listComposedLayers: (styleId) => map.listComposedLayers(styleId),
+    baseStyleId: () => map.baseStyleId(),
+    composedStyleLayers: (styleId) => map.composedStyleLayers(styleId),
+    isKnownStyle: (styleId) => map.isKnownStyle(styleId),
     setLayerVisibility: (layerId, visible) =>
       map.setLayoutProperty(layerId, "visibility", visible ? "visible" : "none"),
     setLayerFilter: (layerId, filter) => map.setFilter(layerId, filter),
     hasLayer: (layerId) => Boolean(map.getLayer(layerId)),
   });
+
+  function flushDisplayDefaults(): void {
+    try {
+      const defaults = visibilityController.takeDefaults();
+      if (defaults) {
+        onDisplayDefaults(defaults);
+      }
+    } catch (error) {
+      onError(error);
+    }
+  }
   const images = new Map<string, { url: string; options: Record<string, unknown> | null }>();
   const events = new Map<string, EventRecord>();
   const hovered = new Map<string, number | null>();
@@ -607,7 +635,13 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
         wireClusterZoomForSource(op.id, op.layerIds);
         break;
       case "layer.add": {
-        const record: LayerRecord = { id: op.id, spec: op.spec, slot: op.slot ?? null, before: op.before ?? null };
+        const record: LayerRecord = {
+          id: op.id,
+          spec: op.spec,
+          slot: op.slot ?? null,
+          before: op.before ?? null,
+          owner: op.owner ?? null,
+        };
         layers.set(op.id, record);
         map.addLayer(op.spec, resolveLayerBeforeId(record));
         visibilityController.onLayerAdded(op.id);
@@ -617,6 +651,7 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
         layers.delete(op.id);
         unwireLayerEvents(op.id);
         map.removeLayer(op.id);
+        visibilityController.onLayerRemoved(op.id);
         break;
       case "layer.setPaint": {
         updateSpecSection(layers.get(op.id), "paint", op.name, op.value);
@@ -728,16 +763,10 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
         break;
       }
       case "visibility.set":
-        visibilityController.setGroup(op.id, op.visible, op.targets);
+        visibilityController.setGroup(op.id, op.visible ?? null, op.targets);
         break;
       case "visibility.remove":
         visibilityController.removeGroup(op.id);
-        break;
-      case "overlay.set":
-        visibilityController.setOverlay(op.id, op.visible, op.targets, op.parts);
-        break;
-      case "overlay.remove":
-        visibilityController.removeOverlay(op.id);
         break;
       case "image.add":
         images.set(op.id, { url: op.url, options: op.options ?? null });
@@ -926,6 +955,8 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
           onError(error);
         }
       }
+
+      flushDisplayDefaults();
     },
     pushMotion(layerId, bytes) {
       const store = entityLayers.get(layerId);
@@ -974,7 +1005,8 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
         map.addLayer(record.spec, resolveLayerBeforeId(record));
       }
 
-      visibilityController.replay();
+      visibilityController.replay(true);
+      flushDisplayDefaults();
 
       for (const [id, image] of images) {
         if (!map.hasImage(id)) {
@@ -983,7 +1015,8 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
       }
     },
     replayVisibility() {
-      visibilityController.replay();
+      visibilityController.replay(false);
+      flushDisplayDefaults();
     },
     dispose() {
       follow.dispose();

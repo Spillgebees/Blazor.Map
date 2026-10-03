@@ -3,6 +3,7 @@ import { encodeMotionFrame } from "./motion";
 import type { Op } from "./ops";
 import { createEngine, type Engine, type EngineEvent, type EngineMap } from "./runtime";
 import { createScheduler } from "./scheduler";
+import type { ComposedLayerInfo } from "./visibility";
 
 interface SourceStub {
   spec: Record<string, unknown>;
@@ -16,10 +17,9 @@ interface Harness {
   log: string[];
   sources: Map<string, SourceStub>;
   layers: Map<string, { spec: Record<string, unknown>; beforeId: string | undefined }>;
-  composedLayers: Map<
-    string,
-    { runtimeLayerId: string; originalVisible: boolean; originalFilter: unknown | undefined }
-  >;
+  /** Composed overlay styles by style id (the composition registry). */
+  composedStyles: Map<string, ComposedLayerInfo[]>;
+  displayDefaults: Record<string, boolean>[];
   featureStates: { source: string; id: number | string; state: Record<string, unknown> }[];
   events: EngineEvent[];
   errors: unknown[];
@@ -34,10 +34,8 @@ function createHarness(options: { sourcesSupportUpdateData?: boolean } = {}): Ha
   const log: string[] = [];
   const sources = new Map<string, SourceStub>();
   const layers = new Map<string, { spec: Record<string, unknown>; beforeId: string | undefined }>();
-  const composedLayers = new Map<
-    string,
-    { runtimeLayerId: string; originalVisible: boolean; originalFilter: unknown | undefined }
-  >();
+  const composedStyles = new Map<string, ComposedLayerInfo[]>();
+  const displayDefaults: Record<string, boolean>[] = [];
   const featureStates: Harness["featureStates"] = [];
   const events: EngineEvent[] = [];
   const errors: unknown[] = [];
@@ -127,20 +125,9 @@ function createHarness(options: { sourcesSupportUpdateData?: boolean } = {}): Ha
       handlers.delete(typeof layerIdOrHandler === "function" ? event : `${event}:${layerIdOrHandler}`);
     },
     listStyleLayers: () => [...layers.values()].map((layer) => layer.spec as { id: string }),
-    resolveComposedLayer: (styleId, layerId) => {
-      const layer = composedLayers.get(`${styleId}\u0000${layerId}`);
-      return layer
-        ? { layerId: layer.runtimeLayerId, visible: layer.originalVisible, filter: layer.originalFilter }
-        : null;
-    },
-    listComposedLayers: (styleId) =>
-      [...composedLayers.entries()]
-        .filter(([key]) => key.startsWith(`${styleId}\u0000`))
-        .map(([, layer]) => ({
-          layerId: layer.runtimeLayerId,
-          visible: layer.originalVisible,
-          filter: layer.originalFilter,
-        })),
+    baseStyleId: () => null,
+    isKnownStyle: () => true,
+    composedStyleLayers: (styleId) => composedStyles.get(styleId) ?? null,
     setMarker(marker) {
       log.push(`setMarker:${marker.id}`);
     },
@@ -197,6 +184,7 @@ function createHarness(options: { sourcesSupportUpdateData?: boolean } = {}): Ha
     now: () => 0,
     onEvent: (handlerId, event) => events.push({ ...event, handlerId } as EngineEvent & { handlerId: number }),
     onError: (error) => errors.push(error),
+    onDisplayDefaults: (defaults) => displayDefaults.push(defaults),
   });
 
   return {
@@ -205,7 +193,8 @@ function createHarness(options: { sourcesSupportUpdateData?: boolean } = {}): Ha
     log,
     sources,
     layers,
-    composedLayers,
+    composedStyles,
+    displayDefaults,
     featureStates,
     events,
     markerPositions,
@@ -513,44 +502,48 @@ describe("visibility", () => {
       { op: "source.add", id: "s1", spec: { type: "geojson", data: null } },
       { op: "layer.add", id: "l1", spec: { id: "l1", type: "circle", source: "s1" } },
       { op: "layer.add", id: "l2", spec: { id: "l2", type: "circle", source: "s1" } },
-      { op: "visibility.set", id: "g1", visible: false, targets: [{ kind: "runtimeLayer", layerIds: ["l1"] }] },
+      { op: "visibility.set", id: "g1", visible: false, targets: [{ kind: "layers", ids: ["l1"] }] },
     ]);
 
     expect(harness.log).toContain("setLayout:l1:visibility=none");
     expect(harness.log).not.toContain("setLayout:l2:visibility=none");
 
     harness.engine.applyOps([
-      { op: "visibility.set", id: "g1", visible: true, targets: [{ kind: "runtimeLayer", layerIds: ["l1"] }] },
+      { op: "visibility.set", id: "g1", visible: true, targets: [{ kind: "layers", ids: ["l1"] }] },
     ]);
     expect(harness.log).toContain("setLayout:l1:visibility=visible");
   });
 
-  it("composes overlay and part visibility", () => {
+  it("hides every layer a component created through its owner id", () => {
     const harness = createHarness();
     harness.engine.applyOps([
       { op: "source.add", id: "s1", spec: { type: "geojson", data: null } },
-      { op: "layer.add", id: "l1", spec: { id: "l1", type: "circle", source: "s1" } },
-      {
-        op: "overlay.set",
-        id: "o1",
-        visible: true,
-        targets: [],
-        parts: [{ id: "p1", visible: true, targets: [{ kind: "runtimeLayer", layerIds: ["l1"] }] }],
-      },
+      { op: "layer.add", id: "trains-symbols", spec: { id: "trains-symbols", type: "symbol" }, owner: "trains" },
+      { op: "visibility.set", id: "g1", visible: false, targets: [{ kind: "layers", ids: ["trains"] }] },
+      // layers the component adds later join the item too
+      { op: "layer.add", id: "trains-route", spec: { id: "trains-route", type: "symbol" }, owner: "trains" },
     ]);
-    expect(harness.log).toContain("setLayout:l1:visibility=visible");
 
-    // hiding the part hides the layer even while the overlay stays visible
-    harness.engine.applyOps([
-      {
-        op: "overlay.set",
-        id: "o1",
-        visible: true,
-        targets: [],
-        parts: [{ id: "p1", visible: false, targets: [{ kind: "runtimeLayer", layerIds: ["l1"] }] }],
-      },
+    expect(harness.log).toContain("setLayout:trains-symbols:visibility=none");
+    expect(harness.log).toContain("setLayout:trains-route:visibility=none");
+  });
+
+  it("reports style defaults of unset items once per change", () => {
+    const harness = createHarness();
+    harness.composedStyles.set("railway", [
+      { layerId: "sgb-overlay-style-railway-tram", originalLayerId: "tram", visible: false, filter: null, tags: [] },
     ]);
-    expect(harness.log).toContain("setLayout:l1:visibility=none");
+    const op: Op = {
+      op: "visibility.set",
+      id: "tram",
+      visible: null,
+      targets: [{ kind: "styleLayers", styleId: "railway", layerIds: ["tram"] }],
+    };
+
+    harness.engine.applyOps([op]);
+    harness.engine.applyOps([op]);
+
+    expect(harness.displayDefaults).toEqual([{ tram: false }]);
   });
 
   it("composes hidden feature filters onto the baseline and restores it", () => {
@@ -562,7 +555,7 @@ describe("visibility", () => {
         op: "visibility.set",
         id: "g1",
         visible: false,
-        targets: [{ kind: "styleLayerFeatures", styleId: "base", layerIds: ["l1"], filter: ["==", "type", "x"] }],
+        targets: [{ kind: "layers", ids: ["l1"], filter: ["==", "type", "x"] }],
       },
     ]);
 
@@ -573,7 +566,7 @@ describe("visibility", () => {
         op: "visibility.set",
         id: "g1",
         visible: true,
-        targets: [{ kind: "styleLayerFeatures", styleId: "base", layerIds: ["l1"], filter: ["==", "type", "x"] }],
+        targets: [{ kind: "layers", ids: ["l1"], filter: ["==", "type", "x"] }],
       },
     ]);
     expect(harness.log).toContain('setFilter:l1:["has","kind"]');
@@ -746,7 +739,7 @@ describe("replay", () => {
       { op: "source.add", id: "s1", spec: { type: "geojson", data: null } },
       { op: "entities.create", id: "vehicles", config: {} },
       { op: "layer.add", id: "l1", spec: { id: "l1", type: "circle", source: "s1" }, slot: "overlay" },
-      { op: "visibility.set", id: "g1", visible: false, targets: [{ kind: "runtimeLayer", layerIds: ["l1"] }] },
+      { op: "visibility.set", id: "g1", visible: false, targets: [{ kind: "layers", ids: ["l1"] }] },
     ]);
     harness.resetLog();
 
@@ -768,18 +761,22 @@ describe("replay", () => {
         op: "visibility.set",
         id: "lifecycle",
         visible: false,
-        targets: [{ kind: "styleLayer", styleId: "railway", layerIds: ["railway-lifecycle-construction"] }],
+        targets: [{ kind: "styleLayers", styleId: "railway", layerIds: ["railway-lifecycle-construction"] }],
       },
     ]);
     harness.layers.set("sgb-overlay-style-railway-railway-lifecycle-construction", {
       spec: { id: "sgb-overlay-style-railway-railway-lifecycle-construction" },
       beforeId: undefined,
     });
-    harness.composedLayers.set("railway\u0000railway-lifecycle-construction", {
-      runtimeLayerId: "sgb-overlay-style-railway-railway-lifecycle-construction",
-      originalVisible: true,
-      originalFilter: undefined,
-    });
+    harness.composedStyles.set("railway", [
+      {
+        layerId: "sgb-overlay-style-railway-railway-lifecycle-construction",
+        originalLayerId: "railway-lifecycle-construction",
+        visible: true,
+        filter: null,
+        tags: [],
+      },
+    ]);
     harness.resetLog();
 
     harness.engine.replayVisibility();

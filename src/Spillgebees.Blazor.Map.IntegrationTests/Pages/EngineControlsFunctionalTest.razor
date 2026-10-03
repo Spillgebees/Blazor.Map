@@ -2,7 +2,7 @@
 
 <main class="e2e-shell">
     <h1>Engine controls functional test</h1>
-    <p>The map control component family: native controls, panels with Blazor content, display and overlay controls.</p>
+    <p>The map control component family: native controls, panels with Blazor content, display and legend controls.</p>
 
     @if (_lastError is not null)
     {
@@ -10,23 +10,19 @@
     }
 
     <div id="engine-controls-frame" class="stress-map-frame">
-        <SgbMap Style="@BaseStyle"
-                  Display="@_display"
-                  Center="@(new Coordinate(49.61, 6.14))"
-                  Zoom="12"
-                  Height="480px"
-                  Width="100%"
-                  OnMapError="@HandleMapError">
+        <SgbMap Style="@_baseStyle"
+                Display="@_display"
+                Center="@(new Coordinate(49.61, 6.14))"
+                Zoom="12"
+                Height="480px"
+                Width="100%"
+                OnMapError="@HandleMapError">
             <GeoJsonSource Id="ctrl" Data="@DataJson">
                 <CircleLayer Id="ctrl-points" Radius="8" Color="@("#dc2626")" />
             </GeoJsonSource>
-            <MapOverlay Id="notes" Label="Notes">
-                <MapOverlayPart Id="markers" Label="Markers">
-                    <GeoJsonSource Id="notes-source" Data="@NotesDataJson">
-                        <CircleLayer Id="notes-circle" Radius="6" Color="@("#16a34a")" />
-                    </GeoJsonSource>
-                </MapOverlayPart>
-            </MapOverlay>
+            <GeoJsonSource Id="notes-source" Data="@NotesDataJson">
+                <CircleLayer Id="notes-circle" Radius="6" Color="@("#16a34a")" />
+            </GeoJsonSource>
 
             <MapControls>
                 <NavigationMapControl Id="nav" />
@@ -34,8 +30,7 @@
                     <div data-testid="panel-content">Hello from Blazor</div>
                 </PanelMapControl>
                 <DisplayMapControl Id="display-ctrl" Label="Display" InitiallyOpen="true" Position="ControlPosition.BottomLeft" />
-                <OverlayMapControl Id="overlay-ctrl" Label="Overlays" InitiallyOpen="true" Position="ControlPosition.BottomRight" />
-                <LegendMapControl Id="legend-ctrl" Title="Legend" InitiallyOpen="true" Position="ControlPosition.TopRight" Definition="@Legend" />
+                <LegendMapControl Id="legend-ctrl" Title="Legend" InitiallyOpen="true" Position="ControlPosition.TopRight" Definition="@_legend" />
             </MapControls>
 
             <MapFeatures>
@@ -52,7 +47,7 @@
 </main>
 
 @code {
-    private static readonly MapStyle BaseStyle = MapStyle
+    private static readonly MapStyle _baseStyle = MapStyle
         .FromRasterUrl(
             "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGM4YWMDAAMQAUEiFmcFAAAAAElFTkSuQmCC",
             "base"
@@ -72,10 +67,13 @@
         """;
 
     private readonly MapDisplayState _display = new(
-        [new MapDisplayItem("points", [MapDisplayTarget.RuntimeLayers("ctrl-points")], Label: "Points")]
+        [
+            new MapDisplayItem("points", [MapDisplayTarget.Layers("ctrl-points")], Label: "Points"),
+            new MapDisplayItem("notes", [MapDisplayTarget.Layers("notes-circle")], Label: "Notes"),
+        ]
     );
 
-    private static readonly MapLegend Legend = new(
+    private static readonly MapLegend _legend = new(
         [
             new MapLegendSection(
                 "Layers",
