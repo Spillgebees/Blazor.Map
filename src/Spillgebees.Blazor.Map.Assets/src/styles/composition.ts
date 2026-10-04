@@ -127,11 +127,26 @@ function layerFilter(layer: StyleSpecification["layers"][number]): unknown {
   return "filter" in layer ? layer.filter : null;
 }
 
+const pendingApplies = new WeakMap<MapLibreMap, Promise<void>>();
+
 /**
  * Composes styles on top of the base style.
  * Fetches each style's JSON, loads its sprites, then merges sources and layers.
  */
-export async function applyComposedStyles(
+export function applyComposedStyles(
+  map: MapLibreMap,
+  styles: ComposedStyleRequest[],
+  options?: ApplyComposedStylesOptions,
+): Promise<void> {
+  // overlapping runs would skip layers the other run already added instead of moving
+  // them, so each call waits for the previous one on the same map
+  const previous = pendingApplies.get(map) ?? Promise.resolve();
+  const next = previous.catch(() => {}).then(() => applyComposedStylesNow(map, styles, options));
+  pendingApplies.set(map, next);
+  return next;
+}
+
+async function applyComposedStylesNow(
   map: MapLibreMap,
   styles: ComposedStyleRequest[],
   options?: ApplyComposedStylesOptions,

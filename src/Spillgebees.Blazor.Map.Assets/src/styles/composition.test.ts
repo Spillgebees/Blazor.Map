@@ -560,6 +560,48 @@ describe("applyComposedStyles", () => {
       "sgb-slot:sgb:composed-labels",
     );
   });
+
+  it("should apply overlapping calls in order so the latest slot wins", async () => {
+    // arrange
+    const layers = new Set(["sgb-slot:sgb:composed-ground", "sgb-slot:sgb:composed-labels"]);
+    const map = {
+      getSource: vi.fn().mockReturnValue(undefined),
+      addSource: vi.fn(),
+      removeSource: vi.fn(),
+      hasImage: vi.fn().mockReturnValue(true),
+      removeImage: vi.fn(),
+      getLayer: vi.fn((id: string) => (layers.has(id) ? { id } : undefined)),
+      addLayer: vi.fn((layer: { id: string }) => {
+        layers.add(layer.id);
+      }),
+      removeLayer: vi.fn((id: string) => {
+        layers.delete(id);
+      }),
+    } as unknown as Parameters<typeof applyComposedStyles>[0];
+    window.Spillgebees.Map.composedStyleLayerIds.set(map, new Map());
+    let respond: (response: unknown) => void = () => {};
+    const pendingResponse = new Promise((resolve) => {
+      respond = resolve;
+    });
+    vi.stubGlobal("fetch", vi.fn().mockReturnValue(pendingResponse));
+    const request = { styleId: "rail", url: "https://example.com/rail.json", referrerPolicy: null } as const;
+
+    // act: the second call starts while the first still waits for the style JSON
+    const first = applyComposedStyles(map, [{ ...request, slot: "below-labels" }], { forceReapply: true });
+    const second = applyComposedStyles(map, [{ ...request, slot: "above-labels" }], { forceReapply: true });
+    respond({
+      ok: true,
+      url: "https://example.com/rail.json",
+      json: vi.fn().mockResolvedValue({ version: 8, sources: {}, layers: [{ id: "station-dots", type: "circle" }] }),
+    });
+    await Promise.all([first, second]);
+
+    // assert
+    expect(map.addLayer).toHaveBeenLastCalledWith(
+      expect.objectContaining({ id: "sgb-overlay-style-rail-station-dots" }),
+      "sgb-slot:sgb:composed-labels",
+    );
+  });
 });
 
 describe("resolveLayerSlot", () => {
