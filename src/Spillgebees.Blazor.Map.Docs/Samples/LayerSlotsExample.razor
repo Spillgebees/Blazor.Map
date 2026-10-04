@@ -1,0 +1,38 @@
+<div class="sample-btn-row">
+    <button type="button"
+            class="sample-btn @(_slot is LayerSlot.BelowLabels ? "active" : "")"
+            aria-pressed="@(_slot is LayerSlot.BelowLabels)"
+            @onclick="@(() => _slot = LayerSlot.BelowLabels)">
+        Below labels
+    </button>
+    <button type="button"
+            class="sample-btn @(_slot is LayerSlot.AboveLabels ? "active" : "")"
+            aria-pressed="@(_slot is LayerSlot.AboveLabels)"
+            @onclick="@(() => _slot = LayerSlot.AboveLabels)">
+        Above labels
+    </button>
+</div>
+
+<SgbMap Center="@(new Coordinate(49.6116, 6.1319))"
+        Zoom="15.8"
+        Pitch="55"
+        Style="@MapStyle.OpenFreeMap.Positron"
+        Height="400px"
+        Width="100%">
+    <MapControls>
+        <NavigationMapControl />
+    </MapControls>
+    <FillExtrusionLayer Id="docs-buildings-3d"
+                        SourceId="openmaptiles"
+                        SourceLayerId="building"
+                        Slot="@_slot"
+                        Color="@("#d1d5db")"
+                        Opacity="0.7"
+                        Height="@(Expr.Get("render_height"))"
+                        Base="@(Expr.Get("render_min_height"))"
+                        MinZoom="14" />
+</SgbMap>
+
+@code {
+    private LayerSlot _slot = LayerSlot.BelowLabels;
+}

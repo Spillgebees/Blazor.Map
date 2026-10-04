@@ -7,7 +7,7 @@
 // never show. Filtered targets never toggle whole layers: while their item is off, the
 // filter is negated and ANDed onto the layer's baseline filter.
 //
-// Originals: runtime layers read the engine layer store, composed overlay layers read
+// Originals: runtime layers read the engine layer store, composed style layers read
 // their style JSON (composition registry), and base-style layers read a snapshot taken
 // before the controller first touches the style (re-taken after a base style change), so
 // the controller never mistakes its own writes for the style's defaults.
@@ -24,7 +24,7 @@ export interface StyleLayerInfo {
 export interface ComposedLayerInfo {
   /** Runtime (prefixed) layer id. */
   layerId: string;
-  /** Layer id in the overlay style JSON. */
+  /** Layer id in the composed style JSON. */
   originalLayerId: string;
   visible: boolean;
   filter: unknown;
@@ -47,9 +47,9 @@ export interface VisibilityHost {
   listBaseStyleLayers(): StyleLayerInfo[];
   /** Id of the base style, when the consumer gave it one. */
   baseStyleId(): string | null;
-  /** Layers of a composed overlay style, or null when no such style is composed. */
+  /** Layers of a composed style, or null when no such style is composed. */
   composedStyleLayers(styleId: string): ComposedLayerInfo[] | null;
-  /** Whether the map was configured with a style of this id (base or overlay). */
+  /** Whether the map was configured with a style of this id (base or composed). */
   isKnownStyle(styleId: string): boolean;
   setLayerVisibility(layerId: string, visible: boolean): void;
   setLayerFilter(layerId: string, filter: unknown): void;

@@ -647,7 +647,7 @@ Spillgebees.Blazor.Map.LayerBase.OnMouseEnter.get -> Microsoft.AspNetCore.Compon
 Spillgebees.Blazor.Map.LayerBase.OnMouseEnter.set -> void
 Spillgebees.Blazor.Map.LayerBase.OnMouseLeave.get -> Microsoft.AspNetCore.Components.EventCallback
 Spillgebees.Blazor.Map.LayerBase.OnMouseLeave.set -> void
-Spillgebees.Blazor.Map.LayerBase.Slot.get -> string?
+Spillgebees.Blazor.Map.LayerBase.Slot.get -> Spillgebees.Blazor.Map.LayerSlot
 Spillgebees.Blazor.Map.LayerBase.Slot.set -> void
 Spillgebees.Blazor.Map.LayerBase.SourceId.get -> string?
 Spillgebees.Blazor.Map.LayerBase.SourceId.set -> void
@@ -664,6 +664,9 @@ Spillgebees.Blazor.Map.LayerFeatureEventArgs.Position.init -> void
 Spillgebees.Blazor.Map.LayerFeatureEventArgs.Properties.get -> System.Text.Json.JsonElement?
 Spillgebees.Blazor.Map.LayerFeatureEventArgs.Properties.init -> void
 Spillgebees.Blazor.Map.LayerOptionEnumExtensions
+Spillgebees.Blazor.Map.LayerSlot
+Spillgebees.Blazor.Map.LayerSlot.AboveLabels = 0 -> Spillgebees.Blazor.Map.LayerSlot
+Spillgebees.Blazor.Map.LayerSlot.BelowLabels = 1 -> Spillgebees.Blazor.Map.LayerSlot
 Spillgebees.Blazor.Map.LegendChromeOptions
 Spillgebees.Blazor.Map.LegendChromeOptions.<Clone>$() -> Spillgebees.Blazor.Map.LegendChromeOptions!
 Spillgebees.Blazor.Map.LegendChromeOptions.ClassName.get -> string?
@@ -1202,6 +1205,8 @@ Spillgebees.Blazor.Map.MapSources.MapSources() -> void
 Spillgebees.Blazor.Map.MapStyle
 Spillgebees.Blazor.Map.MapStyle.Id.get -> string?
 Spillgebees.Blazor.Map.MapStyle.Id.init -> void
+Spillgebees.Blazor.Map.MapStyle.LayerSlots.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Spillgebees.Blazor.Map.LayerSlot>?
+Spillgebees.Blazor.Map.MapStyle.LayerSlots.init -> void
 Spillgebees.Blazor.Map.MapStyle.MapStyle(Spillgebees.Blazor.Map.MapStyle! original) -> void
 Spillgebees.Blazor.Map.MapStyle.OpenFreeMap
 Spillgebees.Blazor.Map.MapStyle.OpenStreetMap
@@ -1209,9 +1214,13 @@ Spillgebees.Blazor.Map.MapStyle.RasterSource.get -> Spillgebees.Blazor.Map.Raste
 Spillgebees.Blazor.Map.MapStyle.RasterSource.init -> void
 Spillgebees.Blazor.Map.MapStyle.ReferrerPolicy.get -> Spillgebees.Blazor.Map.ReferrerPolicy?
 Spillgebees.Blazor.Map.MapStyle.ReferrerPolicy.init -> void
+Spillgebees.Blazor.Map.MapStyle.Slot.get -> Spillgebees.Blazor.Map.LayerSlot?
+Spillgebees.Blazor.Map.MapStyle.Slot.init -> void
 Spillgebees.Blazor.Map.MapStyle.Url.get -> string?
 Spillgebees.Blazor.Map.MapStyle.WithId(string! id) -> Spillgebees.Blazor.Map.MapStyle!
+Spillgebees.Blazor.Map.MapStyle.WithLayerSlot(string! layerId, Spillgebees.Blazor.Map.LayerSlot slot) -> Spillgebees.Blazor.Map.MapStyle!
 Spillgebees.Blazor.Map.MapStyle.WithReferrerPolicy(Spillgebees.Blazor.Map.ReferrerPolicy? referrerPolicy) -> Spillgebees.Blazor.Map.MapStyle!
+Spillgebees.Blazor.Map.MapStyle.WithSlot(Spillgebees.Blazor.Map.LayerSlot slot) -> Spillgebees.Blazor.Map.MapStyle!
 Spillgebees.Blazor.Map.MapStyle.WmsSource.get -> Spillgebees.Blazor.Map.WmsTileSource?
 Spillgebees.Blazor.Map.MapStyle.WmsSource.init -> void
 Spillgebees.Blazor.Map.MapTheme
@@ -1711,6 +1720,8 @@ Spillgebees.Blazor.Map.TileOverlay.Opacity.get -> double
 Spillgebees.Blazor.Map.TileOverlay.Opacity.init -> void
 Spillgebees.Blazor.Map.TileOverlay.ReferrerPolicy.get -> Spillgebees.Blazor.Map.ReferrerPolicy?
 Spillgebees.Blazor.Map.TileOverlay.ReferrerPolicy.init -> void
+Spillgebees.Blazor.Map.TileOverlay.Slot.get -> Spillgebees.Blazor.Map.LayerSlot
+Spillgebees.Blazor.Map.TileOverlay.Slot.init -> void
 Spillgebees.Blazor.Map.TileOverlay.TileOverlay(Spillgebees.Blazor.Map.TileOverlay! original) -> void
 Spillgebees.Blazor.Map.TileOverlay.TileOverlay(string! Id, string! UrlTemplate, string! Attribution = "", int TileSize = 256, double Opacity = 1, Spillgebees.Blazor.Map.ReferrerPolicy? ReferrerPolicy = null) -> void
 Spillgebees.Blazor.Map.TileOverlay.TileSize.get -> int

@@ -14,14 +14,27 @@ public class EngineOpsSerializationTests
     public void Should_write_the_op_discriminator_and_camel_case_properties()
     {
         // arrange
-        var op = new LayerAddOp("tracks", JsonNode.Parse("""{"id":"tracks","type":"line"}""")!, Slot: "overlay");
+        var op = new LayerAddOp("tracks", JsonNode.Parse("""{"id":"tracks","type":"line"}""")!, Slot: "below-labels");
 
         // act
         var json = Serialize(op);
 
         // assert
         json.Should()
-            .Be("""[{"op":"layer.add","id":"tracks","spec":{"id":"tracks","type":"line"},"slot":"overlay"}]""");
+            .Be("""[{"op":"layer.add","id":"tracks","spec":{"id":"tracks","type":"line"},"slot":"below-labels"}]""");
+    }
+
+    [Test]
+    public void Should_serialize_layer_move_with_slot_and_before()
+    {
+        // arrange
+        var op = new LayerMoveOp("tracks", Slot: "below-labels", Before: "labels");
+
+        // act
+        var json = Serialize(op);
+
+        // assert
+        json.Should().Be("""[{"op":"layer.move","id":"tracks","slot":"below-labels","before":"labels"}]""");
     }
 
     [Test]

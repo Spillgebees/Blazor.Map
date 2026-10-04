@@ -20,7 +20,6 @@ namespace Spillgebees.Blazor.Map.Engine;
 [JsonDerivedType(typeof(LayerSetFilterOp), "layer.setFilter")]
 [JsonDerivedType(typeof(LayerSetZoomOp), "layer.setZoom")]
 [JsonDerivedType(typeof(LayerMoveOp), "layer.move")]
-[JsonDerivedType(typeof(SlotDefineOp), "slot.define")]
 [JsonDerivedType(typeof(EntitiesCreateOp), "entities.create")]
 [JsonDerivedType(typeof(EntitiesConfigureOp), "entities.configure")]
 [JsonDerivedType(typeof(EntitiesRemoveOp), "entities.remove")]
@@ -81,8 +80,6 @@ internal sealed record LayerSetFilterOp(string Id, JsonNode? Filter) : EngineOp;
 internal sealed record LayerSetZoomOp(string Id, double Min, double Max) : EngineOp;
 
 internal sealed record LayerMoveOp(string Id, string? Slot = null, string? Before = null) : EngineOp;
-
-internal sealed record SlotDefineOp(string Id, string? Before = null) : EngineOp;
 
 internal sealed record EntitiesCreateOp(string Id, EngineEntityLayerConfig Config) : EngineOp;
 

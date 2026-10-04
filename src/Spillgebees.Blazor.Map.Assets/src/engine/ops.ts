@@ -226,7 +226,6 @@ export type Op =
   | { op: "layer.setFilter"; id: string; filter: unknown }
   | { op: "layer.setZoom"; id: string; min: number; max: number }
   | { op: "layer.move"; id: string; slot?: string | null; before?: string | null }
-  | { op: "slot.define"; id: string; before?: string | null }
   | { op: "entities.create"; id: string; config: EntityLayerConfig }
   | { op: "entities.configure"; id: string; config: Partial<EntityLayerConfig> }
   | { op: "entities.remove"; id: string }

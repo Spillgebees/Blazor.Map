@@ -44,9 +44,13 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
     [Parameter]
     public double? MaxZoom { get; set; }
 
-    /// <summary>Ordering slot defined on the map (see engine slot ops).</summary>
+    /// <summary>
+    /// Where this layer paints relative to the base style's labels. Defaults to
+    /// <see cref="LayerSlot.AboveLabels"/>, the top of the map. Changing it moves the
+    /// layer without recreating it.
+    /// </summary>
     [Parameter]
-    public string? Slot { get; set; }
+    public LayerSlot Slot { get; set; }
 
     /// <summary>Explicit before-layer id; takes precedence over <see cref="Slot"/>.</summary>
     [Parameter]
@@ -70,6 +74,8 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
     private string? _appliedFilterJson;
     private double? _appliedMinZoom;
     private double? _appliedMaxZoom;
+    private LayerSlot _appliedSlot;
+    private string? _appliedBefore;
     private int _clickHandlerId;
     private int _enterHandlerId;
     private int _leaveHandlerId;
@@ -124,6 +130,8 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
         _appliedFilterJson = Filter is null ? null : EngineJson.ToNode(Filter)?.ToJsonString();
         _appliedMinZoom = MinZoom;
         _appliedMaxZoom = MaxZoom;
+        _appliedSlot = Slot;
+        _appliedBefore = Before;
 
         var spec = new JsonObject
         {
@@ -161,7 +169,7 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
             spec["layout"] = _appliedLayout.DeepClone();
         }
 
-        Map!.Channel.Queue(new LayerAddOp(Id, spec, Slot, Before));
+        Map!.Channel.Queue(new LayerAddOp(Id, spec, EngineSlots.ForLayer(Slot), Before));
         RegisterEventHandlers();
     }
 
@@ -236,6 +244,13 @@ public abstract class LayerBase : ComponentBase, IAsyncDisposable
             _appliedMinZoom = MinZoom;
             _appliedMaxZoom = MaxZoom;
             channel.Queue(new LayerSetZoomOp(Id, MinZoom ?? 0, MaxZoom ?? 24));
+        }
+
+        if (Slot != _appliedSlot || Before != _appliedBefore)
+        {
+            _appliedSlot = Slot;
+            _appliedBefore = Before;
+            channel.Queue(new LayerMoveOp(Id, EngineSlots.ForLayer(Slot), Before));
         }
     }
 

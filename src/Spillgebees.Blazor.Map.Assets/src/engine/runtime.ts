@@ -33,12 +33,11 @@ import type {
   PopupData,
 } from "./ops";
 import { createScheduler, type Scheduler } from "./scheduler";
+import { COMPOSED_STYLE_PREFIX, isLabelLayer, isSlotId, SLOT_LAYER_PREFIX, SLOTS, slotAnchorLayerId } from "./slots";
 import { type ComposedLayerInfo, createVisibilityController, styleLayerInfo } from "./visibility";
 
-const SLOT_LAYER_PREFIX = "sgb-slot:";
 const CIRCLES_LAYER_ID = "sgb-circles-layer";
 const POLYLINES_LAYER_ID = "sgb-polylines-layer";
-const COMPOSED_LAYER_PREFIX = "sgb-overlay-style-";
 
 /** The MapLibre surface the engine touches — structural, so tests can stub it. */
 export interface EngineMap {
@@ -99,12 +98,18 @@ export interface EngineMap {
   off(event: string, handler: (event: unknown) => void): unknown;
   off(event: string, layerId: string, handler: (event: unknown) => void): unknown;
   /** All layers of the current style (including engine-managed ones; the runtime filters). */
-  listStyleLayers(): { id: string; layout?: { visibility?: string }; filter?: unknown; metadata?: unknown }[];
+  listStyleLayers(): {
+    id: string;
+    type?: string;
+    layout?: { visibility?: string; [property: string]: unknown };
+    filter?: unknown;
+    metadata?: unknown;
+  }[];
   /** Id the consumer gave the base style, if any. */
   baseStyleId(): string | null;
-  /** Layers of a composed overlay style (styles/composition.ts registry), or null if not composed. */
+  /** Layers of a composed style (styles/composition.ts registry), or null if not composed. */
   composedStyleLayers(styleId: string): ComposedLayerInfo[] | null;
-  /** Whether the map was configured with a style of this id (base or overlay). */
+  /** Whether the map was configured with a style of this id (base or composed). */
   isKnownStyle(styleId: string): boolean;
 }
 
@@ -141,8 +146,13 @@ export interface Engine {
   pushMotion(layerId: string, bytes: Uint8Array): void;
   /** Re-applies the full scene in canonical order (after map.setStyle). */
   replay(): void;
-  /** Re-applies display visibility/filter registrations after the composed overlay styles changed. */
+  /** Re-applies display visibility/filter registrations after the composed styles changed. */
   replayVisibility(): void;
+  /**
+   * Adds the slot anchors against the current base style. Idempotent; called once the
+   * style has loaded, before style composition and before any layer ops arrive.
+   */
+  ensureSlots(): void;
   dispose(): void;
 }
 
@@ -189,7 +199,6 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
   const onFollowCleared = options.onFollowCleared ?? (() => {});
   const onDisplayDefaults = options.onDisplayDefaults ?? (() => {});
 
-  const slots = new Map<string, { before: string | null }>();
   const sources = new Map<string, Record<string, unknown>>();
   const layers = new Map<string, LayerRecord>();
   const entityLayers = new Map<string, EntityLayerStore>();
@@ -222,7 +231,7 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
           (layer) =>
             !layers.has(layer.id) &&
             !layer.id.startsWith(SLOT_LAYER_PREFIX) &&
-            !layer.id.startsWith(COMPOSED_LAYER_PREFIX),
+            !layer.id.startsWith(`${COMPOSED_STYLE_PREFIX}-`),
         )
         .map(styleLayerInfo),
     baseStyleId: () => map.baseStyleId(),
@@ -251,31 +260,12 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
   // (a recreated layer with the same ids must not stack handlers on a stale store)
   const entityListeners = new Map<string, { event: string; layerId: string; handler: (event: unknown) => void }[]>();
 
-  function slotAnchorId(slotId: string): string {
-    return `${SLOT_LAYER_PREFIX}${slotId}`;
-  }
-
   function resolveBeforeId(slot: string | null | undefined, before: string | null | undefined): string | undefined {
     if (before) {
-      return slots.has(before) ? slotAnchorId(before) : before;
+      return before;
     }
 
-    if (slot && slots.has(slot)) {
-      return slotAnchorId(slot);
-    }
-
-    return undefined;
-  }
-
-  function addSlotAnchor(slotId: string, before: string | null): void {
-    map.addLayer(
-      {
-        id: slotAnchorId(slotId),
-        type: "background",
-        layout: { visibility: "none" },
-      },
-      resolveBeforeId(null, before),
-    );
+    return slot && isSlotId(slot) ? slotAnchorLayerId(slot) : undefined;
   }
 
   function resolveLayerBeforeId(record: LayerRecord): string | undefined {
@@ -285,6 +275,39 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
     }
 
     return CIRCLES_LAYER_ID;
+  }
+
+  function firstBaseLabelLayerId(): string | undefined {
+    return map
+      .listStyleLayers()
+      .find(
+        (layer) =>
+          isLabelLayer(layer) &&
+          !layer.id.startsWith(SLOT_LAYER_PREFIX) &&
+          !layer.id.startsWith(`${COMPOSED_STYLE_PREFIX}-`) &&
+          !layers.has(layer.id),
+      )?.id;
+  }
+
+  function ensureSlots(): void {
+    if (SLOTS.every(({ id }) => map.getLayer(slotAnchorLayerId(id)))) {
+      return;
+    }
+
+    // each anchor's position comes from the current style, so re-adding only the
+    // missing one could flip the slot order; recreate all of them instead
+    const firstLabelId = firstBaseLabelLayerId();
+    for (const { id, anchor } of SLOTS) {
+      const anchorId = slotAnchorLayerId(id);
+      if (map.getLayer(anchorId)) {
+        map.removeLayer(anchorId);
+      }
+
+      map.addLayer(
+        { id: anchorId, type: "background", layout: { visibility: "none" } },
+        anchor === "first-label" ? firstLabelId : undefined,
+      );
+    }
   }
 
   function entitySourceSpec(store: EntityLayerStore): Record<string, unknown> {
@@ -694,10 +717,6 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
         map.moveLayer(op.id, resolveBeforeId(op.slot, op.before));
         break;
       }
-      case "slot.define":
-        slots.set(op.id, { before: op.before ?? null });
-        addSlotAnchor(op.id, op.before ?? null);
-        break;
       case "entities.create": {
         const store = createEntityLayerStore(op.id, op.config);
         entityLayers.set(op.id, store);
@@ -985,10 +1004,8 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
     replay() {
       // Canonical order: slots → sources → layers → visibility → images. Layer event
       // listeners are delegated on the map object and survive setStyle, so they are
-      // not rewired here.
-      for (const [slotId, slot] of slots) {
-        addSlotAnchor(slotId, slot.before);
-      }
+      // not rewired here. Slot anchors are derived from the new base style.
+      ensureSlots();
 
       for (const [id, spec] of sources) {
         map.addSource(id, spec);
@@ -1018,6 +1035,7 @@ export function createEngine(map: EngineMap, options: EngineOptions = {}): Engin
       visibilityController.replay(false);
       flushDisplayDefaults();
     },
+    ensureSlots,
     dispose() {
       follow.dispose();
       for (const layerId of [...events.keys()]) {
