@@ -1,0 +1,148 @@
+@page "/guides/layer-ordering"
+
+<PageTitle>Layer Ordering | Spillgebees.Blazor.Map</PageTitle>
+
+<Breadcrumb Section="guides" PageName="Layer Ordering" />
+<OnThisPage />
+
+<h1>Layer Ordering</h1>
+<p>
+    MapLibre paints layers one after another, in the order they sit in the style, so a layer added later covers everything before it.
+    Without help, a railway style composed onto a basemap draws its tracks over the street names, and 3D buildings hide the labels behind them.
+    Slots decide where a layer paints relative to the base style's labels, whatever basemap you use and whenever the layer is added.
+</p>
+
+<h2 id="paint_order">// paint_order</h2>
+<p>
+    A map has layers from three places: the base style, composed styles (every entry after the first in <code>Styles</code>),
+    and your own layer components and tile overlays. Slots stack them like this:
+</p>
+<CodeBlock Language="text" Files="@_paintOrder" />
+<p>
+    The line between ground and labels is the base style's first symbol layer that draws text.
+    Icon-only symbols, like the one-way arrows some styles draw between their roads, count as ground.
+    When the base style changes, the slots are recomputed against the new one.
+</p>
+
+<h2 id="composed_styles">// composed_styles</h2>
+<p>
+    Composed style layers go into a slot by type: symbol layers above the base style's labels, everything else below them.
+    Tracks and platforms stay under the street names, and station names stay readable on top.
+    Switch to <code>AboveLabels</code> to see the whole railway style stacked over the basemap instead.
+</p>
+<ExampleView TComponent="ComposedStyleSlotsExample">
+    <ComposedStyleSlotsExample />
+</ExampleView>
+<p>
+    <code>WithSlot</code> puts every layer of a style in one slot.
+    Inside a slot, each style keeps its own layer order, and styles stack in the order you list them.
+</p>
+<CodeBlock Language="csharp" Files="@_styleSlot" />
+
+<h2 id="single_layers">// single_layers</h2>
+<p>
+    A layer's type doesn't always match its purpose. A circle layer is usually data, but station dots are markers that should stay visible over 3D buildings.
+    <code>WithLayerSlot</code> places single layers of a style you don't author, keyed by their id in the style JSON:
+</p>
+<CodeBlock Language="csharp" Files="@_layerSlot" />
+<p>If you author the style, put the slot in the layer's metadata instead, next to the <code>sgb:tags</code> that display items use:</p>
+<CodeBlock Language="json" Files="@_metadataSlot" />
+<p>
+    <code>WithLayerSlot</code> wins over <code>sgb:slot</code> metadata, which wins over <code>WithSlot</code>.
+    The <a href="/components/tracked-entity-layer">train tracking example</a> uses both sides: its 3D buildings sit below the labels, and its station dots are moved above them.
+</p>
+
+<h2 id="layer_components">// layer_components</h2>
+<p>
+    Layer components take a <code>Slot</code> parameter. The default, <code>LayerSlot.AboveLabels</code>, puts the layer at the top of the map, above everything else.
+    <code>LayerSlot.BelowLabels</code> is the place for 3D buildings and other area drawing that shouldn't cover text.
+    Move the buildings above the labels to see the street names disappear behind them.
+</p>
+<ExampleView TComponent="LayerSlotsExample">
+    <LayerSlotsExample />
+</ExampleView>
+<p>
+    Changing <code>Slot</code> moves the layer without recreating it.
+    <code>Before</code>, the id of the layer to paint below, takes precedence over <code>Slot</code>.
+</p>
+
+<h2 id="tile_overlays">// tile_overlays</h2>
+<p>
+    Tile overlays default to <code>LayerSlot.BelowLabels</code> and paint right above the base style's ground, below every vector layer.
+    Labels, composed styles and your own layers all stay visible on top of the imagery.
+    Set <code>Slot</code> to <code>LayerSlot.AboveLabels</code> to put an overlay at the top of the map instead:
+</p>
+<CodeBlock Language="csharp" Files="@_tileOverlaySlot" />
+
+<h2 id="behaviour_notes">// behaviour_notes</h2>
+<ul>
+    <li>Labels above 3D buildings draw over them everywhere, even where a building stands in front of a label. MapLibre doesn't hide symbols behind extrusions, which is what keeps labels readable.</li>
+    <li>Raster basemaps have no label layers, since the labels are part of the tiles. The slots then all sit at the top of the base style, still in the same order.</li>
+    <li>A base style's own 3D buildings count as ground, so composed style ground layers draw over them. OpenFreeMap Liberty ships 3D buildings; hide them with a display item and add your own building layer in <code>BelowLabels</code>, like the examples here do.</li>
+</ul>
+
+@code {
+    private static readonly Dictionary<string, string> _paintOrder = new()
+    {
+        ["paint order, bottom to top"] = """
+            base style ground         land, water, roads, bridges
+            tile overlays             TileOverlay (BelowLabels by default)
+            composed style ground     tracks, route lines, platform fills
+            Slot = BelowLabels        your 3D buildings, area drawing
+            base style labels         street names, place names
+            composed style labels     station names, icons
+            Slot = AboveLabels        your entities, markers, highlights (default)
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _styleSlot = new()
+    {
+        ["Styles.cs"] = """
+            IReadOnlyList<MapStyle> styles =
+            [
+                MapStyle.OpenFreeMap.Positron,
+                MapStyle
+                    .FromUrl("https://example.com/railway-style.json")
+                    .WithId("railways")
+                    .WithSlot(LayerSlot.AboveLabels),
+            ];
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _layerSlot = new()
+    {
+        ["Styles.cs"] = """
+            MapStyle
+                .FromUrl("https://example.com/railway-style.json")
+                .WithId("railways")
+                // station dots are circles, which go below labels by default
+                .WithLayerSlot("railway-stations-circle", LayerSlot.AboveLabels);
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _metadataSlot = new()
+    {
+        ["railway-style.json"] = """
+            {
+                "id": "railway-stations-circle",
+                "type": "circle",
+                "source": "railways",
+                "metadata": { "sgb:slot": "above-labels", "sgb:tags": ["stations"] },
+                "paint": { "circle-radius": 6, "circle-color": "#c2410c" }
+            }
+            """,
+    };
+
+    private static readonly Dictionary<string, string> _tileOverlaySlot = new()
+    {
+        ["Overlays.cs"] = """
+            IReadOnlyList<TileOverlay> overlays =
+            [
+                TileOverlay.FromWms("rail-network", "https://example.com/wms", layers: "railways") with
+                {
+                    Slot = LayerSlot.AboveLabels,
+                },
+            ];
+            """,
+    };
+}

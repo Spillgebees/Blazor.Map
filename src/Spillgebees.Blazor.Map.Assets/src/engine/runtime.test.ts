@@ -17,7 +17,7 @@ interface Harness {
   log: string[];
   sources: Map<string, SourceStub>;
   layers: Map<string, { spec: Record<string, unknown>; beforeId: string | undefined }>;
-  /** Composed overlay styles by style id (the composition registry). */
+  /** Composed styles by style id (the composition registry). */
   composedStyles: Map<string, ComposedLayerInfo[]>;
   displayDefaults: Record<string, boolean>[];
   featureStates: { source: string; id: number | string; state: Record<string, unknown> }[];
@@ -265,21 +265,167 @@ describe("op dispatch", () => {
 });
 
 describe("slots", () => {
-  it("anchors layers to their slot and resolves slot references in before", () => {
+  const label = { "text-field": ["get", "name"] };
+
+  function seedBaseStyle(harness: Harness, firstLabelId = "road-label"): void {
+    harness.map.addLayer({ id: "land", type: "fill" });
+    harness.map.addLayer({ id: "roads", type: "line" });
+    harness.map.addLayer({ id: firstLabelId, type: "symbol", layout: label });
+    harness.map.addLayer({ id: "poi-label", type: "symbol", layout: label });
+    harness.resetLog();
+  }
+
+  function anchorLog(firstLabelId?: string): string[] {
+    const before = firstLabelId ? `@${firstLabelId}` : "";
+    return [
+      `addLayer:sgb-slot:sgb:tile-overlays${before}`,
+      `addLayer:sgb-slot:sgb:composed-ground${before}`,
+      `addLayer:sgb-slot:below-labels${before}`,
+      "addLayer:sgb-slot:sgb:composed-labels",
+    ];
+  }
+
+  it("anchors the ground slots below the first base label and the composed labels slot at the top", () => {
     const harness = createHarness();
+    seedBaseStyle(harness);
+
+    harness.engine.ensureSlots();
+
+    expect(harness.log).toEqual(anchorLog("road-label"));
+  });
+
+  it("skips icon-only symbol layers that sit among the roads", () => {
+    const harness = createHarness();
+    harness.map.addLayer({ id: "roads", type: "line" });
+    harness.map.addLayer({ id: "road-one-way-arrow", type: "symbol", layout: { "icon-image": "arrow" } });
+    harness.map.addLayer({ id: "bridges", type: "line" });
+    harness.map.addLayer({ id: "buildings-3d", type: "fill-extrusion" });
+    harness.map.addLayer({ id: "road-label", type: "symbol", layout: label });
+    harness.resetLog();
+
+    harness.engine.ensureSlots();
+
+    expect(harness.log).toEqual(anchorLog("road-label"));
+  });
+
+  it("skips composed style labels when looking for the first base label", () => {
+    const harness = createHarness();
+    harness.map.addLayer({ id: "land", type: "fill" });
+    harness.map.addLayer({ id: "sgb-overlay-style-rail-station-labels", type: "symbol", layout: label });
+    harness.map.addLayer({ id: "road-label", type: "symbol", layout: label });
+    harness.resetLog();
+
+    harness.engine.ensureSlots();
+
+    expect(harness.log).toEqual(anchorLog("road-label"));
+  });
+
+  it("appends the anchors when the base style has no labels", () => {
+    const harness = createHarness();
+    harness.map.addLayer({ id: "raster-base", type: "raster" });
+    harness.resetLog();
+
+    harness.engine.ensureSlots();
+
+    expect(harness.log).toEqual(anchorLog());
+  });
+
+  it("is idempotent once the anchors exist", () => {
+    const harness = createHarness();
+    seedBaseStyle(harness);
+    harness.engine.ensureSlots();
+    harness.resetLog();
+
+    harness.engine.ensureSlots();
+
+    expect(harness.log).toEqual([]);
+  });
+
+  it("recreates every anchor when one is missing", () => {
+    const harness = createHarness();
+    seedBaseStyle(harness);
+    harness.engine.ensureSlots();
+    harness.layers.delete("sgb-slot:below-labels");
+    harness.resetLog();
+
+    harness.engine.ensureSlots();
+
+    expect(harness.log).toEqual([
+      "removeLayer:sgb-slot:sgb:tile-overlays",
+      "addLayer:sgb-slot:sgb:tile-overlays@road-label",
+      "removeLayer:sgb-slot:sgb:composed-ground",
+      "addLayer:sgb-slot:sgb:composed-ground@road-label",
+      "addLayer:sgb-slot:below-labels@road-label",
+      "removeLayer:sgb-slot:sgb:composed-labels",
+      "addLayer:sgb-slot:sgb:composed-labels",
+    ]);
+  });
+
+  it("inserts layers before their slot's anchor", () => {
+    const harness = createHarness();
+    seedBaseStyle(harness);
+    harness.engine.ensureSlots();
+    harness.resetLog();
+
     harness.engine.applyOps([
-      { op: "slot.define", id: "overlay" },
-      { op: "layer.add", id: "tracks", spec: { id: "tracks", type: "line" }, slot: "overlay" },
-      { op: "layer.add", id: "halo", spec: { id: "halo", type: "circle" }, before: "overlay" },
-      { op: "layer.move", id: "tracks", before: "overlay" },
+      { op: "layer.add", id: "buildings", spec: { id: "buildings", type: "fill-extrusion" }, slot: "below-labels" },
+      { op: "layer.add", id: "wms", spec: { id: "wms", type: "raster" }, slot: "sgb:tile-overlays" },
+      { op: "layer.add", id: "trains", spec: { id: "trains", type: "circle" } },
     ]);
 
     expect(harness.log).toEqual([
-      "addLayer:sgb-slot:overlay",
-      "addLayer:tracks@sgb-slot:overlay",
-      "addLayer:halo@sgb-slot:overlay",
-      "moveLayer:tracks@sgb-slot:overlay",
+      "addLayer:buildings@sgb-slot:below-labels",
+      "addLayer:wms@sgb-slot:sgb:tile-overlays",
+      "addLayer:trains",
     ]);
+  });
+
+  it("puts layers with an unknown slot on top", () => {
+    const harness = createHarness();
+    seedBaseStyle(harness);
+    harness.engine.ensureSlots();
+    harness.resetLog();
+
+    harness.engine.applyOps([
+      { op: "layer.add", id: "dots", spec: { id: "dots", type: "circle" }, slot: "above-labels" },
+    ]);
+
+    expect(harness.log).toEqual(["addLayer:dots"]);
+  });
+
+  it("moves layers between a slot and the top, with before taking precedence", () => {
+    const harness = createHarness();
+    seedBaseStyle(harness);
+    harness.engine.ensureSlots();
+    harness.engine.applyOps([{ op: "layer.add", id: "dots", spec: { id: "dots", type: "circle" } }]);
+    harness.resetLog();
+
+    harness.engine.applyOps([
+      { op: "layer.move", id: "dots", slot: "below-labels" },
+      { op: "layer.move", id: "dots", slot: "below-labels", before: "poi-label" },
+      { op: "layer.move", id: "dots" },
+    ]);
+
+    expect(harness.log).toEqual(["moveLayer:dots@sgb-slot:below-labels", "moveLayer:dots@poi-label", "moveLayer:dots"]);
+  });
+
+  it("derives the anchors from the new base style on replay", () => {
+    const harness = createHarness();
+    seedBaseStyle(harness);
+    harness.engine.ensureSlots();
+    harness.engine.applyOps([
+      { op: "layer.add", id: "buildings", spec: { id: "buildings", type: "fill-extrusion" }, slot: "below-labels" },
+    ]);
+
+    // map.setStyle replaces the whole style, here with a base whose first label differs
+    harness.layers.clear();
+    harness.map.addLayer({ id: "water", type: "fill" });
+    harness.map.addLayer({ id: "place-label", type: "symbol", layout: label });
+    harness.resetLog();
+
+    harness.engine.replay();
+
+    expect(harness.log).toEqual([...anchorLog("place-label"), "addLayer:buildings@sgb-slot:below-labels"]);
   });
 
   it("inserts late-added convenience polylines below circles", () => {
@@ -301,7 +447,11 @@ describe("slots", () => {
 
     harness.engine.replay();
 
-    expect(harness.log).toEqual(["addLayer:sgb-circles-layer", "addLayer:sgb-polylines-layer@sgb-circles-layer"]);
+    expect(harness.log).toEqual([
+      ...anchorLog(),
+      "addLayer:sgb-circles-layer",
+      "addLayer:sgb-polylines-layer@sgb-circles-layer",
+    ]);
     expect(harness.layers.get("sgb-polylines-layer")?.beforeId).toBe("sgb-circles-layer");
   });
 });
@@ -735,10 +885,9 @@ describe("replay", () => {
   it("re-applies the scene in canonical order after a style change", () => {
     const harness = createHarness();
     harness.engine.applyOps([
-      { op: "slot.define", id: "overlay" },
       { op: "source.add", id: "s1", spec: { type: "geojson", data: null } },
       { op: "entities.create", id: "vehicles", config: {} },
-      { op: "layer.add", id: "l1", spec: { id: "l1", type: "circle", source: "s1" }, slot: "overlay" },
+      { op: "layer.add", id: "l1", spec: { id: "l1", type: "circle", source: "s1" }, slot: "below-labels" },
       { op: "visibility.set", id: "g1", visible: false, targets: [{ kind: "layers", ids: ["l1"] }] },
     ]);
     harness.resetLog();
@@ -746,15 +895,19 @@ describe("replay", () => {
     harness.engine.replay();
 
     expect(harness.log).toEqual([
-      "addLayer:sgb-slot:overlay",
+      // slot anchors come first (no labels here, so they're appended)
+      "addLayer:sgb-slot:sgb:tile-overlays",
+      "addLayer:sgb-slot:sgb:composed-ground",
+      "addLayer:sgb-slot:below-labels",
+      "addLayer:sgb-slot:sgb:composed-labels",
       "addSource:s1",
       "addSource:vehicles",
-      "addLayer:l1@sgb-slot:overlay",
+      "addLayer:l1@sgb-slot:below-labels",
       "setLayout:l1:visibility=none",
     ]);
   });
 
-  it("re-applies visibility after composed overlay layers become available", () => {
+  it("re-applies visibility after composed style layers become available", () => {
     const harness = createHarness();
     harness.engine.applyOps([
       {

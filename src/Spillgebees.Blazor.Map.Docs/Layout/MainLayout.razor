@@ -12,17 +12,18 @@
     [
         new("Getting Started", [
             new NavPage("Home", ""),
-            new NavPage("Installation", "installation"),
+            new NavPage("Installation", "installation")
         ]),
         new("Guides", [
             new NavPage("Simple features", "guides/simple-features"),
             new NavPage("Interaction legend", "guides/interaction-legend"),
+            new NavPage("Layer ordering", "guides/layer-ordering")
         ]),
         new("Components", [
             new NavPage("SgbMap", "components/sgb-map"),
             new NavPage("Map Controls", "components/controls"),
             new NavPage("Tracked Entity Layers", "components/tracked-entity-layer"),
         ]),
-        new("API Reference", ApiReferenceNav.Generate<SgbMap>()),
+        new("API Reference", ApiReferenceNav.Generate<SgbMap>())
     ];
 }

@@ -1,3 +1,5 @@
+import type { LayerSlot } from "../engine/slots";
+
 export interface ICoordinate {
   latitude: number;
   longitude: number;
@@ -14,6 +16,10 @@ export interface IMapStyle {
   referrerPolicy?: ReferrerPolicy | null;
   rasterSource: IRasterTileSource | null;
   wmsSource: IWmsTileSource | null;
+  /** Slot for every layer of a composed style; null picks one per layer by type. */
+  slot?: LayerSlot | null;
+  /** Per-layer slots by original layer id; beat `slot` and style metadata. */
+  layerSlots?: Record<string, LayerSlot> | null;
 }
 
 export type ReferrerPolicy =

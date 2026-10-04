@@ -1,13 +1,14 @@
 import type { Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
+import {
+  COMPOSED_GROUND_SLOT,
+  COMPOSED_LABELS_SLOT,
+  COMPOSED_STYLE_PREFIX,
+  type LayerSlot,
+  slotAnchorLayerId,
+} from "../engine/slots";
 import { layerTags } from "../engine/visibility";
 import type { ReferrerPolicy } from "../interfaces/map";
-import type { ComposedStyleLayerRegistration, OverlayStyleRequestOptions } from "../interfaces/spillgebees";
-
-/**
- * Prefix used for all overlay-managed sources and layers to avoid ID collisions
- * with the base style and with user-added sources/layers.
- */
-const OVERLAY_PREFIX = "sgb-overlay-style";
+import type { ComposedStyleLayerRegistration, ComposedStyleRequest } from "../interfaces/spillgebees";
 
 /**
  * Resolves a potentially relative URL against a base URL.
@@ -46,16 +47,16 @@ function resolveTemplateUrl(url: string, baseUrl: string): string {
 }
 
 /**
- * Tracks which overlay styles are currently applied to a map.
+ * Tracks which composed styles are currently applied to a map.
  */
-export interface OverlayStyleState {
+export interface ComposedStyleState {
   sourceIds: string[];
   layerIds: string[];
   imageIds: string[];
   composedLayerIds: ComposedStyleLayerRegistration[];
 }
 
-export interface ApplyOverlayStyleOptions {
+export interface ApplyComposedStylesOptions {
   forceReapply?: boolean;
 }
 
@@ -67,59 +68,117 @@ export function fetchStyleJson(url: string, referrerPolicy: ReferrerPolicy | nul
   return fetch(url, createFetchOptions(referrerPolicy));
 }
 
-// WeakMap so entries are GC'd when the map instance is collected
-const appliedOverlays = new WeakMap<MapLibreMap, Map<string, OverlayStyleState>>();
+interface CachedStyleJson {
+  json: unknown;
+  /** Final URL after redirects, used to resolve relative sprite, tile, and glyph URLs. */
+  resolvedUrl: string;
+}
 
-function getOverlayMap(map: MapLibreMap): Map<string, OverlayStyleState> {
-  let overlays = appliedOverlays.get(map);
-  if (!overlays) {
-    overlays = new Map();
-    appliedOverlays.set(map, overlays);
+// per-map cache of fetched style JSON, so recomposing (slot changes, base style
+// switches, glyph validation) doesn't refetch. it lives as long as the map, so a
+// style updated on the server only shows up in a new map instance
+const styleJsonCache = new WeakMap<MapLibreMap, Map<string, CachedStyleJson>>();
+
+/**
+ * Fetches (or returns the cached) composed style JSON for a URL.
+ * Returns null after logging when the response is not OK; fetch/parse errors propagate.
+ */
+async function fetchStyleJsonCached(
+  map: MapLibreMap,
+  url: string,
+  referrerPolicy: ReferrerPolicy | null,
+): Promise<CachedStyleJson | null> {
+  let cache = styleJsonCache.get(map);
+  if (!cache) {
+    cache = new Map();
+    styleJsonCache.set(map, cache);
   }
-  return overlays;
+
+  const cached = cache.get(url);
+  if (cached) {
+    return cached;
+  }
+
+  const response = await fetchStyleJson(url, referrerPolicy);
+  if (!response.ok) {
+    // biome-ignore lint/suspicious/noConsole: library warning for developers
+    console.warn(`[Spillgebees.Map] Failed to fetch composed style: ${url} (${String(response.status)})`);
+    return null;
+  }
+
+  const entry: CachedStyleJson = { json: await response.json(), resolvedUrl: response.url };
+  cache.set(url, entry);
+  return entry;
+}
+
+// WeakMap so entries are GC'd when the map instance is collected
+const appliedStyles = new WeakMap<MapLibreMap, Map<string, ComposedStyleState>>();
+
+function getAppliedStyles(map: MapLibreMap): Map<string, ComposedStyleState> {
+  let applied = appliedStyles.get(map);
+  if (!applied) {
+    applied = new Map();
+    appliedStyles.set(map, applied);
+  }
+  return applied;
 }
 
 function layerFilter(layer: StyleSpecification["layers"][number]): unknown {
   return "filter" in layer ? layer.filter : null;
 }
 
+const pendingApplies = new WeakMap<MapLibreMap, Promise<void>>();
+
 /**
- * Applies overlay styles on top of the base style.
- * Fetches each overlay style JSON, loads its sprites, then merges sources and layers.
+ * Composes styles on top of the base style.
+ * Fetches each style's JSON, loads its sprites, then merges sources and layers.
  */
-export async function applyOverlayStyles(
+export function applyComposedStyles(
   map: MapLibreMap,
-  overlayStyles: OverlayStyleRequestOptions[],
-  options?: ApplyOverlayStyleOptions,
+  styles: ComposedStyleRequest[],
+  options?: ApplyComposedStylesOptions,
 ): Promise<void> {
-  const overlays = getOverlayMap(map);
-  const currentStyleIds = new Set(overlayStyles.map((overlayStyle) => overlayStyle.styleId));
+  // overlapping runs would skip layers the other run already added instead of moving
+  // them, so each call waits for the previous one on the same map
+  const previous = pendingApplies.get(map) ?? Promise.resolve();
+  const next = previous.catch(() => {}).then(() => applyComposedStylesNow(map, styles, options));
+  pendingApplies.set(map, next);
+  return next;
+}
+
+async function applyComposedStylesNow(
+  map: MapLibreMap,
+  styles: ComposedStyleRequest[],
+  options?: ApplyComposedStylesOptions,
+): Promise<void> {
+  const applied = getAppliedStyles(map);
+  const currentStyleIds = new Set(styles.map((style) => style.styleId));
   const composedStyleLayerIds = window.Spillgebees.Map.composedStyleLayerIds.get(map) ?? new Map();
 
   composedStyleLayerIds.clear();
 
   if (options?.forceReapply) {
-    for (const [styleId, state] of overlays) {
+    for (const [styleId, state] of applied) {
       if (currentStyleIds.has(styleId)) {
-        removeOverlayStyle(map, state);
-        overlays.delete(styleId);
+        removeComposedStyle(map, state);
+        applied.delete(styleId);
       }
     }
   }
 
-  // Remove overlays that are no longer in the list
-  for (const [styleId, state] of overlays) {
+  // Remove styles that are no longer in the list
+  for (const [styleId, state] of applied) {
     if (!currentStyleIds.has(styleId)) {
-      removeOverlayStyle(map, state);
-      overlays.delete(styleId);
+      removeComposedStyle(map, state);
+      applied.delete(styleId);
     }
   }
 
-  // Apply new overlays in order
-  for (let i = 0; i < overlayStyles.length; i++) {
-    const { styleId, url } = overlayStyles[i];
-    if (overlays.has(styleId)) {
-      const existingState = overlays.get(styleId);
+  // Apply new styles in order
+  for (const request of styles) {
+    const { styleId, url } = request;
+    if (applied.has(styleId)) {
+      const existingState = applied.get(styleId);
       if (existingState) {
         registerComposedLayerIds(composedStyleLayerIds, existingState);
       }
@@ -127,34 +186,31 @@ export async function applyOverlayStyles(
     }
 
     try {
-      const response = await fetchStyleJson(url, overlayStyles[i].referrerPolicy);
-      if (!response.ok) {
-        // biome-ignore lint/suspicious/noConsole: library warning for developers
-        console.warn(`[Spillgebees.Map] Failed to fetch overlay style: ${url} (${String(response.status)})`);
+      const cached = await fetchStyleJsonCached(map, url, request.referrerPolicy);
+      if (!cached) {
         continue;
       }
 
-      const styleJson = (await response.json()) as StyleSpecification;
       const state = await mergeStyleIntoMap(
         map,
-        styleJson,
-        `${OVERLAY_PREFIX}-${styleId}`,
+        cached.json as StyleSpecification,
+        `${COMPOSED_STYLE_PREFIX}-${styleId}`,
         styleId,
-        response.url,
-        overlayStyles[i].referrerPolicy,
+        cached.resolvedUrl,
+        request,
       );
-      overlays.set(styleId, state);
+      applied.set(styleId, state);
       registerComposedLayerIds(composedStyleLayerIds, state);
     } catch (error) {
       // biome-ignore lint/suspicious/noConsole: library warning for developers
-      console.warn(`[Spillgebees.Map] Error applying overlay style ${url}:`, error);
+      console.warn(`[Spillgebees.Map] Error applying composed style ${url}:`, error);
     }
   }
 
   window.Spillgebees.Map.composedStyleLayerIds.set(map, composedStyleLayerIds);
 }
 
-function registerComposedLayerIds(store: Map<string, ComposedStyleLayerRegistration>, state: OverlayStyleState): void {
+function registerComposedLayerIds(store: Map<string, ComposedStyleLayerRegistration>, state: ComposedStyleState): void {
   for (const layer of state.composedLayerIds) {
     store.set(`${layer.styleId}\u0000${layer.originalLayerId}`, layer);
   }
@@ -216,20 +272,50 @@ async function loadSpriteImages(
         });
         imageIds.push(name);
       } catch {
-        // Individual image extraction failure — skip silently
+        // Individual image extraction failure, skip silently
       }
     }
 
     imageBitmap.close();
   } catch {
-    // Sprite loading failure — layers will render without icons
+    // Sprite loading failure, layers will render without icons
   }
 
   return imageIds;
 }
 
+function isLayerSlot(value: unknown): value is LayerSlot {
+  return value === "above-labels" || value === "below-labels";
+}
+
 /**
- * Merges an overlay style's sources, layers, and sprite images into the map.
+ * Picks the slot a composed style layer paints in. The consumer's per-layer slot
+ * wins, then `sgb:slot` metadata from the style author, then the style's slot. With
+ * none of those, symbol layers go above labels and everything else below.
+ */
+export function resolveLayerSlot(
+  layer: { id: string; type?: string; metadata?: unknown },
+  request: Pick<ComposedStyleRequest, "slot" | "layerSlots">,
+): LayerSlot {
+  const layerSlot = request.layerSlots?.[layer.id];
+  if (isLayerSlot(layerSlot)) {
+    return layerSlot;
+  }
+
+  const metadataSlot = (layer.metadata as Record<string, unknown> | null | undefined)?.["sgb:slot"];
+  if (isLayerSlot(metadataSlot)) {
+    return metadataSlot;
+  }
+
+  if (isLayerSlot(request.slot)) {
+    return request.slot;
+  }
+
+  return layer.type === "symbol" ? "above-labels" : "below-labels";
+}
+
+/**
+ * Merges a composed style's sources, layers, and sprite images into the map.
  * Sprite images are loaded BEFORE layers to ensure icon-image references resolve.
  */
 async function mergeStyleIntoMap(
@@ -238,17 +324,18 @@ async function mergeStyleIntoMap(
   prefix: string,
   styleId: string,
   styleUrl: string,
-  referrerPolicy: ReferrerPolicy | null,
-): Promise<OverlayStyleState> {
+  request: ComposedStyleRequest,
+): Promise<ComposedStyleState> {
+  const referrerPolicy = request.referrerPolicy;
   const sourceIds: string[] = [];
   const layerIds: string[] = [];
   let imageIds: string[] = [];
-  const composedLayerIds: OverlayStyleState["composedLayerIds"] = [];
+  const composedLayerIds: ComposedStyleState["composedLayerIds"] = [];
 
   // Build a mapping from original source IDs to prefixed IDs
   const sourceIdMap = new Map<string, string>();
 
-  // 1. Add sources — resolve relative URLs against the style's base URL
+  // 1. Add sources, resolving relative URLs against the style's URL
   if (style.sources) {
     for (const [originalId, sourceSpec] of Object.entries(style.sources)) {
       const prefixedId = `${prefix}-${originalId}`;
@@ -272,7 +359,7 @@ async function mergeStyleIntoMap(
     }
   }
 
-  // 2. Load sprite images BEFORE adding layers — resolve relative sprite URL
+  // 2. Load sprite images BEFORE adding layers, resolving a relative sprite URL
   if (style.sprite) {
     const rawSpriteUrl = typeof style.sprite === "string" ? style.sprite : undefined;
     if (rawSpriteUrl) {
@@ -281,7 +368,19 @@ async function mergeStyleIntoMap(
     }
   }
 
-  // 3. Add layers (after sprites are loaded)
+  // 3. Add layers (after sprites are loaded). Below-labels layers go in before the
+  // composed ground anchor, above-labels layers before the composed labels anchor.
+  // Inserting every layer before the same anchor keeps the style's own order. Without
+  // anchors (engine not bootstrapped), layers are appended instead.
+  const slotAnchors: Record<LayerSlot, string | undefined> = {
+    "below-labels": map.getLayer(slotAnchorLayerId(COMPOSED_GROUND_SLOT))
+      ? slotAnchorLayerId(COMPOSED_GROUND_SLOT)
+      : undefined,
+    "above-labels": map.getLayer(slotAnchorLayerId(COMPOSED_LABELS_SLOT))
+      ? slotAnchorLayerId(COMPOSED_LABELS_SLOT)
+      : undefined,
+  };
+
   if (style.layers) {
     for (const layer of style.layers) {
       const prefixedLayerId = `${prefix}-${layer.id}`;
@@ -309,13 +408,16 @@ async function mergeStyleIntoMap(
         }
       }
 
-      // Skip background layers — they'd cover the base map
+      // Skip background layers, they'd cover the base map
       if (layer.type === "background") {
         continue;
       }
 
       try {
-        map.addLayer(remappedLayer as Parameters<MapLibreMap["addLayer"]>[0]);
+        map.addLayer(
+          remappedLayer as Parameters<MapLibreMap["addLayer"]>[0],
+          slotAnchors[resolveLayerSlot(layer, request)],
+        );
         layerIds.push(prefixedLayerId);
         composedLayerIds.push({
           styleId,
@@ -327,7 +429,7 @@ async function mergeStyleIntoMap(
         });
       } catch (error) {
         // biome-ignore lint/suspicious/noConsole: library warning for developers
-        console.warn(`[Spillgebees.Map] Failed to add overlay layer ${prefixedLayerId}:`, error);
+        console.warn(`[Spillgebees.Map] Failed to add composed style layer ${prefixedLayerId}:`, error);
       }
     }
   }
@@ -336,20 +438,20 @@ async function mergeStyleIntoMap(
 }
 
 /**
- * Validates glyph compatibility across base and overlay styles, returning
+ * Validates glyph compatibility across the base and composed styles, returning
  * the effective glyph URL that should be applied to the map (or null if
  * no rewrite is needed).
  *
  * When `composedGlyphsUrl` is provided, it acts as an explicit override.
- * When absent, the function fetches each overlay style to compare glyph
+ * When absent, the function fetches each composed style to compare glyph
  * endpoints and rejects composition if they conflict.
  */
 export async function validateComposedGlyphs(
   map: MapLibreMap,
-  overlayStyles: OverlayStyleRequestOptions[],
+  styles: ComposedStyleRequest[],
   composedGlyphsUrl: string | null,
 ): Promise<{ proceed: true; effectiveGlyphsUrl: string | null } | { proceed: false }> {
-  if (overlayStyles.length === 0) {
+  if (styles.length === 0) {
     return { proceed: true, effectiveGlyphsUrl: null };
   }
 
@@ -362,26 +464,26 @@ export async function validateComposedGlyphs(
     return { proceed: true, effectiveGlyphsUrl: null };
   }
 
-  // no explicit override — check compatibility by fetching overlay styles
+  // no explicit override, check compatibility by fetching the composed styles
   const glyphUrls = new Set<string>();
   if (baseGlyphs) {
     glyphUrls.add(baseGlyphs);
   }
 
-  for (const overlayStyle of overlayStyles) {
+  for (const style of styles) {
     try {
-      const response = await fetchStyleJson(overlayStyle.url, overlayStyle.referrerPolicy);
-      if (!response.ok) {
+      const cached = await fetchStyleJsonCached(map, style.url, style.referrerPolicy);
+      if (!cached) {
         continue;
       }
 
-      const styleJson = (await response.json()) as { glyphs?: string };
+      const styleJson = cached.json as { glyphs?: string };
       if (styleJson.glyphs) {
-        const resolved = resolveTemplateUrl(styleJson.glyphs, response.url);
+        const resolved = resolveTemplateUrl(styleJson.glyphs, cached.resolvedUrl);
         glyphUrls.add(resolved);
       }
     } catch {
-      // fetch failure — skip this overlay for glyph validation
+      // fetch failure, skip this style for glyph validation
     }
   }
 
@@ -392,16 +494,16 @@ export async function validateComposedGlyphs(
   const urlList = Array.from(glyphUrls).join(", ");
   // biome-ignore lint/suspicious/noConsole: library warning for developers
   console.warn(
-    `[Spillgebees.Map] Composed map styles require a single shared glyph endpoint. The supplied base and overlay styles resolve to different glyphs URLs, and overlay glyph URLs are ignored during composition. Set ComposedGlyphsUrl to a shared font service or use styles that already share the same glyph endpoint. Resolved glyph URLs: ${urlList}`,
+    `[Spillgebees.Map] Composed map styles require a single shared glyph endpoint. The supplied base and composed styles resolve to different glyphs URLs, and composed styles' glyph URLs are ignored during composition. Set ComposedGlyphsUrl to a shared font service or use styles that already share the same glyph endpoint. Resolved glyph URLs: ${urlList}`,
   );
 
   return { proceed: false };
 }
 
 /**
- * Removes all sources, layers, and images added by an overlay style.
+ * Removes all sources, layers, and images added by a composed style.
  */
-function removeOverlayStyle(map: MapLibreMap, state: OverlayStyleState): void {
+function removeComposedStyle(map: MapLibreMap, state: ComposedStyleState): void {
   // Remove layers first (they reference sources)
   for (const layerId of state.layerIds) {
     if (map.getLayer(layerId)) {

@@ -96,6 +96,7 @@ internal sealed class MapTileOverlayCoordinator(MapEngineChannel channel)
                     ["source"] = sourceId,
                     ["paint"] = new JsonObject { ["raster-opacity"] = overlay.Opacity },
                 },
+                Slot: EngineSlots.ForTileOverlay(overlay.Slot),
                 Owner: overlay.Id
             )
         );

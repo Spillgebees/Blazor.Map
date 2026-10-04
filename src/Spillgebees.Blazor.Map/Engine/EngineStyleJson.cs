@@ -51,6 +51,8 @@ internal static class EngineStyleJson
             ["id"] = style.Id,
             ["url"] = style.Url,
             ["referrerPolicy"] = style.ReferrerPolicy is { } policy ? EnumJsonName.Get(policy) : null,
+            ["slot"] = style.Slot is { } slot ? EnumJsonName.Get(slot) : null,
+            ["layerSlots"] = style.LayerSlots is { Count: > 0 } layerSlots ? LayerSlotsToNode(layerSlots) : null,
             ["rasterSource"] = style.RasterSource is { } raster
                 ? new JsonObject
                 {
@@ -76,4 +78,17 @@ internal static class EngineStyleJson
                 }
                 : null,
         };
+
+    private static JsonObject LayerSlotsToNode(IReadOnlyDictionary<string, LayerSlot> layerSlots)
+    {
+        // deterministic key order: style reactivity compares serialized JSON, so a
+        // rebuilt dictionary with different insertion order must not force a reapply
+        var node = new JsonObject();
+        foreach (var (layerId, slot) in layerSlots.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+        {
+            node[layerId] = EnumJsonName.Get(slot);
+        }
+
+        return node;
+    }
 }

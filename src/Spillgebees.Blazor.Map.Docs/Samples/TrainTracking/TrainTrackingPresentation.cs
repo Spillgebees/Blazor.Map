@@ -224,7 +224,16 @@ public static class TrainTrackingPresentation
         var resolvedOverlayStyleUrl = string.IsNullOrWhiteSpace(overlayStyleUrl)
             ? DefaultOverlayStyleUrl
             : overlayStyleUrl;
-        return [MapStyle.OpenFreeMap.Positron, MapStyle.FromUrl(resolvedOverlayStyleUrl).WithId(OverlayStyleId)];
+        return
+        [
+            MapStyle.OpenFreeMap.Positron,
+            MapStyle
+                .FromUrl(resolvedOverlayStyleUrl)
+                .WithId(OverlayStyleId)
+                // station dots are circles, which go below labels and the 3D buildings by
+                // default; above labels keeps them visible as markers
+                .WithLayerSlot("railway-stations-circle", LayerSlot.AboveLabels),
+        ];
     }
 
     public static IReadOnlyList<string> WebFonts { get; } = ["11px 'Martian Mono'", "11px 'DM Sans'"];

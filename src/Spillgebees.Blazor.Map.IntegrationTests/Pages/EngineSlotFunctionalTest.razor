@@ -1,0 +1,139 @@
+@page "/engine-slot-functional-test"
+
+<main class="e2e-shell">
+    <h1>Engine slot functional test</h1>
+    <p>Deterministic fixture for Playwright: slot anchors, composed style layer slots (by layer type, metadata and per-layer slots), layer components below labels, a tile overlay, Before precedence, and re-anchoring after a base style switch.</p>
+
+    <section style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+        <button type="button"
+                data-testid="switch-style"
+                @onclick="SwitchStyle">
+            Switch base style
+        </button>
+        <button type="button"
+                data-testid="toggle-custom-slot"
+                @onclick="ToggleCustomSlot">
+            Toggle custom layer slot
+        </button>
+        <button type="button"
+                data-testid="toggle-composed-track-slot"
+                @onclick="ToggleComposedTrackSlot">
+            Toggle composed track slot
+        </button>
+        <span>
+            Base:
+            <strong data-testid="active-style">@_activeStyleId</strong>
+        </span>
+        <span>
+            Custom slot:
+            <strong data-testid="custom-slot">@(_customSlot is LayerSlot.BelowLabels ? "below-labels" : "above-labels")</strong>
+        </span>
+        <span>
+            Composed track:
+            <strong data-testid="composed-track-slot">@(_composedTrackAbove ? "above-labels" : "default")</strong>
+        </span>
+        <span>
+            Reloads:
+            <strong data-testid="reload-count">@_reloadCount</strong>
+        </span>
+    </section>
+
+    @if (_lastError is not null)
+    {
+        <p style="color: #b91c1c;" data-testid="map-error">@_lastError</p>
+    }
+
+    <div id="engine-slot-frame" class="stress-map-frame">
+        <SgbMap Styles="@_styles"
+                Overlays="@_tileOverlays"
+                Center="@(new Coordinate(49.61, 6.14))"
+                Zoom="12"
+                Height="480px"
+                Width="100%"
+                OnStyleReloaded="@HandleStyleReloaded"
+                OnMapError="@HandleMapError">
+            <GeoJsonSource Id="custom-points" Data="@PointData">
+                <CircleLayer Id="custom-below"
+                             Slot="@_customSlot"
+                             Radius="8"
+                             Color="@("#0ea5e9")" />
+                <CircleLayer Id="custom-top"
+                             Radius="5"
+                             Color="@("#111827")" />
+                <CircleLayer Id="custom-before-top"
+                             Slot="@LayerSlot.BelowLabels"
+                             Before="custom-top"
+                             Radius="6"
+                             Color="@("#f97316")" />
+            </GeoJsonSource>
+        </SgbMap>
+    </div>
+</main>
+
+@code {
+    private const string PointData = """
+        {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "geometry": { "type": "Point", "coordinates": [6.14, 49.61] },
+                    "properties": { "name": "custom-marker" }
+                }
+            ]
+        }
+        """;
+
+    private static readonly MapStyle _baseStyle = MapStyle.FromUrl("/test-slot-base-style.json").WithId("slot-base");
+
+    private static readonly MapStyle _altBaseStyle = MapStyle
+        .FromUrl("/test-slot-base-style-alt.json")
+        .WithId("slot-base-alt");
+
+    private static readonly MapStyle _composedStyle = MapStyle
+        .FromUrl("/test-slot-composed-style.json")
+        .WithId("test-slot-composed")
+        .WithLayerSlot("composed-dot-csharp", LayerSlot.AboveLabels);
+
+    private static readonly MapStyle _composedStyleWithTrackAbove = _composedStyle.WithLayerSlot(
+        "composed-track",
+        LayerSlot.AboveLabels
+    );
+
+    private static readonly IReadOnlyList<TileOverlay> _tileOverlays =
+    [
+        new("slot-tiles", "https://tiles.invalid/{z}/{x}/{y}.png", Opacity: 0.5),
+    ];
+
+    private IReadOnlyList<MapStyle> _styles = [_baseStyle, _composedStyle];
+    private string _activeStyleId = "slot-base";
+    private LayerSlot _customSlot = LayerSlot.BelowLabels;
+    private bool _composedTrackAbove;
+    private int _reloadCount;
+    private string? _lastError;
+
+    private void SwitchStyle()
+    {
+        _activeStyleId = _activeStyleId == "slot-base" ? "slot-base-alt" : "slot-base";
+        _styles = [_activeStyleId == "slot-base" ? _baseStyle : _altBaseStyle, _activeComposedStyle];
+    }
+
+    private void ToggleCustomSlot() =>
+        _customSlot = _customSlot is LayerSlot.BelowLabels ? LayerSlot.AboveLabels : LayerSlot.BelowLabels;
+
+    private void ToggleComposedTrackSlot()
+    {
+        _composedTrackAbove = !_composedTrackAbove;
+        _styles = [_activeStyleId == "slot-base" ? _baseStyle : _altBaseStyle, _activeComposedStyle];
+    }
+
+    private MapStyle _activeComposedStyle => _composedTrackAbove ? _composedStyleWithTrackAbove : _composedStyle;
+
+    private void HandleStyleReloaded() => _reloadCount++;
+
+    private void HandleMapError(Exception exception)
+    {
+        _lastError = exception.Message;
+        StateHasChanged();
+    }
+}

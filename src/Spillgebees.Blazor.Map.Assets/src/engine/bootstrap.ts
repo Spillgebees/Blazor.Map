@@ -4,9 +4,9 @@
 
 import { Map as MapLibreMap, type Popup as MapLibrePopup, type RequestParameters } from "maplibre-gl";
 import type { IMapStyle } from "../interfaces/map";
-import type { OverlayStyleRequestOptions } from "../interfaces/spillgebees";
+import type { ComposedStyleRequest } from "../interfaces/spillgebees";
 import { buildStyleFromOptions } from "../styles/base-style";
-import { applyOverlayStyles, validateComposedGlyphs } from "../styles/composition";
+import { applyComposedStyles, validateComposedGlyphs } from "../styles/composition";
 import { type ControlsController, createControlsController } from "./controls";
 import { createFullscreenController, type FullscreenController } from "./fullscreen";
 import { createMarkerController, createMarkerPopup, type MarkerController } from "./markers";
@@ -22,7 +22,7 @@ interface DotNetObjectReference {
 interface EngineStyleOptions {
   /** Raw style: a URL string or a style JSON object. Used when `styles` is absent. */
   style?: string | object | null;
-  /** Typed styles: index 0 is the base map, the rest compose as overlay styles. */
+  /** Typed styles: index 0 is the base map, the rest are composed on top of it. */
   styles?: IMapStyle[] | null;
   composedGlyphsUrl?: string | null;
 }
@@ -51,7 +51,7 @@ interface EngineInstance {
   baseStyleKey: string;
   /** Consumer-given id of the base style (display targets resolve against it). */
   baseStyleId: string | null;
-  overlayStyles: OverlayStyleRequestOptions[];
+  composedStyles: ComposedStyleRequest[];
   composedGlyphsUrl: string | null;
   pendingStyleReload: boolean;
   isLoaded: boolean;
@@ -151,16 +151,16 @@ function styleKey(style: string | object): string {
   return typeof style === "string" ? style : JSON.stringify(style);
 }
 
-function toOverlayRequests(
+function toComposedStyleRequests(
   styles: IMapStyle[] | null | undefined,
   onError: (error: unknown) => void,
-): OverlayStyleRequestOptions[] {
-  const requests: OverlayStyleRequestOptions[] = [];
+): ComposedStyleRequest[] {
+  const requests: ComposedStyleRequest[] = [];
   for (const style of styles?.slice(1) ?? []) {
     if (!style.url) {
       onError(
         new Error(
-          `Overlay style '${style.id ?? "?"}' must be a URL style; raster/WMS overlays compose as tile overlays instead.`,
+          `Composed style '${style.id ?? "?"}' must be a URL style; add raster/WMS layers as tile overlays instead.`,
         ),
       );
       continue;
@@ -170,20 +170,22 @@ function toOverlayRequests(
       styleId: style.id ?? style.url,
       url: style.url,
       referrerPolicy: style.referrerPolicy ?? null,
+      slot: style.slot ?? null,
+      layerSlots: style.layerSlots ?? null,
     });
   }
 
   return requests;
 }
 
-async function composeOverlays(instance: EngineInstance, onError: (error: unknown) => void): Promise<void> {
-  if (instance.overlayStyles.length === 0 || !instance.isLoaded) {
+async function composeStyles(instance: EngineInstance, onError: (error: unknown) => void): Promise<void> {
+  if (instance.composedStyles.length === 0 || !instance.isLoaded) {
     // pre-load composition is deferred to the load handler
     return;
   }
 
   try {
-    const glyphResult = await validateComposedGlyphs(instance.map, instance.overlayStyles, instance.composedGlyphsUrl);
+    const glyphResult = await validateComposedGlyphs(instance.map, instance.composedStyles, instance.composedGlyphsUrl);
     if (!glyphResult.proceed) {
       return;
     }
@@ -194,7 +196,7 @@ async function composeOverlays(instance: EngineInstance, onError: (error: unknow
       instance.map.setStyle(style, { diff: true });
     }
 
-    await applyOverlayStyles(instance.map, instance.overlayStyles, { forceReapply: true });
+    await applyComposedStyles(instance.map, instance.composedStyles, { forceReapply: true });
     instance.engine.replayVisibility();
   } catch (error) {
     onError(error);
@@ -274,7 +276,7 @@ function createMap(container: HTMLElement, optionsJson: string, router: DotNetOb
     router,
     baseStyleKey: styleKey(baseStyle),
     baseStyleId: options.styles?.[0]?.id ?? null,
-    overlayStyles: toOverlayRequests(options.styles, reportError),
+    composedStyles: toComposedStyleRequests(options.styles, reportError),
     composedGlyphsUrl: options.composedGlyphsUrl ?? null,
     pendingStyleReload: false,
     isLoaded: false,
@@ -294,10 +296,13 @@ function createMap(container: HTMLElement, optionsJson: string, router: DotNetOb
       applyConfig(instance, config);
     }
     wireShapePopups(map);
-    await composeOverlays(instance, reportError);
+    // slot anchors must exist before composed styles insert layers before them
+    // and before the first C# layer ops arrive (the load ack below gates those)
+    engine.ensureSlots();
+    await composeStyles(instance, reportError);
     void router.invokeMethodAsync("OnMapEvent", "load", {});
   });
-  // after a base style change, re-apply the engine scene and overlay styles
+  // after a base style change, re-apply the engine scene and composed styles
   map.on("styledata", () => {
     if (!instance.pendingStyleReload) {
       return;
@@ -307,7 +312,7 @@ function createMap(container: HTMLElement, optionsJson: string, router: DotNetOb
     void (async () => {
       instance.engine.replay();
       wireShapePopups(map);
-      await composeOverlays(instance, reportError);
+      await composeStyles(instance, reportError);
       void router.invokeMethodAsync("OnMapEvent", "stylereloaded", {});
     })();
   });
@@ -330,7 +335,7 @@ function setStyles(container: HTMLElement, stylesJson: string): void {
   const options = JSON.parse(stylesJson) as EngineStyleOptions;
   const baseStyle = resolveBaseStyle(options);
   const newKey = styleKey(baseStyle);
-  instance.overlayStyles = toOverlayRequests(options.styles, reportError);
+  instance.composedStyles = toComposedStyleRequests(options.styles, reportError);
   instance.baseStyleId = options.styles?.[0]?.id ?? null;
   instance.composedGlyphsUrl = options.composedGlyphsUrl ?? null;
   instance.policyStyles = options.styles ?? [];
@@ -343,8 +348,8 @@ function setStyles(container: HTMLElement, stylesJson: string): void {
     return;
   }
 
-  // base unchanged: only the overlay set / glyph endpoint changed
-  void composeOverlays(instance, reportError);
+  // base unchanged: only the composed styles or the glyph endpoint changed
+  void composeStyles(instance, reportError);
 }
 
 function setTheme(container: HTMLElement, theme: string): void {
@@ -434,7 +439,7 @@ function hasStyleLayer(container: HTMLElement, styleId: string, layerId: string)
     return false;
   }
 
-  // composed overlay-style layers register under prefixed runtime ids
+  // composed style layers register under prefixed runtime ids
   const composed = window.Spillgebees.Map?.composedStyleLayerIds?.get(instance.map)?.get(`${styleId}\u0000${layerId}`);
   if (composed) {
     return Boolean(instance.map.getLayer(composed.runtimeLayerId));
@@ -663,7 +668,7 @@ function toEngineMap(
       return (
         instance.baseStyleId === null ||
         instance.baseStyleId === styleId ||
-        instance.overlayStyles.some((overlay) => overlay.styleId === styleId)
+        instance.composedStyles.some((composed) => composed.styleId === styleId)
       );
     },
     composedStyleLayers: (styleId) => {

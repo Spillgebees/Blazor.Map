@@ -1,8 +1,9 @@
 namespace Spillgebees.Blazor.Map;
 
 /// <summary>
-/// A raster tile layer rendered on top of the base map style.
-/// Supports XYZ tile URLs, WMS endpoints, and WMTS services.
+/// A raster tile layer drawn over the base map style, below its labels unless
+/// <see cref="Slot"/> says otherwise. Supports XYZ tile URLs, WMS endpoints, and WMTS
+/// services.
 /// </summary>
 /// <param name="Id">A unique identifier for the overlay.</param>
 /// <param name="UrlTemplate">
@@ -22,6 +23,14 @@ public record TileOverlay(
     ReferrerPolicy? ReferrerPolicy = null
 )
 {
+    /// <summary>
+    /// Where the overlay paints. Defaults to <see cref="LayerSlot.BelowLabels"/>: above the
+    /// base style's ground and below every vector layer the map adds, so labels, composed
+    /// styles and layer components stay visible over it.
+    /// <see cref="LayerSlot.AboveLabels"/> puts it at the top of the map.
+    /// </summary>
+    public LayerSlot Slot { get; init; } = LayerSlot.BelowLabels;
+
     /// <summary>
     /// Creates a tile overlay from a WMS endpoint.
     /// The WMS GetMap URL is constructed automatically with the correct parameters.

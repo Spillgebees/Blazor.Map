@@ -47,6 +47,45 @@ public record MapStyle
     public WmsTileSource? WmsSource { get; init; }
 
     /// <summary>
+    /// The slot every layer of this style paints in when it's a composed style (any
+    /// entry after the first in <see cref="SgbMap.Styles"/>). When <see langword="null"/>,
+    /// the default, symbol layers go above the base style's labels and every other layer
+    /// below them. Ignored for the base style.
+    /// </summary>
+    public LayerSlot? Slot { get; init; }
+
+    /// <summary>
+    /// Slots for single layers of this composed style, keyed by the layer id in the style
+    /// JSON. They take precedence over <see cref="Slot"/> and over a layer's
+    /// <c>"sgb:slot"</c> metadata, so you can place layers of a style you don't author,
+    /// for example to keep station dots above 3D buildings. Ignored for the base style.
+    /// </summary>
+    public IReadOnlyDictionary<string, LayerSlot>? LayerSlots { get; init; }
+
+    /// <summary>
+    /// Returns a copy of this style with every layer in <paramref name="slot"/>.
+    /// </summary>
+    public MapStyle WithSlot(LayerSlot slot) => this with { Slot = slot };
+
+    /// <summary>
+    /// Returns a copy of this style with <paramref name="layerId"/>, the layer id in the
+    /// style JSON, in <paramref name="slot"/>.
+    /// </summary>
+    public MapStyle WithLayerSlot(string layerId, LayerSlot slot)
+    {
+        if (string.IsNullOrWhiteSpace(layerId))
+        {
+            throw new ArgumentException("Layer ID must not be empty.", nameof(layerId));
+        }
+
+        var layerSlots = LayerSlots is null
+            ? new Dictionary<string, LayerSlot>()
+            : new Dictionary<string, LayerSlot>(LayerSlots);
+        layerSlots[layerId] = slot;
+        return this with { LayerSlots = layerSlots };
+    }
+
+    /// <summary>
     /// Returns a copy of this style with the given stable identifier.
     /// </summary>
     public MapStyle WithId(string id)

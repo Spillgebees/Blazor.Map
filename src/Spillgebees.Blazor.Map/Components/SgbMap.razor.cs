@@ -28,8 +28,9 @@ public partial class SgbMap : ComponentBase, IAsyncDisposable, IMapControlHost, 
     public MapStyle? Style { get; set; }
 
     /// <summary>
-    /// Composed styles: index 0 is the base map, the rest merge in as overlay styles
-    /// (URL styles only). Takes precedence over <see cref="Style"/>.
+    /// Composed styles: index 0 is the base map, the rest are composed on top of it
+    /// (URL styles only), with their layers placed in slots around the base style's
+    /// labels (see <see cref="MapStyle.Slot"/>). Takes precedence over <see cref="Style"/>.
     /// </summary>
     [Parameter]
     public IReadOnlyList<MapStyle>? Styles { get; set; }
@@ -110,7 +111,7 @@ public partial class SgbMap : ComponentBase, IAsyncDisposable, IMapControlHost, 
     [Parameter]
     public double? PixelRatio { get; set; }
 
-    /// <summary>Raster tile overlays stacked above the base style.</summary>
+    /// <summary>Raster tile overlays drawn over the base style, below its labels by default (see <see cref="TileOverlay.Slot"/>).</summary>
     [Parameter]
     public IReadOnlyList<TileOverlay>? Overlays { get; set; }
 

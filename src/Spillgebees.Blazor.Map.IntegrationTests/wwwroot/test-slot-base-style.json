@@ -1,0 +1,36 @@
+{
+    "version": 8,
+    "glyphs": "/fonts/{fontstack}/{range}.pbf",
+    "sources": {
+        "base-points": {
+            "type": "geojson",
+            "data": {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": { "type": "Point", "coordinates": [6.14, 49.61] },
+                        "properties": { "name": "base-marker" }
+                    }
+                ]
+            }
+        }
+    },
+    "layers": [
+        { "id": "base-background", "type": "background", "paint": { "background-color": "#fee2e2" } },
+        {
+            "id": "base-ground",
+            "type": "circle",
+            "source": "base-points",
+            "paint": { "circle-radius": 16, "circle-color": "#fca5a5" }
+        },
+        { "id": "base-arrows", "type": "symbol", "source": "base-points" },
+        {
+            "id": "base-bridges",
+            "type": "circle",
+            "source": "base-points",
+            "paint": { "circle-radius": 14, "circle-color": "#f87171" }
+        },
+        { "id": "base-labels", "type": "symbol", "source": "base-points", "layout": { "text-field": "" } }
+    ]
+}

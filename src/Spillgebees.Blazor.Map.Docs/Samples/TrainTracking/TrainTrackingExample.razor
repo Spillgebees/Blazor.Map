@@ -1,6 +1,3 @@
-@using Spillgebees.Blazor.Map
-@using Spillgebees.Blazor.Map.Docs.Samples.TrainTracking
-
 <style>
     @@import url("https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400&family=DM+Sans:wght@400;500;600;700&display=swap");
 
@@ -275,6 +272,7 @@
         <FillExtrusionLayer Id="sgb-buildings-3d"
                             SourceId="openmaptiles"
                             SourceLayerId="building"
+                            Slot="@LayerSlot.BelowLabels"
                             Color="@("#d1d5db")"
                             Opacity="0.7"
                             Height="@(Expr.Get("render_height"))"
@@ -286,7 +284,7 @@
                             ItemId="@(train => train.Id)"
                             Position="@(train => train.CurrentPosition)"
                             Icon="@(train => $"train-{train.Color.TrimStart('#')}")"
-                            Rotation="@(train => TrainTrackingPresentation.GetBearing(train))"
+                            Rotation="@TrainTrackingPresentation.GetBearing"
                             Color="@(train => train.Color)"
                             SortKey="@(_ => 100)"
                             HoverScale="@(_ => 1.2)"
@@ -305,7 +303,7 @@
                               TextSize="12"
                               HaloColor="#ffffff"
                               HaloWidth="1.5"
-                              TextFont="@(new[] { "DM Sans", "Noto Sans Regular" })" />
+                              TextFont="@(["DM Sans", "Noto Sans Regular"])" />
             <EntityDecoration Id="route"
                               Text="@(train => train.Route.Replace(">", "›"))"
                               Offset="@(new PixelPoint(20, 7.5))"
@@ -315,7 +313,7 @@
                               TextSize="8"
                               HaloColor="#ffffff"
                               HaloWidth="1.0"
-                              TextFont="@(new[] { "DM Sans", "Noto Sans Regular" })" />
+                              TextFont="@(["DM Sans", "Noto Sans Regular"])" />
             <EntityDecoration Id="operator"
                               Text="@(train => train.Operator)"
                               Offset="@(new PixelPoint(-16, -4))"
@@ -325,7 +323,7 @@
                               TextSize="10"
                               HaloColor="#ffffff"
                               HaloWidth="1.5"
-                              TextFont="@(new[] { "Martian Mono", "Noto Sans Regular" })" />
+                              TextFont="@(["Martian Mono", "Noto Sans Regular"])" />
         </TrackedEntityLayer>
     </SgbMap>
 </div>

@@ -1,0 +1,50 @@
+<div class="sample-btn-row">
+    <button type="button"
+            class="sample-btn @(!_aboveLabels ? "active" : "")"
+            aria-pressed="@(!_aboveLabels)"
+            @onclick="@(() => SetAboveLabels(false))">
+        Default slots
+    </button>
+    <button type="button"
+            class="sample-btn @(_aboveLabels ? "active" : "")"
+            aria-pressed="@_aboveLabels"
+            @onclick="@(() => SetAboveLabels(true))">
+        Everything above labels
+    </button>
+</div>
+
+<SgbMap Center="@(new Coordinate(49.5996, 6.1342))"
+        Zoom="15.8"
+        Pitch="55"
+        Styles="@_styles"
+        ComposedGlyphsUrl="https://tiles.spillgebees.dev/fonts/{fontstack}/{range}.pbf"
+        Height="400px"
+        Width="100%">
+    <MapControls>
+        <NavigationMapControl />
+    </MapControls>
+    <FillExtrusionLayer Id="docs-composed-buildings-3d"
+                        SourceId="openmaptiles"
+                        SourceLayerId="building"
+                        Slot="@LayerSlot.BelowLabels"
+                        Color="@("#d1d5db")"
+                        Opacity="0.7"
+                        Height="@(Expr.Get("render_height"))"
+                        Base="@(Expr.Get("render_min_height"))"
+                        MinZoom="14" />
+</SgbMap>
+
+@code {
+    private static readonly MapStyle _railways = MapStyle
+        .FromUrl("https://tiles.spillgebees.dev/style.json")
+        .WithId("railways");
+
+    private IReadOnlyList<MapStyle> _styles = [MapStyle.OpenFreeMap.Positron, _railways];
+    private bool _aboveLabels;
+
+    private void SetAboveLabels(bool aboveLabels)
+    {
+        _aboveLabels = aboveLabels;
+        _styles = [MapStyle.OpenFreeMap.Positron, aboveLabels ? _railways.WithSlot(LayerSlot.AboveLabels) : _railways];
+    }
+}

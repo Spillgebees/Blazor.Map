@@ -1,0 +1,46 @@
+{
+    "version": 8,
+    "sources": {
+        "composed-points": {
+            "type": "geojson",
+            "data": {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": { "type": "Point", "coordinates": [6.14, 49.61] },
+                        "properties": { "name": "composed-marker" }
+                    }
+                ]
+            }
+        }
+    },
+    "layers": [
+        {
+            "id": "composed-track",
+            "type": "circle",
+            "source": "composed-points",
+            "paint": { "circle-radius": 12, "circle-color": "#a855f7" }
+        },
+        { "id": "composed-label", "type": "symbol", "source": "composed-points" },
+        {
+            "id": "composed-dot-metadata",
+            "type": "circle",
+            "source": "composed-points",
+            "metadata": { "sgb:slot": "above-labels" },
+            "paint": { "circle-radius": 6, "circle-color": "#f97316" }
+        },
+        {
+            "id": "composed-dot-csharp",
+            "type": "circle",
+            "source": "composed-points",
+            "paint": { "circle-radius": 4, "circle-color": "#22c55e" }
+        },
+        {
+            "id": "composed-caption-ground",
+            "type": "symbol",
+            "source": "composed-points",
+            "metadata": { "sgb:slot": "below-labels" }
+        }
+    ]
+}

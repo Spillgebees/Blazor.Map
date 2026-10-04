@@ -38,7 +38,7 @@ public sealed record MapDisplayTarget
         new(MapDisplayTargetKind.Layers, RequireNames(ids, nameof(ids), "component ID"), null);
 
     /// <summary>Targets layers of a style by their id in that style's JSON.</summary>
-    /// <param name="styleId">The <see cref="MapStyle.Id"/> of the base or an overlay style.</param>
+    /// <param name="styleId">The <see cref="MapStyle.Id"/> of the base or a composed style.</param>
     /// <param name="layerIds">Layer ids as written in the style JSON.</param>
     public static MapDisplayTarget StyleLayers(string styleId, params string[] layerIds) =>
         new(
@@ -51,7 +51,7 @@ public sealed record MapDisplayTarget
     /// Targets every layer of a style whose <c>metadata["sgb:tags"]</c> (or
     /// <c>metadata.tags</c>) contains any of the given tags.
     /// </summary>
-    /// <param name="styleId">The <see cref="MapStyle.Id"/> of the base or an overlay style.</param>
+    /// <param name="styleId">The <see cref="MapStyle.Id"/> of the base or a composed style.</param>
     /// <param name="tags">Tags to match.</param>
     public static MapDisplayTarget StyleTags(string styleId, params string[] tags) =>
         new(MapDisplayTargetKind.StyleTags, RequireNames(tags, nameof(tags), "tag"), RequireStyleId(styleId));
@@ -60,7 +60,7 @@ public sealed record MapDisplayTarget
     /// Targets every layer of a style. Turning the item off hides the whole style; turning
     /// it on never shows layers the style ships hidden.
     /// </summary>
-    /// <param name="styleId">The <see cref="MapStyle.Id"/> of the base or an overlay style.</param>
+    /// <param name="styleId">The <see cref="MapStyle.Id"/> of the base or a composed style.</param>
     public static MapDisplayTarget Style(string styleId) =>
         new(MapDisplayTargetKind.Style, [], RequireStyleId(styleId));
 
