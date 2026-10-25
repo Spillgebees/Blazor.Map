@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using AwesomeAssertions;
+using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Spillgebees.Blazor.Map.Engine;
 
@@ -17,19 +18,17 @@ public class MapDisplayCoordinatorTests
     public async Task Should_send_only_the_items_that_changed()
     {
         // arrange
-        var (coordinator, js) = await CreateReadyCoordinatorAsync();
+        var (coordinator, js, dispatcher) = await CreateReadyCoordinatorAsync();
         var state = new MapDisplayState([
             new MapDisplayItem("tram", [MapDisplayTarget.StyleTags("railway", "tram")]),
             new MapDisplayItem("roads", [MapDisplayTarget.Layers("roads")]),
         ]);
-        coordinator.Sync(state);
-        await SettleAsync(js);
+        await OnRendererAsync(dispatcher, () => coordinator.Sync(state));
         js.Clear();
 
         // act
         state.SetOn("tram", true);
-        coordinator.Sync(state);
-        await SettleAsync(js);
+        await OnRendererAsync(dispatcher, () => coordinator.Sync(state));
 
         // assert
         AppliedOps(js).Select(op => op["id"]!.GetValue<string>()).Should().Equal("tram");
@@ -39,16 +38,14 @@ public class MapDisplayCoordinatorTests
     public async Task Should_send_nothing_when_only_style_defaults_changed()
     {
         // arrange
-        var (coordinator, js) = await CreateReadyCoordinatorAsync();
+        var (coordinator, js, dispatcher) = await CreateReadyCoordinatorAsync();
         var state = new MapDisplayState([new MapDisplayItem("tram", [MapDisplayTarget.StyleTags("railway", "tram")])]);
-        coordinator.Sync(state);
-        await SettleAsync(js);
+        await OnRendererAsync(dispatcher, () => coordinator.Sync(state));
         js.Clear();
 
         // act
         state.SetStyleDefaults(new object(), new Dictionary<string, bool> { ["tram"] = false });
-        coordinator.Sync(state);
-        await SettleAsync(js);
+        await OnRendererAsync(dispatcher, () => coordinator.Sync(state));
 
         // assert
         AppliedOps(js).Should().BeEmpty();
@@ -58,14 +55,16 @@ public class MapDisplayCoordinatorTests
     public async Task Should_release_items_removed_from_the_state()
     {
         // arrange
-        var (coordinator, js) = await CreateReadyCoordinatorAsync();
-        coordinator.Sync(new MapDisplayState([new MapDisplayItem("roads", [MapDisplayTarget.Layers("roads")])]));
-        await SettleAsync(js);
+        var (coordinator, js, dispatcher) = await CreateReadyCoordinatorAsync();
+        await OnRendererAsync(
+            dispatcher,
+            () =>
+                coordinator.Sync(new MapDisplayState([new MapDisplayItem("roads", [MapDisplayTarget.Layers("roads")])]))
+        );
         js.Clear();
 
         // act
-        coordinator.Sync(new MapDisplayState([]));
-        await SettleAsync(js);
+        await OnRendererAsync(dispatcher, () => coordinator.Sync(new MapDisplayState([])));
 
         // assert
         AppliedOps(js).Select(op => op["op"]!.GetValue<string>()).Should().Equal("visibility.remove");
@@ -75,7 +74,7 @@ public class MapDisplayCoordinatorTests
     public async Task Should_serialize_unset_items_and_target_vocabulary()
     {
         // arrange
-        var (coordinator, js) = await CreateReadyCoordinatorAsync();
+        var (coordinator, js, dispatcher) = await CreateReadyCoordinatorAsync();
         var state = new MapDisplayState([
             new MapDisplayItem(
                 "mixed",
@@ -89,8 +88,7 @@ public class MapDisplayCoordinatorTests
         ]);
 
         // act
-        coordinator.Sync(state);
-        await SettleAsync(js);
+        await OnRendererAsync(dispatcher, () => coordinator.Sync(state));
 
         // assert
         var op = AppliedOps(js).Should().ContainSingle().Subject;
@@ -101,28 +99,22 @@ public class MapDisplayCoordinatorTests
             );
     }
 
-    // Queue defers its flush with Task.Yield; outside Blazor's renderer that continuation runs
-    // on the thread pool, so wait for the channel to go quiet instead of flushing alongside it.
-    private static async Task SettleAsync(RecordingJsRuntime js)
-    {
-        var stablePolls = 0;
-        var previousCount = -1;
-        for (var attempt = 0; attempt < 500 && stablePolls < 5; attempt++)
-        {
-            var count = js.Snapshot().Count;
-            stablePolls = count == previousCount ? stablePolls + 1 : 0;
-            previousCount = count;
-            await Task.Delay(1);
-        }
-    }
-
-    private static async Task<(MapDisplayCoordinator, RecordingJsRuntime)> CreateReadyCoordinatorAsync()
+    private static async Task<(MapDisplayCoordinator, RecordingJsRuntime, Dispatcher)> CreateReadyCoordinatorAsync()
     {
         var js = new RecordingJsRuntime();
+        var dispatcher = Dispatcher.CreateDefault();
         var channel = new MapEngineChannel(js);
         channel.Attach(default);
-        await channel.MarkReadyAsync();
-        return (new MapDisplayCoordinator(channel), js);
+        await dispatcher.InvokeAsync(channel.MarkReadyAsync);
+        return (new MapDisplayCoordinator(channel), js, dispatcher);
+    }
+
+    // the channel isn't thread-safe and relies on the renderer's sync context, so drive it the
+    // same way. the second call drains the flush that Queue deferred with Task.Yield.
+    private static async Task OnRendererAsync(Dispatcher dispatcher, Action action)
+    {
+        await dispatcher.InvokeAsync(action);
+        await dispatcher.InvokeAsync(() => { });
     }
 
     private static IReadOnlyList<JsonObject> AppliedOps(RecordingJsRuntime js) =>
