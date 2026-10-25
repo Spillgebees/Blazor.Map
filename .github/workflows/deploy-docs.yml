@@ -10,7 +10,7 @@ jobs:
       contents: read
       pages: write
       id-token: write
-    uses: Spillgebees/Blazor.Docs.Sdk/.github/workflows/deploy-docs.yml@1b0a4ebf31bdb43946587bda0a37a778f3d2f441 # main
+    uses: Spillgebees/Blazor.Docs.Sdk/.github/workflows/deploy-docs.yml@e27872c1f24cd7c4aed3cc662a6084dc4f1c1090 # main
     with:
       docs-project-path: src/Spillgebees.Blazor.Map.Docs/Spillgebees.Blazor.Map.Docs.csproj
       base-href: /Blazor.Map/
