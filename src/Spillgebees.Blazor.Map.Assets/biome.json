@@ -73,6 +73,18 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["**/*.scss"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnknownUnit": "off"
+          }
+        }
+      }
+    }
+  ],
   "assist": {
     "enabled": true,
     "actions": {
