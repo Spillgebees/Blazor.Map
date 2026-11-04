@@ -4,7 +4,7 @@
 
 <h1>Installation</h1>
 
-<h2>NuGet Package</h2>
+<h2 id="nuget_package">NuGet package</h2>
 
 <p>Add the package to your project:</p>
 
@@ -13,7 +13,7 @@
                ["Terminal"] = "dotnet add package Spillgebees.Blazor.Map",
            })" />
 
-<h2>Stylesheet</h2>
+<h2 id="stylesheet">Stylesheet</h2>
 
 <p>
     Load the stylesheet. It bundles the MapLibre GL CSS and the
@@ -37,7 +37,7 @@
     fingerprinted, so the plain path is the correct form there.
 </p>
 
-<h2>JavaScript Module</h2>
+<h2 id="javascript_module">JavaScript module</h2>
 
 <p>
     No script tags are required. The library ships with a <code>lib.module.js</code> file that Blazor
@@ -47,7 +47,7 @@
     The MapLibre GL JS bundle is included, so no CDN reference is needed.
 </p>
 
-<h2>Minimal Usage</h2>
+<h2 id="minimal_usage">Minimal usage</h2>
 
 <p>
     Add the component to any Razor page or component. A fixed height is required for the map to render.
@@ -55,7 +55,7 @@
 
 <CodeBlock Language="razor" Files="@_minimalUsage" />
 
-<h2>Changing the Map Style</h2>
+<h2 id="changing_the_map_style">Changing the map style</h2>
 
 <p>
     When no style is specified, the map defaults to <strong>OpenFreeMap Liberty</strong>, a clean vector style

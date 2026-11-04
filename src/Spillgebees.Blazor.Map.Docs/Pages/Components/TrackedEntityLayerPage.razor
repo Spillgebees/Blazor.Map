@@ -5,12 +5,11 @@
 <Breadcrumb Section="components" PageName="TrackedEntityLayer"
             ApiReferenceUrl="api/TrackedEntityLayer-1"
             SourceUrl="https://github.com/Spillgebees/Blazor.Map/blob/main/src/Spillgebees.Blazor.Map/Components/Layers/TrackedEntityLayer.razor" />
-<OnThisPage />
 
 <h1>TrackedEntityLayer</h1>
 <p>High-performance real-time entity rendering with smooth animation, decorations, clustering, and interaction.</p>
 
-<h2 id="train_tracking">// train_tracking</h2>
+<h2 id="train_tracking">Train tracking</h2>
 <p>This example simulates 47 trains across the Luxembourg rail network. Each train is a tracked entity whose position, rotation, and feature-state properties update every tick without re-creating the underlying MapLibre source.</p>
 
 <p>Features demonstrated:</p>
@@ -26,7 +25,7 @@
     <li>Interactive <a href="/components/controls#legend_map_controls">LegendMapControl</a> inside <code>MapControls</code>, with custom swatch templates</li>
 </ul>
 
-<h2 id="tracked_entity_clustering">// tracked_entity_clustering</h2>
+<h2 id="tracked_entity_clustering">Tracked entity clustering</h2>
 <p><code>TrackedEntityLayer</code> uses the same <code>ClusterOptions</code> model as <code>GeoJsonSource</code>. Use <code>ClusterOptions.Default</code> for standard cluster circles and click-to-zoom behavior, or use <code>ClusterOptions.Create</code> when you need custom radius, max zoom, aggregate values, visuals, or click behavior.</p>
 <p>The GeoJSON clustering section shows the same practical patterns for custom cluster layers, aggregate properties, custom rendering, and practical limits. Apply those patterns through the <code>Cluster</code> parameter; aggregate cluster properties read the values supplied by the <code>Properties</code> selector.</p>
 <CodeBlock Language="razor" Files="@_trackedClusteringExamples" />

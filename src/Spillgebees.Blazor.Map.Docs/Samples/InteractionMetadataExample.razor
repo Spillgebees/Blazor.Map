@@ -34,7 +34,8 @@
            aria-labelledby="interaction-reference-title">
         <header class="interaction-reference-header">
             <div>
-                <h2 id="interaction-reference-title">Move around the map</h2>
+                @* the label ids sit on spans so the docs on-this-page rail skips these hidden headings *@
+                <h2><span id="interaction-reference-title">Move around the map</span></h2>
             </div>
             <button type="button"
                     class="interaction-reference-close"
@@ -51,7 +52,7 @@
             @foreach (var group in _groups)
             {
                 <section class="interaction-reference-group" aria-labelledby="@($"interaction-group-{group.Id}")">
-                    <h3 id="@($"interaction-group-{group.Id}")">@group.Label</h3>
+                    <h3><span id="@($"interaction-group-{group.Id}")">@group.Label</span></h3>
                     <div class="interaction-reference-list">
                         @foreach (var input in group.Inputs)
                         {

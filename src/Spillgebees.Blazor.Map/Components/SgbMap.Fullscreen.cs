@@ -4,13 +4,10 @@ using Spillgebees.Blazor.Map.Engine;
 
 namespace Spillgebees.Blazor.Map;
 
-/// <summary>
-/// The fullscreen surface of <see cref="SgbMap" />: an imperative API for toggling fullscreen
-/// without placing a control, and the change notification that keeps host UI in sync. Both the
-/// built-in <see cref="FullscreenMapControl" /> and these methods drive the one shared fullscreen
-/// primitive in the engine, so state stays consistent across the control, this API, and the user
-/// pressing Esc.
-/// </summary>
+// The fullscreen surface of SgbMap: an imperative API for toggling fullscreen without placing a
+// control, plus the change notification that keeps host UI in sync. Both FullscreenMapControl and
+// these methods drive the one fullscreen primitive in the engine. A plain comment on purpose: a doc
+// comment on this partial would replace the class summary in SgbMap.razor.cs.
 public partial class SgbMap
 {
     /// <summary>
