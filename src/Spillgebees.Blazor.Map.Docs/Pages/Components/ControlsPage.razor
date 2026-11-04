@@ -3,12 +3,11 @@
 <PageTitle>Map Controls | Spillgebees.Blazor.Map</PageTitle>
 
 <Breadcrumb Section="components" PageName="Map Controls" />
-<OnThisPage />
 
 <h1>Map Controls</h1>
 <p>Map controls are component-first UI elements rendered inside <code>MapControls</code>. Every top-level control ends with <code>MapControl</code>, so controls are easy to find in IntelliSense and docs.</p>
 
-<h2 id="choose_the_right_map_control">// choose_the_right_map_control</h2>
+<h2 id="choose_the_right_map_control">Choose the right map control</h2>
 <table>
     <thead>
         <tr>
@@ -33,51 +32,51 @@
     </tbody>
 </table>
 
-<h2 id="placement_ids_ordering_and_visibility">// placement_ids_ordering_and_visibility</h2>
+<h2 id="placement_ids_ordering_and_visibility">Placement, IDs, ordering and visibility</h2>
 <p>All controls must be declared inside <code>MapControls</code>. IDs must be unique. <code>Position</code> chooses the map corner, <code>Order</code> sorts controls in that corner, and <code>Visible</code> controls whether the entry is rendered.</p>
 <CodeBlock Language="razor" Files="@_placementExample" />
 
-<h2 id="icons">// icons</h2>
+<h2 id="icons">Icons</h2>
 <p>Icons are plain <code>RenderFragment</code> content. Inline SVG and component-library icons are both correct. Use <code>currentColor</code>, mark decorative icons with <code>aria-hidden="true"</code>, and keep <code>Label</code> as the accessible name and default tooltip.</p>
 <CodeBlock Language="razor" Files="@_iconExamples" />
 
-<h2 id="built_in_map_controls">// built_in_map_controls</h2>
+<h2 id="built_in_map_controls">Built-in map controls</h2>
 <p>Built-in controls wrap MapLibre behavior and should be used before custom equivalents.</p>
 <CodeBlock Language="razor" Files="@_builtInExamples" />
 
-<h2 id="button_map_controls">// button_map_controls</h2>
+<h2 id="button_map_controls">Button map controls</h2>
 <p><code>ButtonMapControl</code> is for one immediate command. Use <code>Disabled</code> for button interactivity; use <code>Visible</code> only to remove the control.</p>
 <CodeBlock Language="razor" Files="@_buttonExamples" />
 
-<h2 id="toggle_button_map_controls">// toggle_button_map_controls</h2>
+<h2 id="toggle_button_map_controls">Toggle button map controls</h2>
 <p><code>ToggleButtonMapControl</code> is for one boolean state and renders <code>aria-pressed</code>.</p>
 <CodeBlock Language="razor" Files="@_toggleExamples" />
 
-<h2 id="button_group_map_controls">// button_group_map_controls</h2>
+<h2 id="button_group_map_controls">Button group map controls</h2>
 <p><code>ButtonGroupMapControl</code> groups related commands and states. Its children must be <code>MapButton</code> or <code>MapToggleButton</code>.</p>
 <CodeBlock Language="razor" Files="@_groupExamples" />
 
-<h2 id="panel_map_controls">// panel_map_controls</h2>
+<h2 id="panel_map_controls">Panel map controls</h2>
 <p><code>PanelMapControl</code> is the default for filters, settings, basemap pickers, search forms, status panels, and other options UI. Use <code>InitiallyOpen</code> for uncontrolled panels, or bind <code>IsOpen</code> when application state owns the open value.</p>
 <CodeBlock Language="razor" Files="@_panelExamples" />
 
-<h2 id="display_map_controls">// display_map_controls</h2>
+<h2 id="display_map_controls">Display map controls</h2>
 <p><code>DisplayMapControl</code> renders <code>SgbMap.Display</code> items. Use <code>ItemIds</code> to choose and order a subset.</p>
 <p>Layers start as their style ships them. An item that is on shows the layers it names, even ones the style hides; an item that is off hides everything it targets; off wins. Leave <code>IsOn</code> unset and the item starts as the style has it, so the control matches the style without repeating its defaults. <code>MapDisplayTarget.Style</code> switches a whole style and only ever hides; <code>.Where(filter)</code> narrows any target to the features hidden while the item is off.</p>
 <CodeBlock Language="razor" Files="@_displayExamples" />
 
-<h2 id="legend_map_controls">// legend_map_controls</h2>
+<h2 id="legend_map_controls">Legend map controls</h2>
 <p><code>LegendMapControl</code> explains visual symbols. Use structured symbols for common swatches, lines, dashed lines, and circles; use templates only for bespoke legends.</p>
 <CodeBlock Language="razor" Files="@_legendExamples" />
 
-<h2 id="custom_map_controls">// custom_map_controls</h2>
+<h2 id="custom_map_controls">Custom map controls</h2>
 <p><code>CustomMapControl</code> is the escape hatch when none of the purpose-built controls match.</p>
 <CodeBlock Language="razor" Files="@_customExamples" />
 
-<h2 id="accessibility">// accessibility</h2>
+<h2 id="accessibility">Accessibility</h2>
 <p>Button-like controls require <code>Label</code>. The label is rendered as the accessible name and default HTML <code>title</code>; set <code>Title</code> only when the pointer tooltip should differ from the accessible name. Toggles expose pressed state, panels expose expanded state, and panels close with Escape.</p>
 
-<h2 id="performance">// performance</h2>
+<h2 id="performance">Performance</h2>
 <p>Blazor owns control content and event handlers. JavaScript owns the MapLibre control shell, placement, max-height handling, and lifecycle. Controls are reconciled by <code>Id</code>; content-bearing controls preserve their Blazor DOM instances, and native MapLibre controls are reused across placement and ordering changes.</p>
 
 <ExampleView TComponent="CustomControlsExample">

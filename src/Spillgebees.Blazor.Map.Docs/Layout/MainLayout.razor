@@ -24,6 +24,6 @@
             new NavPage("Map Controls", "components/controls"),
             new NavPage("Tracked Entity Layers", "components/tracked-entity-layer"),
         ]),
-        new("API Reference", ApiReferenceNav.Generate<SgbMap>())
+        NavSection.Collapsed("API Reference", ApiReferenceNav.Generate<SgbMap>())
     ];
 }

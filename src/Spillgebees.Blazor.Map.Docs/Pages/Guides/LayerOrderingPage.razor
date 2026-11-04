@@ -3,7 +3,6 @@
 <PageTitle>Layer Ordering | Spillgebees.Blazor.Map</PageTitle>
 
 <Breadcrumb Section="guides" PageName="Layer Ordering" />
-<OnThisPage />
 
 <h1>Layer Ordering</h1>
 <p>
@@ -12,7 +11,7 @@
     Slots decide where a layer paints relative to the base style's labels, whatever basemap you use and whenever the layer is added.
 </p>
 
-<h2 id="paint_order">// paint_order</h2>
+<h2 id="paint_order">Paint order</h2>
 <p>
     A map has layers from three places: the base style, composed styles (every entry after the first in <code>Styles</code>),
     and your own layer components and tile overlays. Slots stack them like this:
@@ -24,7 +23,7 @@
     When the base style changes, the slots are recomputed against the new one.
 </p>
 
-<h2 id="composed_styles">// composed_styles</h2>
+<h2 id="composed_styles">Composed styles</h2>
 <p>
     Composed style layers go into a slot by type: symbol layers above the base style's labels, everything else below them.
     Tracks and platforms stay under the street names, and station names stay readable on top.
@@ -39,7 +38,7 @@
 </p>
 <CodeBlock Language="csharp" Files="@_styleSlot" />
 
-<h2 id="single_layers">// single_layers</h2>
+<h2 id="single_layers">Single layers</h2>
 <p>
     A layer's type doesn't always match its purpose. A circle layer is usually data, but station dots are markers that should stay visible over 3D buildings.
     <code>WithLayerSlot</code> places single layers of a style you don't author, keyed by their id in the style JSON:
@@ -52,7 +51,7 @@
     The <a href="/components/tracked-entity-layer">train tracking example</a> uses both sides: its 3D buildings sit below the labels, and its station dots are moved above them.
 </p>
 
-<h2 id="layer_components">// layer_components</h2>
+<h2 id="layer_components">Layer components</h2>
 <p>
     Layer components take a <code>Slot</code> parameter. The default, <code>LayerSlot.AboveLabels</code>, puts the layer at the top of the map, above everything else.
     <code>LayerSlot.BelowLabels</code> is the place for 3D buildings and other area drawing that shouldn't cover text.
@@ -66,7 +65,7 @@
     <code>Before</code>, the id of the layer to paint below, takes precedence over <code>Slot</code>.
 </p>
 
-<h2 id="tile_overlays">// tile_overlays</h2>
+<h2 id="tile_overlays">Tile overlays</h2>
 <p>
     Tile overlays default to <code>LayerSlot.BelowLabels</code> and paint right above the base style's ground, below every vector layer.
     Labels, composed styles and your own layers all stay visible on top of the imagery.
@@ -74,7 +73,7 @@
 </p>
 <CodeBlock Language="csharp" Files="@_tileOverlaySlot" />
 
-<h2 id="behaviour_notes">// behaviour_notes</h2>
+<h2 id="behaviour_notes">Behaviour notes</h2>
 <ul>
     <li>Labels above 3D buildings draw over them everywhere, even where a building stands in front of a label. MapLibre doesn't hide symbols behind extrusions, which is what keeps labels readable.</li>
     <li>Raster basemaps have no label layers, since the labels are part of the tiles. The slots then all sit at the top of the base style, still in the same order.</li>

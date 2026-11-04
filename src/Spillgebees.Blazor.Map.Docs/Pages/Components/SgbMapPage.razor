@@ -5,28 +5,27 @@
 <Breadcrumb Section="components" PageName="SgbMap"
             ApiReferenceUrl="api/SgbMap"
             SourceUrl="https://github.com/Spillgebees/Blazor.Map/blob/main/src/Spillgebees.Blazor.Map/Components/SgbMap.razor" />
-<OnThisPage />
 
 <h1>SgbMap</h1>
 <p>The main map component. Renders an interactive MapLibre GL JS map with configurable styles, structured child sections, controls, sources, overlays, and popups.</p>
 
-<h2 id="canonical_structure">// canonical_structure</h2>
+<h2 id="canonical_structure">Canonical structure</h2>
 <p>Use three child content sections for component markup. Put controls in <code>MapControls</code>, MapLibre data sources in <code>MapSources</code>, and app overlays in <code>MapFeatures</code>. Sections make ownership clear and produce placement errors when components are nested in the wrong place.</p>
 <CodeBlock Language="razor" Files="@_canonicalStructure" />
 
-<h2 id="basic_usage">// basic_usage</h2>
+<h2 id="basic_usage">Basic usage</h2>
 <p>Provide a center coordinate and zoom level. The default style is OpenFreeMap Liberty, a clean vector style that requires no API key. Add controls inside <code>MapControls</code> with subcomponents such as <code>NavigationMapControl</code>, <code>ScaleMapControl</code>, and <code>LegendMapControl</code>. <code>FitBoundsOptions</code> auto-fits the viewport to a set of feature IDs.</p>
 <ExampleView TComponent="BasicMapExample">
     <BasicMapExample />
 </ExampleView>
 
-<h2 id="fit_bounds_padding">// fit_bounds_padding</h2>
+<h2 id="fit_bounds_padding">Fit bounds padding</h2>
 <p><code>FitBoundsOptions</code> fits the map viewport to a set of features. Use <code>Padding</code> for uniform spacing on all sides, or <code>TopLeftPadding</code> and <code>BottomRightPadding</code> for asymmetric padding when UI elements like sidebars overlap the map. The <code>CenterMapControl</code> button returns to the home view: the <code>FitBounds</code> features when set, otherwise <code>Center</code>/<code>Zoom</code>.</p>
 <ExampleView TComponent="FitBoundsPaddingExample">
     <FitBoundsPaddingExample />
 </ExampleView>
 
-<h2 id="camera_follow">// camera_follow</h2>
+<h2 id="camera_follow">Camera follow</h2>
 <p><code>Follow</code> makes the camera track a single entity in a tracked entity layer as it moves. It is a map-level parameter, so it lives on <code>SgbMap</code> rather than on the layer: give it a layer id and an entity id, and the camera rides along. Each camera gesture has a mode: <code>Free</code> leaves it to the user, <code>Anchored</code> holds a target but lets the user nudge it and springs back, <code>Locked</code> holds a target and disables the gesture, and <code>Clear</code> ends the follow when the user uses it. Zoom is its own gesture; pitch and bearing share one (drag-to-rotate tilts and turns together), so they share <code>OrientationMode</code>.</p>
 <p>The example runs three trains on preset loops. Pick one to follow, then change the options live; each change re-applies the follow. While orientation holds, <code>MapFollowBearingSource.MatchHeading</code> ("match heading") reads the entity's <code>Rotation</code>, so the map turns with the train, easing into each turn so sharp changes stay smooth. Prefer <code>@@bind-Follow</code> so a follow the user breaks (a pan, by default) flows back into your state, and use <code>OnFollowChanged</code> when you need the reason: <code>Started</code>, <code>Updated</code>, <code>Cleared</code>, <code>UserInteraction</code>, or <code>FeatureMissing</code>.</p>
 <p>Two things worth trying: drag the map while following to break it (the "clear on user pan" default), and despawn the followed train to watch <code>ClearWhenFeatureMissing</code> choose between clearing the follow and holding the camera in place.</p>
@@ -34,7 +33,7 @@
     <CameraFollowExample />
 </ExampleView>
 
-<h2 id="controls">// controls</h2>
+<h2 id="controls">Controls</h2>
 <p>Use control subcomponents inside <code>MapControls</code>. The component-first control API uses discoverable names such as <code>NavigationMapControl</code>, <code>ButtonMapControl</code>, <code>PanelMapControl</code>, <code>DisplayMapControl</code>, <code>LegendMapControl</code>, and <code>CustomMapControl</code>.</p>
 <p>The complete control selection guide, advanced examples, icon guidance, accessibility notes, and performance guidance live on the dedicated <a href="/components/controls">Map Controls</a> page.</p>
 <CodeBlock Language="razor" Files="@_customControlExamples" />
@@ -43,71 +42,71 @@
     <CustomControlsExample />
 </ExampleView>
 
-<h2 id="styles">// styles</h2>
+<h2 id="styles">Styles</h2>
 <p>Swap between built-in style presets using the <code>Style</code> parameter. The library ships with <code>MapStyle.OpenFreeMap.Liberty</code>, <code>Positron</code>, and <code>Bright</code>. Use <code>MapStyle.FromUrl</code> or <code>MapStyle.FromRasterUrl</code> for custom sources. Assign a new <code>MapStyle</code> to switch styles reactively.</p>
 <ExampleView TComponent="StyleSwitchingExample">
     <StyleSwitchingExample />
 </ExampleView>
 
-<h2 id="pixel_ratio">// pixel_ratio</h2>
+<h2 id="pixel_ratio">Pixel ratio</h2>
 <p>Use <code>PixelRatioMode</code> or <code>PixelRatio</code> to opt into MapLibre canvas pixel ratio control. The default preserves browser behavior. Rounded DPR can improve label sharpness on fractional display scaling such as 125%, at the cost of higher canvas resolution and GPU memory use.</p>
 <ExampleView TComponent="PixelRatioExample">
     <PixelRatioExample />
 </ExampleView>
 
-<h2 id="themes">// themes</h2>
+<h2 id="themes">Themes</h2>
 <p>The <code>Theme</code> parameter controls UI chrome appearance (controls, popups, attribution). It has no effect on tile rendering. Pass <code>MapTheme.Dark</code> to switch to dark chrome. Hover the marker below and toggle themes to see the popup styling change.</p>
 <ExampleView TComponent="ThemeSwitchingExample">
     <ThemeSwitchingExample />
 </ExampleView>
 
-<h2 id="markers">// markers</h2>
+<h2 id="markers">Markers</h2>
 <p>DOM-based markers with optional drag, custom colors, and icons. Pass a list of <code>Marker</code> records to the <code>Markers</code> parameter. Key options include <code>Title</code>, <code>Color</code>, <code>Draggable</code>, <code>Scale</code>, and <code>Icon</code>.</p>
 <ExampleView TComponent="MarkersExample">
     <MarkersExample />
 </ExampleView>
 
-<h2 id="circles_and_polylines">// circles_and_polylines</h2>
+<h2 id="circles_and_polylines">Circles and polylines</h2>
 <p>GPU-rendered shapes for higher performance. <code>Circle</code> and <code>Polyline</code> records are rendered via MapLibre GL's WebGL pipeline. They render efficiently at large counts and support data-driven styling.</p>
 <ExampleView TComponent="CirclesAndPolylinesExample">
     <CirclesAndPolylinesExample />
 </ExampleView>
 
-<h2 id="entity_and_list_overlays">// entity_and_list_overlays</h2>
+<h2 id="entity_and_list_overlays">Entity and list overlays</h2>
 <p>Use <code>TrackedEntityLayer</code> for moving, interactive entities that need stable IDs, feature-state driven hover or selection, popups, decorations, clustering, and diffed updates. Use <code>GeoJsonSource</code> for static or externally supplied GeoJSON where you want to define MapLibre layers directly.</p>
 <p>Use batch overlay components for app lists such as stations and tracks. They live in <code>MapFeatures</code> and adapt your items with selectors.</p>
 <CodeBlock Language="razor" Files="@_overlaySections" />
 
-<h2 id="geojson_clustering">// geojson_clustering</h2>
+<h2 id="geojson_clustering">GeoJSON clustering</h2>
 <p>Use <code>ClusterOptions</code> to group dense GeoJSON point data. Clustering belongs to the source, while <code>ClusterLayerSet</code> controls the generated cluster circles and count labels. Use <code>GeoJsonSource.Layers</code> for the individual points that appear after clusters dissolve.</p>
 <p>This live example aggregates incident severity for cluster styling and shows individual incident points after clusters dissolve.</p>
 <ExampleView TComponent="GeoJsonClusteringExample">
     <GeoJsonClusteringExample />
 </ExampleView>
-<h3 id="geojson_clustering_enable">enable clustering</h3>
+<h3 id="geojson_clustering_enable">Enable clustering</h3>
 <p>Use <code>ClusterOptions.Default</code> for standard cluster circles, count labels, and click-to-zoom behavior. Filter regular point layers with <code>!has point_count</code> so they only render unclustered features.</p>
 <CodeBlock Language="razor" Files="@_geoJsonDefaultClusteringExample" />
-<h3 id="geojson_clustering_appearance">customize appearance</h3>
+<h3 id="geojson_clustering_appearance">Customize appearance</h3>
 <p>Use <code>ClusterOptions.Create</code> with <code>ClusterLayerSet.Custom</code> when cluster circles or labels need custom colors, sizes, or expressions. Custom suffixes must be unique within the source.</p>
 <CodeBlock Language="razor" Files="@_geoJsonCustomClusterLayersExample" />
-<h3 id="geojson_clustering_properties">aggregate values</h3>
+<h3 id="geojson_clustering_properties">Aggregate values</h3>
 <p>Use <code>properties</code> to aggregate values from child points into each cluster. Aggregated values can drive cluster colors, sizes, or labels.</p>
 <CodeBlock Language="razor" Files="@_geoJsonClusterPropertiesExample" />
-<h3 id="geojson_clustering_custom_behavior">custom rendering and behavior</h3>
+<h3 id="geojson_clustering_custom_behavior">Custom rendering and behavior</h3>
 <p>Use <code>ClusterLayerSet.None</code> when another component or custom JavaScript renders clusters. Set <code>clickBehavior: ClusterClickBehavior.None</code> when you want to handle cluster clicks yourself instead of using the built-in zoom-to-dissolve behavior.</p>
 <CodeBlock Language="razor" Files="@_geoJsonSourceOnlyClusteringExample" />
-<h3 id="geojson_clustering_limits">clustering limits</h3>
+<h3 id="geojson_clustering_limits">Clustering limits</h3>
 <p>MapLibre applies one clustering algorithm per GeoJSON source. Use multiple sources when the same data needs different radius, max zoom, minimum points, or aggregate properties. Changing clustering rules rebuilds the source; data and style changes are lighter-weight.</p>
 <CodeBlock Language="razor" Files="@_geoJsonClusteringLimitsExample" />
 
-<h2 id="popups">// popups</h2>
+<h2 id="popups">Popups</h2>
 <p>Three trigger modes: click, hover, and permanent. Attach a <code>PopupOptions</code> record to any <code>Marker</code> or <code>Circle</code> via its <code>Popup</code> property. Set <code>CloseButton: false</code> on permanent popups for a cleaner look.</p>
 <p><strong>Popup safety:</strong> use <code>PopupOptions.FromText</code> by default. Use <code>PopupOptions.FromRawHtml</code> only with trusted or sanitized HTML.</p>
 <ExampleView TComponent="PopupsExample">
     <PopupsExample />
 </ExampleView>
 
-<h2 id="wms_raster_styles">// wms_raster_styles</h2>
+<h2 id="wms_raster_styles">WMS raster styles</h2>
 <p>Use <code>MapStyle.FromWmsUrl</code> to render WMS raster tiles as the base map style. Other factory methods include <code>FromWmtsUrl</code>, <code>FromArcGisMapServer</code>, and <code>FromRasterUrl</code>. To layer raster sources on top of a vector base, use <code>TileOverlay</code> instead.</p>
 <ExampleView TComponent="WmsRasterStyleExample">
     <WmsRasterStyleExample />

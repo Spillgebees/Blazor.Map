@@ -9,10 +9,6 @@
     <link rel="stylesheet" href="_content/Spillgebees.Blazor.Docs.Sdk/docs-sdk.css" />
     <link rel="stylesheet" href="_content/Spillgebees.Blazor.Map/Spillgebees.Blazor.Map.lib.module.css" />
     <style>
-        .doc-content li {
-            color: var(--color-text-secondary);
-        }
-
         .sample-btn-row {
             display: flex;
             gap: 0.5rem;
@@ -24,9 +20,9 @@
         .sample-btn {
             padding: 6px 14px;
             background: transparent;
-            border: 1px solid var(--color-border);
-            color: var(--color-text-muted);
-            font-family: var(--font-mono);
+            border: 1px solid var(--docs-line);
+            color: var(--docs-text-3);
+            font-family: var(--docs-font-mono);
             font-size: 12px;
             font-weight: 500;
             cursor: pointer;
@@ -34,31 +30,31 @@
         }
 
         .sample-btn:hover {
-            color: var(--color-text);
-            background: var(--color-surface-overlay);
+            color: var(--docs-text);
+            background: var(--docs-surface-3);
         }
 
         .sample-btn.active {
-            color: var(--color-primary);
-            border-color: var(--color-primary);
-            background: rgba(200, 160, 80, 0.08);
+            color: var(--docs-accent);
+            border-color: var(--docs-accent);
+            background: var(--docs-accent-wash);
         }
 
         .docs-pixel-ratio-control {
             display: grid;
             gap: 2px;
             padding: 7px 10px;
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            color: var(--color-text);
-            font-family: var(--font-mono);
+            background: var(--docs-surface-1);
+            border: 1px solid var(--docs-line);
+            color: var(--docs-text);
+            font-family: var(--docs-font-mono);
             font-size: 12px;
             line-height: 1.25;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
         }
 
         .docs-pixel-ratio-label {
-            color: var(--color-text-muted);
+            color: var(--docs-text-3);
             font-size: 10px;
             text-transform: uppercase;
         }
@@ -80,8 +76,8 @@
             flex-direction: column;
             gap: 0.85rem;
             padding: 1rem 1.15rem;
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
+            background: var(--docs-surface-1);
+            border: 1px solid var(--docs-line);
             border-radius: 10px;
         }
 
@@ -99,17 +95,17 @@
 
         .follow-group + .follow-group {
             padding-top: 0.8rem;
-            border-top: 1px solid var(--color-border);
+            border-top: 1px solid var(--docs-line);
         }
 
         .follow-group-title {
             margin: 0;
-            font-family: var(--font-mono);
+            font-family: var(--docs-font-mono);
             font-size: 11px;
             font-weight: 600;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: var(--color-text);
+            color: var(--docs-text);
         }
 
         .follow-group-note {
@@ -117,7 +113,7 @@
             font-weight: 400;
             letter-spacing: 0;
             text-transform: none;
-            color: var(--color-text-muted);
+            color: var(--docs-text-3);
         }
 
         .follow-field {
@@ -127,9 +123,9 @@
         }
 
         .follow-field-label {
-            font-family: var(--font-mono);
+            font-family: var(--docs-font-mono);
             font-size: 11px;
-            color: var(--color-text-muted);
+            color: var(--docs-text-3);
         }
 
         .follow-field-note {
@@ -154,19 +150,19 @@
             gap: 0.6rem;
             margin-left: 0.3rem;
             padding-left: 0.75rem;
-            border-left: 2px solid var(--color-primary);
+            border-left: 2px solid var(--docs-accent);
         }
 
         .follow-status {
             margin: 0;
             font-size: 13px;
             line-height: 1.5;
-            color: var(--color-text-secondary);
+            color: var(--docs-text-2);
         }
 
         /* Interaction metadata sample: page-level field guide rather than map-owned chrome. */
         .interaction-example {
-            --interaction-accent: var(--color-primary);
+            --interaction-accent: var(--docs-accent);
         }
 
         .interaction-example-toolbar {
@@ -175,9 +171,9 @@
             align-items: center;
             justify-content: space-between;
             padding: 0.8rem 0.9rem;
-            color: var(--color-text);
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
+            color: var(--docs-text);
+            background: var(--docs-surface-1);
+            border: 1px solid var(--docs-line);
             border-bottom: 0;
         }
 
@@ -187,14 +183,14 @@
         }
 
         .interaction-example-toolbar strong {
-            font-family: var(--font-mono);
+            font-family: var(--docs-font-mono);
             font-size: 0.8rem;
             letter-spacing: 0.015em;
         }
 
         .interaction-example-toolbar span {
             font-size: 0.75rem;
-            color: var(--color-text-muted);
+            color: var(--docs-text-3);
         }
 
         .interaction-help-trigger {
@@ -204,13 +200,13 @@
             align-items: center;
             min-height: 2.35rem;
             padding: 0.45rem 0.75rem;
-            font-family: var(--font-mono);
+            font-family: var(--docs-font-mono);
             font-size: 0.75rem;
             font-weight: 700;
-            color: #16130c;
+            color: var(--docs-accent-contrast);
             cursor: pointer;
-            background: var(--color-primary);
-            border: 1px solid var(--color-primary);
+            background: var(--docs-accent);
+            border: 1px solid var(--docs-accent);
             box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);
         }
 
@@ -220,7 +216,7 @@
 
         .interaction-help-trigger:focus-visible,
         .interaction-reference-close:focus-visible {
-            outline: 2px solid var(--color-primary);
+            outline: 2px solid var(--docs-accent);
             outline-offset: 3px;
         }
 
@@ -243,9 +239,9 @@
             padding: 0;
             margin: auto;
             overflow: auto;
-            color: var(--color-text);
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
+            color: var(--docs-text);
+            background: var(--docs-surface-1);
+            border: 1px solid var(--docs-line);
             box-shadow: 0 1.5rem 5rem rgba(0, 0, 0, 0.55);
         }
 
@@ -263,8 +259,8 @@
             align-items: flex-start;
             justify-content: space-between;
             padding: 1rem 1.1rem;
-            background: var(--color-surface-overlay);
-            border-bottom: 1px solid var(--color-border);
+            background: var(--docs-surface-3);
+            border-bottom: 1px solid var(--docs-line);
         }
 
         .interaction-reference-header h2,
@@ -282,7 +278,7 @@
             max-width: 44rem;
             margin-top: 0.35rem;
             font-size: 0.8rem;
-            color: var(--color-text-muted);
+            color: var(--docs-text-3);
         }
 
         .interaction-reference-close {
@@ -291,17 +287,17 @@
             width: 2.2rem;
             height: 2.2rem;
             padding: 0;
-            color: var(--color-text);
+            color: var(--docs-text);
             cursor: pointer;
             background: transparent;
-            border: 1px solid var(--color-border);
+            border: 1px solid var(--docs-line);
             border-radius: 50%;
             place-items: center;
         }
 
         .interaction-reference-close:hover {
-            color: var(--color-primary);
-            background: var(--color-surface);
+            color: var(--docs-accent);
+            background: var(--docs-surface-1);
         }
 
         .interaction-reference-close svg {
@@ -320,8 +316,8 @@
         .interaction-reference-group {
             min-width: 0;
             padding: 1rem;
-            border-right: 1px solid var(--color-border);
-            border-bottom: 1px solid var(--color-border);
+            border-right: 1px solid var(--docs-line);
+            border-bottom: 1px solid var(--docs-line);
         }
 
         .interaction-reference-group:nth-child(2n) {
@@ -330,9 +326,9 @@
 
         .interaction-reference-group h3 {
             margin: 0 0 0.65rem;
-            font-family: var(--font-mono);
+            font-family: var(--docs-font-mono);
             font-size: 0.7rem;
-            color: var(--color-text-muted);
+            color: var(--docs-text-3);
             text-transform: uppercase;
             letter-spacing: 0.11em;
         }
@@ -350,8 +346,8 @@
             align-items: center;
             min-width: 0;
             padding: 0.5rem;
-            background: var(--color-surface-overlay);
-            border: 1px solid var(--color-border);
+            background: var(--docs-surface-3);
+            border: 1px solid var(--docs-line);
         }
 
         .interaction-reference-copy {
@@ -366,14 +362,14 @@
         }
 
         .interaction-reference-copy strong {
-            font-family: var(--font-mono);
+            font-family: var(--docs-font-mono);
             font-size: 0.68rem;
             line-height: 1.25;
         }
 
         .interaction-reference-copy span {
             font-size: 0.66rem;
-            color: var(--color-text-muted);
+            color: var(--docs-text-3);
         }
 
         .interaction-gesture-visual {
@@ -381,9 +377,9 @@
             display: grid;
             width: 3.5rem;
             min-height: 2.9rem;
-            color: var(--color-text-secondary);
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
+            color: var(--docs-text-2);
+            background: var(--docs-surface-1);
+            border: 1px solid var(--docs-line);
             place-items: center;
         }
 
@@ -419,8 +415,8 @@
         .interaction-gesture-visual .active-button,
         .interaction-gesture-visual .active-wheel,
         .interaction-gesture-visual .finger {
-            fill: var(--color-primary);
-            stroke: color-mix(in srgb, var(--color-primary) 60%, black);
+            fill: var(--docs-accent);
+            stroke: color-mix(in srgb, var(--docs-accent) 60%, black);
             stroke-width: 0.75;
         }
 
@@ -429,7 +425,7 @@
         .interaction-gesture-visual .tap-ring,
         .interaction-gesture-visual .click-mark {
             fill: none;
-            color: var(--color-primary);
+            color: var(--docs-accent);
             stroke: currentColor;
             stroke-linecap: round;
             stroke-linejoin: round;
@@ -462,12 +458,12 @@
         .interaction-gesture-visual .arrow-key-grid kbd {
             min-width: 1.25rem;
             padding: 0.2rem 0.32rem;
-            font: 700 0.62rem/1 var(--font-mono);
-            color: var(--color-text);
+            font: 700 0.62rem/1 var(--docs-font-mono);
+            color: var(--docs-text);
             text-align: center;
-            background: var(--color-surface-overlay);
-            border: 1px solid var(--color-border);
-            border-bottom: 2px solid var(--color-primary);
+            background: var(--docs-surface-3);
+            border: 1px solid var(--docs-line);
+            border-bottom: 2px solid var(--docs-accent);
         }
 
         .interaction-gesture-visual .key-cluster .direction-key {
